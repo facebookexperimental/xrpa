@@ -1,0 +1,13 @@
+{
+  "name": "xred-tracking",
+  "version": "1.0.0",
+  "description": "Tracking interface",
+  "main": "lib/index.js",
+  "files": [
+    "lib/**/*"
+  ],
+  "license": "Apache-2.0",
+  "peerDependencies": {
+    "xrpa-orchestrator": "file:../../../../../libraries/xred/platform/dataset/js"
+  }
+}
