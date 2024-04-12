@@ -1,0 +1,36 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+export { BuiltinType, isBuiltinType } from "./shared/BuiltinTypes";
+export { CodeGen } from "./shared/CodeGen";
+export { AngularUnitType, CoordAxis, CoordinateSystemDef, SpatialUnitType } from "./shared/CoordinateTransformer";
+export { DataMapDefinition } from "./shared/DataMap";
+export { DataModelDefinition, UserStructSpec } from "./shared/DataModel";
+export { DataStoreDefinition } from "./shared/DataStore";
+export { FileWriter } from "./shared/FileWriter";
+export { buckBuild, buckRun, buckRunPackage, runProcess } from "./shared/Helpers";
+export { ModuleDefinition } from "./shared/ModuleDefinition";
+export * from "./shared/SyntheticObject";
+export * from "./shared/TypeDefinition";
+export { CppModuleDefinition } from "./targets/cpp/CppModuleDefinition";
+export { CppStandalone } from "./targets/cpp/CppStandalone";
+export { UepluginModuleDefinition } from "./targets/ueplugin/UepluginModuleDefinition";
+export { UnityPackageModuleDefinition } from "./targets/unitypackage/UnityPackageModuleDefinition";
+export * from "./ConvenienceWrappers";
+export * from "./Unity";
+export * from "./UnrealEngine";
+
