@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SignalGraph = exports.SignalOutputDeviceType = exports.SignalOutputDataType = exports.SignalSoftClipType = exports.SignalMathOpType = exports.SignalCurveType = exports.SignalChannelStackType = exports.SignalChannelSelectType = exports.SignalOscillatorType = exports.SignalSourceFileType = exports.ISignalNodeType = exports.SignalEventType = exports.DeviceHandednessFilterEnum = exports.SampleTypeEnum = exports.MathOperationEnum = exports.WaveformTypeEnum = exports.Vector3ParamType = exports.DistanceParamType = exports.FrequencyParamType = exports.ScalarParamType = exports.CountParamType = void 0;
+exports.SignalGraph = exports.SignalOutputDeviceType = exports.SignalOutputDataType = exports.SignalSoftClipType = exports.SignalMultiplexerType = exports.SignalMathOpType = exports.SignalCurveType = exports.SignalChannelStackType = exports.SignalChannelSelectType = exports.SignalOscillatorType = exports.SignalSourceFileType = exports.ISignalNodeType = exports.SignalEventCombinerType = exports.SignalEventType = exports.EventCombinerParameterMode = exports.DeviceHandednessFilterEnum = exports.SampleTypeEnum = exports.MathOperationEnum = exports.WaveformTypeEnum = exports.Vector3ParamType = exports.DistanceParamType = exports.FrequencyParamType = exports.ScalarParamType = exports.CountParamType = void 0;
 const assert_1 = __importDefault(require("assert"));
 const xrpa_orchestrator_1 = require("xrpa-orchestrator");
 /* FUTURE:
@@ -108,6 +108,31 @@ function setEventField(fieldValues, fieldName, value) {
         return;
     }
     fieldValues[fieldName] = value;
+    if (value.extraDependency) {
+        for (let i = 0; i < 100; ++i) {
+            const depFieldName = `eventDependency${i}`;
+            if (!(depFieldName in fieldValues)) {
+                fieldValues[depFieldName] = value.extraDependency;
+                break;
+            }
+        }
+    }
+}
+function getOrCreateEventField(fieldValues, fieldName, eventDependency) {
+    const existing = fieldValues[fieldName];
+    if (existing instanceof SignalEventType) {
+        return existing;
+    }
+    const ev = new SignalEventType();
+    setEventField(fieldValues, fieldName, ev);
+    if (eventDependency) {
+        ev.extraDependency = eventDependency;
+    }
+    return ev;
+}
+function setStartEventField(fieldValues, startEvent, autoStart) {
+    setEventField(fieldValues, "startEvent", startEvent);
+    setField(fieldValues, "autoStart", startEvent ? (autoStart ?? false) : true);
 }
 ///////////////////////////////////////////////////////////////////////////////
 var WaveformTypeEnum;
@@ -136,15 +161,42 @@ var DeviceHandednessFilterEnum;
     DeviceHandednessFilterEnum[DeviceHandednessFilterEnum["Left"] = 2] = "Left";
     DeviceHandednessFilterEnum[DeviceHandednessFilterEnum["Right"] = 3] = "Right";
 })(DeviceHandednessFilterEnum = exports.DeviceHandednessFilterEnum || (exports.DeviceHandednessFilterEnum = {}));
+var EventCombinerParameterMode;
+(function (EventCombinerParameterMode) {
+    EventCombinerParameterMode[EventCombinerParameterMode["Passthrough"] = 0] = "Passthrough";
+    EventCombinerParameterMode[EventCombinerParameterMode["SrcIndex"] = 1] = "SrcIndex";
+    EventCombinerParameterMode[EventCombinerParameterMode["Constant"] = 2] = "Constant";
+})(EventCombinerParameterMode = exports.EventCombinerParameterMode || (exports.EventCombinerParameterMode = {}));
 class SignalEventType extends xrpa_orchestrator_1.XrpaObjectDef {
     // FUTURE: readonly onEvent = new XrpaMessage({});
     constructor(
     // FUTURE: readonly sendEvent?: XrpaMessage,
     ) {
         super("SignalEvent");
+        this.extraDependency = null;
+    }
+    onEvent() {
+        return this;
     }
 }
 exports.SignalEventType = SignalEventType;
+class SignalEventCombinerType extends xrpa_orchestrator_1.XrpaObjectDef {
+    constructor(params) {
+        super("SignalEventCombiner");
+        if (params.inputs.length > SignalEventCombinerType.MAX_INPUTS) {
+            throw new Error("SignalEventCombinerType: too many inputs (" + params.inputs.length + " > " + SignalEventCombinerType.MAX_INPUTS + ")");
+        }
+        for (let i = 0; i < SignalEventCombinerType.MAX_INPUTS; i++) {
+            setEventField(this.fieldValues, "srcEvent" + i, params.inputs[i]?.onEvent());
+        }
+        setField(this.fieldValues, "parameterMode", params.parameterMode);
+    }
+    onEvent() {
+        return getOrCreateEventField(this.fieldValues, "onEvent", this);
+    }
+}
+SignalEventCombinerType.MAX_INPUTS = 6;
+exports.SignalEventCombinerType = SignalEventCombinerType;
 class ISignalNodeType extends xrpa_orchestrator_1.XrpaObjectDef {
     constructor() {
         super(...arguments);
@@ -238,9 +290,14 @@ class SignalCurveType extends ISignalNodeType {
             setField(this.fieldValues, "segmentLength" + i, params.segments[i]?.timeLength);
             setField(this.fieldValues, "segmentEndValue" + i, params.segments[i]?.endValue);
         }
-        setEventField(this.fieldValues, "startEvent", params.startEvent);
-        setEventField(this.fieldValues, "onDoneEvent", params.onDoneEvent);
+        setStartEventField(this.fieldValues, params.startEvent?.onEvent(), params.autoStart);
         this.numOutputChannels = 1;
+    }
+    setStartEvent(ev, autoStart) {
+        setStartEventField(this.fieldValues, ev?.onEvent(), autoStart);
+    }
+    onDone() {
+        return getOrCreateEventField(this.fieldValues, "onDoneEvent");
     }
 }
 SignalCurveType.MAX_SEGMENTS = 6;
@@ -256,6 +313,29 @@ class SignalMathOpType extends ISignalNodeType {
     }
 }
 exports.SignalMathOpType = SignalMathOpType;
+class SignalMultiplexerType extends ISignalNodeType {
+    constructor(params) {
+        super("SignalMultiplexer");
+        if (params.inputs.length > SignalMultiplexerType.MAX_INPUTS) {
+            throw new Error("SignalMultiplexerType: too many inputs (" + params.inputs.length + " > " + SignalMultiplexerType.MAX_INPUTS + ")");
+        }
+        for (let i = 0; i < SignalMultiplexerType.MAX_INPUTS; i++) {
+            setField(this.fieldValues, "srcNode" + i, params.inputs[i]);
+        }
+        setEventField(this.fieldValues, "incrementEvent", params.incrementEvent?.onEvent());
+        setStartEventField(this.fieldValues, params.startEvent?.onEvent(), params.autoStart);
+        this.setOutputChannelsToMaxInputChannels();
+        setField(this.fieldValues, "numChannels", this.numOutputChannels);
+    }
+    setStartEvent(ev, autoStart) {
+        setStartEventField(this.fieldValues, ev?.onEvent(), autoStart);
+    }
+    onDone() {
+        return getOrCreateEventField(this.fieldValues, "onDoneEvent");
+    }
+}
+SignalMultiplexerType.MAX_INPUTS = 6;
+exports.SignalMultiplexerType = SignalMultiplexerType;
 class SignalSoftClipType extends ISignalNodeType {
     constructor(params) {
         super("SignalSoftClip");
@@ -289,7 +369,7 @@ exports.SignalOutputDeviceType = SignalOutputDeviceType;
 class SignalGraph extends xrpa_orchestrator_1.XrpaSyntheticObject {
     constructor(params) {
         super(params.outputs, params.done ? {
-            target: params.done,
+            target: params.done?.onEvent(),
             fieldName: "receiveEvent",
         } : undefined);
     }

@@ -1,12 +1,12 @@
 {
-  "name": "xred-signal-processing",
-  "version": "1.1.0",
-  "description": "Signal processing interface",
+  "name": "xred-signal-output",
+  "version": "1.0.0",
+  "description": "Signal output device interface",
   "main": "lib/index.js",
+  "license": "Apache-2.0",
   "files": [
     "lib/**/*"
   ],
-  "license": "Apache-2.0",
   "peerDependencies": {
     "xrpa-orchestrator": "file:../../../../../libraries/xred/platform/dataset/js"
   }

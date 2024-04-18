@@ -31,6 +31,15 @@ export declare class DistanceParamType extends XrpaParamDef {
 export declare class Vector3ParamType extends XrpaParamDef {
     constructor(name: string, description?: string);
 }
+export interface AcceptsStartEvent {
+    setStartEvent(ev: FiresEvent | null, autoStart?: boolean): void;
+}
+export interface FiresDoneEvent {
+    onDone(): SignalEventType;
+}
+export interface FiresEvent {
+    onEvent(): SignalEventType;
+}
 export type NonSignalNumericValue = CountParamType | ScalarParamType | FrequencyParamType | DistanceParamType | number;
 export type NumericValue = NonSignalNumericValue | ISignalNodeType;
 export declare enum WaveformTypeEnum {
@@ -55,8 +64,23 @@ export declare enum DeviceHandednessFilterEnum {
     Left = 2,
     Right = 3
 }
-export declare class SignalEventType extends XrpaObjectDef {
+export declare enum EventCombinerParameterMode {
+    Passthrough = 0,
+    SrcIndex = 1,
+    Constant = 2
+}
+export declare class SignalEventType extends XrpaObjectDef implements FiresEvent {
+    extraDependency: XrpaObjectDef | null;
     constructor();
+    onEvent(): SignalEventType;
+}
+export declare class SignalEventCombinerType extends XrpaObjectDef implements FiresEvent {
+    static MAX_INPUTS: number;
+    constructor(params: {
+        inputs: Array<FiresEvent>;
+        parameterMode?: EventCombinerParameterMode;
+    });
+    onEvent(): SignalEventType;
 }
 export declare class ISignalNodeType extends XrpaObjectDef {
     protected numOutputChannels: number;
@@ -102,7 +126,7 @@ export declare class SignalChannelStackType extends ISignalNodeType {
         ];
     });
 }
-export declare class SignalCurveType extends ISignalNodeType {
+export declare class SignalCurveType extends ISignalNodeType implements AcceptsStartEvent, FiresDoneEvent {
     static MAX_SEGMENTS: number;
     constructor(params: {
         softCurve?: boolean;
@@ -111,9 +135,11 @@ export declare class SignalCurveType extends ISignalNodeType {
             timeLength: NonSignalNumericValue;
             endValue: NonSignalNumericValue;
         }>;
-        startEvent?: SignalEventType;
-        onDoneEvent?: SignalEventType;
+        startEvent?: FiresEvent;
+        autoStart?: boolean;
     });
+    setStartEvent(ev: FiresEvent | null, autoStart?: boolean): void;
+    onDone(): SignalEventType;
 }
 export declare class SignalMathOpType extends ISignalNodeType {
     constructor(params: {
@@ -121,6 +147,17 @@ export declare class SignalMathOpType extends ISignalNodeType {
         operandA: NumericValue;
         operandB: NumericValue;
     });
+}
+export declare class SignalMultiplexerType extends ISignalNodeType implements AcceptsStartEvent, FiresDoneEvent {
+    static MAX_INPUTS: number;
+    constructor(params: {
+        inputs: Array<ISignalNodeType>;
+        incrementEvent?: FiresEvent;
+        startEvent?: FiresEvent;
+        autoStart?: boolean;
+    });
+    setStartEvent(ev: FiresEvent | null, autoStart?: boolean): void;
+    onDone(): SignalEventType;
 }
 export declare class SignalSoftClipType extends ISignalNodeType {
     constructor(params: {
@@ -146,7 +183,7 @@ type SignalOut = SignalOutputDataType | SignalOutputDeviceType;
 export declare class SignalGraph extends XrpaSyntheticObject {
     constructor(params: {
         outputs: SignalOut[];
-        done?: SignalEventType;
+        done?: FiresEvent;
     });
 }
 export {};

@@ -31,12 +31,5 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SignalGraph = void 0;
-__exportStar(require("./SignalProcessingDataModel"), exports);
-var SignalProcessingTypes_1 = require("./SignalProcessingTypes");
-Object.defineProperty(exports, "SignalGraph", { enumerable: true, get: function () { return SignalProcessingTypes_1.SignalGraph; } });
-__exportStar(require("./MathOps"), exports);
-__exportStar(require("./Parameters"), exports);
-__exportStar(require("./ProcessingNodes"), exports);
-__exportStar(require("./StringFilter"), exports);
+__exportStar(require("./SignalOutputDataModel"), exports);
 //# sourceMappingURL=index.js.map

@@ -15,7 +15,5 @@
  */
 
 
-import { DataModelDefinition, DataStoreDefinition } from "xrpa-orchestrator";
-export declare function SignalProcessingDataModel(datamodel: DataModelDefinition): void;
-export declare function setupSignalProcessingDataStore(datastore: DataStoreDefinition): void;
+export * from "./SignalOutputDataModel";
 

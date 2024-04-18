@@ -18,6 +18,7 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.XrpaSyntheticObject = exports.XrpaObjectDef = exports.XrpaParamDef = void 0;
+const Helpers_1 = require("./Helpers");
 class XrpaParamDef {
     constructor(name, type) {
         this.name = name;
@@ -34,7 +35,8 @@ class XrpaObjectDef {
         this.__isXrpaObjectDef = true;
         this.id = XrpaObjectDef.idCounter++;
         if (!this.name) {
-            this.name = `object${this.id}`;
+            const prefix = (0, Helpers_1.lowerFirst)(collectionType);
+            this.name = `${prefix}${this.id}`;
         }
     }
 }

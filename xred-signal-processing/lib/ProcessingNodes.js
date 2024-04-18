@@ -40,7 +40,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AudioStream = exports.AdsrEnvelope = exports.TrapezoidCurve = exports.StackChannels = exports.SelectChannel = exports.SoftClip = exports.WhiteNoise = exports.SquareWave = exports.TriangleWave = exports.SawtoothWave = exports.SineWave = exports.SignalEvent = exports.OutputDevice = void 0;
+exports.Sequence = exports.AudioStream = exports.AdsrEnvelope = exports.TrapezoidCurve = exports.StackChannels = exports.SelectChannel = exports.SoftClip = exports.WhiteNoise = exports.SquareWave = exports.TriangleWave = exports.SawtoothWave = exports.SineWave = exports.OutputDevice = void 0;
 const path = __importStar(require("path"));
 const MathOps_1 = require("./MathOps");
 const SignalProcessingTypes_1 = require("./SignalProcessingTypes");
@@ -52,10 +52,6 @@ function OutputDevice(params) {
     });
 }
 exports.OutputDevice = OutputDevice;
-function SignalEvent() {
-    return new SignalProcessingTypes_1.SignalEventType();
-}
-exports.SignalEvent = SignalEvent;
 function SignalGen(params) {
     const fullParams = {
         channelCount: 1,
@@ -153,7 +149,6 @@ function TrapezoidCurve(params) {
             { endValue: fullParams.lowValue, timeLength: fullParams.finalHoldTime },
         ],
         startEvent: params.startEvent,
-        onDoneEvent: params.onDoneEvent,
     });
 }
 exports.TrapezoidCurve = TrapezoidCurve;
@@ -175,7 +170,6 @@ function AdsrEnvelope(params) {
             { endValue: 0, timeLength: fullParams.releaseTime },
         ],
         startEvent: params.startEvent,
-        onDoneEvent: params.onDoneEvent,
     });
 }
 exports.AdsrEnvelope = AdsrEnvelope;
@@ -187,6 +181,38 @@ function AudioStream(filename, params) {
     });
 }
 exports.AudioStream = AudioStream;
+function Sequence(params) {
+    // each element starts when its predecessor is done
+    for (let i = 1; i < params.elements.length; ++i) {
+        params.elements[i].setStartEvent(params.elements[i - 1].onDone());
+    }
+    // multiplexer needs to switch between the signal inputs when an input fires the done event
+    const incrementEvent = new SignalProcessingTypes_1.SignalEventCombinerType({
+        inputs: params.elements.map(value => value.onDone()),
+    });
+    // choose a single input to pipe to the output at a time
+    const multiplexer = new SignalProcessingTypes_1.SignalMultiplexerType({
+        inputs: params.elements,
+        incrementEvent: incrementEvent,
+    });
+    if (params.loop || params.startEvent) {
+        const events = [];
+        if (params.loop) {
+            events.push(multiplexer.onDone());
+        }
+        if (params.startEvent) {
+            events.push(params.startEvent);
+        }
+        const startEvent = events.length > 1 ? (new SignalProcessingTypes_1.SignalEventCombinerType({
+            inputs: events,
+        })) : events[0];
+        const autoStart = params.autoStart ?? !params.startEvent;
+        params.elements[0].setStartEvent(startEvent, autoStart);
+        multiplexer.setStartEvent(startEvent, autoStart);
+    }
+    return multiplexer;
+}
+exports.Sequence = Sequence;
 /*
 export function LowPassFilter(signal: ISignalNodeType, cutoffFrequency: NumericValue): ISignalNodeType {
   return new SignalLowPassFilterType({

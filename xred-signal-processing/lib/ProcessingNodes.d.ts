@@ -15,14 +15,13 @@
  */
 
 
-import { ISignalNodeType, NonSignalNumericValue, NumericValue, SignalCurveType, SignalEventType, SignalOutputDeviceType } from "./SignalProcessingTypes";
+import { AcceptsStartEvent, FiresDoneEvent, FiresEvent, ISignalNodeType, NonSignalNumericValue, NumericValue, SignalCurveType, SignalOutputDeviceType } from "./SignalProcessingTypes";
 import { StringFilter } from "./StringFilter";
 export declare function OutputDevice(params: {
     deviceName: StringFilter;
     source: ISignalNodeType;
     channelOffset?: number;
 }): SignalOutputDeviceType;
-export declare function SignalEvent(): SignalEventType;
 export declare function SineWave(params: {
     channelCount?: number;
     frequency?: NumericValue;
@@ -65,8 +64,7 @@ export declare function TrapezoidCurve(params: {
     highHoldTime?: NonSignalNumericValue;
     rampDownTime?: NonSignalNumericValue;
     finalHoldTime?: NonSignalNumericValue;
-    startEvent?: SignalEventType;
-    onDoneEvent?: SignalEventType;
+    startEvent?: FiresEvent;
 }): SignalCurveType;
 export declare function AdsrEnvelope(params: {
     attackTime?: NonSignalNumericValue;
@@ -74,11 +72,16 @@ export declare function AdsrEnvelope(params: {
     sustainLevel?: NonSignalNumericValue;
     sustainTime?: NonSignalNumericValue;
     releaseTime?: NonSignalNumericValue;
-    startEvent?: SignalEventType;
-    onDoneEvent?: SignalEventType;
+    startEvent?: FiresEvent;
 }): SignalCurveType;
 export declare function AudioStream(filename: string, params?: {
     autoPlay?: boolean;
     numChannels?: number;
 }): ISignalNodeType;
+export declare function Sequence(params: {
+    elements: Array<ISignalNodeType & AcceptsStartEvent & FiresDoneEvent>;
+    loop?: boolean;
+    startEvent?: FiresEvent;
+    autoStart?: boolean;
+}): ISignalNodeType & FiresDoneEvent;
 

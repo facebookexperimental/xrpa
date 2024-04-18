@@ -106,7 +106,11 @@ function genCreateObjectsBody(ctx, codegen, objectDef, includes) {
         // create object
         createLines.push(`${objVarName} = ${codegen.genCreateObject(objType, [idCall])};`, `${codegen.genDerefMethodCall(codegen.genDeref(storeVarName, reconcilerName), "addObject", [objVarName])};`);
         // set field values
+        const fields = reconcilerDef.type.getAllFields();
         for (const fieldName in objDef.fieldValues) {
+            if (!(fieldName in fields)) {
+                continue;
+            }
             const fieldValue = objDef.fieldValues[fieldName];
             let value = undefined;
             if (isXrpaObjectDef(fieldValue)) {

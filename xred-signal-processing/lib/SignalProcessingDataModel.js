@@ -17,7 +17,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SignalProcessingDataModel = void 0;
+exports.setupSignalProcessingDataStore = exports.SignalProcessingDataModel = void 0;
 const xrpa_orchestrator_1 = require("xrpa-orchestrator");
 function SignalProcessingDataModel(datamodel) {
     datamodel.setStoredCoordinateSystem(xrpa_orchestrator_1.UnityCoordinateSystem);
@@ -31,6 +31,20 @@ function SignalProcessingDataModel(datamodel) {
             receiveEvent: datamodel.addMessageStruct("ReceiveEventMessage", {
                 payload: datamodel.ScalarField(),
             }),
+        },
+    });
+    datamodel.addCollection({
+        name: "SignalEventCombiner",
+        maxCount: 128,
+        fields: {
+            srcEvent0: SignalEvent,
+            srcEvent1: SignalEvent,
+            srcEvent2: SignalEvent,
+            srcEvent3: SignalEvent,
+            srcEvent4: SignalEvent,
+            srcEvent5: SignalEvent,
+            parameterMode: datamodel.addEnum("ParameterMode", ["Passthrough", "SrcIndex", "Constant"]),
+            onEvent: SignalEvent,
         },
     });
     const ISignalNode = datamodel.addInterface({
@@ -108,6 +122,7 @@ function SignalProcessingDataModel(datamodel) {
             segmentLength5: datamodel.ScalarField(),
             segmentEndValue5: datamodel.ScalarField(),
             startEvent: SignalEvent,
+            autoStart: datamodel.BooleanField(true),
             onDoneEvent: SignalEvent,
         },
     });
@@ -122,6 +137,24 @@ function SignalProcessingDataModel(datamodel) {
             operandANode: ISignalNode,
             operandB: datamodel.ScalarField(),
             operandBNode: ISignalNode,
+        },
+    });
+    datamodel.addCollection({
+        name: "SignalMultiplexer",
+        interfaceType: ISignalNode,
+        maxCount: 256,
+        fields: {
+            numChannels: datamodel.CountField(1),
+            srcNode0: ISignalNode,
+            srcNode1: ISignalNode,
+            srcNode2: ISignalNode,
+            srcNode3: ISignalNode,
+            srcNode4: ISignalNode,
+            srcNode5: ISignalNode,
+            incrementEvent: SignalEvent,
+            startEvent: SignalEvent,
+            autoStart: datamodel.BooleanField(true),
+            onDoneEvent: SignalEvent,
         },
     });
     datamodel.addCollection({
@@ -162,4 +195,48 @@ function SignalProcessingDataModel(datamodel) {
     });
 }
 exports.SignalProcessingDataModel = SignalProcessingDataModel;
+// this is a hacky temporary fix until we have proper direcionality in the data model
+function setupSignalProcessingDataStore(datastore) {
+    datastore.addOutputReconciler({
+        type: "SignalEvent",
+        inboundFields: ["receiveEvent"],
+    });
+    datastore.addOutputReconciler({
+        type: "SignalEventCombiner",
+    });
+    datastore.addOutputReconciler({
+        type: "SignalSource",
+    });
+    datastore.addOutputReconciler({
+        type: "SignalSourceFile",
+    });
+    datastore.addOutputReconciler({
+        type: "SignalChannelSelect",
+    });
+    datastore.addOutputReconciler({
+        type: "SignalChannelStack",
+    });
+    datastore.addOutputReconciler({
+        type: "SignalCurve",
+    });
+    datastore.addOutputReconciler({
+        type: "SignalMathOp",
+    });
+    datastore.addOutputReconciler({
+        type: "SignalMultiplexer",
+    });
+    datastore.addOutputReconciler({
+        type: "SignalOscillator",
+    });
+    datastore.addOutputReconciler({
+        type: "SignalSoftClip",
+    });
+    datastore.addOutputReconciler({
+        type: "SignalOutputData",
+    });
+    datastore.addOutputReconciler({
+        type: "SignalOutputDevice",
+    });
+}
+exports.setupSignalProcessingDataStore = setupSignalProcessingDataStore;
 //# sourceMappingURL=SignalProcessingDataModel.js.map

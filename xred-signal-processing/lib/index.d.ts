@@ -15,7 +15,7 @@
  */
 
 
-export { SignalProcessingDataModel } from "./SignalProcessingDataModel";
+export * from "./SignalProcessingDataModel";
 export { SignalGraph } from "./SignalProcessingTypes";
 export * from "./MathOps";
 export * from "./Parameters";
