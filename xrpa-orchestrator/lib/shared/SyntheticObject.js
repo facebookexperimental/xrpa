@@ -28,10 +28,11 @@ class XrpaParamDef {
 }
 exports.XrpaParamDef = XrpaParamDef;
 class XrpaObjectDef {
-    constructor(collectionType, name = "", fieldValues = {}) {
+    constructor(collectionType, name = "", fieldValues = {}, breaksCycles = false) {
         this.collectionType = collectionType;
         this.name = name;
         this.fieldValues = fieldValues;
+        this.breaksCycles = breaksCycles;
         this.__isXrpaObjectDef = true;
         this.id = XrpaObjectDef.idCounter++;
         if (!this.name) {
@@ -49,12 +50,18 @@ class XrpaSyntheticObject {
         const graphDepths = new Map();
         const params = new Set();
         const paramConnections = {};
-        function walkConnections(obj, graphPath) {
+        function walkConnections(obj, graphPath, pathBreaksCycles) {
             const name = obj.name;
             const newGraphPath = [...graphPath, name];
-            // check for cycles
+            pathBreaksCycles = pathBreaksCycles || obj.breaksCycles;
+            // check for cycles and stop recursion if found
             if (graphPath.includes(name)) {
-                throw new Error(`cycle detected: ${newGraphPath.join(" -> ")}`);
+                if (pathBreaksCycles) {
+                    return;
+                }
+                else {
+                    throw new Error(`cycle detected: ${newGraphPath.join(" -> ")}`);
+                }
             }
             // update node depth
             const oldDepth = graphDepths.get(obj) ?? 0;
@@ -65,7 +72,7 @@ class XrpaSyntheticObject {
             for (const fieldName in obj.fieldValues) {
                 const fieldValue = obj.fieldValues[fieldName];
                 if (fieldValue instanceof XrpaObjectDef) {
-                    walkConnections(fieldValue, newGraphPath);
+                    walkConnections(fieldValue, newGraphPath, pathBreaksCycles);
                 }
                 else if (fieldValue instanceof XrpaParamDef) {
                     params.add(fieldValue);
@@ -75,10 +82,10 @@ class XrpaSyntheticObject {
             }
         }
         for (const obj of objects) {
-            walkConnections(obj, []);
+            walkConnections(obj, [], false);
         }
         if (selfTerminateEvent) {
-            walkConnections(selfTerminateEvent.target, ["selfTerminateEvent"]);
+            walkConnections(selfTerminateEvent.target, ["selfTerminateEvent"], false);
         }
         // sort nodes by depth, descending order
         this.objDefs = [...graphDepths.keys()].sort((a, b) => {

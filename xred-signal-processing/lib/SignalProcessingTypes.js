@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SignalGraph = exports.SignalOutputDeviceType = exports.SignalOutputDataType = exports.SignalSoftClipType = exports.SignalMultiplexerType = exports.SignalMathOpType = exports.SignalCurveType = exports.SignalChannelStackType = exports.SignalChannelSelectType = exports.SignalOscillatorType = exports.SignalSourceFileType = exports.ISignalNodeType = exports.SignalEventCombinerType = exports.SignalEventType = exports.EventCombinerParameterMode = exports.DeviceHandednessFilterEnum = exports.SampleTypeEnum = exports.MathOperationEnum = exports.WaveformTypeEnum = exports.Vector3ParamType = exports.DistanceParamType = exports.FrequencyParamType = exports.ScalarParamType = exports.CountParamType = void 0;
+exports.SignalGraph = exports.SignalOutputDeviceType = exports.SignalOutputDataType = exports.SignalSoftClipType = exports.SignalMultiplexerType = exports.SignalMathOpType = exports.SignalParametricEqualizerType = exports.SignalFeedbackType = exports.SignalDelayType = exports.SignalCurveType = exports.SignalChannelStackType = exports.SignalChannelSelectType = exports.SignalOscillatorType = exports.SignalSourceFileType = exports.ISignalNodeType = exports.SignalEventCombinerType = exports.SignalEventType = exports.FilterTypeEnum = exports.EventCombinerParameterMode = exports.DeviceHandednessFilterEnum = exports.SampleTypeEnum = exports.MathOperationEnum = exports.WaveformTypeEnum = exports.Vector3ParamType = exports.DistanceParamType = exports.FrequencyParamType = exports.ScalarParamType = exports.CountParamType = void 0;
 const assert_1 = __importDefault(require("assert"));
 const xrpa_orchestrator_1 = require("xrpa-orchestrator");
 /* FUTURE:
@@ -87,6 +87,9 @@ class Vector3ParamType extends xrpa_orchestrator_1.XrpaParamDef {
 exports.Vector3ParamType = Vector3ParamType;
 function setField(fieldValues, fieldName, value) {
     fieldValues[fieldName] = value;
+    if (value instanceof ISignalNodeType) {
+        value.incrementOutputCount();
+    }
 }
 function setNumericField(fieldValues, fieldName, nodeFieldName, value) {
     if (value === undefined) {
@@ -98,6 +101,7 @@ function setNumericField(fieldValues, fieldName, nodeFieldName, value) {
     else if (value instanceof ISignalNodeType) {
         (0, assert_1.default)(nodeFieldName);
         fieldValues[nodeFieldName] = value;
+        value.incrementOutputCount();
     }
     else {
         fieldValues[fieldName] = value;
@@ -167,6 +171,16 @@ var EventCombinerParameterMode;
     EventCombinerParameterMode[EventCombinerParameterMode["SrcIndex"] = 1] = "SrcIndex";
     EventCombinerParameterMode[EventCombinerParameterMode["Constant"] = 2] = "Constant";
 })(EventCombinerParameterMode = exports.EventCombinerParameterMode || (exports.EventCombinerParameterMode = {}));
+var FilterTypeEnum;
+(function (FilterTypeEnum) {
+    FilterTypeEnum[FilterTypeEnum["Bypass"] = 0] = "Bypass";
+    FilterTypeEnum[FilterTypeEnum["Peak"] = 1] = "Peak";
+    FilterTypeEnum[FilterTypeEnum["LowShelf"] = 2] = "LowShelf";
+    FilterTypeEnum[FilterTypeEnum["HighShelf"] = 3] = "HighShelf";
+    FilterTypeEnum[FilterTypeEnum["LowPass"] = 4] = "LowPass";
+    FilterTypeEnum[FilterTypeEnum["HighPass"] = 5] = "HighPass";
+    FilterTypeEnum[FilterTypeEnum["BandPass"] = 6] = "BandPass";
+})(FilterTypeEnum = exports.FilterTypeEnum || (exports.FilterTypeEnum = {}));
 class SignalEventType extends xrpa_orchestrator_1.XrpaObjectDef {
     // FUTURE: readonly onEvent = new XrpaMessage({});
     constructor(
@@ -200,7 +214,15 @@ exports.SignalEventCombinerType = SignalEventCombinerType;
 class ISignalNodeType extends xrpa_orchestrator_1.XrpaObjectDef {
     constructor() {
         super(...arguments);
+        this.numOutputs = 0;
         this.numOutputChannels = 0;
+    }
+    incrementOutputCount() {
+        this.numOutputs++;
+        setField(this.fieldValues, "numOutputs", this.numOutputs);
+    }
+    getNumChannels() {
+        return this.numOutputChannels;
     }
     setOutputChannelsPassthrough(source) {
         this.numOutputChannels = source.numOutputChannels;
@@ -262,7 +284,8 @@ class SignalChannelSelectType extends ISignalNodeType {
         super("SignalChannelSelect");
         setField(this.fieldValues, "srcNode", params.source);
         setField(this.fieldValues, "channelIdx", params.channelIdx);
-        this.numOutputChannels = 1;
+        this.numOutputChannels = params.numChannels ?? 1;
+        setField(this.fieldValues, "numChannels", this.numOutputChannels);
     }
 }
 exports.SignalChannelSelectType = SignalChannelSelectType;
@@ -291,6 +314,7 @@ class SignalCurveType extends ISignalNodeType {
             setField(this.fieldValues, "segmentEndValue" + i, params.segments[i]?.endValue);
         }
         setStartEventField(this.fieldValues, params.startEvent?.onEvent(), params.autoStart);
+        setField(this.fieldValues, "autoLoop", params.autoLoop ?? false);
         this.numOutputChannels = 1;
     }
     setStartEvent(ev, autoStart) {
@@ -302,6 +326,48 @@ class SignalCurveType extends ISignalNodeType {
 }
 SignalCurveType.MAX_SEGMENTS = 6;
 exports.SignalCurveType = SignalCurveType;
+class SignalDelayType extends ISignalNodeType {
+    constructor(params) {
+        super("SignalDelay");
+        setField(this.fieldValues, "srcNode", params.source);
+        setNumericField(this.fieldValues, "delayTimeMs", null, params.delayTimeMs);
+        this.setOutputChannelsPassthrough(params.source);
+        setField(this.fieldValues, "numChannels", this.numOutputChannels);
+    }
+}
+exports.SignalDelayType = SignalDelayType;
+class SignalFeedbackType extends ISignalNodeType {
+    constructor() {
+        super("SignalFeedback", "", {}, true);
+    }
+    setSource(source) {
+        setField(this.fieldValues, "srcNode", source);
+        this.setOutputChannelsPassthrough(source);
+        setField(this.fieldValues, "numChannels", this.numOutputChannels);
+    }
+}
+exports.SignalFeedbackType = SignalFeedbackType;
+class SignalParametricEqualizerType extends ISignalNodeType {
+    constructor(params) {
+        super("SignalParametricEqualizer");
+        if (params.filters.length > SignalParametricEqualizerType.MAX_FILTERS) {
+            throw new Error("SignalParametricEqualizerType: too many filters (" + params.filters.length + " > " + SignalParametricEqualizerType.MAX_FILTERS + ")");
+        }
+        setField(this.fieldValues, "srcNode", params.source);
+        for (let i = 0; i < SignalParametricEqualizerType.MAX_FILTERS; i++) {
+            setField(this.fieldValues, "filterType" + i, params.filters[i]?.type ?? FilterTypeEnum.Bypass);
+            setField(this.fieldValues, "frequency" + i, params.filters[i]?.frequency ?? 50);
+            setField(this.fieldValues, "quality" + i, params.filters[i]?.q ?? 0.7076);
+            setField(this.fieldValues, "gain" + i, params.filters[i]?.gain ?? 0);
+        }
+        setField(this.fieldValues, "gainAdjust", params.gainAdjust ?? 0);
+        this.setOutputChannelsPassthrough(params.source);
+        setField(this.fieldValues, "numChannels", this.numOutputChannels);
+    }
+}
+SignalParametricEqualizerType.MAX_FILTERS = 5;
+SignalParametricEqualizerType.MAX_CHANNELS = 2;
+exports.SignalParametricEqualizerType = SignalParametricEqualizerType;
 class SignalMathOpType extends ISignalNodeType {
     constructor(params) {
         super("SignalMathOp");

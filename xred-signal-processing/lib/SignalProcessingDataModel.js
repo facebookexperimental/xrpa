@@ -55,6 +55,7 @@ function SignalProcessingDataModel(datamodel) {
         interfaceType: ISignalNode,
         maxCount: 64,
         fields: {
+            numOutputs: datamodel.CountField(1),
             srcData: datamodel.SignalField(),
         },
     });
@@ -63,6 +64,7 @@ function SignalProcessingDataModel(datamodel) {
         interfaceType: ISignalNode,
         maxCount: 64,
         fields: {
+            numOutputs: datamodel.CountField(1),
             filePath: datamodel.addFixedString(256),
             autoPlay: datamodel.BooleanField(true),
         },
@@ -72,6 +74,7 @@ function SignalProcessingDataModel(datamodel) {
         interfaceType: ISignalNode,
         maxCount: 128,
         fields: {
+            numOutputs: datamodel.CountField(1),
             numChannels: datamodel.CountField(1),
             waveformType: datamodel.addEnum("WaveformType", ["Sawtooth", "Square", "Triangle", "Sine", "WhiteNoise"]),
             frequency: datamodel.ScalarField(440),
@@ -85,6 +88,8 @@ function SignalProcessingDataModel(datamodel) {
         interfaceType: ISignalNode,
         maxCount: 256,
         fields: {
+            numOutputs: datamodel.CountField(1),
+            numChannels: datamodel.CountField(1),
             channelIdx: datamodel.CountField(0),
             srcNode: ISignalNode,
         },
@@ -94,6 +99,7 @@ function SignalProcessingDataModel(datamodel) {
         interfaceType: ISignalNode,
         maxCount: 256,
         fields: {
+            numOutputs: datamodel.CountField(1),
             numChannels: datamodel.CountField(1),
             srcNode0: ISignalNode,
             srcNode1: ISignalNode,
@@ -106,6 +112,7 @@ function SignalProcessingDataModel(datamodel) {
         interfaceType: ISignalNode,
         maxCount: 256,
         fields: {
+            numOutputs: datamodel.CountField(1),
             softCurve: datamodel.BooleanField(false),
             numSegments: datamodel.CountField(1),
             startValue: datamodel.ScalarField(),
@@ -124,6 +131,28 @@ function SignalProcessingDataModel(datamodel) {
             startEvent: SignalEvent,
             autoStart: datamodel.BooleanField(true),
             onDoneEvent: SignalEvent,
+            autoLoop: datamodel.BooleanField(false),
+        },
+    });
+    datamodel.addCollection({
+        name: "SignalDelay",
+        interfaceType: ISignalNode,
+        maxCount: 256,
+        fields: {
+            numOutputs: datamodel.CountField(1),
+            numChannels: datamodel.CountField(1),
+            srcNode: ISignalNode,
+            delayTimeMs: datamodel.ScalarField(),
+        },
+    });
+    datamodel.addCollection({
+        name: "SignalFeedback",
+        interfaceType: ISignalNode,
+        maxCount: 256,
+        fields: {
+            numOutputs: datamodel.CountField(1),
+            numChannels: datamodel.CountField(1),
+            srcNode: ISignalNode,
         },
     });
     datamodel.addCollection({
@@ -131,6 +160,7 @@ function SignalProcessingDataModel(datamodel) {
         interfaceType: ISignalNode,
         maxCount: 256,
         fields: {
+            numOutputs: datamodel.CountField(1),
             numChannels: datamodel.CountField(1),
             operation: datamodel.addEnum("MathOperation", ["Add", "Multiply"]),
             operandA: datamodel.ScalarField(),
@@ -144,6 +174,7 @@ function SignalProcessingDataModel(datamodel) {
         interfaceType: ISignalNode,
         maxCount: 256,
         fields: {
+            numOutputs: datamodel.CountField(1),
             numChannels: datamodel.CountField(1),
             srcNode0: ISignalNode,
             srcNode1: ISignalNode,
@@ -157,11 +188,50 @@ function SignalProcessingDataModel(datamodel) {
             onDoneEvent: SignalEvent,
         },
     });
+    const FilterType = datamodel.addEnum("FilterType", ["Bypass", "Peak", "LowShelf", "HighShelf", "LowPass", "HighPass", "BandPass"]);
+    datamodel.addCollection({
+        name: "SignalParametricEqualizer",
+        interfaceType: ISignalNode,
+        maxCount: 256,
+        fields: {
+            numOutputs: datamodel.CountField(1),
+            numChannels: datamodel.CountField(1),
+            srcNode: ISignalNode,
+            // band0
+            filterType0: FilterType,
+            frequency0: datamodel.ScalarField(50),
+            quality0: datamodel.ScalarField(0.707106),
+            gain0: datamodel.ScalarField(0),
+            // band1
+            filterType1: FilterType,
+            frequency1: datamodel.ScalarField(50),
+            quality1: datamodel.ScalarField(0.707106),
+            gain1: datamodel.ScalarField(0),
+            // band2
+            filterType2: FilterType,
+            frequency2: datamodel.ScalarField(50),
+            quality2: datamodel.ScalarField(0.707106),
+            gain2: datamodel.ScalarField(0),
+            // band3
+            filterType3: FilterType,
+            frequency3: datamodel.ScalarField(50),
+            quality3: datamodel.ScalarField(0.707106),
+            gain3: datamodel.ScalarField(0),
+            // band4
+            filterType4: FilterType,
+            frequency4: datamodel.ScalarField(50),
+            quality4: datamodel.ScalarField(0.707106),
+            gain4: datamodel.ScalarField(0),
+            // gain
+            gainAdjust: datamodel.ScalarField(0),
+        },
+    });
     datamodel.addCollection({
         name: "SignalSoftClip",
         interfaceType: ISignalNode,
         maxCount: 256,
         fields: {
+            numOutputs: datamodel.CountField(1),
             numChannels: datamodel.CountField(1),
             srcNode: ISignalNode,
         },
@@ -220,6 +290,12 @@ function setupSignalProcessingDataStore(datastore) {
         type: "SignalCurve",
     });
     datastore.addOutputReconciler({
+        type: "SignalDelay",
+    });
+    datastore.addOutputReconciler({
+        type: "SignalFeedback",
+    });
+    datastore.addOutputReconciler({
         type: "SignalMathOp",
     });
     datastore.addOutputReconciler({
@@ -227,6 +303,9 @@ function setupSignalProcessingDataStore(datastore) {
     });
     datastore.addOutputReconciler({
         type: "SignalOscillator",
+    });
+    datastore.addOutputReconciler({
+        type: "SignalParametricEqualizer",
     });
     datastore.addOutputReconciler({
         type: "SignalSoftClip",

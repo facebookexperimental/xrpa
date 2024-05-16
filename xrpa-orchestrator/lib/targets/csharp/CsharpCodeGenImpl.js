@@ -552,6 +552,16 @@ function genFieldGetter(classSpec, params) {
                 return body;
             },
         });
+        classSpec.methods.push({
+            decorations,
+            name: `${funcName}Id`,
+            returnType: fieldType.declareLocalReturnType(classSpec.namespace, classSpec.includes, true),
+            isConst: true,
+            visibility: params.visibility,
+            body: [
+                `return ${fieldVar};`,
+            ],
+        });
     }
     else if (params.convertToLocal) {
         classSpec.methods.push({

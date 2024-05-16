@@ -15,7 +15,7 @@
  */
 
 
-import { AcceptsStartEvent, FiresDoneEvent, FiresEvent, ISignalNodeType, NonSignalNumericValue, NumericValue, SignalCurveType, SignalOutputDeviceType } from "./SignalProcessingTypes";
+import { AcceptsStartEvent, FilterTypeEnum, FiresDoneEvent, FiresEvent, ISignalNodeType, NonSignalNumericValue, NumericValue, SignalCurveType, SignalFeedbackType, SignalOutputDeviceType } from "./SignalProcessingTypes";
 import { StringFilter } from "./StringFilter";
 export declare function OutputDevice(params: {
     deviceName: StringFilter;
@@ -52,6 +52,16 @@ export declare function WhiteNoise(params: {
     amplitude?: NumericValue;
     bias?: NumericValue;
 }): ISignalNodeType;
+export declare function CustomWave(params: {
+    channelCount?: number;
+    frequency?: number;
+    amplitude?: number;
+    waveShape: Array<{
+        time: number;
+        value: number;
+    }>;
+    softShape?: boolean;
+}): ISignalNodeType;
 export declare function SoftClip(node: ISignalNodeType): ISignalNodeType;
 export declare function SelectChannel(signal: ISignalNodeType, channelIdx: number): ISignalNodeType;
 export declare function StackChannels(signal0: ISignalNodeType, ...otherSignals: ISignalNodeType[]): ISignalNodeType;
@@ -84,4 +94,19 @@ export declare function Sequence(params: {
     startEvent?: FiresEvent;
     autoStart?: boolean;
 }): ISignalNodeType & FiresDoneEvent;
+export declare function Delay(source: ISignalNodeType, delayTimeMs: NonSignalNumericValue): ISignalNodeType;
+export declare function Feedback(): SignalFeedbackType;
+export declare function ParametricEqualizer(params: {
+    source: ISignalNodeType;
+    filters: Array<{
+        type: FilterTypeEnum;
+        frequency: NonSignalNumericValue;
+        q: NonSignalNumericValue;
+        gain: NonSignalNumericValue;
+    }>;
+    gainAdjust?: NonSignalNumericValue;
+}): ISignalNodeType;
+export declare function LowPassFilter(signal: ISignalNodeType, cutoffFrequency: NonSignalNumericValue): ISignalNodeType;
+export declare function HighPassFilter(signal: ISignalNodeType, cutoffFrequency: NonSignalNumericValue): ISignalNodeType;
+export declare function BandPassFilter(signal: ISignalNodeType, centerFrequency: NonSignalNumericValue, q?: NonSignalNumericValue): ISignalNodeType;
 

@@ -40,7 +40,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Sequence = exports.AudioStream = exports.AdsrEnvelope = exports.TrapezoidCurve = exports.StackChannels = exports.SelectChannel = exports.SoftClip = exports.WhiteNoise = exports.SquareWave = exports.TriangleWave = exports.SawtoothWave = exports.SineWave = exports.OutputDevice = void 0;
+exports.BandPassFilter = exports.HighPassFilter = exports.LowPassFilter = exports.ParametricEqualizer = exports.Feedback = exports.Delay = exports.Sequence = exports.AudioStream = exports.AdsrEnvelope = exports.TrapezoidCurve = exports.StackChannels = exports.SelectChannel = exports.SoftClip = exports.CustomWave = exports.WhiteNoise = exports.SquareWave = exports.TriangleWave = exports.SawtoothWave = exports.SineWave = exports.OutputDevice = void 0;
 const path = __importStar(require("path"));
 const MathOps_1 = require("./MathOps");
 const SignalProcessingTypes_1 = require("./SignalProcessingTypes");
@@ -103,6 +103,40 @@ function WhiteNoise(params) {
     });
 }
 exports.WhiteNoise = WhiteNoise;
+function CustomWave(params) {
+    const waveShape = params.waveShape.slice().sort((a, b) => a.time - b.time);
+    const startValue = waveShape[0].value;
+    const endTime = waveShape[waveShape.length - 1].time;
+    const timeScale = endTime === 0 ? 1 : (1 / (endTime * (params.frequency ?? 1)));
+    let prevTime = 0;
+    const segments = [];
+    for (let i = 0; i < waveShape.length; i++) {
+        const point = waveShape[i];
+        const segmentDuration = point.time - prevTime;
+        prevTime = point.time;
+        if (segmentDuration === 0 && i === 0) {
+            continue;
+        }
+        segments.push({
+            endValue: point.value,
+            timeLength: segmentDuration * timeScale,
+        });
+    }
+    let node = new SignalProcessingTypes_1.SignalCurveType({
+        softCurve: params.softShape ?? false,
+        startValue,
+        segments,
+        autoLoop: true,
+    });
+    if (params.amplitude !== undefined && params.amplitude !== 1) {
+        node = (0, MathOps_1.Multiply)(node, params.amplitude);
+    }
+    if (params.channelCount !== undefined && params.channelCount > 1) {
+        node = StackChannels(node, ...Array(params.channelCount - 1).fill(node));
+    }
+    return node;
+}
+exports.CustomWave = CustomWave;
 function SoftClip(node) {
     return new SignalProcessingTypes_1.SignalSoftClipType({
         source: node,
@@ -213,26 +247,77 @@ function Sequence(params) {
     return multiplexer;
 }
 exports.Sequence = Sequence;
-/*
-export function LowPassFilter(signal: ISignalNodeType, cutoffFrequency: NumericValue): ISignalNodeType {
-  return new SignalLowPassFilterType({
-    source: signal,
-    cutoffFrequency,
-  });
+function Delay(source, delayTimeMs) {
+    return new SignalProcessingTypes_1.SignalDelayType({
+        source,
+        delayTimeMs,
+    });
 }
-
-export function PitchAdjust(signal: ISignalNodeType, pitchMultiplier: NumericValue): ISignalNodeType {
-  return new SignalPitchAdjustType({
-    source: signal,
-    pitchMultiplier,
-  });
+exports.Delay = Delay;
+function Feedback() {
+    return new SignalProcessingTypes_1.SignalFeedbackType();
 }
-
-export function SpatializeAudio(signal: ISignalNodeType, position: Vector3ParamType): ISignalNodeType {
-  return new SignalAudioSpatializer({
-    source: signal,
-    position,
-  });
+exports.Feedback = Feedback;
+// splits a multichannel signal up into subgroups to process in parallel, then recombines them into the same number of channels as the input
+function parallelChannelProcessing(signal, maxChannelsPerProcess, process) {
+    const numChannels = signal.getNumChannels();
+    const splits = Math.ceil(numChannels / maxChannelsPerProcess);
+    if (splits <= 1) {
+        return process(signal);
+    }
+    const nodes = [];
+    for (let i = 0; i < splits; i++) {
+        const selectNode = new SignalProcessingTypes_1.SignalChannelSelectType({
+            source: signal,
+            channelIdx: i * maxChannelsPerProcess,
+            numChannels: Math.min(numChannels - i * maxChannelsPerProcess, maxChannelsPerProcess),
+        });
+        nodes.push(process(selectNode));
+    }
+    return StackChannels(nodes[0], ...nodes.slice(1));
 }
-*/
+function ParametricEqualizer(params) {
+    return parallelChannelProcessing(params.source, SignalProcessingTypes_1.SignalParametricEqualizerType.MAX_CHANNELS, (source) => new SignalProcessingTypes_1.SignalParametricEqualizerType({
+        source,
+        filters: params.filters,
+        gainAdjust: params.gainAdjust,
+    }));
+}
+exports.ParametricEqualizer = ParametricEqualizer;
+function LowPassFilter(signal, cutoffFrequency) {
+    return ParametricEqualizer({
+        source: signal,
+        filters: [{
+                type: SignalProcessingTypes_1.FilterTypeEnum.LowPass,
+                frequency: cutoffFrequency,
+                q: 1,
+                gain: 0,
+            }],
+    });
+}
+exports.LowPassFilter = LowPassFilter;
+function HighPassFilter(signal, cutoffFrequency) {
+    return ParametricEqualizer({
+        source: signal,
+        filters: [{
+                type: SignalProcessingTypes_1.FilterTypeEnum.HighPass,
+                frequency: cutoffFrequency,
+                q: 1,
+                gain: 0,
+            }],
+    });
+}
+exports.HighPassFilter = HighPassFilter;
+function BandPassFilter(signal, centerFrequency, q = 6) {
+    return ParametricEqualizer({
+        source: signal,
+        filters: [{
+                type: SignalProcessingTypes_1.FilterTypeEnum.BandPass,
+                frequency: centerFrequency,
+                q,
+                gain: 0,
+            }],
+    });
+}
+exports.BandPassFilter = BandPassFilter;
 //# sourceMappingURL=ProcessingNodes.js.map

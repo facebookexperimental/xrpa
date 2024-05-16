@@ -69,6 +69,15 @@ export declare enum EventCombinerParameterMode {
     SrcIndex = 1,
     Constant = 2
 }
+export declare enum FilterTypeEnum {
+    Bypass = 0,
+    Peak = 1,
+    LowShelf = 2,
+    HighShelf = 3,
+    LowPass = 4,
+    HighPass = 5,
+    BandPass = 6
+}
 export declare class SignalEventType extends XrpaObjectDef implements FiresEvent {
     extraDependency: XrpaObjectDef | null;
     constructor();
@@ -83,7 +92,10 @@ export declare class SignalEventCombinerType extends XrpaObjectDef implements Fi
     onEvent(): SignalEventType;
 }
 export declare class ISignalNodeType extends XrpaObjectDef {
+    protected numOutputs: number;
     protected numOutputChannels: number;
+    incrementOutputCount(): void;
+    getNumChannels(): number;
     protected setOutputChannelsPassthrough(source: ISignalNodeType): void;
     protected setOutputChannelsToMaxInputChannels(): void;
     protected setOutputChannelsToSumInputChannels(): void;
@@ -107,6 +119,7 @@ export declare class SignalChannelSelectType extends ISignalNodeType {
     constructor(params: {
         source: ISignalNodeType;
         channelIdx: NonSignalNumericValue;
+        numChannels?: number;
     });
 }
 export declare class SignalChannelStackType extends ISignalNodeType {
@@ -137,9 +150,34 @@ export declare class SignalCurveType extends ISignalNodeType implements AcceptsS
         }>;
         startEvent?: FiresEvent;
         autoStart?: boolean;
+        autoLoop?: boolean;
     });
     setStartEvent(ev: FiresEvent | null, autoStart?: boolean): void;
     onDone(): SignalEventType;
+}
+export declare class SignalDelayType extends ISignalNodeType {
+    constructor(params: {
+        source: ISignalNodeType;
+        delayTimeMs: NonSignalNumericValue;
+    });
+}
+export declare class SignalFeedbackType extends ISignalNodeType {
+    constructor();
+    setSource(source: ISignalNodeType): void;
+}
+export declare class SignalParametricEqualizerType extends ISignalNodeType {
+    static MAX_FILTERS: number;
+    static MAX_CHANNELS: number;
+    constructor(params: {
+        source: ISignalNodeType;
+        filters: Array<{
+            type: FilterTypeEnum;
+            frequency: NonSignalNumericValue;
+            q: NonSignalNumericValue;
+            gain: NonSignalNumericValue;
+        }>;
+        gainAdjust?: NonSignalNumericValue;
+    });
 }
 export declare class SignalMathOpType extends ISignalNodeType {
     constructor(params: {

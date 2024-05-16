@@ -29,10 +29,11 @@ export declare class XrpaObjectDef {
     readonly collectionType: string;
     readonly name: string;
     readonly fieldValues: Record<string, XrpaFieldValue>;
+    readonly breaksCycles: boolean;
     readonly __isXrpaObjectDef = true;
     private static idCounter;
     private id;
-    constructor(collectionType: string, name?: string, fieldValues?: Record<string, XrpaFieldValue>);
+    constructor(collectionType: string, name?: string, fieldValues?: Record<string, XrpaFieldValue>, breaksCycles?: boolean);
 }
 interface ConnectedObjectField {
     target: XrpaObjectDef;
