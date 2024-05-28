@@ -49,8 +49,6 @@ function SignalOutputDataModel(datamodel) {
         maxCount: 128,
         fields: {
             device: SignalOutputDevice,
-            enabled: datamodel.BooleanField(true),
-            volume: datamodel.ScalarField(1),
             signal: datamodel.SignalField(),
         },
     });
