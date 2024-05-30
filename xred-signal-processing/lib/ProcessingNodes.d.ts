@@ -63,6 +63,11 @@ export declare function CustomWave(params: {
     softShape?: boolean;
 }): ISignalNodeType;
 export declare function SoftClip(node: ISignalNodeType): ISignalNodeType;
+export declare function RouteToChannel(params: {
+    source: ISignalNodeType;
+    channelSelect: NumericValue;
+    numOutputChannels: number;
+}): ISignalNodeType;
 export declare function SelectChannel(signal: ISignalNodeType, channelIdx: number): ISignalNodeType;
 export declare function StackChannels(signal0: ISignalNodeType, ...otherSignals: ISignalNodeType[]): ISignalNodeType;
 export declare function TrapezoidCurve(params: {

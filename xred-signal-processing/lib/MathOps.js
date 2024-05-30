@@ -17,7 +17,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MultiplyAdd = exports.Average = exports.Multiply = exports.Add = void 0;
+exports.MultiplyAdd = exports.Average = exports.Multiply = exports.Subtract = exports.Add = void 0;
 const SignalProcessingTypes_1 = require("./SignalProcessingTypes");
 function Add(node, ...values) {
     if (!values.length) {
@@ -36,6 +36,14 @@ function Add(node, ...values) {
     return node;
 }
 exports.Add = Add;
+function Subtract(operandA, operandB) {
+    return new SignalProcessingTypes_1.SignalMathOpType({
+        operation: SignalProcessingTypes_1.MathOperationEnum.Subtract,
+        operandA,
+        operandB,
+    });
+}
+exports.Subtract = Subtract;
 function Multiply(node, ...values) {
     if (!values.length) {
         return node;

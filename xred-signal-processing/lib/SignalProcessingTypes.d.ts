@@ -51,7 +51,8 @@ export declare enum WaveformTypeEnum {
 }
 export declare enum MathOperationEnum {
     Add = 0,
-    Multiply = 1
+    Multiply = 1,
+    Subtract = 2
 }
 export declare enum SampleTypeEnum {
     Float = 0,
@@ -113,6 +114,13 @@ export declare class SignalOscillatorType extends ISignalNodeType {
         waveformType: WaveformTypeEnum;
         frequency?: NumericValue;
         pulseWidth?: NumericValue;
+    });
+}
+export declare class SignalChannelRouterType extends ISignalNodeType {
+    constructor(params: {
+        source: ISignalNodeType;
+        channelSelect: NumericValue;
+        numOutputChannels: number;
     });
 }
 export declare class SignalChannelSelectType extends ISignalNodeType {

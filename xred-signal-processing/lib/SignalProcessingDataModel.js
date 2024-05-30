@@ -84,6 +84,18 @@ function SignalProcessingDataModel(datamodel) {
         },
     });
     datamodel.addCollection({
+        name: "SignalChannelRouter",
+        interfaceType: ISignalNode,
+        maxCount: 256,
+        fields: {
+            numOutputs: datamodel.CountField(1),
+            numChannels: datamodel.CountField(1),
+            channelSelect: datamodel.ScalarField(0.5),
+            channelSelectNode: ISignalNode,
+            srcNode: ISignalNode,
+        },
+    });
+    datamodel.addCollection({
         name: "SignalChannelSelect",
         interfaceType: ISignalNode,
         maxCount: 256,
@@ -162,7 +174,7 @@ function SignalProcessingDataModel(datamodel) {
         fields: {
             numOutputs: datamodel.CountField(1),
             numChannels: datamodel.CountField(1),
-            operation: datamodel.addEnum("MathOperation", ["Add", "Multiply"]),
+            operation: datamodel.addEnum("MathOperation", ["Add", "Multiply", "Subtract"]),
             operandA: datamodel.ScalarField(),
             operandANode: ISignalNode,
             operandB: datamodel.ScalarField(),
@@ -279,6 +291,9 @@ function setupSignalProcessingDataStore(datastore) {
     });
     datastore.addOutputReconciler({
         type: "SignalSourceFile",
+    });
+    datastore.addOutputReconciler({
+        type: "SignalChannelRouter",
     });
     datastore.addOutputReconciler({
         type: "SignalChannelSelect",

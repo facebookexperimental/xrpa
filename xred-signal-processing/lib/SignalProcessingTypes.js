@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SignalGraph = exports.SignalOutputDeviceType = exports.SignalOutputDataType = exports.SignalSoftClipType = exports.SignalMultiplexerType = exports.SignalMathOpType = exports.SignalParametricEqualizerType = exports.SignalFeedbackType = exports.SignalDelayType = exports.SignalCurveType = exports.SignalChannelStackType = exports.SignalChannelSelectType = exports.SignalOscillatorType = exports.SignalSourceFileType = exports.ISignalNodeType = exports.SignalEventCombinerType = exports.SignalEventType = exports.FilterTypeEnum = exports.EventCombinerParameterMode = exports.DeviceHandednessFilterEnum = exports.SampleTypeEnum = exports.MathOperationEnum = exports.WaveformTypeEnum = exports.Vector3ParamType = exports.DistanceParamType = exports.FrequencyParamType = exports.ScalarParamType = exports.CountParamType = void 0;
+exports.SignalGraph = exports.SignalOutputDeviceType = exports.SignalOutputDataType = exports.SignalSoftClipType = exports.SignalMultiplexerType = exports.SignalMathOpType = exports.SignalParametricEqualizerType = exports.SignalFeedbackType = exports.SignalDelayType = exports.SignalCurveType = exports.SignalChannelStackType = exports.SignalChannelSelectType = exports.SignalChannelRouterType = exports.SignalOscillatorType = exports.SignalSourceFileType = exports.ISignalNodeType = exports.SignalEventCombinerType = exports.SignalEventType = exports.FilterTypeEnum = exports.EventCombinerParameterMode = exports.DeviceHandednessFilterEnum = exports.SampleTypeEnum = exports.MathOperationEnum = exports.WaveformTypeEnum = exports.Vector3ParamType = exports.DistanceParamType = exports.FrequencyParamType = exports.ScalarParamType = exports.CountParamType = void 0;
 const assert_1 = __importDefault(require("assert"));
 const xrpa_orchestrator_1 = require("xrpa-orchestrator");
 /* FUTURE:
@@ -151,6 +151,7 @@ var MathOperationEnum;
 (function (MathOperationEnum) {
     MathOperationEnum[MathOperationEnum["Add"] = 0] = "Add";
     MathOperationEnum[MathOperationEnum["Multiply"] = 1] = "Multiply";
+    MathOperationEnum[MathOperationEnum["Subtract"] = 2] = "Subtract";
 })(MathOperationEnum = exports.MathOperationEnum || (exports.MathOperationEnum = {}));
 var SampleTypeEnum;
 (function (SampleTypeEnum) {
@@ -279,6 +280,18 @@ class SignalOscillatorType extends ISignalNodeType {
     }
 }
 exports.SignalOscillatorType = SignalOscillatorType;
+// routes a single input channel into a multi-channel output, panning between channels if a fractional value is provided
+class SignalChannelRouterType extends ISignalNodeType {
+    constructor(params) {
+        super("SignalChannelRouter");
+        setField(this.fieldValues, "srcNode", params.source);
+        setNumericField(this.fieldValues, "channelSelect", "channelSelectNode", params.channelSelect);
+        this.numOutputChannels = params.numOutputChannels;
+        setField(this.fieldValues, "numChannels", this.numOutputChannels);
+    }
+}
+exports.SignalChannelRouterType = SignalChannelRouterType;
+// selects/extracts a subset of channels from an input signal
 class SignalChannelSelectType extends ISignalNodeType {
     constructor(params) {
         super("SignalChannelSelect");
@@ -289,6 +302,7 @@ class SignalChannelSelectType extends ISignalNodeType {
     }
 }
 exports.SignalChannelSelectType = SignalChannelSelectType;
+// stacks multiple input signals into a single multi-channel output signal
 class SignalChannelStackType extends ISignalNodeType {
     constructor(params) {
         super("SignalChannelStack");

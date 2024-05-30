@@ -17,6 +17,7 @@
 
 import { ISignalNodeType, NumericValue } from "./SignalProcessingTypes";
 export declare function Add(node: ISignalNodeType, ...values: NumericValue[]): ISignalNodeType;
+export declare function Subtract(operandA: NumericValue, operandB: NumericValue): ISignalNodeType;
 export declare function Multiply(node: ISignalNodeType, ...values: NumericValue[]): ISignalNodeType;
 export declare function Average(...values: ISignalNodeType[]): ISignalNodeType;
 export declare function MultiplyAdd(value: ISignalNodeType, mul: NumericValue, add: NumericValue): ISignalNodeType;
