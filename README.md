@@ -2,6 +2,56 @@
 
 See the [CONTRIBUTING](CONTRIBUTING.md) file for how to help out.
 
+## Integrating with a Unity git repo
+
+### Setup Xrpa as a git submodule
+From a PowerShell prompt, change directory to the root the git repo containing your Unity project. Then run the following commands:
+
+```
+git submodule add https://github.com/facebookexperimental/xrpa xrpa
+git submodule update --init --recursive
+git add .
+git commit -m "Setup xrpa submodule"
+```
+
+### Create package.json, configure, and install dependencies
+Run the following PowerShell commands to setup files:
+```
+copy xrpa/xrpa-init/package.json .
+copy xrpa/xrpa-init/tsconfig.json .
+mkdir js
+copy xrpa/xrpa-init/*.ts js/
+Add-Content -Path .gitignore -Value "/node_modules/"
+```
+
+Open package.json in a text editor and change the name and description to something relevant to your project. Then run the following PowerShell commands:
+```
+yarn
+git add .
+git commit -m "Setup xrpa config and install dependencies"
+```
+
+Whenever you want to upgrade to the latest version of Xrpa, simply run `yarn pull-xrpa` and it will run the commands defined in the pull-xrpa script in your package.json and do the right thing.
+
+### Create Effects
+Create effects in typescript files within the `js/` subfolder. See TestEffect.ts for an example. Include (and name) effects in `js/index.ts` for them to be available in Unity.
+
+### Using Effects
+Each effect creates a MonoBehaviour script component that you can place in your scenes. These components have parameters exposed that get routed to the signal processor. You can run an effect in several ways:
+1. Check the `AutoRun` option on the script component. This will make it run the effect when the component's game object becomes alive.
+2. Call the `Run()` and `Stop()` methods on the script component.
+3. Spawn separate effect instances by calling the `Spawn()` method on the script component. This will create a separate object that you need to manage yourself (it is an IDisposable so you can dispose of it that way, or call `Terminate()` on it). The effect instance will get initialized with the parameter values that are currently set on the script component, but you can modify them separately afterward by calling the accessors on the effect instance object.
+
+### At Runtime
+In order for effects to play, you need to have the SignalProcessing module and the SignalOutput module running. From a PowerShell prompt, simply navigate to the root directory and run `yarn SignalOutput` and `yarn SignalProcessing` (in separate PowerShell windows). To exit those modules, just press the enter key with the window in focus.
+
+### Output Devices
+#### BuzzDuino
+Run `yarn SignalOutput` and in your effect target the device with `strContains("BuzzDuino")`. SignalOutput will print out what devices it found and what COM port they are on (or BLE address if that's how your BD is connected).
+
+#### Audio
+Target your audio device with `strContains` and the system name of your audio device. SignalOutput will print out a list of devices it finds.
+
 ## License
 Xrpa is Apache 2.0 licensed, as found in the LICENSE file.
 
