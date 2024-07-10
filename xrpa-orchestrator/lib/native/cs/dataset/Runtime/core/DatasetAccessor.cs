@@ -340,10 +340,47 @@ namespace Xrpa {
       _header.LastChangelogID = lastChangelogID;
 
       // clear out all changelog pointers to the target memory location since they are now invalid
-      int changeCount = _changeLog.Count;
-      for (int i = 0; i < changeCount; ++i) {
-        DSChangeEventAccessor entry = new(_changeLog.GetAt(i));
+      PlacedRingBufferIterator iter = new();
+      while (iter.HasNext(_changeLog)) {
+        DSChangeEventAccessor entry = new(iter.Next(_changeLog));
         entry.ClearPoolOffsetIfMatch(objHeader.PoolOffset);
+      }
+    }
+
+    public void DeleteAllByType(int dsType) {
+      int lastChangelogID = _header.LastChangelogID;
+      int count = _objectHeaders.Count;
+
+      for (int i = 0; i < count; ++i) {
+        DSObjectHeader objHeader = _objectHeaders.GetAt(i);
+        if (objHeader.Type != dsType) {
+          continue;
+        }
+
+        // free memoryPool memory
+        _memoryPool.Free(objHeader.PoolOffset);
+
+        // remove from objectHeaders
+        _objectHeaders.RemoveIndex(i);
+        count--;
+        i--;
+
+        // add entry to log
+        DSChangeEventAccessor changeEvent = new(_changeLog.Push(DSChangeEventAccessor.DS_SIZE, ref lastChangelogID));
+        changeEvent.SetChangeType(DSChangeType.DeleteObject);
+        changeEvent.SetTarget(ref objHeader);
+        changeEvent.SetTimestamp(GetCurrentTimestamp());
+      }
+
+      _header.LastChangelogID = lastChangelogID;
+
+      // clear out all changelog pointers to the target entries since they are now invalid
+      PlacedRingBufferIterator iter = new();
+      while (iter.HasNext(_changeLog)) {
+        DSChangeEventAccessor entry = new(iter.Next(_changeLog));
+        if (entry.GetTargetType() == dsType) {
+          entry.SetTargetPoolOffset(0);
+        }
       }
     }
 

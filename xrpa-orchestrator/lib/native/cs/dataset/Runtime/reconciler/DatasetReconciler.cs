@@ -124,10 +124,8 @@ namespace Xrpa {
     public void Shutdown() {
       _dataset.Acquire(1, (DatasetAccessor accessor) => {
         foreach (var collectionKV in _collections) {
-          var collectionId = collectionKV.Key;
-          var objectIds = accessor.GetAllObjectIDsByType(collectionId);
-          foreach (var id in objectIds) {
-            accessor.DeleteObject(id);
+          if (collectionKV.Value.IsLocalOwned()) {
+            accessor.DeleteAllByType(collectionKV.Key);
           }
         }
       });
@@ -275,10 +273,7 @@ namespace Xrpa {
 
     private void ReconcileOutboundChanges(DatasetAccessor accessor) {
       foreach (int collectionId in _pendingCollectionClears) {
-        var existingIDs = accessor.GetAllObjectIDsByType(collectionId);
-        foreach (var id in existingIDs) {
-          accessor.DeleteObject(id);
-        }
+        accessor.DeleteAllByType(collectionId);
       }
       _pendingCollectionClears.Clear();
 

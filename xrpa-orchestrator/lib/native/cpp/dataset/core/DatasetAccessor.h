@@ -277,8 +277,47 @@ class DatasetAccessor {
     changeEvent.setTimestamp(getCurrentTimestamp());
 
     // clear out all changelog pointers to the target memory location since they are now invalid
-    for (int i = 0; i < changeLog->count; ++i) {
-      DSChangeEventAccessor(changeLog->getAt(i)).clearPoolOffsetIfMatch(target.poolOffset);
+    PlacedRingBufferIterator iter;
+    while (iter.hasNext(changeLog)) {
+      DSChangeEventAccessor(iter.next(changeLog)).clearPoolOffsetIfMatch(target.poolOffset);
+    }
+  }
+
+  void deleteAllByType(int dsType) {
+    int lastChangelogID = header->lastChangelogID;
+    int count = objectHeaders->count;
+    for (int i = 0; i < count; ++i) {
+      auto& objHeader = objectHeaders->getAt(i);
+      if (objHeader.type != dsType) {
+        continue;
+      }
+
+      // free memoryPool memory
+      memoryPool->free(objHeader.poolOffset);
+
+      // remove from objectHeaders
+      DSObjectHeader target = objHeader; // copy off data for changelog first
+      objectHeaders->removeIndex(i);
+      count--;
+      i--;
+
+      // add entry to log
+      auto changeEvent =
+          DSChangeEventAccessor(changeLog->push(DSChangeEventAccessor::DS_SIZE, &lastChangelogID));
+      changeEvent.setChangeType(DSChangeType::DeleteObject);
+      changeEvent.setTarget(target);
+      changeEvent.setTimestamp(getCurrentTimestamp());
+    }
+
+    header->lastChangelogID = lastChangelogID;
+
+    // clear out all changelog pointers to the target entries since they are now invalid
+    PlacedRingBufferIterator iter;
+    while (iter.hasNext(changeLog)) {
+      auto entry = DSChangeEventAccessor(iter.next(changeLog));
+      if (entry.getTargetType() == dsType) {
+        entry.setTargetPoolOffset(0);
+      }
     }
   }
 

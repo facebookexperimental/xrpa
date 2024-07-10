@@ -156,10 +156,9 @@ void DatasetReconciler::shutdown() {
   dataset->acquire(1ms, [&](DatasetAccessor* accessor) {
     // delete all outbound objects from the dataset
     for (auto& iter : collections_) {
-      auto collectionId = iter.second->getId();
-      auto objectIds = accessor->getAllObjectIDsByType(collectionId);
-      for (auto& id : objectIds) {
-        accessor->deleteObject(id);
+      if (iter.second->isLocalOwned()) {
+        auto collectionId = iter.second->getId();
+        accessor->deleteAllByType(collectionId);
       }
     }
   });
@@ -167,10 +166,7 @@ void DatasetReconciler::shutdown() {
 
 void DatasetReconciler::reconcileOutboundChanges(DatasetAccessor* accessor) {
   for (auto collectionId : pendingCollectionClears_) {
-    auto objectIds = accessor->getAllObjectIDsByType(collectionId);
-    for (auto& id : objectIds) {
-      accessor->deleteObject(id);
-    }
+    accessor->deleteAllByType(collectionId);
   }
   pendingCollectionClears_.clear();
 
