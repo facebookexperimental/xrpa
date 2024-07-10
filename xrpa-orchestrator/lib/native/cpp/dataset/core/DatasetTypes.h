@@ -20,11 +20,12 @@
 #include <dataset/utils/PlacedMemoryAllocator.h>
 #include <dataset/utils/PlacedRingBuffer.h>
 #include <dataset/utils/PlacedSortedArray.h>
-#include <stdint.h>
-#include <string.h>
 #include <chrono>
+#include <cstdint>
+#include <cstring>
 #include <memory>
 #include <ostream>
+#include <sstream>
 #include <string>
 
 namespace Xrpa {
@@ -121,6 +122,7 @@ struct DSHeader {
   // readers can check this without locking the mutex to see if there have been changes
   int32_t lastMessageID;
 };
+static_assert(sizeof(DSHeader) == 72);
 
 struct DSIdentifier {
   uint64_t id0;
@@ -160,6 +162,8 @@ struct DSIdentifier {
     return id0 != other.id0 || id1 != other.id1;
   }
 
+  operator std::string() const;
+
   int compare(const DSIdentifier& other) const {
     if (id0 == other.id0) {
       if (id1 == other.id1) {
@@ -195,6 +199,8 @@ struct DSObjectHeader {
     return a.id.compare(id);
   }
 };
+static_assert(sizeof(DSObjectHeader) == 32);
+static_assert(offsetof(DSObjectHeader, type) == 16);
 
 enum class DSChangeType : int32_t {
   CreateObject = 0,
@@ -338,4 +344,10 @@ inline std::ostream& operator<<(std::ostream& os, const Xrpa::DSIdentifier& k) {
   uint32_t C = (k.id1 >> 32) & 0xFFFFFFFF;
   uint32_t D = (k.id1) & 0xFFFFFFFF;
   return os << A << "-" << B << "-" << C << "-" << D;
+}
+
+inline Xrpa::DSIdentifier::operator std::string() const {
+  std::ostringstream oss;
+  oss << *this;
+  return oss.str();
 }

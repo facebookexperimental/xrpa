@@ -40,9 +40,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genInboundTypeReconcilers = exports.getInboundReconcilerClassName = exports.genInboundReconciledTypes = void 0;
+exports.genIndexedBindingCalls = exports.genObjectCollectionClasses = exports.genInboundReconciledTypes = void 0;
 const ClassSpec_1 = require("../../shared/ClassSpec");
+const DataStore_1 = require("../../shared/DataStore");
 const Helpers_1 = require("../../shared/Helpers");
+const TypeValue_1 = require("../../shared/TypeValue");
 const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
 const CsharpCodeGenImpl_1 = require("./CsharpCodeGenImpl");
 const CsharpCodeGenImpl = __importStar(require("./CsharpCodeGenImpl"));
@@ -50,20 +52,6 @@ const CsharpDatasetLibraryTypes_1 = require("./CsharpDatasetLibraryTypes");
 const GenDataStore_1 = require("./GenDataStore");
 const GenMessageAccessors_1 = require("./GenMessageAccessors");
 const GenWriteReconcilerDataStore_1 = require("./GenWriteReconcilerDataStore");
-function getGetIndexFieldFunction(classSpec, params) {
-    if (!params.indexParams) {
-        return;
-    }
-    const indexedFieldType = params.typeDef.getStateFields()[params.indexParams.fieldName].type.getLocalType(classSpec.namespace, classSpec.includes);
-    classSpec.methods.push({
-        name: "GetIndexField",
-        returnType: indexedFieldType,
-        body: [
-            `return ${params.fieldToMemberVar(params.indexParams.fieldName)};`,
-        ],
-        isConst: true,
-    });
-}
 function genProcessUpdateFunctionBodyForIndexed(ctx, includes, typeDef, reconcilerDef) {
     const lines = [];
     const typeFields = typeDef.getStateFields();
@@ -73,7 +61,7 @@ function genProcessUpdateFunctionBodyForIndexed(ctx, includes, typeDef, reconcil
             continue;
         }
         const checkName = `Check${(0, Helpers_1.upperFirst)(fieldName)}Changed`;
-        const funcName = `Get${(0, Helpers_1.upperFirst)(fieldName)}`;
+        const funcName = (0, GenDataStoreShared_1.fieldGetterFuncName)(CsharpCodeGenImpl, typeFields, fieldName);
         lines.push(`if (value.${checkName}(fieldsChanged)) {`, `  ${(0, GenWriteReconcilerDataStore_1.defaultFieldToMemberVar)(fieldName)} = value.${funcName}();`, `}`);
     }
     return lines;
@@ -87,12 +75,11 @@ function genInboundReconciledTypes(ctx, includesIn) {
             continue;
         }
         const readAccessor = typeDef.getReadAccessorType(ctx.namespace, includesIn);
-        const indexParams = reconcilerDef.indexedReconciled;
         const classSpec = new ClassSpec_1.ClassSpec({
             name: typeDef.getLocalType(ctx.namespace, null),
             superClass: CsharpDatasetLibraryTypes_1.DataStoreObject.getLocalType(ctx.namespace, includesIn),
-            interfaceName: typeDef.interfaceType ? typeDef.interfaceType.getLocalType(ctx.namespace, includesIn) : `${CsharpDatasetLibraryTypes_1.IInboundReconciledType.getLocalType(ctx.namespace, includesIn)}<${readAccessor}>`,
-            forceAbstract: !indexParams,
+            interfaceName: typeDef.interfaceType ? typeDef.interfaceType.getLocalType(ctx.namespace, includesIn) : `${CsharpDatasetLibraryTypes_1.IDataStoreObjectAccessor.getLocalType(ctx.namespace, includesIn)}<${readAccessor}>`,
+            forceAbstract: !reconcilerDef.shouldGenerateConcreteReconciledType(),
             namespace: ctx.namespace,
             includes: includesIn,
         });
@@ -101,19 +88,11 @@ function genInboundReconciledTypes(ctx, includesIn) {
                     name: "id",
                     type: ctx.moduleDef.DSIdentifier,
                 }, {
-                    name: "reconciler",
-                    type: CsharpDatasetLibraryTypes_1.InboundTypeReconcilerInterface,
+                    name: "collection",
+                    type: CsharpDatasetLibraryTypes_1.CollectionInterface,
                 }],
-            superClassInitializers: ["id", typeDef.getDSTypeID(ctx.namespace, classSpec.includes)],
-            memberInitializers: [
-                ["_reconciler", "reconciler"],
-            ],
+            superClassInitializers: ["id", "collection"],
             body: [],
-        });
-        classSpec.members.push({
-            name: "reconciler",
-            type: CsharpDatasetLibraryTypes_1.InboundTypeReconcilerInterface,
-            visibility: "private",
         });
         (0, GenWriteReconcilerDataStore_1.genWriteFieldAccessors)(classSpec, {
             ctx,
@@ -129,16 +108,11 @@ function genInboundReconciledTypes(ctx, includesIn) {
             fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar,
             canCreate: false,
             canChange: true,
+            canSetDirty: reconcilerDef.shouldGenerateConcreteReconciledType(),
             directionality: "outbound",
             visibility: "private",
         });
         if (reconcilerDef.shouldGenerateConcreteReconciledType()) {
-            classSpec.methods.push({
-                name: "SetDirty",
-                body: [
-                    `_reconciler.SetDirty(GetDSID());`,
-                ],
-            });
             classSpec.methods.push({
                 name: "ProcessDSUpdate",
                 parameters: [{
@@ -162,11 +136,11 @@ function genInboundReconciledTypes(ctx, includesIn) {
                         name: "obj",
                         type: readAccessor,
                     }, {
-                        name: "reconciler",
-                        type: CsharpDatasetLibraryTypes_1.InboundTypeReconcilerInterface,
+                        name: "collection",
+                        type: CsharpDatasetLibraryTypes_1.CollectionInterface,
                     }],
                 body: [
-                    `return new ${classSpec.name}(id, reconciler);`,
+                    `return new ${classSpec.name}(id, collection);`,
                 ],
                 isStatic: true,
             });
@@ -223,7 +197,6 @@ function genInboundReconciledTypes(ctx, includesIn) {
             reconcilerDef,
             genMsgHandler: GenDataStore_1.genMsgHandler,
             msgDataToParams: () => ["message"],
-            isOverride: true,
         });
         classSpec.methods.push({
             name: "WriteDSChanges",
@@ -239,64 +212,244 @@ function genInboundReconciledTypes(ctx, includesIn) {
                 canCreate: false,
                 proxyObj: null,
             }),
-            isOverride: true,
+            isVirtual: true,
         });
-        getGetIndexFieldFunction(classSpec, { fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar, typeDef, indexParams });
         ret.push(classSpec);
     }
     return ret;
 }
 exports.genInboundReconciledTypes = genInboundReconciledTypes;
-function getInboundReconcilerClassName(ctx, typeDef) {
-    return `Inbound${typeDef.getReadAccessorType(ctx.namespace, null)}Reconciler`;
-}
-exports.getInboundReconcilerClassName = getInboundReconcilerClassName;
-function genInboundTypeReconcilers(ctx, includes) {
+function genObjectCollectionClasses(ctx, includesIn) {
     const ret = [];
-    for (const reconcilerDef of ctx.storeDef.getInputReconcilers()) {
+    for (const reconcilerDef of ctx.storeDef.getAllReconcilers()) {
+        const isLocalOwned = reconcilerDef instanceof DataStore_1.OutputReconcilerDefinition;
         const typeDef = reconcilerDef.type;
-        const readAccessor = typeDef.getReadAccessorType(ctx.namespace, includes);
-        const localPtr = typeDef.getLocalTypePtr(ctx.namespace, includes);
-        const indexParams = reconcilerDef.indexedReconciled;
-        const indexedFieldType = indexParams ? typeDef.getStateFields()[indexParams.fieldName].type.getLocalType(ctx.namespace, includes) : "int";
-        const indexedFieldMask = indexParams ? typeDef.getFieldBitMask(indexParams.fieldName) : 0;
-        const indexedType = indexParams ? `${indexParams.indexedTypeName}` : `${CsharpDatasetLibraryTypes_1.DummyIndexReconciledType.getLocalType(ctx.namespace, includes)}<${readAccessor}, ${localPtr}>`;
-        const outboundFieldMask = reconcilerDef.getOutboundChangeBits();
+        const readAccessor = typeDef.getReadAccessorType(ctx.namespace, includesIn);
+        const localPtr = typeDef.getLocalTypePtr(ctx.namespace, includesIn);
+        const indexedFieldMask = reconcilerDef.getIndexedBitMask();
+        const inboundFieldMask = reconcilerDef.getInboundChangeBits();
+        const superClass = `${CsharpDatasetLibraryTypes_1.ObjectCollection.getLocalType(ctx.namespace, includesIn)}<${readAccessor}, ${localPtr}>`;
         const classSpec = new ClassSpec_1.ClassSpec({
-            name: getInboundReconcilerClassName(ctx, typeDef),
-            superClass: `${CsharpDatasetLibraryTypes_1.InboundTypeReconciler.getLocalType(ctx.namespace, includes)}<${readAccessor}, ${localPtr}, ${indexedFieldType}, ${indexedType}>`,
+            name: isLocalOwned ? (0, GenDataStoreShared_1.getOutboundCollectionClassName)(ctx, typeDef) : (0, GenDataStoreShared_1.getInboundCollectionClassName)(ctx, typeDef),
+            superClass,
             namespace: ctx.namespace,
-            includes,
+            includes: includesIn,
         });
+        const constructorBody = [];
+        // inbound (remotely created) objects are created by the reconciler, so we need to give it a delegate functions
+        if (reconcilerDef instanceof DataStore_1.InputReconcilerDefinition) {
+            if (reconcilerDef.shouldGenerateConcreteReconciledType()) {
+                const reconciledTypeName = typeDef.getLocalType(ctx.namespace, null);
+                constructorBody.push(`SetCreateDelegateInternal(${reconciledTypeName}.Create);`);
+            }
+            else {
+                // the class we generate is not concrete, so the user needs to set the delegate
+                classSpec.methods.push({
+                    name: "SetCreateDelegate",
+                    parameters: [{
+                            name: "createDelegate",
+                            type: "CreateDelegateFunction",
+                        }],
+                    body: ["SetCreateDelegateInternal(createDelegate);"],
+                });
+            }
+        }
+        else {
+            // expose addObject and removeObject to the user
+            classSpec.methods.push({
+                name: "AddObject",
+                parameters: [{
+                        name: "obj",
+                        type: localPtr,
+                    }],
+                body: ["AddObjectInternal(obj);"],
+            });
+            classSpec.methods.push({
+                name: "RemoveObject",
+                parameters: [{
+                        name: "id",
+                        type: ctx.moduleDef.DSIdentifier,
+                    }],
+                body: ["RemoveObjectInternal(id);"],
+            });
+        }
         classSpec.constructors.push({
             parameters: [{
                     name: "reconciler",
-                    type: CsharpDatasetLibraryTypes_1.DatasetReconciler.getLocalType(ctx.namespace, includes),
+                    type: CsharpDatasetLibraryTypes_1.DatasetReconciler,
                 }],
             superClassInitializers: [
                 "reconciler",
-                typeDef.getDSTypeID(ctx.namespace, includes),
-                `${outboundFieldMask}`,
+                typeDef.getDSTypeID(ctx.namespace, classSpec.includes),
+                `${inboundFieldMask}`,
                 `${indexedFieldMask}`,
+                `${isLocalOwned}`,
             ],
-            body: [],
+            body: constructorBody,
         });
-        classSpec.methods.push({
-            name: "GetIndexField",
-            returnType: indexedFieldType,
-            parameters: [{
-                    name: "directReconciledObj",
-                    type: localPtr,
-                }],
-            body: [`return ${indexParams ? `directReconciledObj.GetIndexField()` : 0};`],
-            visibility: "protected",
-            isVirtual: true,
-            isOverride: true,
-            isFinal: true,
-        });
+        setupCollectionClassIndexing(ctx, classSpec, reconcilerDef);
         ret.push(classSpec);
     }
     return ret;
 }
-exports.genInboundTypeReconcilers = genInboundTypeReconcilers;
+exports.genObjectCollectionClasses = genObjectCollectionClasses;
+function genIndexedBindingCalls(ctx, reconcilerDef, dataStorePtr, boundObjPtr, getFieldMemberName) {
+    const ret = {};
+    for (const indexConfig of reconcilerDef.indexConfigs) {
+        const indexMemberName = getFieldMemberName(reconcilerDef, indexConfig.indexFieldName);
+        ret[indexConfig.indexFieldName] = {
+            addBinding: `${dataStorePtr}.Add${(0, Helpers_1.upperFirst)(indexConfig.indexFieldName)}Binding(${indexMemberName}, ${boundObjPtr});`,
+            removeBinding: `${dataStorePtr}.Remove${(0, Helpers_1.upperFirst)(indexConfig.indexFieldName)}Binding(${indexMemberName}, ${boundObjPtr});`,
+        };
+    }
+    return ret;
+}
+exports.genIndexedBindingCalls = genIndexedBindingCalls;
+function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
+    const bindingTickLines = [];
+    const bindingWriteChangesLines = [];
+    const bindingProcessMessageLines = [];
+    const indexNotifyCreateLines = [];
+    const indexNotifyUpdateLines = [];
+    const indexNotifyDeleteLines = [];
+    const fields = reconcilerDef.type.getStateFields();
+    const readAccessor = reconcilerDef.type.getReadAccessorType(ctx.namespace, classSpec.includes);
+    const localPtr = reconcilerDef.type.getLocalTypePtr(ctx.namespace, classSpec.includes);
+    for (const indexConfig of reconcilerDef.indexConfigs) {
+        const boundType = indexConfig.boundClassName ?? null;
+        const indexFieldType = fields[indexConfig.indexFieldName].type;
+        const indexFieldTypeName = indexFieldType.getLocalType(ctx.namespace, classSpec.includes);
+        const indexFieldGet = (0, GenDataStoreShared_1.fieldGetterFuncName)(CsharpCodeGenImpl, fields, indexConfig.indexFieldName);
+        const memberName = indexConfig.boundClassName ? CsharpCodeGenImpl.privateMember(`binding${indexConfig.boundClassName}To${(0, Helpers_1.upperFirst)(indexConfig.indexFieldName)}`) : `${(0, Helpers_1.upperFirst)(indexConfig.indexFieldName)}Index`;
+        indexNotifyCreateLines.push(`${memberName}.OnCreate(obj, obj.${indexFieldGet}());`);
+        indexNotifyUpdateLines.push(`if ((fieldsChanged & ${reconcilerDef.type.getFieldBitMask(indexConfig.indexFieldName)}) != 0) {`, `  ${memberName}.OnUpdate(obj, obj.${indexFieldGet}());`, `}`);
+        indexNotifyDeleteLines.push(`${memberName}.OnDelete(obj, obj.${indexFieldGet}());`);
+        if (boundType) {
+            classSpec.members.push({
+                name: memberName,
+                type: `${CsharpDatasetLibraryTypes_1.ObjectCollectionIndexedBinding.getLocalType(ctx.namespace, classSpec.includes)}<${readAccessor}, ${localPtr}, ${indexFieldTypeName}, ${boundType}>`,
+                visibility: "private",
+                initialValue: new TypeValue_1.CodeLiteralValue(CsharpCodeGenImpl, `new(${reconcilerDef.getInboundChangeBits()})`),
+            });
+            classSpec.methods.push({
+                name: `Add${(0, Helpers_1.upperFirst)(indexConfig.indexFieldName)}Binding`,
+                parameters: [{
+                        name: "indexValue",
+                        type: indexFieldType,
+                    }, {
+                        name: "localObj",
+                        type: boundType,
+                    }],
+                body: [
+                    `${memberName}.AddLocalObject(indexValue, localObj);`,
+                ],
+            });
+            classSpec.methods.push({
+                name: `Remove${(0, Helpers_1.upperFirst)(indexConfig.indexFieldName)}Binding`,
+                parameters: [{
+                        name: "indexValue",
+                        type: indexFieldType,
+                    }, {
+                        name: "localObj",
+                        type: boundType,
+                    }],
+                body: [
+                    `${memberName}.RemoveLocalObject(indexValue, localObj);`,
+                ],
+            });
+            bindingTickLines.push(`${memberName}.Tick();`);
+            bindingWriteChangesLines.push(`${memberName}.WriteChanges(id);`);
+            bindingProcessMessageLines.push(`${memberName}.ProcessMessage(id, messageType, timestamp, msgAccessor);`);
+            indexNotifyUpdateLines.push(`${memberName}.ProcessUpdate(obj.GetXrpaId(), fieldsChanged);`);
+        }
+        else {
+            classSpec.members.push({
+                name: memberName,
+                type: `${CsharpDatasetLibraryTypes_1.ObjectCollectionIndex.getLocalType(ctx.namespace, classSpec.includes)}<${readAccessor}, ${localPtr}, ${indexFieldTypeName}>`,
+                visibility: "public",
+                initialValue: new TypeValue_1.CodeLiteralValue(CsharpCodeGenImpl, "new()"),
+            });
+        }
+    }
+    if (bindingTickLines.length > 0) {
+        classSpec.methods.push({
+            name: "BindingTick",
+            body: bindingTickLines,
+            isOverride: true,
+            visibility: "protected",
+        });
+    }
+    if (bindingWriteChangesLines.length > 0) {
+        classSpec.methods.push({
+            name: "BindingWriteChanges",
+            parameters: [{
+                    name: "id",
+                    type: ctx.moduleDef.DSIdentifier,
+                }],
+            body: bindingWriteChangesLines,
+            isOverride: true,
+            visibility: "protected",
+        });
+    }
+    if (bindingProcessMessageLines.length > 0) {
+        classSpec.methods.push({
+            name: "BindingProcessMessage",
+            parameters: [{
+                    name: "id",
+                    type: ctx.moduleDef.DSIdentifier,
+                }, {
+                    name: "messageType",
+                    type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
+                }, {
+                    name: "timestamp",
+                    type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
+                }, {
+                    name: "msgAccessor",
+                    type: CsharpDatasetLibraryTypes_1.MemoryAccessor,
+                }],
+            body: bindingProcessMessageLines,
+            isOverride: true,
+            visibility: "protected",
+        });
+    }
+    if (indexNotifyCreateLines.length > 0) {
+        classSpec.methods.push({
+            name: "IndexNotifyCreate",
+            parameters: [{
+                    name: "obj",
+                    type: localPtr,
+                }],
+            body: indexNotifyCreateLines,
+            isOverride: true,
+            visibility: "protected",
+        });
+    }
+    if (indexNotifyUpdateLines.length > 0) {
+        classSpec.methods.push({
+            name: "IndexNotifyUpdate",
+            parameters: [{
+                    name: "obj",
+                    type: localPtr,
+                }, {
+                    name: "fieldsChanged",
+                    type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
+                }],
+            body: indexNotifyUpdateLines,
+            isOverride: true,
+            visibility: "protected",
+        });
+    }
+    if (indexNotifyDeleteLines.length > 0) {
+        classSpec.methods.push({
+            name: "IndexNotifyDelete",
+            parameters: [{
+                    name: "obj",
+                    type: localPtr,
+                }],
+            body: indexNotifyDeleteLines,
+            isOverride: true,
+            visibility: "protected",
+        });
+    }
+}
 //# sourceMappingURL=GenReadReconcilerDataStore.js.map

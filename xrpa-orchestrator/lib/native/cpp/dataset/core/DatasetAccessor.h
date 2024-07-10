@@ -36,16 +36,20 @@ struct DatasetConfig {
 
 class DatasetAccessor {
  public:
-  explicit DatasetAccessor(std::unique_ptr<MutexLockedPointer>&& src) : dataSource(std::move(src)) {
+  DatasetAccessor(std::unique_ptr<MutexLockedPointer>&& src, bool isInitializing)
+      : dataSource(std::move(src)) {
     header = dataSource->get<DSHeader>(0);
-    initRegionPointers();
+    if (!isInitializing) {
+      initRegionPointers();
+    }
   }
 
   DatasetAccessor(const DatasetAccessor& other) = delete;
   DatasetAccessor& operator=(const DatasetAccessor& other) = delete;
 
   // move constructor
-  DatasetAccessor(DatasetAccessor&& other) noexcept : DatasetAccessor(std::move(other.dataSource)) {
+  DatasetAccessor(DatasetAccessor&& other) noexcept
+      : DatasetAccessor(std::move(other.dataSource), false) {
     if (this != &other) {
       other.header = nullptr;
       other.objectHeaders = nullptr;
@@ -370,7 +374,7 @@ class DatasetAccessor {
   }
 
  private:
-  static constexpr int32_t DATASET_VERSION = 6; // conorwdickinson: schema hash as struct
+  static constexpr int32_t DATASET_VERSION = 7; // conorwdickinson: ring buffer added lastElemOffset
 
   [[nodiscard]] const DSObjectHeader* getObjectHeader(const DSIdentifier& id) {
     bool isInIndex;
@@ -409,11 +413,11 @@ class DatasetAccessor {
     }
   }
 
-  DSHeader* header;
-  DSObjectHeaderArray* objectHeaders;
-  PlacedMemoryAllocator* memoryPool;
-  PlacedRingBuffer* changeLog;
-  PlacedRingBuffer* messageQueue;
+  DSHeader* header = nullptr;
+  DSObjectHeaderArray* objectHeaders = nullptr;
+  PlacedMemoryAllocator* memoryPool = nullptr;
+  PlacedRingBuffer* changeLog = nullptr;
+  PlacedRingBuffer* messageQueue = nullptr;
 
   std::unique_ptr<MutexLockedPointer> dataSource;
 };

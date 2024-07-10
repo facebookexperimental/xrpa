@@ -20,58 +20,67 @@
 #include <dataset/reconciler/DatasetReconciler.h>
 #include <memory>
 #include <type_traits>
+#include <unordered_set>
 
 namespace Xrpa {
 
 class DataStoreObject : public std::enable_shared_from_this<DataStoreObject> {
  public:
-  DataStoreObject(const DSIdentifier& id, int32_t type) : id_(id), type_(type) {}
+  explicit DataStoreObject(const DSIdentifier& id) : id_(id) {}
+
+  DataStoreObject(const DSIdentifier& id, Xrpa::CollectionInterface* collection)
+      : collection_(collection), id_(id) {}
+
   virtual ~DataStoreObject() {}
 
-  const DSIdentifier& getDSID() const {
+  void setXrpaCollection(Xrpa::CollectionInterface* collection) {
+    collection_ = collection;
+  }
+
+  const DSIdentifier& getXrpaId() const {
     return id_;
   }
 
-  int32_t getDSType() const {
-    return type_;
-  }
+ protected:
+  Xrpa::CollectionInterface* collection_ = nullptr;
 
  private:
   DSIdentifier id_;
-  int32_t type_;
 };
 
-class InboundTypeReconcilerInterface {
+class CollectionInterface {
  public:
-  explicit InboundTypeReconcilerInterface(DatasetReconciler* reconciler)
-      : reconciler_(reconciler) {}
-  virtual ~InboundTypeReconcilerInterface() {}
+  explicit CollectionInterface(DatasetReconciler* reconciler, int32_t collectionId)
+      : reconciler_(reconciler), collectionId_(collectionId) {}
+  virtual ~CollectionInterface() = default;
 
-  virtual MemoryAccessor
-  sendMessage(const DSIdentifier& id, int32_t messageType, int32_t numBytes) = 0;
+  MemoryAccessor sendMessage(const DSIdentifier& id, int32_t messageType, int32_t numBytes) {
+    return reconciler_->sendMessage(id, messageType, numBytes);
+  }
 
-  void setDirty(const DSIdentifier& id) {
-    reconciler_->setDirty(id, getType());
+  virtual void setDirty(const DSIdentifier& objId, uint64_t /*fieldsChanged*/) {
+    reconciler_->setDirty(objId, getId());
   }
 
  protected:
   friend class DatasetReconciler;
   DatasetReconciler* reconciler_;
+  int32_t collectionId_;
 
-  virtual int32_t getType() = 0;
+  int32_t getId() {
+    return collectionId_;
+  }
+
+  [[nodiscard]] virtual bool isLocalOwned() const = 0;
 
   virtual void tick() = 0;
 
   virtual void writeChanges(DatasetAccessor* accessor, const DSIdentifier& id) = 0;
 
-  virtual void
-  processCreate(const DSIdentifier& id, MemoryAccessor objAccessor, int32_t reconcileID) = 0;
+  virtual void processCreate(const DSIdentifier& id, MemoryAccessor objAccessor) = 0;
 
-  virtual bool processUpdate(
-      const DSIdentifier& id,
-      MemoryAccessor objAccessor,
-      uint64_t fieldsChanged,
-      int32_t reconcileID) = 0;
+  virtual bool
+  processUpdate(const DSIdentifier& id, MemoryAccessor objAccessor, uint64_t fieldsChanged) = 0;
 
   virtual void processDelete(const DSIdentifier& id) = 0;
 
@@ -81,53 +90,33 @@ class InboundTypeReconcilerInterface {
       int32_t timestamp,
       MemoryAccessor msgAccessor) = 0;
 
-  virtual void
-  processFullReconcile(const DSIdentifier& id, MemoryAccessor objAccessor, int32_t reconcileID) = 0;
+  virtual void processUpsert(const DSIdentifier& id, MemoryAccessor objAccessor) = 0;
 
-  virtual void endFullReconcile(int32_t reconcileID) = 0;
+  virtual void processFullReconcile(const std::unordered_set<DSIdentifier>& reconciledIds) = 0;
 };
 
-class OutboundTypeReconcilerInterface {
- public:
-  explicit OutboundTypeReconcilerInterface(DatasetReconciler* reconciler)
-      : reconciler_(reconciler) {}
-  virtual ~OutboundTypeReconcilerInterface() {}
-
-  virtual MemoryAccessor
-  sendMessage(const DSIdentifier& id, int32_t messageType, int32_t numBytes) = 0;
-
-  void setDirty(const DSIdentifier& id) {
-    reconciler_->setDirty(id, getType());
-  }
-
- protected:
-  friend class DatasetReconciler;
-  DatasetReconciler* reconciler_;
-
-  virtual int32_t getType() = 0;
-
-  virtual void tick() = 0;
-
-  virtual void writeChanges(DatasetAccessor* accessor, const DSIdentifier& id) = 0;
-
-  virtual bool
-  processUpdate(const DSIdentifier& id, MemoryAccessor objAccessor, uint64_t fieldsChanged) = 0;
-
-  virtual void processMessage(
-      const DSIdentifier& id,
-      int32_t messageType,
-      int32_t timestamp,
-      MemoryAccessor msgAccessor) = 0;
-};
-
+// tickXrpa traits
 template <typename T, typename = std::void_t<>>
-struct has_tickDS : std::false_type {};
+struct has_tickXrpa : std::false_type {};
 
 template <typename T>
-struct has_tickDS<T*, std::void_t<decltype(std::declval<T>().tickDS())>> : std::true_type {};
+struct has_tickXrpa<T*, std::void_t<decltype(std::declval<T>().tickXrpa())>> : std::true_type {};
 
 template <typename T>
-struct has_tickDS<std::shared_ptr<T>, std::void_t<decltype(std::declval<T>().tickDS())>>
+struct has_tickXrpa<std::shared_ptr<T>, std::void_t<decltype(std::declval<T>().tickXrpa())>>
     : std::true_type {};
+
+// processDSDelete traits
+template <typename T, typename = std::void_t<>>
+struct has_processDSDelete : std::false_type {};
+
+template <typename T>
+struct has_processDSDelete<T*, std::void_t<decltype(std::declval<T>().processDSDelete())>>
+    : std::true_type {};
+
+template <typename T>
+struct has_processDSDelete<
+    std::shared_ptr<T>,
+    std::void_t<decltype(std::declval<T>().processDSDelete())>> : std::true_type {};
 
 } // namespace Xrpa

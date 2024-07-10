@@ -37,7 +37,6 @@ export declare function genFieldProperties(classSpec: ClassSpec, params: {
     ctx: GenDataStoreContext;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
     setterHooks: FieldSetterHooks;
-    indexedFieldName: string | null;
     proxyObj: string | null;
 }): void;
 export declare function genUnityMessageChannelDispatch(classSpec: ClassSpec, params: {
@@ -51,8 +50,8 @@ export declare function genUnityMessageFieldAccessors(classSpec: ClassSpec, para
     proxyObj: string | null;
 }): void;
 /********************************************************/
-export declare function genFieldDefaultInitializers(ctx: GenDataStoreContext, includes: IncludeAggregator | null, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition, indexedFieldName: string | null): string[];
-export declare function genFieldInitializers(ctx: GenDataStoreContext, includes: IncludeAggregator | null, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition, indexedFieldName: string | null): string[];
+export declare function genFieldDefaultInitializers(ctx: GenDataStoreContext, includes: IncludeAggregator | null, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition): string[];
+export declare function genFieldInitializers(ctx: GenDataStoreContext, includes: IncludeAggregator | null, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition): string[];
 export declare function genTransformInitializers(ctx: GenDataStoreContext, includes: IncludeAggregator | null, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition): string[];
 export declare function genTransformUpdates(params: {
     ctx: GenDataStoreContext;
@@ -64,7 +63,6 @@ export declare function genProcessUpdateBody(params: {
     ctx: GenDataStoreContext;
     includes: IncludeAggregator | null;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
-    indexedFieldName: string | null;
     proxyObj: string | null;
 }): string[];
 export declare function writeMonoBehaviour(classSpec: ClassSpec, params: {

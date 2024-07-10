@@ -47,6 +47,7 @@ export declare function nsJoin(...names: string[]): string;
 export declare function nsExtract(qualifiedName: string, nonNamespacePartCount?: number): string;
 export declare function constRef(type: string, _byteSize: number): string;
 export declare function privateMember(memberVarName: string): string;
+export declare function methodMember(methodName: string): string;
 export declare function genPrimitiveValue(typename: string, value: string | boolean | number | null): string;
 export declare function genMultiValue(typename: string, hasInitializerConstructor: boolean, valueStrings: [string, string][]): string;
 export declare function genDeclaration(params: {

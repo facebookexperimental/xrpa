@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genMethodBind = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genWriteValue = exports.genReadValue = exports.genClassSourceDefinition = exports.genClassHeaderDefinition = exports.genClassDefinition = exports.makeObjectAccessor = exports.getTypesHeaderName = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.privateMember = exports.constRef = exports.forwardDeclareClass = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.CppIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.GET_CURRENT_CLOCK_TIME = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.BUCK_HEADER = exports.HEADER = exports.XRPA_NAMESPACE = exports.registerObjectAccessorInterface = exports.registerMemoryAccessor = void 0;
+exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genMethodBind = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genWriteValue = exports.genReadValue = exports.genClassSourceDefinition = exports.genClassHeaderDefinition = exports.genClassDefinition = exports.makeObjectAccessor = exports.getTypesHeaderName = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.constRef = exports.forwardDeclareClass = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.CppIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.GET_CURRENT_CLOCK_TIME = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.BUCK_HEADER = exports.HEADER = exports.XRPA_NAMESPACE = exports.registerObjectAccessorInterface = exports.registerMemoryAccessor = void 0;
 const assert_1 = __importDefault(require("assert"));
 const Helpers_1 = require("../../shared/Helpers");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
@@ -183,6 +183,10 @@ function privateMember(memberVarName) {
     return memberVarName + "_";
 }
 exports.privateMember = privateMember;
+function methodMember(methodName) {
+    return methodName;
+}
+exports.methodMember = methodMember;
 function genInitializer(values) {
     return `{${values.join(", ")}}`;
 }
@@ -654,7 +658,7 @@ function getNullValue() {
 exports.getNullValue = getNullValue;
 function genReferencePtrToID(varName, ptrType, dsIdentifierType) {
     const conditional = ptrType === "bare" ? varName : `${varName}.get()`;
-    return `${conditional} ? ${varName}->getDSID() : ${dsIdentifierType}()`;
+    return `${conditional} ? ${varName}->getXrpaId() : ${dsIdentifierType}()`;
 }
 exports.genReferencePtrToID = genReferencePtrToID;
 function genFieldGetter(classSpec, params) {
@@ -690,7 +694,7 @@ function genFieldGetter(classSpec, params) {
         classSpec.methods.push({
             decorations,
             name: `${funcName}Id`,
-            returnType: fieldType.declareLocalReturnType(classSpec.namespace, classSpec.includes, true),
+            returnType: fieldType.declareLocalReturnType(classSpec.namespace, classSpec.includes, !params.convertToLocal),
             isConst: true,
             visibility: params.visibility,
             body: [

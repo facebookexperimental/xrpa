@@ -172,7 +172,7 @@ class ModuleDefinition {
         return new FixedStringType_1.FixedStringType(this.codegen, name, apiname, maxBytes, this.datamap.typeMap);
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    setCollectionAsInbound(type, reconciledTo, _indexedReconciled) {
+    setCollectionAsInbound(type, reconciledTo, _indexes) {
         const collection = type;
         const namespace = this.codegen.nsExtract(collection.datasetType.typename);
         collection.localType = reconciledTo ?? {

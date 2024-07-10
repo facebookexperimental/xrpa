@@ -17,8 +17,26 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genFieldProperties = void 0;
+exports.genFieldProperties = exports.getOutboundCollectionClassName = exports.getInboundCollectionClassName = exports.fieldGetterFuncName = void 0;
+const Helpers_1 = require("../../shared/Helpers");
+const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const TypeValue_1 = require("../../shared/TypeValue");
+function fieldGetterFuncName(codegen, typeFields, fieldName) {
+    let funcName = `get${(0, Helpers_1.upperFirst)(fieldName)}`;
+    if ((0, TypeDefinition_1.typeIsReference)(typeFields[fieldName].type)) {
+        funcName += "Id";
+    }
+    return codegen.methodMember(funcName);
+}
+exports.fieldGetterFuncName = fieldGetterFuncName;
+function getInboundCollectionClassName(ctx, typeDef) {
+    return `Inbound${typeDef.getReadAccessorType(ctx.namespace, null)}Collection`;
+}
+exports.getInboundCollectionClassName = getInboundCollectionClassName;
+function getOutboundCollectionClassName(ctx, typeDef) {
+    return `Outbound${typeDef.getReadAccessorType(ctx.namespace, null)}Collection`;
+}
+exports.getOutboundCollectionClassName = getOutboundCollectionClassName;
 function genFieldProperties(classSpec, params) {
     let bitMask = 0;
     const typeFields = params.reconcilerDef.type.getStateFields();
@@ -32,6 +50,7 @@ function genFieldProperties(classSpec, params) {
         bitMask |= params.reconcilerDef.type.getFieldBitMask(fieldName);
         params.reconcilerDef.type.declareLocalFieldClassMember(classSpec, fieldName, params.fieldToMemberVar(fieldName), true, [], params.visibility);
     }
+    let hasChangeBits = false;
     if (params.canCreate) {
         classSpec.members.push({
             name: "createTimestamp",
@@ -44,6 +63,7 @@ function genFieldProperties(classSpec, params) {
             initialValue: new TypeValue_1.CodeLiteralValue(params.codegen, `${bitMask}`),
             visibility: params.visibility,
         });
+        hasChangeBits = true;
     }
     else if (params.canChange && bitMask !== 0) {
         classSpec.members.push({
@@ -51,6 +71,23 @@ function genFieldProperties(classSpec, params) {
             type: params.codegen.PRIMITIVE_INTRINSICS.uint64.typename,
             initialValue: new TypeValue_1.CodeLiteralValue(params.codegen, "0"),
             visibility: params.visibility,
+        });
+        hasChangeBits = true;
+    }
+    if (params.canSetDirty && hasChangeBits) {
+        const changeBits = params.codegen.privateMember("changeBits");
+        classSpec.methods.push({
+            name: "setDirty",
+            parameters: [{
+                    name: "fieldsChanged",
+                    type: params.codegen.PRIMITIVE_INTRINSICS.uint64.typename,
+                }],
+            body: [
+                `if ((${changeBits} & fieldsChanged) != fieldsChanged) {`,
+                `  ${changeBits} |= fieldsChanged;`,
+                `  ${params.codegen.genDerefMethodCall(params.codegen.privateMember("collection"), "setDirty", [params.codegen.genDerefMethodCall("", "getXrpaId", []), "0"])};`,
+                `}`,
+            ],
         });
     }
 }

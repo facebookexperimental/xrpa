@@ -36,7 +36,6 @@ export declare function genFieldProperties(classSpec: ClassSpec, params: {
     ctx: GenDataStoreContext;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
     setterHooks: FieldSetterHooks;
-    indexedFieldName: string | null;
     proxyObj: string | null;
     separateImplementation?: boolean;
 }): void;
@@ -52,7 +51,7 @@ export declare function genUEMessageFieldAccessors(classSpec: ClassSpec, params:
 }): void;
 /********************************************************/
 export declare function genFieldDefaultInitializers(ctx: GenDataStoreContext, includes: IncludeAggregator | null, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition): string[];
-export declare function genFieldInitializers(ctx: GenDataStoreContext, includes: IncludeAggregator | null, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition, indexedFieldName: string | null): string[];
+export declare function genFieldInitializers(ctx: GenDataStoreContext, includes: IncludeAggregator | null, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition): string[];
 export declare function genTransformInitializers(ctx: GenDataStoreContext, includes: IncludeAggregator | null, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition): string[];
 export declare function genTransformUpdates(params: {
     ctx: GenDataStoreContext;
@@ -64,7 +63,6 @@ export declare function genProcessUpdateBody(params: {
     ctx: GenDataStoreContext;
     includes: IncludeAggregator | null;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
-    indexedFieldName: string | null;
     proxyObj: string | null;
 }): string[];
 export declare function writeSceneComponent(classSpec: ClassSpec, params: {

@@ -16,6 +16,29 @@
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -25,40 +48,30 @@ const path_1 = __importDefault(require("path"));
 const ClassSpec_1 = require("../../shared/ClassSpec");
 const Helpers_1 = require("../../shared/Helpers");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
+const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
 const CsharpCodeGenImpl_1 = require("./CsharpCodeGenImpl");
+const CsharpCodeGenImpl = __importStar(require("./CsharpCodeGenImpl"));
 const CsharpDatasetLibraryTypes_1 = require("./CsharpDatasetLibraryTypes");
 const GenReadReconcilerDataStore_1 = require("./GenReadReconcilerDataStore");
 const GenTypesDefinitions_1 = require("./GenTypesDefinitions");
 const GenWriteReconcilerDataStore_1 = require("./GenWriteReconcilerDataStore");
 function genMsgHandler(msg) {
-    return `_${msg}MessageHandler`;
+    return CsharpCodeGenImpl.privateMember(`${msg}MessageHandler`);
 }
 exports.genMsgHandler = genMsgHandler;
-function getOutboundReconcilerClassName(ctx, includes, typeDef) {
-    const readAccessor = typeDef.getReadAccessorType(ctx.namespace, includes);
-    const localPtr = typeDef.getLocalTypePtr(ctx.namespace, includes);
-    return `${CsharpDatasetLibraryTypes_1.OutboundTypeReconciler.getLocalType(ctx.namespace, includes)}<${readAccessor}, ${localPtr}>`;
-}
-function genReconcilerConstructorContents(ctx, includes) {
+function genReconcilerConstructorContents(ctx) {
     const lines = [];
     for (const reconcilerDef of ctx.storeDef.getInputReconcilers()) {
         const typeDef = reconcilerDef.type;
-        const className = (0, GenReadReconcilerDataStore_1.getInboundReconcilerClassName)(ctx, typeDef);
+        const className = (0, GenDataStoreShared_1.getInboundCollectionClassName)(ctx, typeDef);
         const varName = reconcilerDef.getDataStoreAccessorName();
-        const dsTypeID = typeDef.getDSTypeID(ctx.namespace, includes);
-        lines.push(`${varName} = new ${className}(this);`, `SetInboundReconciler(${dsTypeID}, ${varName});`);
-        if (reconcilerDef.shouldGenerateConcreteReconciledType()) {
-            const reconciledTypeName = typeDef.getLocalType(ctx.namespace, null);
-            lines.push(`${varName}.SetCreateDelegate(${reconciledTypeName}.Create);`);
-        }
+        lines.push(`${varName} = new ${className}(this);`, `RegisterCollection(${varName});`);
     }
     for (const reconcilerDef of ctx.storeDef.getOutputReconcilers()) {
         const typeDef = reconcilerDef.type;
-        const className = getOutboundReconcilerClassName(ctx, includes, typeDef);
+        const className = (0, GenDataStoreShared_1.getOutboundCollectionClassName)(ctx, typeDef);
         const varName = reconcilerDef.getDataStoreAccessorName();
-        const dsTypeID = typeDef.getDSTypeID(ctx.namespace, includes);
-        const inboundFieldMask = reconcilerDef.getInboundChangeBits();
-        lines.push(`${varName} = new ${className}(this, ${dsTypeID}, ${inboundFieldMask});`, `SetOutboundReconciler(${dsTypeID}, ${varName});`);
+        lines.push(`${varName} = new ${className}(this);`, `RegisterCollection(${varName});`);
     }
     return lines;
 }
@@ -84,14 +97,14 @@ function genDataStoreClass(ctx, includes) {
     const lines = [
         `public class ${className} : ${baseClassName} {`,
         `  public ${className}(${CsharpDatasetLibraryTypes_1.DatasetInterface.declareLocalParam(ctx.namespace, includes, "dataset")})`,
-        `      : base(dataset, ${hashName}, ${ctx.storeDef.datamodel.getCollectionCount()}, ${messagePoolSize}) {`,
-        ...(0, Helpers_1.indent)(2, genReconcilerConstructorContents(ctx, includes)),
+        `      : base(dataset, ${hashName}, ${messagePoolSize}) {`,
+        ...(0, Helpers_1.indent)(2, genReconcilerConstructorContents(ctx)),
         `  }`,
         ``,
     ];
     for (const reconcilerDef of ctx.storeDef.getInputReconcilers()) {
         const typeDef = reconcilerDef.type;
-        const className = (0, GenReadReconcilerDataStore_1.getInboundReconcilerClassName)(ctx, typeDef);
+        const className = (0, GenDataStoreShared_1.getInboundCollectionClassName)(ctx, typeDef);
         const varName = reconcilerDef.getDataStoreAccessorName();
         lines.push(...(0, Helpers_1.indent)(1, [
             `public ${className} ${varName};`,
@@ -99,7 +112,7 @@ function genDataStoreClass(ctx, includes) {
     }
     for (const reconcilerDef of ctx.storeDef.getOutputReconcilers()) {
         const typeDef = reconcilerDef.type;
-        const className = getOutboundReconcilerClassName(ctx, includes, typeDef);
+        const className = (0, GenDataStoreShared_1.getOutboundCollectionClassName)(ctx, typeDef);
         const varName = reconcilerDef.getDataStoreAccessorName();
         lines.push(...(0, Helpers_1.indent)(1, [
             `public ${className} ${varName};`,
@@ -133,7 +146,7 @@ function genInterfaceTypes(ctx, includes) {
             const classSpec = new ClassSpec_1.ClassSpec({
                 name: typeDef.getLocalType(ctx.namespace, includes),
                 superClass: CsharpDatasetLibraryTypes_1.DataStoreObject.getLocalType(ctx.namespace, includes),
-                interfaceName: CsharpDatasetLibraryTypes_1.IReconciledType.getLocalType(ctx.namespace, includes),
+                interfaceName: CsharpDatasetLibraryTypes_1.IDataStoreObject.getLocalType(ctx.namespace, includes),
                 forceAbstract: true,
                 namespace: ctx.namespace,
                 includes,
@@ -143,10 +156,10 @@ function genInterfaceTypes(ctx, includes) {
                         name: "id",
                         type: ctx.moduleDef.DSIdentifier,
                     }, {
-                        name: "type",
-                        type: "int",
+                        name: "collection",
+                        type: CsharpDatasetLibraryTypes_1.CollectionInterface,
                     }],
-                superClassInitializers: ["id", "type"],
+                superClassInitializers: ["id", "collection"],
                 body: [],
             });
             ret.push(classSpec);
@@ -163,7 +176,7 @@ function genDataStore(fileWriter, outdir, ctx) {
         ...(0, GenWriteReconcilerDataStore_1.genOutboundReconciledTypes)(ctx, includes),
         ...(0, GenReadReconcilerDataStore_1.genInboundReconciledTypes)(ctx, includes),
     ];
-    const reconcilers = (0, GenReadReconcilerDataStore_1.genInboundTypeReconcilers)(ctx, includes);
+    const collections = (0, GenReadReconcilerDataStore_1.genObjectCollectionClasses)(ctx, includes);
     const lines = [
         `namespace ${ctx.namespace} {`,
         ``,
@@ -172,8 +185,8 @@ function genDataStore(fileWriter, outdir, ctx) {
         `// Reconciled Types`,
         ...(0, Helpers_1.mapAndCollapse)(reconciledTypes, CsharpCodeGenImpl_1.genClassDefinition),
         ``,
-        `// Reconciler Classes`,
-        ...(0, Helpers_1.mapAndCollapse)(reconcilers, CsharpCodeGenImpl_1.genClassDefinition),
+        `// Object Collections`,
+        ...(0, Helpers_1.mapAndCollapse)(collections, CsharpCodeGenImpl_1.genClassDefinition),
         ``,
         `// Data Store Implementation`,
         ...genDataStoreClass(ctx, includes),

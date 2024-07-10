@@ -19,11 +19,15 @@ import { ClassSpec, ClassVisibility } from "../../shared/ClassSpec";
 import { DataStoreDefinition, InputReconcilerDefinition, OutputReconcilerDefinition } from "../../shared/DataStore";
 import { ModuleDefinition } from "../../shared/ModuleDefinition";
 import { TargetCodeGenImpl } from "../../shared/TargetCodeGen";
+import { CollectionTypeDefinition, StructSpec } from "../../shared/TypeDefinition";
 export interface GenDataStoreContext {
     moduleDef: ModuleDefinition;
     storeDef: DataStoreDefinition;
     namespace: string;
 }
+export declare function fieldGetterFuncName(codegen: TargetCodeGenImpl, typeFields: StructSpec, fieldName: string): string;
+export declare function getInboundCollectionClassName(ctx: GenDataStoreContext, typeDef: CollectionTypeDefinition): string;
+export declare function getOutboundCollectionClassName(ctx: GenDataStoreContext, typeDef: CollectionTypeDefinition): string;
 export declare function genFieldProperties(classSpec: ClassSpec, params: {
     codegen: TargetCodeGenImpl;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
@@ -31,6 +35,7 @@ export declare function genFieldProperties(classSpec: ClassSpec, params: {
     directionality: "inbound" | "outbound";
     canCreate?: boolean;
     canChange?: boolean;
+    canSetDirty?: boolean;
     visibility?: ClassVisibility;
 }): void;
 

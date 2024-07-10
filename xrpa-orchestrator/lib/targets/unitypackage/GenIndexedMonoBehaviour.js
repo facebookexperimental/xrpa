@@ -30,10 +30,10 @@ const GenDataStore_1 = require("../csharp/GenDataStore");
 const GenWriteReconcilerDataStore_1 = require("../csharp/GenWriteReconcilerDataStore");
 const GenDataStoreSubsystem_1 = require("./GenDataStoreSubsystem");
 const MonoBehaviourShared_1 = require("./MonoBehaviourShared");
+const GenReadReconcilerDataStore_1 = require("../csharp/GenReadReconcilerDataStore");
 const PROXY_OBJ = "_reconciledObj";
 function genComponentInit(ctx, includes, reconcilerDef) {
-    (0, assert_1.default)(reconcilerDef.indexedReconciled);
-    const indexMemberName = (0, MonoBehaviourShared_1.getFieldMemberName)(reconcilerDef, reconcilerDef.indexedReconciled.fieldName);
+    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.Instance.DataStore.${reconcilerDef.getDataStoreAccessorName()}`, "this", MonoBehaviourShared_1.getFieldMemberName);
     return [
         `if (_dsIsInitialized) {`,
         `  return;`,
@@ -41,42 +41,37 @@ function genComponentInit(ctx, includes, reconcilerDef) {
         `_dsIsInitialized = true;`,
         `_changeBits = ${reconcilerDef.getOutboundChangeBits()};`,
         ``,
-        ...(0, MonoBehaviourShared_1.genFieldInitializers)(ctx, includes, reconcilerDef, reconcilerDef.indexedReconciled.fieldName),
+        ...(0, MonoBehaviourShared_1.genFieldInitializers)(ctx, includes, reconcilerDef),
         ``,
         ...(0, MonoBehaviourShared_1.genTransformInitializers)(ctx, includes, reconcilerDef),
         ``,
-        `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.Instance.DataStore.${reconcilerDef.getDataStoreAccessorName()}.AddIndexReconciledObject(${indexMemberName}, this);`,
+        ...Object.values(bindingCalls).map(bindings => bindings.addBinding),
     ];
 }
 function genComponentDeinit(ctx, reconcilerDef) {
-    (0, assert_1.default)(reconcilerDef.indexedReconciled);
-    const indexMemberName = (0, MonoBehaviourShared_1.getFieldMemberName)(reconcilerDef, reconcilerDef.indexedReconciled.fieldName);
+    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.MaybeInstance?.DataStore.${reconcilerDef.getDataStoreAccessorName()}`, "this", MonoBehaviourShared_1.getFieldMemberName);
     return [
         `if (!_dsIsInitialized) {`,
         `  return;`,
         `}`,
-        `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.MaybeInstance?.DataStore.${reconcilerDef.getDataStoreAccessorName()}.RemoveIndexReconciledObject(${indexMemberName});`,
+        ...Object.values(bindingCalls).map(bindings => bindings.removeBinding),
         `_dsIsInitialized = false;`,
     ];
 }
 function getFieldSetterHooks(ctx, reconcilerDef) {
-    (0, assert_1.default)(reconcilerDef.indexedReconciled);
-    const fieldName = reconcilerDef.indexedReconciled.fieldName;
-    const indexMemberName = `_${(0, MonoBehaviourShared_1.getFieldMemberName)(reconcilerDef, fieldName)}`;
-    return {
-        [fieldName]: {
-            preSet: [
-                `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.Instance.DataStore.${reconcilerDef.getDataStoreAccessorName()}.RemoveIndexReconciledObject(${indexMemberName});`
-            ],
-            postSet: [
-                `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.Instance.DataStore.${reconcilerDef.getDataStoreAccessorName()}.AddIndexReconciledObject(${indexMemberName}, this);`,
-            ],
-        }
-    };
+    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.Instance.DataStore.${reconcilerDef.getDataStoreAccessorName()}`, "this", (reconcilerDef, fieldName) => {
+        return (0, CsharpCodeGenImpl_1.privateMember)((0, MonoBehaviourShared_1.getFieldMemberName)(reconcilerDef, fieldName));
+    });
+    const ret = {};
+    for (const fieldName in bindingCalls) {
+        ret[fieldName] = {
+            preSet: [bindingCalls[fieldName].removeBinding],
+            postSet: [bindingCalls[fieldName].addBinding],
+        };
+    }
+    return ret;
 }
 function genIndexedMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
-    (0, assert_1.default)(reconcilerDef.indexedReconciled);
-    const indexedFieldName = reconcilerDef.indexedReconciled.fieldName;
     const baseComponentType = (0, Helpers_1.filterToString)(reconcilerDef.componentProps.basetype) ?? "MonoBehaviour";
     (0, assert_1.default)(!reconcilerDef.type.interfaceType); // not yet supported
     let hasTransformMapping = false;
@@ -92,14 +87,14 @@ function genIndexedMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
     const classSpec = new ClassSpec_1.ClassSpec({
         name: (0, MonoBehaviourShared_1.getComponentClassName)(reconcilerDef.type, reconcilerDef.componentProps.idName),
         superClass: baseComponentType,
-        interfaceName: `${CsharpDatasetLibraryTypes_1.IIndexReconciledType.getLocalType(ctx.namespace, rootIncludes)}<${readAccessor}, ${reconciledType}>`,
+        interfaceName: `${CsharpDatasetLibraryTypes_1.IIndexBoundType.getLocalType(ctx.namespace, rootIncludes)}<${readAccessor}, ${reconciledType}>`,
         namespace: ctx.namespace,
         includes: rootIncludes,
         decorations: reconcilerDef.componentProps.internalOnly ? [
             `[AddComponentMenu("")]`,
         ] : undefined,
     });
-    (0, MonoBehaviourShared_1.genFieldProperties)(classSpec, { ctx, reconcilerDef, setterHooks: getFieldSetterHooks(ctx, reconcilerDef), indexedFieldName, proxyObj: PROXY_OBJ });
+    (0, MonoBehaviourShared_1.genFieldProperties)(classSpec, { ctx, reconcilerDef, setterHooks: getFieldSetterHooks(ctx, reconcilerDef), proxyObj: PROXY_OBJ });
     classSpec.methods.push({
         name: "Start",
         body: [
@@ -116,19 +111,34 @@ function genIndexedMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
     });
     const outboundChangeBits = reconcilerDef.getOutboundChangeBits();
     classSpec.methods.push({
-        name: "SetDSReconciledObj",
+        name: "AddXrpaBinding",
+        parameters: [{
+                name: "reconciledObj",
+                type: reconciledType,
+            }],
+        returnType: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.bool.typename,
+        body: [
+            `if (${PROXY_OBJ} != null) {`,
+            `  return false;`,
+            `}`,
+            `${PROXY_OBJ} = reconciledObj;`,
+            ...(outboundChangeBits !== 0 ? [
+                `_changeBits = ${outboundChangeBits};`,
+                `${PROXY_OBJ}.SetDirty(_changeBits);`,
+            ] : []),
+            `return true;`,
+        ],
+    });
+    classSpec.methods.push({
+        name: "RemoveXrpaBinding",
         parameters: [{
                 name: "reconciledObj",
                 type: reconciledType,
             }],
         body: [
-            `${PROXY_OBJ} = reconciledObj;`,
-            ...(outboundChangeBits !== 0 ? [
-                `if (${PROXY_OBJ} != null) {`,
-                `  _changeBits = ${outboundChangeBits};`,
-                `  ${PROXY_OBJ}.SetDirty();`,
-                `}`,
-            ] : []),
+            `if (${PROXY_OBJ} == reconciledObj) {`,
+            `  ${PROXY_OBJ} = null;`,
+            `}`,
         ],
     });
     if (hasTransformMapping) {
@@ -155,7 +165,7 @@ function genIndexedMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
                 name: "fieldsChanged",
                 type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
             }],
-        body: includes => (0, MonoBehaviourShared_1.genProcessUpdateBody)({ ctx, includes, reconcilerDef, indexedFieldName, proxyObj: PROXY_OBJ }),
+        body: includes => (0, MonoBehaviourShared_1.genProcessUpdateBody)({ ctx, includes, reconcilerDef, proxyObj: PROXY_OBJ }),
     });
     (0, MonoBehaviourShared_1.genUnityMessageFieldAccessors)(classSpec, {
         ctx,

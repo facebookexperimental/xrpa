@@ -16,6 +16,29 @@
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -25,8 +48,10 @@ const path_1 = __importDefault(require("path"));
 const Helpers_1 = require("../../shared/Helpers");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const CppCodeGenImpl_1 = require("../cpp/CppCodeGenImpl");
+const CppCodeGenImpl = __importStar(require("../cpp/CppCodeGenImpl"));
 const GenMessageAccessors_1 = require("../cpp/GenMessageAccessors");
 const GenWriteReconcilerDataStore_1 = require("../cpp/GenWriteReconcilerDataStore");
+const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
 const GenBlueprintTypes_1 = require("./GenBlueprintTypes");
 var IntrinsicProperty;
 (function (IntrinsicProperty) {
@@ -108,7 +133,7 @@ function genWriteFieldProperty(classSpec, params) {
     const isClearSet = params.reconcilerDef.isClearSetField(params.fieldName);
     const hasSetter = !isBoundToIntrinsic && !isClearSet;
     const isEphemeral = params.reconcilerDef.isEphemeralField(params.fieldName);
-    const isSerialized = params.reconcilerDef.isSerializedField(params.fieldName, params.indexedFieldName);
+    const isSerialized = params.reconcilerDef.isSerializedField(params.fieldName);
     const overrideParams = (0, Helpers_1.filterToStringArray)(params.reconcilerDef.fieldAccessorNameOverrides[params.fieldName], 2);
     const setterName = overrideParams?.[0] ?? `Set${pascalFieldName}`;
     const clearName = overrideParams?.[1] ?? `Clear${pascalFieldName}`;
@@ -157,6 +182,16 @@ function genWriteFieldProperty(classSpec, params) {
             separateImplementation: params.separateImplementation,
         });
     }
+    if (params.reconcilerDef.isIndexedField(params.fieldName)) {
+        classSpec.methods.push({
+            name: (0, GenDataStoreShared_1.fieldGetterFuncName)(CppCodeGenImpl, params.reconcilerDef.type.getStateFields(), params.fieldName),
+            returnType: fieldType.declareLocalReturnType(classSpec.namespace, classSpec.includes, true),
+            body: [
+                `return ${params.memberName};`,
+            ],
+            visibility: "public",
+        });
+    }
 }
 function genReadFieldProperty(classSpec, params) {
     const fieldSpec = params.reconcilerDef.getFieldSpec(params.fieldName);
@@ -175,8 +210,7 @@ function genFieldProperties(classSpec, params) {
     for (const fieldName in fields) {
         const memberName = getFieldMemberName(params.reconcilerDef, fieldName);
         const isOutboundField = params.reconcilerDef.isOutboundField(fieldName);
-        const isIndexedField = fieldName === params.indexedFieldName;
-        if (isIndexedField || isOutboundField) {
+        if (params.reconcilerDef.isIndexBoundField(fieldName) || isOutboundField) {
             genWriteFieldProperty(classSpec, { ...params, categoryName, fieldName, memberName, needsSetDirty: isOutboundField });
         }
         else {
@@ -268,17 +302,16 @@ function genFieldDefaultInitializers(ctx, includes, reconcilerDef) {
     return lines;
 }
 exports.genFieldDefaultInitializers = genFieldDefaultInitializers;
-function genFieldInitializers(ctx, includes, reconcilerDef, indexedFieldName) {
+function genFieldInitializers(ctx, includes, reconcilerDef) {
     const lines = [];
     const fields = reconcilerDef.type.getStateFields();
     for (const fieldName in fields) {
         if (reconcilerDef.isFieldBoundToIntrinsic(fieldName)) {
             continue;
         }
-        const isIndexedField = fieldName === indexedFieldName;
         // these types need to be initialized on BeginPlay
         const isClearSetType = reconcilerDef.isClearSetField(fieldName);
-        const isInboundField = !isIndexedField && reconcilerDef.isInboundField(fieldName);
+        const isInboundField = !reconcilerDef.isIndexBoundField(fieldName) && reconcilerDef.isInboundField(fieldName);
         const isEphemeral = reconcilerDef.isEphemeralField(fieldName);
         if (isClearSetType || isInboundField || isEphemeral) {
             const memberName = getFieldMemberName(reconcilerDef, fieldName);
@@ -417,7 +450,7 @@ function genProcessUpdateBody(params) {
     const accessor = params.proxyObj ? `${params.proxyObj}->` : "value.";
     const fields = params.reconcilerDef.type.getStateFields();
     for (const fieldName in fields) {
-        if (!params.reconcilerDef.isInboundField(fieldName) || fieldName === params.indexedFieldName) {
+        if (!params.reconcilerDef.isInboundField(fieldName) || params.reconcilerDef.isIndexBoundField(fieldName)) {
             continue;
         }
         const memberName = getFieldMemberName(params.reconcilerDef, fieldName);

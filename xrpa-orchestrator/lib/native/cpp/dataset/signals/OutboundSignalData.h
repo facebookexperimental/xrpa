@@ -17,7 +17,7 @@
 #pragma once
 
 #include <dataset/core/DatasetTypes.h>
-#include <dataset/reconciler/SignalShared.h>
+#include <dataset/signals/SignalShared.h>
 #include <chrono>
 #include <functional>
 
@@ -25,7 +25,7 @@ namespace Xrpa {
 
 template <typename T>
 using SignalProducerCallback =
-    std::function<void(SignalChannelData<T> dataOut, int32_t sampleRate, uint64_t startSamplePos)>;
+    std::function<void(SignalChannelData<T> dataOut, int32_t framesPerSecond, uint64_t startFrame)>;
 
 class OutboundSignalData {
  public:
@@ -33,44 +33,44 @@ class OutboundSignalData {
   void setSignalSource(
       SignalProducerCallback<T> source,
       int32_t numChannels,
-      int32_t sampleRate,
-      int32_t samplesPerCallback) {
+      int32_t framesPerSecond,
+      int32_t framesPerCallback) {
     // wrapper lambda for the type cast, =(
     signalSource_ = [source, this](SignalPacket& packet) {
-      source(packet.accessChannelData<T>(), sampleRate_, curReadPos_);
+      source(packet.accessChannelData<T>(), framesPerSecond_, curReadPos_);
     };
 
     sampleType_ = inferSampleType<T>();
     sampleSize_ = sizeof(T);
     numChannels_ = numChannels;
-    sampleRate_ = sampleRate;
-    samplesPerCallback_ = samplesPerCallback;
+    framesPerSecond_ = framesPerSecond;
+    framesPerCallback_ = framesPerCallback;
 
     prevFrameStartTime_ = std::chrono::high_resolution_clock::now();
   }
 
   // caller is responsible for filling in the channel data
-  template <typename ReconcilerType, typename SampleType>
+  template <typename MessageSender, typename SampleType>
   SignalChannelData<SampleType> sendSignalData(
       const DSIdentifier& id,
       int32_t messageType,
-      ReconcilerType* reconciler,
-      int32_t sampleCount) {
-    auto packet = sendSignalPacket(id, messageType, reconciler, sampleCount);
+      MessageSender* messageSender,
+      int32_t frameCount) {
+    auto packet = sendSignalPacket(id, messageType, messageSender, frameCount);
     return packet.template accessChannelData<SampleType>();
   }
 
-  template <typename ReconcilerType>
-  void tick(const DSIdentifier& id, int32_t messageType, ReconcilerType* reconciler) {
+  template <typename MessageSender>
+  void tick(const DSIdentifier& id, int32_t messageType, MessageSender* messageSender) {
     auto endTime = std::chrono::high_resolution_clock::now();
-    for (auto sampleCount = getNextSampleCount(endTime); sampleCount > 0;
-         sampleCount = getNextSampleCount(endTime)) {
+    for (auto frameCount = getNextFrameCount(endTime); frameCount > 0;
+         frameCount = getNextFrameCount(endTime)) {
       if (signalSource_) {
-        auto packet = sendSignalPacket(id, messageType, reconciler, sampleCount);
+        auto packet = sendSignalPacket(id, messageType, messageSender, frameCount);
         signalSource_(packet);
       }
 
-      curReadPos_ += sampleCount;
+      curReadPos_ += frameCount;
     }
   }
 
@@ -79,15 +79,15 @@ class OutboundSignalData {
   int32_t sampleType_ = 0;
   int32_t sampleSize_ = 4;
   int32_t numChannels_ = 1;
-  int32_t sampleRate_ = 10;
-  int32_t samplesPerCallback_ = 1024;
+  int32_t framesPerSecond_ = 10;
+  int32_t framesPerCallback_ = 1024;
 
   // internal state management
   uint64_t curReadPos_ = 0;
   std::chrono::high_resolution_clock::time_point prevFrameStartTime_;
 
-  int getNextSampleCount(std::chrono::high_resolution_clock::time_point endTime) {
-    if (!sampleRate_) {
+  int getNextFrameCount(std::chrono::high_resolution_clock::time_point endTime) {
+    if (!framesPerSecond_) {
       return 0;
     }
 
@@ -95,27 +95,27 @@ class OutboundSignalData {
         std::chrono::duration_cast<std::chrono::microseconds>(endTime - prevFrameStartTime_);
 
     // generate signal in fixed-size packets of data
-    auto sampleCount = deltaTime.count() < 0 ? 0 : samplesPerCallback_;
+    auto frameCount = deltaTime.count() < 0 ? 0 : framesPerCallback_;
 
     // do NOT set to now(), as that will lead to accumulation of error
-    prevFrameStartTime_ += std::chrono::microseconds(sampleCount * 1000000 / sampleRate_);
+    prevFrameStartTime_ += std::chrono::microseconds(frameCount * 1000000 / framesPerSecond_);
 
-    return sampleCount;
+    return frameCount;
   }
 
   // caller is responsible for filling in the channel data
-  template <typename ReconcilerType>
+  template <typename MessageSender>
   SignalPacket sendSignalPacket(
       const DSIdentifier& id,
       int32_t messageType,
-      ReconcilerType* reconciler,
-      int32_t sampleCount) {
-    auto packet = SignalPacket(reconciler->sendMessage(
-        id, messageType, SignalPacket::calcPacketSize(numChannels_, sampleSize_, sampleCount)));
-    packet.setSampleCount(sampleCount);
+      MessageSender* messageSender,
+      int32_t frameCount) {
+    auto packet = SignalPacket(messageSender->sendMessage(
+        id, messageType, SignalPacket::calcPacketSize(numChannels_, sampleSize_, frameCount)));
+    packet.setFrameCount(frameCount);
     packet.setSampleType(sampleType_);
     packet.setNumChannels(numChannels_);
-    packet.setSampleRate(sampleRate_);
+    packet.setFrameRate(framesPerSecond_);
     return packet;
   }
 };

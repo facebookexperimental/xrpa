@@ -31,9 +31,9 @@ export interface ComponentProperties {
     ephemeralProperties?: Array<string>;
     fieldToPropertyBindings?: Record<string, PropertyBinding>;
 }
-export interface IndexedReconciledParams {
-    fieldName: string;
-    indexedTypeName: string;
+export interface IndexConfiguration {
+    indexFieldName: string;
+    boundClassName?: string;
 }
 declare class BaseReconcilerDefinition {
     readonly type: CollectionTypeDefinition;
@@ -41,7 +41,8 @@ declare class BaseReconcilerDefinition {
     readonly outboundFields: Array<string> | null;
     readonly fieldAccessorNameOverrides: FieldAccessorNames;
     readonly componentProps: ComponentProperties;
-    constructor(type: CollectionTypeDefinition, inboundFields: Array<string> | null, outboundFields: Array<string> | null, fieldAccessorNameOverrides: FieldAccessorNames, componentProps: ComponentProperties);
+    readonly indexConfigs: Array<IndexConfiguration>;
+    constructor(type: CollectionTypeDefinition, inboundFields: Array<string> | null, outboundFields: Array<string> | null, fieldAccessorNameOverrides: FieldAccessorNames, componentProps: ComponentProperties, indexConfigs: Array<IndexConfiguration>);
     isInboundField(fieldName: string): boolean;
     isOutboundField(fieldName: string): boolean;
     getFieldSpec(fieldName: string): FieldTypeSpec;
@@ -49,21 +50,24 @@ declare class BaseReconcilerDefinition {
     isFieldBoundToIntrinsic(fieldName: string): boolean;
     isEphemeralField(fieldName: string): boolean;
     isClearSetField(fieldName: string): boolean;
-    isSerializedField(fieldName: string, indexedFieldName: string | null): boolean;
+    isIndexedField(fieldName: string): boolean;
+    isIndexBoundField(fieldName: string): boolean;
+    isSerializedField(fieldName: string): boolean;
     getInboundChangeBits(): number;
     getOutboundChangeBits(): number;
+    getIndexedBitMask(): number;
+    hasIndexedBinding(): boolean;
 }
 export declare class InputReconcilerDefinition extends BaseReconcilerDefinition {
     private useGenericReconciledType;
-    readonly indexedReconciled?: IndexedReconciledParams | undefined;
     readonly inboundFields: null;
-    constructor(type: CollectionTypeDefinition, outboundFields: Array<string>, fieldAccessorNameOverrides: FieldAccessorNames, componentProps: ComponentProperties, useGenericReconciledType?: boolean, indexedReconciled?: IndexedReconciledParams | undefined);
+    constructor(type: CollectionTypeDefinition, outboundFields: Array<string>, fieldAccessorNameOverrides: FieldAccessorNames, componentProps: ComponentProperties, useGenericReconciledType: boolean, indexConfigs: Array<IndexConfiguration>);
     shouldGenerateConcreteReconciledType(): boolean;
     getDataStoreAccessorName(): string;
 }
 export declare class OutputReconcilerDefinition extends BaseReconcilerDefinition {
     readonly outboundFields: null;
-    constructor(type: CollectionTypeDefinition, inboundFields: Array<string>, fieldAccessorNameOverrides: FieldAccessorNames, componentProps: ComponentProperties);
+    constructor(type: CollectionTypeDefinition, inboundFields: Array<string>, fieldAccessorNameOverrides: FieldAccessorNames, componentProps: ComponentProperties, indexConfigs: Array<IndexConfiguration>);
     getDataStoreAccessorName(): string;
 }
 export declare class DataStoreDefinition {
@@ -80,7 +84,7 @@ export declare class DataStoreDefinition {
         type: CollectionTypeDefinition | string;
         outboundFields?: Array<string>;
         reconciledTo?: TypeSpec;
-        indexedReconciled?: IndexedReconciledParams;
+        indexes?: Array<IndexConfiguration>;
         fieldAccessorNameOverrides?: FieldAccessorNames;
         componentProps?: ComponentProperties;
         useGenericReconciledType?: boolean;
@@ -89,10 +93,12 @@ export declare class DataStoreDefinition {
     addOutputReconciler(params: {
         type: CollectionTypeDefinition | string;
         inboundFields?: Array<string>;
+        indexes?: Array<IndexConfiguration>;
         fieldAccessorNameOverrides?: FieldAccessorNames;
         componentProps?: ComponentProperties;
     }): OutputReconcilerDefinition;
     getOutputReconcilers(): ReadonlyArray<OutputReconcilerDefinition>;
+    getAllReconcilers(): ReadonlyArray<InputReconcilerDefinition | OutputReconcilerDefinition>;
     addSyntheticObject(name: string, objectDef: XrpaSyntheticObject): void;
     getSyntheticObjects(): Record<string, XrpaSyntheticObject>;
 }

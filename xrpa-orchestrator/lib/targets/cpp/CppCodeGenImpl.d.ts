@@ -52,6 +52,7 @@ export declare function nsExtract(qualifiedName: string, nonNamespacePartCount?:
 export declare function forwardDeclareClass(qualifiedName: string): string;
 export declare function constRef(type: string, byteSize: number): string;
 export declare function privateMember(memberVarName: string): string;
+export declare function methodMember(methodName: string): string;
 export declare function genPrimitiveValue(typename: string, value: string | boolean | number | null): string;
 export declare function genMultiValue(typename: string, _hasInitializerConstructor: boolean, valueStrings: [string, string][]): string;
 export declare function genDeclaration(params: {

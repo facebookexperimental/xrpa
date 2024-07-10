@@ -18,67 +18,78 @@ using System.Collections.Generic;
 
 namespace Xrpa {
 
-  public interface IReconciledType {
-    DSIdentifier GetDSID();
+  public interface IDataStoreObject {
+    DSIdentifier GetXrpaId();
+    int GetCollectionId();
+    void SetXrpaCollection(CollectionInterface collection);
+  }
+
+  public interface IDataStoreObjectAccessor<ObjectAccessorType> : IDataStoreObject where ObjectAccessorType : ObjectAccessorInterface, new() {
     void WriteDSChanges(DatasetAccessor accessor);
     void ProcessDSMessage(int messageType, int timestamp, MemoryAccessor msgAccessor);
-  }
-
-  public interface IInboundReconciledType<ObjectAccessorType> : IReconciledType where ObjectAccessorType : ObjectAccessorInterface, new() {
     void ProcessDSUpdate(ObjectAccessorType remoteValue, ulong fieldsChanged);
-    void ProcessDSDelete();
+    void ProcessDSDelete() {}
+    void TickXrpa() {}
   }
 
-  public interface IOutboundReconciledType<ObjectAccessorType> : IReconciledType where ObjectAccessorType : ObjectAccessorInterface, new() {
-    void SetDSReconciler(OutboundTypeReconcilerInterface reconciler);
-    void ProcessDSUpdate(ObjectAccessorType remoteValue, ulong fieldsChanged);
-  }
-
-  public abstract class DataStoreObject : IReconciledType {
+  public abstract class DataStoreObject : IDataStoreObject {
+    protected CollectionInterface _collection;
     private DSIdentifier _id;
-    private int _type;
 
-    public DataStoreObject(DSIdentifier id, int type) {
+    public DataStoreObject(DSIdentifier id, CollectionInterface collection) {
+      _collection = collection;
       _id = id;
-      _type = type;
     }
 
-    public DSIdentifier GetDSID() {
+    public DSIdentifier GetXrpaId() {
       return _id;
     }
 
-    public int GetDSType() {
-      return _type;
+    public int GetCollectionId() {
+      if (_collection != null) {
+        return _collection.GetId();
+      }
+      return -1;
     }
 
-    public abstract void WriteDSChanges(DatasetAccessor accessor);
-    public abstract void ProcessDSMessage(int messageType, int timestamp, MemoryAccessor msgAccessor);
+    public void SetXrpaCollection(CollectionInterface collection) {
+      _collection = collection;
+    }
   }
 
-  public abstract class InboundTypeReconcilerInterface {
-    protected DatasetReconciler _reconciler;
+  public abstract class CollectionInterface {
+    protected readonly DatasetReconciler _reconciler;
+    private readonly int _collectionId;
 
-    public InboundTypeReconcilerInterface(DatasetReconciler reconciler) {
+    public CollectionInterface(DatasetReconciler reconciler, int collectionId) {
       _reconciler = reconciler;
+      _collectionId = collectionId;
     }
 
-    public abstract MemoryAccessor SendMessage(DSIdentifier id, int messageType, int numBytes);
-
-    public void SetDirty(DSIdentifier id) {
-      _reconciler.SetDirty(id, GetDSType());
+    public MemoryAccessor SendMessage(DSIdentifier id, int messageType, int numBytes) {
+      return _reconciler.SendMessage(id, messageType, numBytes);
     }
 
-    public abstract int GetDSType();
+    public virtual void SetDirty(DSIdentifier id, ulong fieldsChanged) {
+      _reconciler.SetDirty(id, GetId());
+    }
+
+    public int GetId() {
+      return _collectionId;
+    }
+
+    public abstract bool IsLocalOwned();
+
+    public abstract void Tick();
 
     public abstract void WriteChanges(DatasetAccessor accessor, DSIdentifier id);
 
-    public abstract void ProcessCreate(DSIdentifier id, MemoryAccessor memAccessor, int reconcileID);
+    public abstract void ProcessCreate(DSIdentifier id, MemoryAccessor memAccessor);
 
     public abstract bool ProcessUpdate(
         DSIdentifier id,
         MemoryAccessor memAccessor,
-        ulong fieldsChanged,
-        int reconcileID);
+        ulong fieldsChanged);
 
     public abstract void ProcessDelete(DSIdentifier id);
 
@@ -88,35 +99,9 @@ namespace Xrpa {
         int timestamp,
         MemoryAccessor msgAccessor);
 
-    public abstract void ProcessFullReconcile(DSIdentifier id, MemoryAccessor memAccessor, int reconcileID);
+    public abstract void ProcessUpsert(DSIdentifier id, MemoryAccessor memAccessor);
 
-    public abstract void EndFullReconcile(int reconcileID);
-  }
-
-  public abstract class OutboundTypeReconcilerInterface {
-    protected readonly DatasetReconciler _reconciler;
-
-    public OutboundTypeReconcilerInterface(DatasetReconciler reconciler) {
-      _reconciler = reconciler;
-    }
-
-    public abstract MemoryAccessor SendMessage(DSIdentifier id, int messageType, int numBytes);
-
-    public void SetDirty(DSIdentifier id) {
-      _reconciler.SetDirty(id, GetDSType());
-    }
-
-    public abstract int GetDSType();
-
-    public abstract void WriteChanges(DatasetAccessor accessor, DSIdentifier id);
-
-    public abstract bool ProcessUpdate(DSIdentifier id, MemoryAccessor memAccessor, ulong fieldsChanged);
-
-    public abstract void ProcessMessage(
-        DSIdentifier id,
-        int messageType,
-        int timestamp,
-        MemoryAccessor msgAccessor);
+    public abstract void ProcessFullReconcile(HashSet<DSIdentifier> reconciledIds);
   }
 
 }

@@ -37,6 +37,7 @@ SharedDataset::SharedDataset(const std::string& name, const DatasetConfig& confi
 bool SharedDataset::initialize() {
   DSHeader header = DatasetAccessor::genHeader(config_);
 
+  isInitialized_ = false;
   auto didCreate = memoryBlock_.openMemory(datasetName_, header.totalBytes);
 
   if (didCreate) {
@@ -54,6 +55,7 @@ bool SharedDataset::initialize() {
       return false;
     }
   }
+  isInitialized_ = true;
   return true;
 }
 
@@ -77,7 +79,7 @@ bool SharedDataset::acquire(
   if (!memoryBlock_.memBuffer) {
     initialize();
   }
-  auto accessor = std::make_unique<DatasetAccessor>(memoryBlock_.acquire(timeout));
+  auto accessor = std::make_unique<DatasetAccessor>(memoryBlock_.acquire(timeout), !isInitialized_);
   if (!accessor->isValid()) {
     return false;
   }

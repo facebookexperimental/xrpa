@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-using System.Runtime.InteropServices;
-
 namespace Xrpa {
 
   public class PlacedRingBuffer {
     public static readonly int ELEMENT_HEADER_SIZE = 4;
-    private static readonly int PROPS_SIZE = 20;
+    private static readonly int PROPS_SIZE = 24;
 
+    private MemoryAccessor _memSource;
     private MemoryAccessor _propsAccessor;
     private MemoryAccessor _poolAccessor;
 
-    public PlacedRingBuffer(System.IO.UnmanagedMemoryAccessor dataSource, long memOffset) {
-      _propsAccessor = new MemoryAccessor(dataSource, memOffset, PROPS_SIZE);
-      _poolAccessor = new MemoryAccessor(dataSource, memOffset + PROPS_SIZE, _propsAccessor.ReadInt(0));
+    public PlacedRingBuffer(MemoryAccessor memSource, long memOffset) {
+      _memSource = memSource;
+      _propsAccessor = memSource.Slice(memOffset, PROPS_SIZE);
+      _poolAccessor = memSource.Slice(memOffset + PROPS_SIZE, _propsAccessor.ReadInt(0));
     }
 
     public static int GetMemSize(int poolSize) {
@@ -70,7 +70,7 @@ namespace Xrpa {
       }
     }
 
-    public int PrewrapOffset {
+    public int LastElemOffset {
       get {
         return _propsAccessor.ReadInt(16);
       }
@@ -79,13 +79,23 @@ namespace Xrpa {
       }
     }
 
+    public int PrewrapOffset {
+      get {
+        return _propsAccessor.ReadInt(20);
+      }
+      set {
+        _propsAccessor.WriteInt(value, 20);
+      }
+    }
+
     public void Init(int poolSize) {
       PoolSize = poolSize;
       Count = 0;
       StartID = 0;
       StartOffset = 0;
+      LastElemOffset = 0;
       PrewrapOffset = poolSize;
-      _poolAccessor = new MemoryAccessor(_poolAccessor.DataSource, _poolAccessor.MemOffset, poolSize);
+      _poolAccessor = _memSource.Slice(_propsAccessor.MemOffset - _memSource.MemOffset + PROPS_SIZE, poolSize);
     }
 
     public void Reset() {
@@ -151,6 +161,7 @@ namespace Xrpa {
 
       XrpaUtils.BoundsAssert(offset, sizeNeeded, 0, PoolSize);
       SetElementSize(offset, numBytes);
+      LastElemOffset = offset;
       return GetElementAccessor(offset);
     }
 
@@ -177,6 +188,7 @@ namespace Xrpa {
 
       if (Count == 0) {
         StartOffset = 0;
+        LastElemOffset = 0;
         PrewrapOffset = PoolSize;
       }
 
@@ -194,7 +206,7 @@ namespace Xrpa {
       return numBytes;
     }
 
-    private MemoryAccessor GetElementAccessor(int offset) {
+    public MemoryAccessor GetElementAccessor(int offset) {
       int elementSize = GetElementSize(offset);
       return _poolAccessor.Slice(offset + ELEMENT_HEADER_SIZE, elementSize);
     }
@@ -210,6 +222,15 @@ namespace Xrpa {
       return offset;
     }
 
+    public int GetNextOffset(int offset) {
+      int elementSize = GetElementSize(offset);
+      offset += ELEMENT_HEADER_SIZE + elementSize;
+      if (offset >= PrewrapOffset) {
+        offset = 0;
+      }
+      return offset;
+    }
+
     // sizeNeeded includes the size of the header
     private int FindFreeOffset(int sizeNeeded) {
       if (Count == 0) {
@@ -217,7 +238,7 @@ namespace Xrpa {
         return StartOffset;
       }
 
-      int lastElemOffset = GetOffsetForIndex(Count - 1);
+      int lastElemOffset = LastElemOffset;
       int offset = lastElemOffset + ELEMENT_HEADER_SIZE + GetElementSize(lastElemOffset);
 
       if (StartOffset < offset) {
@@ -241,5 +262,43 @@ namespace Xrpa {
       }
     }
   }
+
+
+  public class PlacedRingBufferIterator {
+    public bool HasMissedEntries(PlacedRingBuffer ringBuffer) {
+      return _lastReadId < ringBuffer.StartID - 1;
+    }
+
+    public bool HasNext(PlacedRingBuffer ringBuffer) {
+      return _lastReadId < ringBuffer.GetMaxID();
+    }
+
+    public bool HasNext(int maxId) {
+      return _lastReadId < maxId;
+    }
+
+    public MemoryAccessor Next(PlacedRingBuffer ringBuffer) {
+      if (!HasNext(ringBuffer)) {
+        return new MemoryAccessor();
+      }
+      int startID = ringBuffer.StartID;
+      if (_lastReadId < startID) {
+        _lastReadId = startID;
+        _lastReadOffset = ringBuffer.StartOffset;
+      } else {
+        _lastReadId++;
+        _lastReadOffset = ringBuffer.GetNextOffset(_lastReadOffset);
+      }
+      return ringBuffer.GetElementAccessor(_lastReadOffset);
+    }
+
+    public void SetToEnd(PlacedRingBuffer ringBuffer) {
+      _lastReadId = ringBuffer.GetMaxID();
+      _lastReadOffset = ringBuffer.LastElemOffset;
+    }
+
+    private int _lastReadId = -1;
+    private int _lastReadOffset = 0;
+  };
 
 }

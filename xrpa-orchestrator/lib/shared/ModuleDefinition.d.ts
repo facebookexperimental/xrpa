@@ -20,7 +20,7 @@ import { CodeGen } from "./CodeGen";
 import { CoordinateSystemDef } from "./CoordinateTransformer";
 import { DataMapDefinition } from "./DataMap";
 import { DataModelDefinition } from "./DataModel";
-import { ComponentProperties, DataStoreDefinition, IndexedReconciledParams } from "./DataStore";
+import { ComponentProperties, DataStoreDefinition, IndexConfiguration } from "./DataStore";
 import { FileWriter } from "./FileWriter";
 import { StructType } from "./StructType";
 import { GuidGenSpec, TargetCodeGenImpl, TypeSpec } from "./TargetCodeGen";
@@ -72,7 +72,7 @@ export declare abstract class ModuleDefinition implements CodeGen {
     createCollection(name: string, apiname: string, fields: StructSpec, interfaceType: InterfaceTypeDefinition | undefined, maxCount: number, dsType: number): CollectionTypeDefinition;
     createFixedArray(name: string, apiname: string, innerType: TypeDefinition, arraySize: number): TypeDefinition;
     createFixedString(name: string, apiname: string, maxBytes: number): TypeDefinition;
-    setCollectionAsInbound(type: CollectionTypeDefinition, reconciledTo: TypeSpec | undefined, _indexedReconciled: IndexedReconciledParams | undefined): void;
+    setCollectionAsInbound(type: CollectionTypeDefinition, reconciledTo: TypeSpec | undefined, _indexes: Array<IndexConfiguration> | undefined): void;
     setCollectionAsOutbound(type: CollectionTypeDefinition, _componentProps: ComponentProperties): void;
     abstract doCodeGen(): FileWriter;
 }

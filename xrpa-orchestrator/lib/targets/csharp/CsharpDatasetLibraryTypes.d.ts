@@ -15,24 +15,21 @@
  */
 
 
-import { PrimitiveType } from "../../shared/PrimitiveType";
 import { TypeDefinition } from "../../shared/TypeDefinition";
 export declare const MemoryAccessor: TypeDefinition;
-export declare const DSHashValue: PrimitiveType;
-export declare const ObjectAccessorInterface: PrimitiveType;
+export declare const DSHashValue: TypeDefinition;
+export declare const ObjectAccessorInterface: TypeDefinition;
 export declare const DatasetAccessor: TypeDefinition;
 export declare const DatasetConfig: TypeDefinition;
 export declare const DatasetInterface: TypeDefinition;
 export declare const DatasetReconciler: TypeDefinition;
-export declare const IReconciledType: PrimitiveType;
-export declare const DataStoreObject: PrimitiveType;
-export declare const InboundTypeReconciler: TypeDefinition;
-export declare const IIndexReconciledType: TypeDefinition;
-export declare const DummyIndexReconciledType: TypeDefinition;
-export declare const InboundTypeReconcilerInterface: TypeDefinition;
-export declare const IInboundReconciledType: PrimitiveType;
-export declare const OutboundTypeReconciler: TypeDefinition;
-export declare const OutboundTypeReconcilerInterface: TypeDefinition;
-export declare const IOutboundReconciledType: PrimitiveType;
+export declare const IDataStoreObject: TypeDefinition;
+export declare const IDataStoreObjectAccessor: TypeDefinition;
+export declare const DataStoreObject: TypeDefinition;
+export declare const CollectionInterface: TypeDefinition;
+export declare const ObjectCollection: TypeDefinition;
+export declare const ObjectCollectionIndex: TypeDefinition;
+export declare const IIndexBoundType: TypeDefinition;
+export declare const ObjectCollectionIndexedBinding: TypeDefinition;
 export declare const SharedDataset: TypeDefinition;
 

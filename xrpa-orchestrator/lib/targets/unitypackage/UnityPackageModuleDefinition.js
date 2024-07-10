@@ -42,11 +42,13 @@ class UnityPackageModuleDefinition extends CsharpModuleDefinition_1.CsharpModule
         this.packagesRoot = packagesRoot;
         this.packageInfo = packageInfo;
     }
-    setCollectionAsInbound(type, reconciledTo, indexedReconciled) {
-        if (indexedReconciled) {
-            indexedReconciled.indexedTypeName = (0, MonoBehaviourShared_1.getComponentClassName)(type);
+    setCollectionAsInbound(type, reconciledTo, indexes) {
+        for (const index of (indexes ?? [])) {
+            if (index.boundClassName === "") {
+                index.boundClassName = (0, MonoBehaviourShared_1.getComponentClassName)(type);
+            }
         }
-        super.setCollectionAsInbound(type, reconciledTo, indexedReconciled);
+        super.setCollectionAsInbound(type, reconciledTo, indexes);
     }
     setCollectionAsOutbound(type, componentProps) {
         if ((0, Helpers_1.filterToString)(componentProps.basetype)) {
@@ -96,7 +98,7 @@ class UnityPackageModuleDefinition extends CsharpModuleDefinition_1.CsharpModule
                 }
             }
             for (const accessor of storeDef.getInputReconcilers()) {
-                if (accessor.indexedReconciled) {
+                if (accessor.hasIndexedBinding()) {
                     (0, GenIndexedMonoBehaviour_1.genIndexedMonoBehaviour)(ctx, fileWriter, accessor, runtimeDir);
                 }
             }

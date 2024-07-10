@@ -15,21 +15,24 @@
  */
 
 using System;
-using System.Runtime.InteropServices;
 
 namespace Xrpa {
 
   public class PlacedMemoryAllocator {
+    private static readonly int PROPS_SIZE = 8;
+
+    private MemoryAccessor _memSource;
     private MemoryAccessor _propsAccessor;
     private MemoryAccessor _poolAccessor;
 
-    public PlacedMemoryAllocator(System.IO.UnmanagedMemoryAccessor dataSource, long memOffset) {
-      _propsAccessor = new MemoryAccessor(dataSource, memOffset, 8);
-      _poolAccessor = new MemoryAccessor(dataSource, memOffset + 8, _propsAccessor.ReadInt(4));
+    public PlacedMemoryAllocator(MemoryAccessor memSource, long memOffset) {
+      _memSource = memSource;
+      _propsAccessor = memSource.Slice(memOffset, PROPS_SIZE);
+      _poolAccessor = memSource.Slice(memOffset + PROPS_SIZE, _propsAccessor.ReadInt(4));
     }
 
     public static int GetMemSize(int poolSize) {
-      return 8 + poolSize;
+      return PROPS_SIZE + poolSize;
     }
 
     public int FirstFree {
@@ -53,7 +56,7 @@ namespace Xrpa {
     public void Init(int poolSize) {
       FirstFree = 0;
       PoolSize = poolSize;
-      _poolAccessor = new MemoryAccessor(_propsAccessor.DataSource, _propsAccessor.MemOffset + 8, poolSize);
+      _poolAccessor = _memSource.Slice(_propsAccessor.MemOffset - _memSource.MemOffset + PROPS_SIZE, poolSize);
 
       WriteNodeSize(0, poolSize);
       WriteNodeNext(0, -1);

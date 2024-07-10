@@ -42,7 +42,7 @@ function genComponentInit(ctx, includes, reconcilerDef) {
         `_id = ${id};`,
         `_changeBits = ${bitMask};`,
         ``,
-        ...(0, MonoBehaviourShared_1.genFieldInitializers)(ctx, includes, reconcilerDef, null),
+        ...(0, MonoBehaviourShared_1.genFieldInitializers)(ctx, includes, reconcilerDef),
         ``,
         ...(0, MonoBehaviourShared_1.genTransformInitializers)(ctx, includes, reconcilerDef),
         ``,
@@ -59,20 +59,9 @@ function genComponentDeinit(ctx, reconcilerDef) {
         `_dsIsInitialized = false;`,
     ];
 }
-function genInterfaceComponentClass(ctx, fileWriter, type, outDir, baseComponentType) {
-    const rootIncludes = new CsharpCodeGenImpl_1.CsIncludeAggregator(["UnityEngine"]);
-    const classSpec = new ClassSpec_1.ClassSpec({
-        name: (0, MonoBehaviourShared_1.getComponentClassName)(type),
-        superClass: baseComponentType,
-        interfaceName: CsharpDatasetLibraryTypes_1.IReconciledType.getLocalType(ctx.namespace, rootIncludes),
-        namespace: ctx.namespace,
-        includes: rootIncludes,
-        decorations: [
-            `[AddComponentMenu("")]`,
-        ],
-    });
+function genDataStoreObjectAccessors(ctx, classSpec) {
     classSpec.methods.push({
-        name: "GetDSID",
+        name: "GetXrpaId",
         returnType: ctx.moduleDef.DSIdentifier.declareLocalReturnType(ctx.namespace, classSpec.includes, true),
         body: [
             `return _id;`,
@@ -83,6 +72,42 @@ function genInterfaceComponentClass(ctx, fileWriter, type, outDir, baseComponent
         type: ctx.moduleDef.DSIdentifier,
         visibility: "protected",
     });
+    classSpec.methods.push({
+        name: "SetXrpaCollection",
+        parameters: [{
+                name: "collection",
+                type: CsharpDatasetLibraryTypes_1.CollectionInterface,
+            }],
+        body: [
+            `_collection = collection;`,
+        ],
+    });
+    classSpec.methods.push({
+        name: "GetCollectionId",
+        returnType: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
+        body: [
+            `return _collection == null ? -1 : _collection.GetId();`,
+        ],
+    });
+    classSpec.members.push({
+        name: "collection",
+        type: CsharpDatasetLibraryTypes_1.CollectionInterface,
+        visibility: "protected",
+    });
+}
+function genInterfaceComponentClass(ctx, fileWriter, type, outDir, baseComponentType) {
+    const rootIncludes = new CsharpCodeGenImpl_1.CsIncludeAggregator(["UnityEngine"]);
+    const classSpec = new ClassSpec_1.ClassSpec({
+        name: (0, MonoBehaviourShared_1.getComponentClassName)(type),
+        superClass: baseComponentType,
+        interfaceName: CsharpDatasetLibraryTypes_1.IDataStoreObject.getLocalType(ctx.namespace, rootIncludes),
+        namespace: ctx.namespace,
+        includes: rootIncludes,
+        decorations: [
+            `[AddComponentMenu("")]`,
+        ],
+    });
+    genDataStoreObjectAccessors(ctx, classSpec);
     classSpec.methods.push({
         name: "WriteDSChanges",
         parameters: [{
@@ -133,14 +158,14 @@ function genMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
     const classSpec = new ClassSpec_1.ClassSpec({
         name: (0, MonoBehaviourShared_1.getComponentClassName)(reconcilerDef.type, reconcilerDef.componentProps.idName),
         superClass: parentClass,
-        interfaceName: `${CsharpDatasetLibraryTypes_1.IOutboundReconciledType.getLocalType(ctx.namespace, rootIncludes)}<${readAccessor}>`,
+        interfaceName: `${CsharpDatasetLibraryTypes_1.IDataStoreObjectAccessor.getLocalType(ctx.namespace, rootIncludes)}<${readAccessor}>`,
         namespace: ctx.namespace,
         includes: rootIncludes,
         decorations: reconcilerDef.componentProps.internalOnly ? [
             `[AddComponentMenu("")]`,
         ] : undefined,
     });
-    (0, MonoBehaviourShared_1.genFieldProperties)(classSpec, { ctx, reconcilerDef, setterHooks: {}, indexedFieldName: null, proxyObj: null });
+    (0, MonoBehaviourShared_1.genFieldProperties)(classSpec, { ctx, reconcilerDef, setterHooks: {}, proxyObj: null });
     classSpec.methods.push({
         name: "Start",
         body: [
@@ -156,29 +181,8 @@ function genMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
         visibility: "private",
     });
     if (!reconcilerDef.type.interfaceType) {
-        classSpec.methods.push({
-            name: "GetDSID",
-            returnType: ctx.moduleDef.DSIdentifier.declareLocalReturnType(ctx.namespace, classSpec.includes, true),
-            body: [
-                `return _id;`,
-            ]
-        });
-        classSpec.members.push({
-            name: "id",
-            type: ctx.moduleDef.DSIdentifier,
-            visibility: "private",
-        });
+        genDataStoreObjectAccessors(ctx, classSpec);
     }
-    classSpec.methods.push({
-        name: "SetDSReconciler",
-        parameters: [{
-                name: "reconciler",
-                type: CsharpDatasetLibraryTypes_1.OutboundTypeReconcilerInterface,
-            }],
-        body: [
-            `_reconciler = reconciler;`,
-        ],
-    });
     if (hasTransformMapping) {
         classSpec.methods.push({
             name: "Update",
@@ -211,7 +215,7 @@ function genMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
                 name: "fieldsChanged",
                 type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
             }],
-        body: includes => (0, MonoBehaviourShared_1.genProcessUpdateBody)({ ctx, includes, reconcilerDef, indexedFieldName: null, proxyObj: null }),
+        body: includes => (0, MonoBehaviourShared_1.genProcessUpdateBody)({ ctx, includes, reconcilerDef, proxyObj: null }),
     });
     (0, MonoBehaviourShared_1.genUnityMessageFieldAccessors)(classSpec, {
         ctx,
@@ -231,11 +235,6 @@ function genMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
     classSpec.methods.push({
         name: "DeinitializeDS",
         body: genComponentDeinit(ctx, reconcilerDef),
-        visibility: "private",
-    });
-    classSpec.members.push({
-        name: "reconciler",
-        type: CsharpDatasetLibraryTypes_1.OutboundTypeReconcilerInterface,
         visibility: "private",
     });
     classSpec.members.push({

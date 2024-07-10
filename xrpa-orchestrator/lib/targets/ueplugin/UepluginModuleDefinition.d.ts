@@ -16,7 +16,7 @@
 
 
 import { DataMapDefinition } from "../../shared/DataMap";
-import { ComponentProperties, IndexedReconciledParams } from "../../shared/DataStore";
+import { ComponentProperties, IndexConfiguration } from "../../shared/DataStore";
 import { FileWriter } from "../../shared/FileWriter";
 import { TypeSpec } from "../../shared/TargetCodeGen";
 import { CollectionTypeDefinition, StructSpec, StructTypeDefinition, TypeDefinition } from "../../shared/TypeDefinition";
@@ -27,7 +27,7 @@ export declare class UepluginModuleDefinition extends CppModuleDefinition {
     constructor(name: string, datamap: DataMapDefinition, pluginsRoot: string, pluginDeps: [string, string][]);
     createEnum(name: string, apiname: string, enumValues: Record<string, number>, localTypeOverride: TypeSpec | undefined): TypeDefinition;
     createStruct(name: string, apiname: string, fields: StructSpec, localTypeOverride: TypeSpec | undefined): StructTypeDefinition;
-    setCollectionAsInbound(type: CollectionTypeDefinition, reconciledTo: TypeSpec | undefined, indexedReconciled: IndexedReconciledParams | undefined): void;
+    setCollectionAsInbound(type: CollectionTypeDefinition, reconciledTo: TypeSpec | undefined, indexes: Array<IndexConfiguration> | undefined): void;
     setCollectionAsOutbound(type: CollectionTypeDefinition, componentProps: ComponentProperties): void;
     doCodeGen(): FileWriter;
 }

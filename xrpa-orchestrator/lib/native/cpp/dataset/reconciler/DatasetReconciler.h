@@ -18,21 +18,20 @@
 
 #include <assert.h>
 #include <dataset/core/DatasetInterface.h>
+#include <dataset/utils/PlacedRingBuffer.h>
 #include <chrono>
 #include <memory>
 #include <vector>
 
 namespace Xrpa {
 
-class InboundTypeReconcilerInterface;
-class OutboundTypeReconcilerInterface;
+class CollectionInterface;
 
 class DatasetReconciler {
  public:
   DatasetReconciler(
       std::weak_ptr<DatasetInterface> dataset,
       const DSHashValue& schemaHash,
-      int typeCount,
       int messageDataPoolSize);
 
   virtual ~DatasetReconciler() {
@@ -63,30 +62,19 @@ class DatasetReconciler {
     return MessageAccessorType(sendMessage(id, messageType, MessageAccessorType::DS_SIZE));
   }
 
-  void setDirty(const DSIdentifier& id, int32_t type) {
+  void setDirty(const DSIdentifier& id, int32_t collectionId) {
     auto curSize = pendingWrites_.size();
     if (curSize > 0) {
       auto& lastWrite = pendingWrites_[curSize - 1];
-      if (lastWrite.type_ == type && lastWrite.id_ == id) {
+      if (lastWrite.collectionId_ == collectionId && lastWrite.id_ == id) {
         return;
       }
     }
-    pendingWrites_.emplace_back(id, type);
+    pendingWrites_.emplace_back(id, collectionId);
   }
 
  protected:
-  void setInboundReconciler(
-      int32_t type,
-      std::shared_ptr<InboundTypeReconcilerInterface> reconciler) {
-    inboundReconcilers_[type] = std::move(reconciler);
-  }
-
-  void setOutboundReconciler(
-      int32_t type,
-      std::shared_ptr<OutboundTypeReconcilerInterface> reconciler) {
-    outboundReconcilers_[type] = std::move(reconciler);
-    pendingTypeClears_.emplace_back(type);
-  }
+  void registerCollection(std::shared_ptr<CollectionInterface> collection);
 
  private:
   struct OutboundMessage {
@@ -99,10 +87,11 @@ class DatasetReconciler {
   };
 
   struct PendingWrite {
-    PendingWrite(const DSIdentifier& id, int32_t type) : id_(id), type_(type) {}
+    PendingWrite(const DSIdentifier& id, int32_t collectionId)
+        : id_(id), collectionId_(collectionId) {}
 
     DSIdentifier id_;
-    int32_t type_;
+    int32_t collectionId_;
   };
 
   std::weak_ptr<DatasetInterface> dataset_;
@@ -112,18 +101,14 @@ class DatasetReconciler {
   uint8_t* messageDataPool_ = nullptr;
   int32_t messageDataPoolSize_ = 0;
   int32_t messageDataPoolPos_ = 0;
-  int32_t lastHandledMessageID_ = -1;
   int32_t messageLifetime_;
+  PlacedRingBufferIterator messageIter_;
 
-  // read reconciliation
-  std::vector<std::shared_ptr<InboundTypeReconcilerInterface>> inboundReconcilers_;
-  int32_t lastChangelogID_ = -1;
-  int32_t reconcileID_ = 0;
-
-  // write reconciliation
-  std::vector<std::shared_ptr<OutboundTypeReconcilerInterface>> outboundReconcilers_;
-  std::vector<int32_t> pendingTypeClears_;
+  // collections
+  std::unordered_map<int32_t, std::shared_ptr<CollectionInterface>> collections_;
+  std::vector<int32_t> pendingCollectionClears_;
   std::vector<PendingWrite> pendingWrites_;
+  PlacedRingBufferIterator changelogIter_;
 
   void sendOutboundMessages(DatasetAccessor* accessor);
   void dispatchInboundMessages(DatasetAccessor* accessor);

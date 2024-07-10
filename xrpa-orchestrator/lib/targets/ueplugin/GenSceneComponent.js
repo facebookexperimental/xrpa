@@ -42,7 +42,7 @@ function genComponentInit(ctx, includes, reconcilerDef) {
         `id_ = ${id};`,
         `changeBits_ = ${bitMask};`,
         ``,
-        ...(0, SceneComponentShared_1.genFieldInitializers)(ctx, includes, reconcilerDef, null),
+        ...(0, SceneComponentShared_1.genFieldInitializers)(ctx, includes, reconcilerDef),
         ``,
         ...(0, SceneComponentShared_1.genTransformInitializers)(ctx, includes, reconcilerDef),
         ``,
@@ -58,6 +58,44 @@ function genComponentDeinit(ctx, reconcilerDef) {
         `GetDataStoreSubsystem()->DataStore->${reconcilerDef.getDataStoreAccessorName()}->removeObject(id_);`,
         `dsIsInitialized_ = false;`,
     ];
+}
+function genDataStoreObjectAccessors(ctx, classSpec) {
+    classSpec.methods.push({
+        name: "getXrpaId",
+        returnType: ctx.moduleDef.DSIdentifier.declareLocalReturnType(ctx.namespace, classSpec.includes, true),
+        body: [
+            "return id_;",
+        ],
+        isConst: true,
+    });
+    classSpec.members.push({
+        name: "id",
+        type: ctx.moduleDef.DSIdentifier,
+        visibility: "protected",
+    });
+    classSpec.methods.push({
+        name: "setXrpaCollection",
+        parameters: [{
+                name: "collection",
+                type: CppDatasetLibraryTypes_1.CollectionInterface.getLocalType(ctx.namespace, classSpec.includes) + "*",
+            }],
+        body: [
+            `collection_ = collection;`,
+        ],
+    });
+    classSpec.methods.push({
+        name: "getCollectionId",
+        returnType: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
+        body: [
+            `return collection_ == nullptr ? -1 : collection_->getId();`,
+        ],
+    });
+    classSpec.members.push({
+        name: "collection",
+        type: CppDatasetLibraryTypes_1.CollectionInterface.getLocalType(ctx.namespace, classSpec.includes) + "*",
+        initialValue: "nullptr",
+        visibility: "protected",
+    });
 }
 function genInterfaceComponentClass(ctx, fileWriter, type, outSrcDir, outHeaderDir, baseComponentType, headerIncludes) {
     const componentClassName = (0, SceneComponentShared_1.getComponentClassName)(null, type);
@@ -79,19 +117,7 @@ function genInterfaceComponentClass(ctx, fileWriter, type, outSrcDir, outHeaderD
     classSpec.constructors.push({
         separateImplementation: true,
     });
-    classSpec.methods.push({
-        name: "getDSID",
-        returnType: ctx.moduleDef.DSIdentifier.declareLocalReturnType(ctx.namespace, classSpec.includes, true),
-        body: [
-            "return id_;",
-        ],
-        isConst: true,
-    });
-    classSpec.members.push({
-        name: "id",
-        type: ctx.moduleDef.DSIdentifier,
-        visibility: "protected",
-    });
+    genDataStoreObjectAccessors(ctx, classSpec);
     classSpec.methods.push({
         name: "initializeDS",
         body: [],
@@ -165,38 +191,10 @@ function genSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderD
         },
         separateImplementation: true,
     });
-    (0, SceneComponentShared_1.genFieldProperties)(classSpec, { ctx, reconcilerDef, setterHooks: {}, indexedFieldName: null, proxyObj: null, separateImplementation: true });
+    (0, SceneComponentShared_1.genFieldProperties)(classSpec, { ctx, reconcilerDef, setterHooks: {}, proxyObj: null, separateImplementation: true });
     if (!reconcilerDef.type.interfaceType) {
-        classSpec.methods.push({
-            name: "getDSID",
-            returnType: ctx.moduleDef.DSIdentifier.declareLocalReturnType(ctx.namespace, classSpec.includes, true),
-            body: [
-                "return id_;",
-            ],
-            isConst: true,
-        });
-        classSpec.members.push({
-            name: "id",
-            type: ctx.moduleDef.DSIdentifier,
-            visibility: "protected",
-        });
+        genDataStoreObjectAccessors(ctx, classSpec);
     }
-    classSpec.methods.push({
-        name: "setDSReconciler",
-        parameters: [{
-                name: "reconciler",
-                type: CppDatasetLibraryTypes_1.OutboundTypeReconcilerInterface.getLocalType(ctx.namespace, classSpec.includes) + "*",
-            }],
-        body: [
-            `reconciler_ = reconciler;`,
-        ],
-    });
-    classSpec.members.push({
-        name: "reconciler",
-        type: CppDatasetLibraryTypes_1.OutboundTypeReconcilerInterface.getLocalType(ctx.namespace, classSpec.includes) + "*",
-        initialValue: "nullptr",
-        visibility: "protected",
-    });
     classSpec.methods.push({
         name: "writeDSChanges",
         parameters: [{
@@ -222,7 +220,7 @@ function genSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderD
                 name: "fieldsChanged",
                 type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
             }],
-        body: includes => (0, SceneComponentShared_1.genProcessUpdateBody)({ ctx, includes, reconcilerDef, indexedFieldName: null, proxyObj: null }),
+        body: includes => (0, SceneComponentShared_1.genProcessUpdateBody)({ ctx, includes, reconcilerDef, proxyObj: null }),
         isVirtual: true,
         separateImplementation: true,
     });

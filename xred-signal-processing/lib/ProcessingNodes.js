@@ -40,7 +40,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BandPassFilter = exports.HighPassFilter = exports.LowPassFilter = exports.ParametricEqualizer = exports.Feedback = exports.Delay = exports.Sequence = exports.AudioStream = exports.AdsrEnvelope = exports.TrapezoidCurve = exports.StackChannels = exports.SelectChannel = exports.RouteToChannel = exports.SoftClip = exports.CustomWave = exports.WhiteNoise = exports.SquareWave = exports.TriangleWave = exports.SawtoothWave = exports.SineWave = exports.OutputDevice = void 0;
+exports.PitchShift = exports.BandPassFilter = exports.HighPassFilter = exports.LowPassFilter = exports.ParametricEqualizer = exports.Feedback = exports.Delay = exports.Sequence = exports.AudioStream = exports.AdsrEnvelope = exports.TrapezoidCurve = exports.StackChannels = exports.SelectChannel = exports.RouteToChannel = exports.SoftClip = exports.CustomWave = exports.WhiteNoise = exports.SquareWave = exports.TriangleWave = exports.SawtoothWave = exports.SineWave = exports.OutputDevice = void 0;
 const path = __importStar(require("path"));
 const MathOps_1 = require("./MathOps");
 const SignalProcessingTypes_1 = require("./SignalProcessingTypes");
@@ -324,4 +324,11 @@ function BandPassFilter(signal, centerFrequency, q = 6) {
     });
 }
 exports.BandPassFilter = BandPassFilter;
+function PitchShift(signal, semitones) {
+    return new SignalProcessingTypes_1.SignalPitchShiftType({
+        source: signal,
+        pitchShiftSemitones: semitones,
+    });
+}
+exports.PitchShift = PitchShift;
 //# sourceMappingURL=ProcessingNodes.js.map

@@ -48,6 +48,7 @@ class HeapDataset : public DatasetInterface {
  protected:
   void* memoryBlock = nullptr;
   std::timed_mutex mutex;
+  bool isInitialized_ = false;
 };
 
 } // namespace Xrpa

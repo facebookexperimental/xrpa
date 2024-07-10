@@ -205,6 +205,12 @@ export declare class SignalMultiplexerType extends ISignalNodeType implements Ac
     setStartEvent(ev: FiresEvent | null, autoStart?: boolean): void;
     onDone(): SignalEventType;
 }
+export declare class SignalPitchShiftType extends ISignalNodeType {
+    constructor(params: {
+        source: ISignalNodeType;
+        pitchShiftSemitones: NonSignalNumericValue;
+    });
+}
 export declare class SignalSoftClipType extends ISignalNodeType {
     constructor(params: {
         source: ISignalNodeType;

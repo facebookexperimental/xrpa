@@ -16,7 +16,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace Xrpa {
 
@@ -35,8 +34,9 @@ namespace Xrpa {
     public abstract int GetByteCount();
   }
 
-  [StructLayout(LayoutKind.Sequential)]
   public struct DSHashValue {
+    public static readonly int DS_HASH_SIZE = 32;
+
     public ulong Value0;
     public ulong Value1;
     public ulong Value2;
@@ -92,34 +92,114 @@ namespace Xrpa {
     }
   }
 
-  [StructLayout(LayoutKind.Sequential, Pack = 4)]
-  public struct DSHeader {
-    public int DatasetVersion;
-    public int TotalBytes;
-    public DSHashValue SchemaHash;
+  public class DSHeader {
+    public static readonly int DS_SIZE = 72;
+    private MemoryAccessor _memAccessor;
+
+    public DSHeader(MemoryAccessor source) {
+      _memAccessor = source.Slice(0, DS_SIZE);
+    }
+
+    public int DatasetVersion {
+      get {
+        return _memAccessor.ReadInt(0);
+      }
+      set {
+        _memAccessor.WriteInt(value, 0);
+      }
+    }
+
+    public int TotalBytes {
+      get {
+        return _memAccessor.ReadInt(4);
+      }
+      set {
+        _memAccessor.WriteInt(value, 4);
+      }
+    }
+
+    public DSHashValue SchemaHash {
+      get {
+        return DSHashValue.ReadValue(_memAccessor, 8);
+      }
+      set {
+        DSHashValue.WriteValue(value, _memAccessor, 8);
+      }
+    }
 
     // System clock time in microseconds when the Dataset was initialized; all other timestamps are
     // relative to this value.
     // Also indicates that the dataset memory is initialized, as it is set last.
-    public ulong BaseTimestamp;
+    public ulong BaseTimestamp {
+      get {
+        return _memAccessor.ReadUlong(40);
+      }
+      set {
+        _memAccessor.WriteUlong(value, 40);
+      }
+    }
 
     // memory offsets to the various region data structures
-    public int ObjectHeadersRegion;
-    public int MemoryPoolRegion;
-    public int ChangelogRegion;
-    public int MessageQueueRegion;
+    public int ObjectHeadersRegion {
+      get {
+        return _memAccessor.ReadInt(48);
+      }
+      set {
+        _memAccessor.WriteInt(value, 48);
+      }
+    }
+
+    public int MemoryPoolRegion {
+      get {
+        return _memAccessor.ReadInt(52);
+      }
+      set {
+        _memAccessor.WriteInt(value, 52);
+      }
+    }
+
+    public int ChangelogRegion {
+      get {
+        return _memAccessor.ReadInt(56);
+      }
+      set {
+        _memAccessor.WriteInt(value, 56);
+      }
+    }
+
+    public int MessageQueueRegion {
+      get {
+        return _memAccessor.ReadInt(60);
+      }
+      set {
+        _memAccessor.WriteInt(value, 60);
+      }
+    }
 
     // this is the monotonically increasing ID value for the last entry written to the changelog;
     // readers can check this without locking the mutex to see if there have been changes
-    public int LastChangelogID;
+    public int LastChangelogID {
+      get {
+        return _memAccessor.ReadInt(64);
+      }
+      set {
+        _memAccessor.WriteInt(value, 64);
+      }
+    }
 
     // this is the monotonically increasing ID value for the last entry written to the message queue;
     // readers can check this without locking the mutex to see if there have been changes
-    public int LastMessageID;
+    public int LastMessageID {
+      get {
+        return _memAccessor.ReadInt(68);
+      }
+      set {
+        _memAccessor.WriteInt(value, 68);
+      }
+    }
   }
 
-  [StructLayout(LayoutKind.Sequential)]
-  public struct DSIdentifier {
+  public struct DSIdentifier : System.IEquatable<DSIdentifier> {
     public ulong ID0;
     public ulong ID1;
 
@@ -194,8 +274,9 @@ namespace Xrpa {
     }
   }
 
-  [StructLayout(LayoutKind.Sequential)]
   public struct DSObjectHeader {
+    public static readonly int DS_SIZE = 32;
+
     public DSIdentifier ID;
     public int Type;
     public int PoolOffset;
@@ -207,6 +288,22 @@ namespace Xrpa {
 
     public static int Compare(ref DSObjectHeader a, ref DSIdentifier id) {
       return a.ID.Compare(id);
+    }
+
+    public static DSObjectHeader ReadValue(MemoryAccessor memAccessor, int offset) {
+      return new DSObjectHeader(){
+        ID = DSIdentifier.ReadValue(memAccessor, offset),
+        Type = memAccessor.ReadInt(offset + 16),
+        PoolOffset = memAccessor.ReadInt(offset + 20),
+        CreateTimestamp = memAccessor.ReadInt(offset + 24)
+      };
+    }
+
+    public static void WriteValue(DSObjectHeader value, MemoryAccessor memAccessor, int offset) {
+      DSIdentifier.WriteValue(value.ID, memAccessor, offset);
+      memAccessor.WriteInt(value.Type, offset + 16);
+      memAccessor.WriteInt(value.PoolOffset, offset + 20);
+      memAccessor.WriteInt(value.CreateTimestamp, offset + 24);
     }
   }
 

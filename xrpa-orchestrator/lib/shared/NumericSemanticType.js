@@ -74,7 +74,7 @@ class NumericSemanticType extends StructType_1.StructType {
                 returnType: dsType,
                 returnFieldOrder: dsFieldOrder,
                 valName: "val",
-                valFieldOrder: localFieldOrder,
+                valFieldOrder: dsFieldOrder,
                 valFieldMapping: fieldMappings.toLocal,
                 coordTypeConfig: this.coordTypeConfig,
                 transform: this.conversionData.fromLocalTransform,

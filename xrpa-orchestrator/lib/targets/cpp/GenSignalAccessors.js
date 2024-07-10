@@ -71,16 +71,9 @@ function genOnSignalAccessor(classSpec, params) {
         parameters: [{
                 name: "handler",
                 type: `std::shared_ptr<${CppDatasetLibraryTypes_1.InboundSignalDataInterface.getLocalType(params.ctx.namespace, classSpec.includes)}>`,
-            }, {
-                name: "dataReadyCB",
-                type: "const std::function<void()>&",
-                defaultValue: "nullptr",
             }],
         body: [
             `${signalHandler} = handler;`,
-            `if (handler && dataReadyCB) {`,
-            `  handler->onDataReady(dataReadyCB);`,
-            `}`,
         ],
     });
     classSpec.members.push({
@@ -103,15 +96,15 @@ function genSendSignalAccessor(classSpec, params) {
                 name: "numChannels",
                 type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
             }, {
-                name: "samplesPerChannelPerSec",
+                name: "framesPerSecond",
                 type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
             }, {
-                name: "samplesPerCallback",
+                name: "framesPerCallback",
                 type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
             }],
         body: () => {
             return [
-                `local${(0, Helpers_1.upperFirst)(params.fieldName)}_.setSignalSource(signal, numChannels, samplesPerChannelPerSec, samplesPerCallback);`,
+                `local${(0, Helpers_1.upperFirst)(params.fieldName)}_.setSignalSource(signal, numChannels, framesPerSecond, framesPerCallback);`,
             ];
         },
         separateImplementation: params.separateImplementation,
@@ -122,7 +115,7 @@ function genSendSignalAccessor(classSpec, params) {
         visibility: "private",
     });
     const messageType = params.typeDef.getFieldIndex(params.fieldName);
-    params.tickLines.push(`local${(0, Helpers_1.upperFirst)(params.fieldName)}_.tick(id, ${messageType}, reconciler_);`);
+    params.tickLines.push(`local${(0, Helpers_1.upperFirst)(params.fieldName)}_.tick(id, ${messageType}, collection_);`);
 }
 exports.genSendSignalAccessor = genSendSignalAccessor;
 function genSignalFieldAccessors(classSpec, params) {
@@ -153,9 +146,9 @@ function genSignalFieldAccessors(classSpec, params) {
     }
     if (tickLines.length) {
         classSpec.methods.push({
-            name: "tickDS",
+            name: "tickXrpa",
             body: [
-                `auto id = getDSID();`,
+                `auto id = getXrpaId();`,
                 ...tickLines,
             ],
         });

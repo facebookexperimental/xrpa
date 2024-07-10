@@ -18,7 +18,7 @@
 
 #include <dataset/utils/XrpaUtils.h>
 
-#include <stdint.h>
+#include <cstdint>
 #include <cstring>
 #include <string>
 

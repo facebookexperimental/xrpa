@@ -19,21 +19,23 @@ using System.Threading;
 namespace Xrpa {
 
   public class MutexLockedAccessor : System.IDisposable {
-    public MutexLockedAccessor(System.IO.UnmanagedMemoryAccessor accessor, Mutex lockedMutex) {
-      View = accessor;
+    public MutexLockedAccessor(MemoryAccessor memAccessor, Mutex lockedMutex, System.Action onDispose) {
+      Memory = memAccessor;
       _mutex = lockedMutex;
+      _onDispose = onDispose;
     }
 
     public void Dispose() {
+      _onDispose();
       if (_mutex != null) {
         _mutex.ReleaseMutex();
         _mutex = null;
       }
     }
 
-    public System.IO.UnmanagedMemoryAccessor View { get; }
-
+    public MemoryAccessor Memory { get; }
     private Mutex _mutex;
+    private System.Action _onDispose;
   }
 
 }

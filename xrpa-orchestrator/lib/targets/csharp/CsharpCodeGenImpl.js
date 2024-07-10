@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genMethodBind = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genWriteValue = exports.genReadValue = exports.genClassDefinition = exports.makeObjectAccessor = exports.getTypesHeaderName = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.privateMember = exports.constRef = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.CsIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.GET_CURRENT_CLOCK_TIME = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.HEADER = exports.XRPA_NAMESPACE = exports.registerObjectAccessorInterface = exports.registerMemoryAccessor = void 0;
+exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genMethodBind = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genWriteValue = exports.genReadValue = exports.genClassDefinition = exports.makeObjectAccessor = exports.getTypesHeaderName = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.constRef = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.CsIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.GET_CURRENT_CLOCK_TIME = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.HEADER = exports.XRPA_NAMESPACE = exports.registerObjectAccessorInterface = exports.registerMemoryAccessor = void 0;
 const assert_1 = __importDefault(require("assert"));
 const Helpers_1 = require("../../shared/Helpers");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
@@ -148,6 +148,10 @@ function privateMember(memberVarName) {
     return "_" + memberVarName;
 }
 exports.privateMember = privateMember;
+function methodMember(methodName) {
+    return (0, Helpers_1.upperFirst)(methodName);
+}
+exports.methodMember = methodMember;
 function genInitializer(values) {
     return `{${values.join(", ")}}`;
 }
@@ -373,7 +377,7 @@ function genClassDefinitionMethods(classSpec, includes) {
             prefix += "virtual ";
         }
         const params = paramsToString(classSpec, def.parameters ?? []);
-        const decl = `${prefix}${def.returnType ?? "void"} ${(0, Helpers_1.upperFirst)(def.name)}(${params})`;
+        const decl = `${prefix}${def.returnType ?? "void"} ${methodMember(def.name)}(${params})`;
         lines.push(...(def.decorations ?? []));
         if (def.isAbstract) {
             lines.push(`${decl};`);
@@ -518,7 +522,7 @@ function getNullValue() {
 }
 exports.getNullValue = getNullValue;
 function genReferencePtrToID(varName, _ptrType, dsIdentifierType) {
-    return `${varName}?.GetDSID() ?? new ${dsIdentifierType}()`;
+    return `${varName}?.GetXrpaId() ?? new ${dsIdentifierType}()`;
 }
 exports.genReferencePtrToID = genReferencePtrToID;
 function genFieldGetter(classSpec, params) {
@@ -555,7 +559,7 @@ function genFieldGetter(classSpec, params) {
         classSpec.methods.push({
             decorations,
             name: `${funcName}Id`,
-            returnType: fieldType.declareLocalReturnType(classSpec.namespace, classSpec.includes, true),
+            returnType: fieldType.declareLocalReturnType(classSpec.namespace, classSpec.includes, !params.convertToLocal),
             isConst: true,
             visibility: params.visibility,
             body: [
@@ -647,7 +651,7 @@ function genDeref(ptrName, memberName) {
 }
 exports.genDeref = genDeref;
 function genDerefMethodCall(ptrName, methodName, params) {
-    const methodCall = `${(0, Helpers_1.upperFirst)(methodName)}(${params.join(", ")})`;
+    const methodCall = `${methodMember(methodName)}(${params.join(", ")})`;
     if (!ptrName) {
         return methodCall;
     }
@@ -656,7 +660,7 @@ function genDerefMethodCall(ptrName, methodName, params) {
 exports.genDerefMethodCall = genDerefMethodCall;
 function genMethodBind(ptrName, methodName, params, bindParamCount) {
     const bindParams = new Array(bindParamCount).fill("_");
-    const methodCall = `${(0, Helpers_1.upperFirst)(methodName)}(${params.join(", ")})`;
+    const methodCall = `${methodMember(methodName)}(${params.join(", ")})`;
     if (!ptrName) {
         return `(${bindParams.join(", ")}) => ${methodCall}`;
     }

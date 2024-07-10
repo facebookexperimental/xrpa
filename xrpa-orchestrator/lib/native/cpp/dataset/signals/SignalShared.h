@@ -17,7 +17,7 @@
 #pragma once
 
 #include <dataset/utils/MemoryAccessor.h>
-#include <stdint.h>
+#include <cstdint>
 #include <type_traits>
 #include <utility>
 
@@ -55,47 +55,56 @@ constexpr int32_t inferSampleType() {
 template <typename SampleType>
 class SignalChannelData {
  public:
-  SignalChannelData(MemoryAccessor memAccessor, int32_t sampleCount, int32_t numChannels)
-      : memAccessor_(std::move(memAccessor)),
-        sampleCount_(sampleCount),
-        numChannels_(numChannels) {}
+  SignalChannelData(MemoryAccessor memAccessor, int32_t frameCount, int32_t numChannels)
+      : memAccessor_(std::move(memAccessor)), frameCount_(frameCount), numChannels_(numChannels) {}
 
   int32_t getNumChannels() {
     return numChannels_;
   }
 
-  int32_t getNumSamplesPerChannel() {
-    return sampleCount_;
+  int32_t getFrameCount() {
+    return frameCount_;
   }
 
   int32_t getChannelBufferSize() {
-    return sizeof(SampleType) * sampleCount_;
+    return sizeof(SampleType) * frameCount_;
   }
 
-  void readChannelData(int32_t channelIdx, SampleType* dst, int32_t dstCount) {
+  void
+  readChannelData(int32_t channelIdx, SampleType* dst, int32_t dstCount, int32_t dstStride = 1) {
     auto* src = accessChannelBuffer(channelIdx);
-    if (src) {
-      copySampleData(src, sampleCount_, dst, dstCount);
+    if (dstStride == 1) {
+      if (src) {
+        copySampleData(src, frameCount_, dst, dstCount);
+      } else {
+        std::fill(dst, dst + dstCount, 0);
+      }
     } else {
-      std::fill(dst, dst + dstCount, 0);
+      const int fillCount = src ? std::min(frameCount_, dstCount) : 0;
+      for (int i = 0; i < fillCount; ++i) {
+        dst[i * dstStride] = src[i];
+      }
+      for (int i = fillCount; i < dstCount; ++i) {
+        dst[i * dstStride] = 0;
+      }
     }
   }
 
   void writeChannelData(int32_t channelIdx, const SampleType* src, int32_t srcCount) {
     auto* dst = accessChannelBuffer(channelIdx);
     if (dst) {
-      copySampleData(src, srcCount, dst, sampleCount_);
+      copySampleData(src, srcCount, dst, frameCount_);
     }
   }
 
   void clearUnusedChannels(int32_t startChannelIdx, int32_t usedChannelCount) {
     for (int i = 0; i < startChannelIdx; ++i) {
       auto* dst = accessChannelBuffer(i);
-      std::fill(dst, dst + sampleCount_, 0);
+      std::fill(dst, dst + frameCount_, 0);
     }
     for (int i = startChannelIdx + usedChannelCount; i < numChannels_; ++i) {
       auto* dst = accessChannelBuffer(i);
-      std::fill(dst, dst + sampleCount_, 0);
+      std::fill(dst, dst + frameCount_, 0);
     }
   }
 
@@ -110,7 +119,7 @@ class SignalChannelData {
 
  private:
   MemoryAccessor memAccessor_;
-  int32_t sampleCount_;
+  int32_t frameCount_;
   int32_t numChannels_;
 
   void copySampleData(const SampleType* src, int32_t srcCount, SampleType* dst, int32_t dstCount) {
@@ -125,12 +134,12 @@ class SignalPacket {
  public:
   explicit SignalPacket(MemoryAccessor memAccessor) : memAccessor_(std::move(memAccessor)) {}
 
-  int32_t getSampleCount() {
+  int32_t getFrameCount() {
     return memAccessor_.readValue<int32_t>(0);
   }
 
-  void setSampleCount(int32_t sampleCount) {
-    memAccessor_.writeValue<int32_t>(sampleCount, 0);
+  void setFrameCount(int32_t frameCount) {
+    memAccessor_.writeValue<int32_t>(frameCount, 0);
   }
 
   int32_t getSampleType() {
@@ -149,22 +158,22 @@ class SignalPacket {
     memAccessor_.writeValue<int32_t>(numChannels, 8);
   }
 
-  int32_t getSampleRate() {
+  int32_t getFrameRate() {
     return memAccessor_.readValue<int32_t>(12);
   }
 
-  void setSampleRate(int32_t sampleRate) {
-    memAccessor_.writeValue<int32_t>(sampleRate, 12);
+  void setFrameRate(int32_t framesPerSecond) {
+    memAccessor_.writeValue<int32_t>(framesPerSecond, 12);
   }
 
   template <typename SampleType>
   SignalChannelData<SampleType> accessChannelData() {
     return SignalChannelData<SampleType>(
-        memAccessor_.slice(kHeaderSize), getSampleCount(), getNumChannels());
+        memAccessor_.slice(kHeaderSize), getFrameCount(), getNumChannels());
   }
 
-  static int32_t calcPacketSize(int32_t numChannels, int32_t sampleSize, int32_t sampleCount) {
-    return kHeaderSize + (numChannels * sampleSize * sampleCount);
+  static int32_t calcPacketSize(int32_t numChannels, int32_t sampleSize, int32_t frameCount) {
+    return kHeaderSize + (numChannels * sampleSize * frameCount);
   }
 
  private:

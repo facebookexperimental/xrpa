@@ -49,6 +49,7 @@ class SharedDataset : public DatasetInterface {
   std::string datasetName_;
   DatasetConfig config_;
   SharedMemoryBlock memoryBlock_;
+  bool isInitialized_ = false;
 };
 
 } // namespace Xrpa

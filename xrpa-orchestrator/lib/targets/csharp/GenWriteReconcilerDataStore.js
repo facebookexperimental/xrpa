@@ -48,7 +48,6 @@ const assert_1 = __importDefault(require("assert"));
 const ClassSpec_1 = require("../../shared/ClassSpec");
 const Helpers_1 = require("../../shared/Helpers");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
-const TypeValue_1 = require("../../shared/TypeValue");
 const CsharpCodeGenImpl_1 = require("./CsharpCodeGenImpl");
 const CsharpCodeGenImpl = __importStar(require("./CsharpCodeGenImpl"));
 const CsharpDatasetLibraryTypes_1 = require("./CsharpDatasetLibraryTypes");
@@ -56,19 +55,20 @@ const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
 const GenMessageAccessors_1 = require("./GenMessageAccessors");
 const GenDataStore_1 = require("./GenDataStore");
 function genFieldSetDirty(params) {
+    const changeBit = params.typeDef.getChangedBit(params.ctx.namespace, params.includes, params.fieldName);
     if (params.proxyObj) {
         return [
-            `if (${params.proxyObj} != null) {`,
-            `  _changeBits |= ${params.typeDef.getChangedBit(params.ctx.namespace, params.includes, params.fieldName)};`,
-            `  ${params.proxyObj}.SetDirty();`,
+            `if (${params.proxyObj} != null && (_changeBits & ${changeBit}) == 0) {`,
+            `  _changeBits |= ${changeBit};`,
+            `  ${params.proxyObj}.SetDirty(${changeBit});`,
             `}`,
         ];
     }
     else {
         return [
-            `if (_reconciler != null) {`,
-            `  _changeBits |= ${params.typeDef.getChangedBit(params.ctx.namespace, params.includes, params.fieldName)};`,
-            `  _reconciler.SetDirty(GetDSID());`,
+            `if (_collection != null && (_changeBits & ${changeBit}) == 0) {`,
+            `  _changeBits |= ${changeBit};`,
+            `  _collection.SetDirty(GetXrpaId(), ${changeBit});`,
             `}`,
         ];
     }
@@ -123,6 +123,17 @@ function genWriteFieldSetters(classSpec, params) {
                 }],
             body: includes => [
                 `${fieldVar} = ${fieldType.convertValueFromLocal(params.ctx.namespace, includes, params.fieldName)};`,
+                ...genFieldSetDirty({ ...params, includes }),
+            ],
+        });
+        classSpec.methods.push({
+            name: setterName + "Id",
+            parameters: [{
+                    name: params.fieldName,
+                    type: fieldType,
+                }],
+            body: includes => [
+                `${fieldVar} = ${params.fieldName};`,
                 ...genFieldSetDirty({ ...params, includes }),
             ],
         });
@@ -213,17 +224,17 @@ function genWriteFunctionBody(params) {
             ...(params.canCreate ? [
                 `${writeAccessor} objAccessor = new();`,
                 `if (_createTimestamp != 0) {`,
-                `  objAccessor = accessor.CreateObject<${writeAccessor}>(GetDSID(), _createTimestamp);`,
+                `  objAccessor = accessor.CreateObject<${writeAccessor}>(GetXrpaId(), _createTimestamp);`,
                 `  _createTimestamp = 0;`,
                 ...(0, Helpers_1.indent)(1, initializerLines),
                 `} else if (_changeBits != 0) {`,
-                `  objAccessor = accessor.UpdateObject<${writeAccessor}>(GetDSID(), _changeBits);`,
+                `  objAccessor = accessor.UpdateObject<${writeAccessor}>(GetXrpaId(), _changeBits);`,
                 `}`,
             ] : [
                 `if (_changeBits == 0) {`,
                 `  return;`,
                 `}`,
-                `auto objAccessor = accessor.UpdateObject<${writeAccessor}>(GetDSID(), _changeBits);`,
+                `var objAccessor = accessor.UpdateObject<${writeAccessor}>(GetXrpaId(), _changeBits);`,
             ]),
             `if (objAccessor.IsNull()) {`,
             `  return;`,
@@ -250,7 +261,7 @@ function genOutboundReconciledTypes(ctx, includesIn) {
         const classSpec = new ClassSpec_1.ClassSpec({
             name: typeDef.getLocalType(ctx.namespace, null),
             superClass: typeDef.interfaceType ? typeDef.interfaceType.getLocalType(ctx.namespace, includesIn) : CsharpDatasetLibraryTypes_1.DataStoreObject.getLocalType(ctx.namespace, includesIn),
-            interfaceName: `${CsharpDatasetLibraryTypes_1.IOutboundReconciledType.getLocalType(ctx.namespace, includesIn)}<${readAccessor}>`,
+            interfaceName: `${CsharpDatasetLibraryTypes_1.IDataStoreObjectAccessor.getLocalType(ctx.namespace, includesIn)}<${readAccessor}>`,
             namespace: ctx.namespace,
             includes: includesIn,
         });
@@ -259,21 +270,11 @@ function genOutboundReconciledTypes(ctx, includesIn) {
                     name: "id",
                     type: ctx.moduleDef.DSIdentifier,
                 }],
-            superClassInitializers: ["id", typeDef.getDSTypeID(ctx.namespace, classSpec.includes)],
+            superClassInitializers: ["id", "null"],
             memberInitializers: [
                 ["_createTimestamp", CsharpCodeGenImpl_1.GET_CURRENT_CLOCK_TIME],
             ],
             body: [],
-        });
-        classSpec.methods.push({
-            name: "SetDSReconciler",
-            parameters: [{
-                    name: "reconciler",
-                    type: CsharpDatasetLibraryTypes_1.OutboundTypeReconcilerInterface,
-                }],
-            body: [
-                "_reconciler = reconciler;",
-            ],
         });
         genWriteFieldAccessors(classSpec, {
             ctx,
@@ -297,7 +298,6 @@ function genOutboundReconciledTypes(ctx, includesIn) {
                 canCreate: true,
                 proxyObj: null,
             }),
-            isOverride: true,
         });
         classSpec.methods.push({
             name: "ProcessDSUpdate",
@@ -322,7 +322,6 @@ function genOutboundReconciledTypes(ctx, includesIn) {
             reconcilerDef,
             genMsgHandler: GenDataStore_1.genMsgHandler,
             msgDataToParams: () => ["message"],
-            isOverride: true,
         });
         (0, GenDataStoreShared_1.genFieldProperties)(classSpec, {
             codegen: CsharpCodeGenImpl,
@@ -330,12 +329,6 @@ function genOutboundReconciledTypes(ctx, includesIn) {
             fieldToMemberVar: defaultFieldToMemberVar,
             canCreate: true,
             directionality: "outbound",
-            visibility: "protected",
-        });
-        classSpec.members.push({
-            name: "reconciler",
-            type: CsharpDatasetLibraryTypes_1.OutboundTypeReconcilerInterface,
-            initialValue: new TypeValue_1.CodeLiteralValue(CsharpCodeGenImpl, "null"),
             visibility: "protected",
         });
         ret.push(classSpec);

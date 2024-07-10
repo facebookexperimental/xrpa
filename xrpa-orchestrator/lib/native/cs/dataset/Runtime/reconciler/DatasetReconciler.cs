@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+using System;
 using System.Collections.Generic;
-using System.IO;
-using System.IO.MemoryMappedFiles;
+using System.Runtime.InteropServices;
 
 namespace Xrpa {
 
@@ -34,46 +34,39 @@ namespace Xrpa {
     };
 
     private class PendingWrite {
-      public PendingWrite(DSIdentifier id, int type) {
+      public PendingWrite(DSIdentifier id, int collectionId) {
         ID = id;
-        Type = type;
+        CollectionId = collectionId;
       }
 
       public DSIdentifier ID;
-      public int Type;
+      public int CollectionId;
     };
 
     private readonly DatasetInterface _dataset;
 
     // message stuff
     private readonly List<OutboundMessage> _outboundMessages;
-    private MemoryMappedFile _messageDataPoolFile;
-    private MemoryMappedViewAccessor _messageDataPool;
+    private AllocatedMemory _messageDataPool;
     private int _messageDataPoolPos = 0;
-    private int _lastHandledMessageID = -1;
     private int _messageLifetimeUS = 5000000;
+    private readonly PlacedRingBufferIterator _messageIter = new();
 
-    // read reconciliation
-    private readonly InboundTypeReconcilerInterface[] _inboundReconcilers;
-    private int _lastChangelogID = -1;
-    private int _reconcileID = 0;
-
-    // write reconciliation
-    private readonly OutboundTypeReconcilerInterface[] _outboundReconcilers;
-    private readonly List<int> _pendingTypeClears;
+    // collections
+    private readonly Dictionary<int, CollectionInterface> _collections;
+    private readonly List<int> _pendingCollectionClears;
     private readonly List<PendingWrite> _pendingWrites;
+    private readonly PlacedRingBufferIterator _changelogIter = new();
 
-    public DatasetReconciler(DatasetInterface dataset, DSHashValue schemaHash, int typeCount, int messageDataPoolSize) {
+    public DatasetReconciler(DatasetInterface dataset, DSHashValue schemaHash, int messageDataPoolSize) {
       _dataset = dataset;
       _outboundMessages = new();
-      _inboundReconcilers = new InboundTypeReconcilerInterface[typeCount];
-      _outboundReconcilers = new OutboundTypeReconcilerInterface[typeCount];
-      _pendingTypeClears = new();
+      _collections = new();
+      _pendingCollectionClears = new();
       _pendingWrites = new();
 
       if (messageDataPoolSize > 0) {
-        _messageDataPoolFile = MemoryMappedFile.CreateNew(Path.GetRandomFileName(), messageDataPoolSize);
-        _messageDataPool = _messageDataPoolFile.CreateViewAccessor(0, messageDataPoolSize, MemoryMappedFileAccess.ReadWrite);
+        _messageDataPool = new AllocatedMemory(messageDataPoolSize);
       }
 
       if (!dataset.CheckSchemaHash(schemaHash)) {
@@ -82,12 +75,16 @@ namespace Xrpa {
     }
 
     public void Tick() {
+      foreach (var collectionKV in _collections) {
+        collectionKV.Value.Tick();
+      }
+
       bool bHasOutboundMessages = _outboundMessages.Count > 0;
-      bool bHasOutboundChanges = _pendingTypeClears.Count > 0 || _pendingWrites.Count > 0;
+      bool bHasOutboundChanges = _pendingCollectionClears.Count > 0 || _pendingWrites.Count > 0;
 
       // non-blocking check for inbound changes
-      bool bHasInboundChanges = _dataset.GetLastChangelogID() != _lastChangelogID;
-      bool bHasInboundMessages = _dataset.GetLastMessageID() != _lastHandledMessageID;
+      bool bHasInboundChanges = _changelogIter.HasNext(_dataset.GetLastChangelogID());
+      bool bHasInboundMessages = _messageIter.HasNext(_dataset.GetLastMessageID());
 
       if (!bHasInboundChanges && !bHasInboundMessages && !bHasOutboundChanges &&
           !bHasOutboundMessages) {
@@ -98,15 +95,14 @@ namespace Xrpa {
       bool didLock = _dataset.Acquire(1, (DatasetAccessor accessor) => {
         // process inbound changes
         var changelog = accessor.GetChangeLog();
-        if (changelog.GetMinID() > _lastChangelogID) {
-          // more changes came in between tick() calls than the changelog can hold, so reconcile the
+        if (_changelogIter.HasMissedEntries(changelog)) {
+          // more changes came in between Tick() calls than the changelog can hold, so reconcile the
           // entire dataset
-          // NOTE: this block also hits on the first tick
           ReconcileInboundFromIndex(accessor);
+          _changelogIter.SetToEnd(changelog);
         } else {
           ReconcileInboundFromChangelog(accessor, changelog);
         }
-        _lastChangelogID = changelog.GetMaxID();
 
         // dispatch inbound messages
         DispatchInboundMessages(accessor);
@@ -127,15 +123,17 @@ namespace Xrpa {
 
     public void Shutdown() {
       _dataset.Acquire(1, (DatasetAccessor accessor) => {
-        for (int type = 0; type < _outboundReconcilers.Length; ++type) {
-          if (_outboundReconcilers[type] != null) {
-            var existingIDs = accessor.GetAllObjectIDsByType(type);
-            foreach (var id in existingIDs) {
-              accessor.DeleteObject(id);
-            }
+        foreach (var collectionKV in _collections) {
+          var collectionId = collectionKV.Key;
+          var objectIds = accessor.GetAllObjectIDsByType(collectionId);
+          foreach (var id in objectIds) {
+            accessor.DeleteObject(id);
           }
         }
       });
+
+      _messageDataPool?.Dispose();
+      _messageDataPool = null;
     }
 
     public void SetMessageLifetime(uint messageLifetimeMS) {
@@ -143,30 +141,29 @@ namespace Xrpa {
     }
 
     public MemoryAccessor SendMessage(DSIdentifier id, int messageType, int numBytes) {
-      MemoryAccessor messageData = new(_messageDataPool, _messageDataPoolPos, numBytes);
+      MemoryAccessor messageData = _messageDataPool.Accessor.Slice(_messageDataPoolPos, numBytes);
       _messageDataPoolPos += numBytes;
       _outboundMessages.Add(new OutboundMessage(id, messageType, messageData));
       return messageData;
     }
 
-    public void SetDirty(DSIdentifier id, int type) {
+    public void SetDirty(DSIdentifier id, int collectionId) {
       var curSize = _pendingWrites.Count;
       if (curSize > 0) {
         var lastWrite = _pendingWrites[curSize - 1];
-        if (lastWrite.Type == type && lastWrite.ID == id) {
+        if (lastWrite.CollectionId == collectionId && lastWrite.ID == id) {
           return;
         }
       }
-      _pendingWrites.Add(new PendingWrite(id, type));
+      _pendingWrites.Add(new PendingWrite(id, collectionId));
     }
 
-    protected void SetInboundReconciler(int type, InboundTypeReconcilerInterface reconciler) {
-      _inboundReconcilers[type] = reconciler;
-    }
-
-    protected void SetOutboundReconciler(int type, OutboundTypeReconcilerInterface reconciler) {
-      _outboundReconcilers[type] = reconciler;
-      _pendingTypeClears.Add(type);
+    protected void RegisterCollection(CollectionInterface collection) {
+      var collectionId = collection.GetId();
+      _collections[collectionId] = collection;
+      if (collection.IsLocalOwned()) {
+        _pendingCollectionClears.Add(collectionId);
+      }
     }
 
     private void SendOutboundMessages(DatasetAccessor accessor) {
@@ -185,74 +182,59 @@ namespace Xrpa {
       int oldestTimestamp = accessor.GetCurrentTimestamp() - _messageLifetimeUS;
 
       var messageQueue = accessor.GetMessageQueue();
-      var nextIndex = messageQueue.GetIndexForID(_lastHandledMessageID + 1);
-      var messageCount = messageQueue.Count;
-      for (int i = nextIndex; i < messageCount; ++i) {
-        DSMessageAccessor message = new(messageQueue.GetAt(i));
+      while (_messageIter.HasNext(messageQueue)) {
+        DSMessageAccessor message = new(_messageIter.Next(messageQueue));
         var timestamp = message.GetTimestamp();
         if (timestamp < oldestTimestamp) {
           continue;
         }
 
         var id = message.GetTargetID();
-        var type = message.GetTargetType();
+        var collectionId = message.GetTargetType();
         var messageType = message.GetMessageType();
         var messageData = message.AccessMessageData();
 
-        if (_inboundReconcilers[type] != null) {
-          _inboundReconcilers[type].ProcessMessage(id, messageType, timestamp, messageData);
-        }
-        if (_outboundReconcilers[type] != null) {
-          _outboundReconcilers[type].ProcessMessage(id, messageType, timestamp, messageData);
+        if (_collections.TryGetValue(collectionId, out var collection)) {
+          collection.ProcessMessage(id, messageType, timestamp, messageData);
         }
       }
-
-      _lastHandledMessageID = messageQueue.GetMaxID();
     }
 
     private void ReconcileInboundFromIndex(DatasetAccessor accessor) {
-      // increment reconcileID
-      ++_reconcileID;
-
       // sort the index by timestamp so that we can iterate over it in creation order
       var objectIndex = accessor.GetObjectIndex();
       int objectCount = objectIndex.Count;
       List<DSObjectHeader> sortedHeaders = new();
       for (int i = 0; i < objectCount; ++i) {
-        objectIndex.GetAt(i, out DSObjectHeader objHeader);
-        sortedHeaders.Add(objHeader);
+        sortedHeaders.Add(objectIndex.GetAt(i));
       }
       sortedHeaders.Sort((a, b) => {
         return a.CreateTimestamp - b.CreateTimestamp;
       });
 
-      // sweep through the sorted index, reconciling each object and marking them with the reconcileID
+      // sweep through the sorted index, reconciling each object and keeping track of the IDs
+      var reconciledIds = new HashSet<DSIdentifier>();
       foreach (DSObjectHeader objHeader in sortedHeaders) {
         var id = objHeader.ID;
-        var type = objHeader.Type;
+        var collectionId = objHeader.Type;
         var memAccessor = accessor.GetObjectFromHeader(objHeader);
-        if (_inboundReconcilers[type] != null) {
-          _inboundReconcilers[type].ProcessFullReconcile(id, memAccessor, _reconcileID);
-        }
-        if (_outboundReconcilers[type] != null) {
-          _outboundReconcilers[type].ProcessUpdate(id, memAccessor, ~0UL);
+        if (_collections.TryGetValue(collectionId, out var collection)) {
+          collection.ProcessUpsert(id, memAccessor);
+          reconciledIds.Add(id);
         }
       }
 
-      // delete any reconciled value that was not marked above
-      foreach (var reconciler in _inboundReconcilers) {
-        if (reconciler != null) {
-          reconciler.EndFullReconcile(_reconcileID);
-        }
+      // delete all unreconciled objects
+      foreach (var collectionKV in _collections) {
+        collectionKV.Value.ProcessFullReconcile(reconciledIds);
       }
     }
 
     private void ReconcileInboundFromChangelog(DatasetAccessor accessor, PlacedRingBuffer changelog) {
-      int changelogCount = changelog.Count;
-      for (int i = changelog.GetIndexForID(_lastChangelogID) + 1; i < changelogCount; ++i) {
-        DSChangeEventAccessor entry = new(changelog.GetAt(i));
+      while (_changelogIter.HasNext(changelog)) {
+        DSChangeEventAccessor entry = new(_changelogIter.Next(changelog));
         var id = entry.GetTargetID();
-        var type = entry.GetTargetType();
+        var collectionId = entry.GetTargetType();
         var poolOffset = entry.GetTargetPoolOffset();
         var changeType = entry.GetChangeType();
 
@@ -260,8 +242,8 @@ namespace Xrpa {
           case DSChangeType.CreateObject: {
             var memAccessor = accessor.GetObjectFromOffset(poolOffset);
             if (!memAccessor.IsNull()) {
-              if (_inboundReconcilers[type] != null) {
-                _inboundReconcilers[type].ProcessCreate(id, memAccessor, _reconcileID);
+              if (_collections.TryGetValue(collectionId, out var collection)) {
+                collection.ProcessCreate(id, memAccessor);
               }
             }
             break;
@@ -274,19 +256,16 @@ namespace Xrpa {
             var memAccessor = accessor.GetObjectFromOffset(poolOffset);
             if (!memAccessor.IsNull()) {
               var changedFields = entry.GetChangedFields();
-              if (_inboundReconcilers[type] != null) {
-                _inboundReconcilers[type].ProcessUpdate(id, memAccessor, changedFields, _reconcileID);
-              }
-              if (_outboundReconcilers[type] != null) {
-                _outboundReconcilers[type].ProcessUpdate(id, memAccessor, changedFields);
+              if (_collections.TryGetValue(collectionId, out var collection)) {
+                collection.ProcessUpdate(id, memAccessor, changedFields);
               }
             }
             break;
           }
 
           case DSChangeType.DeleteObject: {
-            if (_inboundReconcilers[type] != null) {
-              _inboundReconcilers[type].ProcessDelete(id);
+            if (_collections.TryGetValue(collectionId, out var collection)) {
+              collection.ProcessDelete(id);
             }
             break;
           }
@@ -295,21 +274,18 @@ namespace Xrpa {
     }
 
     private void ReconcileOutboundChanges(DatasetAccessor accessor) {
-      foreach (int type in _pendingTypeClears) {
-        var existingIDs = accessor.GetAllObjectIDsByType(type);
+      foreach (int collectionId in _pendingCollectionClears) {
+        var existingIDs = accessor.GetAllObjectIDsByType(collectionId);
         foreach (var id in existingIDs) {
           accessor.DeleteObject(id);
         }
       }
-      _pendingTypeClears.Clear();
+      _pendingCollectionClears.Clear();
 
       foreach (var pendingWrite in _pendingWrites) {
         var id = pendingWrite.ID;
-        if (_inboundReconcilers[pendingWrite.Type] != null) {
-          _inboundReconcilers[pendingWrite.Type].WriteChanges(accessor, id);
-        }
-        if (_outboundReconcilers[pendingWrite.Type] != null) {
-          _outboundReconcilers[pendingWrite.Type].WriteChanges(accessor, id);
+        if (_collections.TryGetValue(pendingWrite.CollectionId, out var collection)) {
+          collection.WriteChanges(accessor, id);
         }
       }
       _pendingWrites.Clear();

@@ -31,6 +31,7 @@ export { CppStandalone } from "./targets/cpp/CppStandalone";
 export { UepluginModuleDefinition } from "./targets/ueplugin/UepluginModuleDefinition";
 export { UnityPackageModuleDefinition } from "./targets/unitypackage/UnityPackageModuleDefinition";
 export * from "./ConvenienceWrappers";
+export * from "./Eigen";
 export * from "./Unity";
 export * from "./UnrealEngine";
 

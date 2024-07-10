@@ -14,48 +14,66 @@
  * limitations under the License.
  */
 
-using System.Runtime.InteropServices;
-
 namespace Xrpa {
 
+  public delegate ElemType ReadValueDelegate<ElemType>(MemoryAccessor memAccessor, int offset);
+  public delegate void WriteValueDelegate<ElemType>(ElemType value, MemoryAccessor memAccessor, int offset);
   public delegate int SortCompare<LeftType, RightType>(ref LeftType a, ref RightType b);
 
   public class PlacedSortedArray<ElemType> where ElemType : struct {
+    private static readonly int PROPS_SIZE = 8;
 
-    public PlacedSortedArray(System.IO.UnmanagedMemoryAccessor dataSource, long memOffset, SortCompare<ElemType, ElemType> elemCompare) {
-      _dataSource = dataSource;
-      _memOffset = memOffset;
+    private MemoryAccessor _memSource;
+    private MemoryAccessor _propsAccessor;
+    private MemoryAccessor _poolAccessor;
+    private readonly int _elemSize;
+    private readonly ReadValueDelegate<ElemType> _elemReadValue;
+    private readonly WriteValueDelegate<ElemType> _elemWriteValue;
+    private readonly SortCompare<ElemType, ElemType> _elemCompare;
+
+    public PlacedSortedArray(
+      MemoryAccessor memSource,
+      long memOffset,
+      int elemSize,
+      ReadValueDelegate<ElemType> elemReadValue,
+      WriteValueDelegate<ElemType> elemWriteValue,
+      SortCompare<ElemType, ElemType> elemCompare
+    ) {
+      _memSource = memSource;
+      _propsAccessor = memSource.Slice(memOffset, PROPS_SIZE);
+      _poolAccessor = memSource.Slice(memOffset + PROPS_SIZE, _propsAccessor.ReadInt(0) * elemSize);
+      _elemSize = elemSize;
+      _elemReadValue = elemReadValue;
+      _elemWriteValue = elemWriteValue;
       _elemCompare = elemCompare;
     }
 
-    public static readonly int ElemSize = Marshal.SizeOf(typeof(ElemType));
-    private static readonly int ElemOffset = 8;
-
-    public static int GetMemSize(int maxCount) {
-      return ElemOffset + maxCount * ElemSize;
+    public static int GetMemSize(int maxCount, int elemSize) {
+      return PROPS_SIZE + maxCount * elemSize;
     }
 
     public int MaxCount {
       get {
-        return _dataSource.ReadInt32(_memOffset);
+        return _propsAccessor.ReadInt(0);
       }
       set {
-        _dataSource.Write(_memOffset, value);
+        _propsAccessor.WriteInt(value, 0);
       }
     }
 
     public int Count {
       get {
-        return _dataSource.ReadInt32(_memOffset + 4);
+        return _propsAccessor.ReadInt(4);
       }
       set {
-        _dataSource.Write(_memOffset + 4, value);
+        _propsAccessor.WriteInt(value, 4);
       }
     }
 
     public void Init(int maxCount) {
       MaxCount = maxCount;
       Count = 0;
+      _poolAccessor = _memSource.Slice(_propsAccessor.MemOffset - _memSource.MemOffset + PROPS_SIZE, maxCount * _elemSize);
     }
 
     public void Reset() {
@@ -66,18 +84,22 @@ namespace Xrpa {
       return Count >= MaxCount;
     }
 
-    public void GetAt(int index, out ElemType value) {
-      _dataSource.Read(_memOffset + ElemOffset + index * ElemSize, out value);
+    public ElemType GetAt(int index) {
+      return _elemReadValue(_poolAccessor, index * _elemSize);
     }
 
     private void SetAt(int index, ref ElemType value) {
-      _dataSource.Write(_memOffset + ElemOffset + index * ElemSize, ref value);
+      _elemWriteValue(value, _poolAccessor, index * _elemSize);
     }
 
     private void MemShift(int toIndex, int fromIndex, int count) {
       var temp = new ElemType[count];
-      _dataSource.ReadArray(_memOffset + ElemOffset + fromIndex * ElemSize, temp, 0, count);
-      _dataSource.WriteArray(_memOffset + ElemOffset + toIndex * ElemSize, temp, 0, count);
+      for (int i = 0; i < count; i++) {
+        temp[i] = GetAt(fromIndex + i);
+      }
+      for (int i = 0; i < count; i++) {
+        SetAt(toIndex + i, ref temp[i]);
+      }
     }
 
     public int Insert(ref ElemType val) {
@@ -171,7 +193,7 @@ namespace Xrpa {
 
       while (lowIdx <= highIdx) {
         int midIdx = (lowIdx + highIdx) / 2;
-        GetAt(midIdx, out ElemType midValue);
+        ElemType midValue = GetAt(midIdx);
         int d = compare(ref midValue, ref target);
         if (d > 0) {
           highIdx = midIdx - 1;
@@ -191,10 +213,6 @@ namespace Xrpa {
       }
       return found ? lastFound : lowIdx;
     }
-
-    private readonly System.IO.UnmanagedMemoryAccessor _dataSource;
-    private readonly long _memOffset;
-    private readonly SortCompare<ElemType, ElemType> _elemCompare;
   }
 
 }

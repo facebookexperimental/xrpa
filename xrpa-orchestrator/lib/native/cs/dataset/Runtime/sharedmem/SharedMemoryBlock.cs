@@ -19,7 +19,7 @@ using System.Threading;
 
 namespace Xrpa {
 
-  public class SharedMemoryBlock : System.IDisposable {
+  unsafe public class SharedMemoryBlock : System.IDisposable {
     public SharedMemoryBlock() { }
 
     public SharedMemoryBlock(string name, int size) {
@@ -94,11 +94,23 @@ namespace Xrpa {
       if (_mutex == null || !_mutex.WaitOne(timeoutMS)) {
         return null;
       }
-      return new MutexLockedAccessor(_memView, _mutex);
+
+      return new MutexLockedAccessor(AcquireUnsafeAccess(), _mutex, () => ReleaseUnsafeAccess());
     }
 
-    public MemoryMappedViewAccessor UnsafeAccess() {
-      return _memView;
+    public MemoryAccessor AcquireUnsafeAccess() {
+      if (_memView == null) {
+        return null;
+      }
+      byte* bytePointer = null;
+      _memView.SafeMemoryMappedViewHandle.AcquirePointer(ref bytePointer);
+      return new MemoryAccessor(bytePointer, 0, _memSize);
+    }
+
+    public void ReleaseUnsafeAccess() {
+      if (_memView != null) {
+        _memView.SafeMemoryMappedViewHandle.ReleasePointer();
+      }
     }
 
     private string _memName;

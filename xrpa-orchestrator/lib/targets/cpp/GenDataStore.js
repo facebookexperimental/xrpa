@@ -30,15 +30,11 @@ const CppDatasetLibraryTypes_1 = require("./CppDatasetLibraryTypes");
 const GenReadReconcilerDataStore_1 = require("./GenReadReconcilerDataStore");
 const GenTypesHeader_1 = require("./GenTypesHeader");
 const GenWriteReconcilerDataStore_1 = require("./GenWriteReconcilerDataStore");
+const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
 function genMsgHandler(fieldName) {
     return `${fieldName}MessageHandler_`;
 }
 exports.genMsgHandler = genMsgHandler;
-function getOutboundReconcilerClassName(ctx, includes, typeDef) {
-    const readAccessor = typeDef.getReadAccessorType(ctx.namespace, includes);
-    const localPtr = typeDef.getLocalTypePtr(ctx.namespace, includes);
-    return `${CppDatasetLibraryTypes_1.OutboundTypeReconciler.getLocalType(ctx.namespace, includes)}<${readAccessor}, ${localPtr}>`;
-}
 function getHeaderIncludes(ctx, includes) {
     includes.addFile({
         filename: "<functional>",
@@ -49,26 +45,19 @@ function getHeaderIncludes(ctx, includes) {
         namespace: "std",
     });
 }
-function genReconcilerConstructorContents(ctx, includes) {
+function genReconcilerConstructorContents(ctx) {
     const lines = [];
     for (const reconcilerDef of ctx.storeDef.getInputReconcilers()) {
         const typeDef = reconcilerDef.type;
-        const className = (0, GenReadReconcilerDataStore_1.getInboundReconcilerClassName)(ctx, typeDef);
+        const className = (0, GenDataStoreShared_1.getInboundCollectionClassName)(ctx, typeDef);
         const varName = reconcilerDef.getDataStoreAccessorName();
-        const dsTypeID = typeDef.getDSTypeID(ctx.namespace, includes);
-        lines.push(`${varName} = std::make_shared<${className}>(this);`, `setInboundReconciler(${dsTypeID}, ${varName});`);
-        if (reconcilerDef.shouldGenerateConcreteReconciledType()) {
-            const reconciledTypeName = typeDef.getLocalType(ctx.namespace, null);
-            lines.push(`${varName}->setCreateDelegate(${reconciledTypeName}::create);`);
-        }
+        lines.push(`${varName} = std::make_shared<${className}>(this);`, `registerCollection(${varName});`);
     }
     for (const reconcilerDef of ctx.storeDef.getOutputReconcilers()) {
         const typeDef = reconcilerDef.type;
-        const className = getOutboundReconcilerClassName(ctx, includes, typeDef);
+        const className = (0, GenDataStoreShared_1.getOutboundCollectionClassName)(ctx, typeDef);
         const varName = reconcilerDef.getDataStoreAccessorName();
-        const dsTypeID = typeDef.getDSTypeID(ctx.namespace, includes);
-        const inboundFieldMask = reconcilerDef.getInboundChangeBits();
-        lines.push(`${varName} = std::make_shared<${className}>(this, ${dsTypeID}, ${inboundFieldMask});`, `setOutboundReconciler(${dsTypeID}, ${varName});`);
+        lines.push(`${varName} = std::make_shared<${className}>(this);`, `registerCollection(${varName});`);
     }
     return lines;
 }
@@ -99,14 +88,14 @@ function genDataStoreClass(ctx, includes) {
         `class ${className} : public ${baseClassName} {`,
         ` public:`,
         `  explicit ${className}(std::weak_ptr<${CppDatasetLibraryTypes_1.DatasetInterface.getLocalType(ctx.namespace, includes)}> dataset)`,
-        `      : ${baseClassName}(dataset, ${hashName}, ${ctx.storeDef.datamodel.getCollectionCount()}, ${messagePoolSize}) {`,
-        ...(0, Helpers_1.indent)(2, genReconcilerConstructorContents(ctx, includes)),
+        `      : ${baseClassName}(dataset, ${hashName}, ${messagePoolSize}) {`,
+        ...(0, Helpers_1.indent)(2, genReconcilerConstructorContents(ctx)),
         `  }`,
         ``,
     ];
     for (const reconcilerDef of ctx.storeDef.getInputReconcilers()) {
         const typeDef = reconcilerDef.type;
-        const className = (0, GenReadReconcilerDataStore_1.getInboundReconcilerClassName)(ctx, typeDef);
+        const className = (0, GenDataStoreShared_1.getInboundCollectionClassName)(ctx, typeDef);
         const varName = reconcilerDef.getDataStoreAccessorName();
         lines.push(...(0, Helpers_1.indent)(1, [
             `std::shared_ptr<${className}> ${varName};`,
@@ -114,7 +103,7 @@ function genDataStoreClass(ctx, includes) {
     }
     for (const reconcilerDef of ctx.storeDef.getOutputReconcilers()) {
         const typeDef = reconcilerDef.type;
-        const className = getOutboundReconcilerClassName(ctx, includes, typeDef);
+        const className = (0, GenDataStoreShared_1.getOutboundCollectionClassName)(ctx, typeDef);
         const varName = reconcilerDef.getDataStoreAccessorName();
         lines.push(...(0, Helpers_1.indent)(1, [
             `std::shared_ptr<${className}> ${varName};`,
@@ -143,8 +132,10 @@ function genDataStoreClass(ctx, includes) {
 function genExternalForwardDeclarations(ctx) {
     const lines = [];
     for (const reconcilerDef of ctx.storeDef.getInputReconcilers()) {
-        if (reconcilerDef.indexedReconciled) {
-            lines.push((0, CppCodeGenImpl_1.forwardDeclareClass)(reconcilerDef.indexedReconciled.indexedTypeName));
+        for (const indexConfig of reconcilerDef.indexConfigs) {
+            if (indexConfig.boundClassName) {
+                lines.push((0, CppCodeGenImpl_1.forwardDeclareClass)(indexConfig.boundClassName));
+            }
         }
     }
     lines.push(``);
@@ -193,10 +184,10 @@ function genInterfaceTypes(ctx, includes) {
                         name: "id",
                         type: ctx.moduleDef.DSIdentifier,
                     }, {
-                        name: "type",
-                        type: "int32_t",
+                        name: "collection",
+                        type: CppDatasetLibraryTypes_1.CollectionInterface.getLocalType(ctx.namespace, classSpec.includes) + "*",
                     }],
-                superClassInitializers: ["id", "type"],
+                superClassInitializers: ["id", "collection"],
                 body: [],
             });
             ret.push(classSpec);
@@ -214,7 +205,7 @@ function genDataStore(fileWriter, outdir, ctx) {
         ...(0, GenWriteReconcilerDataStore_1.genOutboundReconciledTypes)(ctx, includes),
         ...(0, GenReadReconcilerDataStore_1.genInboundReconciledTypes)(ctx, includes),
     ];
-    const reconcilers = (0, GenReadReconcilerDataStore_1.genInboundTypeReconcilers)(ctx, includes);
+    const collections = (0, GenReadReconcilerDataStore_1.genObjectCollectionClasses)(ctx, includes);
     const lines = [
         ...genExternalForwardDeclarations(ctx),
         ``,
@@ -228,15 +219,15 @@ function genDataStore(fileWriter, outdir, ctx) {
         `// Reconciled Types`,
         ...(0, Helpers_1.mapAndCollapse)(reconciledTypes, CppCodeGenImpl_1.genClassHeaderDefinition),
         ``,
-        `// Reconciler Classes`,
-        ...(0, Helpers_1.mapAndCollapse)(reconcilers, CppCodeGenImpl_1.genClassHeaderDefinition),
+        `// Object Collections`,
+        ...(0, Helpers_1.mapAndCollapse)(collections, CppCodeGenImpl_1.genClassHeaderDefinition),
         ``,
         `// Data Store Implementation`,
         ...genDataStoreClass(ctx, includes),
         ``,
         ...(0, Helpers_1.mapAndCollapse)(accessors, CppCodeGenImpl_1.genClassSourceDefinition, includes, true),
         ...(0, Helpers_1.mapAndCollapse)(reconciledTypes, CppCodeGenImpl_1.genClassSourceDefinition, includes, true),
-        ...(0, Helpers_1.mapAndCollapse)(reconcilers, CppCodeGenImpl_1.genClassSourceDefinition, includes, true),
+        ...(0, Helpers_1.mapAndCollapse)(collections, CppCodeGenImpl_1.genClassSourceDefinition, includes, true),
         `} // namespace ${ctx.namespace}`,
         ``,
     ];

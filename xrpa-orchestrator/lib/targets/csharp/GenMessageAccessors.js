@@ -72,10 +72,10 @@ function genSendMessageBody(params) {
         const messageType = params.typeDef.getFieldIndex(params.fieldName);
         if (params.fieldType.hasFields()) {
             const msgWriteAccessor = params.fieldType.getWriteAccessorType(params.ctx.namespace, params.includes);
-            lines.push(`${msgWriteAccessor} message = new(_reconciler.SendMessage(`, `    GetDSID(),`, `    ${messageType},`, `    ${msgWriteAccessor}.DS_SIZE));`, ...genMessageParamInitializer(params.ctx, params.includes, params.fieldType));
+            lines.push(`${msgWriteAccessor} message = new(_collection.SendMessage(`, `    GetXrpaId(),`, `    ${messageType},`, `    ${msgWriteAccessor}.DS_SIZE));`, ...genMessageParamInitializer(params.ctx, params.includes, params.fieldType));
         }
         else {
-            lines.push(`_reconciler.SendMessage(`, `    GetDSID(),`, `    ${messageType},`, `    0);`);
+            lines.push(`_collection.SendMessage(`, `    GetXrpaId(),`, `    ${messageType},`, `    0);`);
         }
     }
     return lines;

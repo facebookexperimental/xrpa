@@ -28,6 +28,7 @@ HeapDataset::HeapDataset(const DatasetConfig& config) {
   memoryBlock = malloc(header.totalBytes);
 
   acquire(HM_TIMEOUT, [&](DatasetAccessor* accessor) { accessor->initContents(header, config); });
+  isInitialized_ = true;
 }
 
 HeapDataset::~HeapDataset() {
@@ -40,7 +41,7 @@ bool HeapDataset::acquire(
     std::function<void(DatasetAccessor*)> func) {
   if (memoryBlock != nullptr && mutex.try_lock_for(timeout)) {
     auto accessor = std::make_unique<DatasetAccessor>(
-        std::make_unique<HeapMutexLockedPointer>(memoryBlock, &mutex));
+        std::make_unique<HeapMutexLockedPointer>(memoryBlock, &mutex), !isInitialized_);
     func(accessor.get());
     return true;
   }

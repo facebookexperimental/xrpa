@@ -239,6 +239,17 @@ function SignalProcessingDataModel(datamodel) {
         },
     });
     datamodel.addCollection({
+        name: "SignalPitchShift",
+        interfaceType: ISignalNode,
+        maxCount: 256,
+        fields: {
+            numOutputs: datamodel.CountField(1),
+            numChannels: datamodel.CountField(1),
+            srcNode: ISignalNode,
+            pitchShiftSemitones: datamodel.CountField(0),
+        },
+    });
+    datamodel.addCollection({
         name: "SignalSoftClip",
         interfaceType: ISignalNode,
         maxCount: 256,
@@ -321,6 +332,9 @@ function setupSignalProcessingDataStore(datastore) {
     });
     datastore.addOutputReconciler({
         type: "SignalParametricEqualizer",
+    });
+    datastore.addOutputReconciler({
+        type: "SignalPitchShift",
     });
     datastore.addOutputReconciler({
         type: "SignalSoftClip",

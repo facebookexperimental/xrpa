@@ -63,6 +63,7 @@ export interface TargetCodeGenImpl {
     nsJoin(...names: string[]): string;
     nsExtract(qualifiedName: string, nonNamespacePartCount?: number): string;
     privateMember(memberVarName: string): string;
+    methodMember(methodName: string): string;
     genCommentLines(str?: string): string[];
     genPrimitiveValue(typename: string, value: string | boolean | number | null): string;
     genMultiValue(typename: string, hasInitializerConstructor: boolean, valueStrings: [string, string][]): string;

@@ -15,7 +15,6 @@
  */
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 
 namespace Xrpa {
 
@@ -30,25 +29,20 @@ namespace Xrpa {
   }
 
   public class DatasetAccessor : System.IDisposable {
-    public static readonly int HeaderBaseTimestamp_Offset = (int)Marshal.OffsetOf(typeof(DSHeader), "BaseTimestamp");
-    public static readonly int HeaderDatasetVersion_Offset =(int)Marshal.OffsetOf(typeof(DSHeader), "DatasetVersion");
-    public static readonly int HeaderSchemaHash_Offset =(int)Marshal.OffsetOf(typeof(DSHeader), "SchemaHash");
-    public static readonly int HeaderLastMessageID_Offset = (int)Marshal.OffsetOf(typeof(DSHeader), "LastMessageID");
-    public static readonly int HeaderLastChangelogID_Offset = (int)Marshal.OffsetOf(typeof(DSHeader), "LastChangelogID");
+    private const int DATASET_VERSION = 7; // conorwdickinson: ring buffer added LastElemOffset
 
-    private const int DATASET_VERSION = 6; // conorwdickinson: schema hash as struct
-
-    public DatasetAccessor(System.IO.UnmanagedMemoryAccessor lockedMemView) {
-      _dataSource = lockedMemView;
-
-      _dataSource.Read(0, out _header);
+    public DatasetAccessor(MemoryAccessor memAccessor, bool isInitializing) {
+      _memAccessor = memAccessor;
+      _header = new DSHeader(_memAccessor);
 
       _nullObjectHeader = new DSObjectHeader {
         Type = -1,
         PoolOffset = 0
       };
 
-      InitRegionWrappers();
+      if (!isInitializing) {
+        InitRegionWrappers();
+      }
     }
 
     public void Dispose() {
@@ -62,20 +56,35 @@ namespace Xrpa {
     }
 
     private void InitRegionWrappers() {
-      _objectHeaders = new DSObjectHeaderArray(_dataSource, _header.ObjectHeadersRegion, DSObjectHeader.Compare);
-      _memoryPool = new PlacedMemoryAllocator(_dataSource, _header.MemoryPoolRegion);
-      _changeLog = new PlacedRingBuffer(_dataSource, _header.ChangelogRegion);
-      _messageQueue = new PlacedRingBuffer(_dataSource, _header.MessageQueueRegion);
+      _objectHeaders = new DSObjectHeaderArray(_memAccessor, _header.ObjectHeadersRegion, DSObjectHeader.DS_SIZE, DSObjectHeader.ReadValue, DSObjectHeader.WriteValue, DSObjectHeader.Compare);
+      _memoryPool = new PlacedMemoryAllocator(_memAccessor, _header.MemoryPoolRegion);
+      _changeLog = new PlacedRingBuffer(_memAccessor, _header.ChangelogRegion);
+      _messageQueue = new PlacedRingBuffer(_memAccessor, _header.MessageQueueRegion);
     }
 
-    public void InitContents(DSHeader prefilledHeader, DatasetConfig config) {
+    public void InitContents(DatasetConfig config) {
       // initialize baseTimestamp to 0 first, to let lock-free readers know the data is invalid
       // (note there is still sort of a race condition there... but a reader always has to acquire
       // the lock before actually doing anything anyway)
-      _dataSource.Write(HeaderBaseTimestamp_Offset, 0);
+      _header.BaseTimestamp = 0;
 
-      _header = prefilledHeader;
-      _dataSource.Write(0, ref _header);
+      _header.DatasetVersion = DATASET_VERSION;
+      _header.SchemaHash = config.SchemaHash;
+      _header.TotalBytes = DSHeader.DS_SIZE;
+      _header.LastChangelogID = -1;
+      _header.LastMessageID = -1;
+
+      _header.ObjectHeadersRegion = _header.TotalBytes;
+      _header.TotalBytes += DSObjectHeaderArray.GetMemSize(config.MaxObjectCount, DSObjectHeader.DS_SIZE);
+
+      _header.MemoryPoolRegion = _header.TotalBytes;
+      _header.TotalBytes += PlacedMemoryAllocator.GetMemSize(config.MemPoolSize);
+
+      _header.ChangelogRegion = _header.TotalBytes;
+      _header.TotalBytes += PlacedRingBuffer.GetMemSize(config.ChangelogPoolSize);
+
+      _header.MessageQueueRegion = _header.TotalBytes;
+      _header.TotalBytes += PlacedRingBuffer.GetMemSize(config.MessagePoolSize);
 
       InitRegionWrappers();
 
@@ -87,19 +96,16 @@ namespace Xrpa {
       // set this last (and not in genHeader()) as it tells anyone accessing the header
       // without a mutex lock that the header is not yet initialized
       _header.BaseTimestamp = GetCurrentClockTimeMicroseconds();
-      _dataSource.Write(HeaderBaseTimestamp_Offset, _header.BaseTimestamp);
     }
 
     public void Clear() {
       // initialize baseTimestamp to 0 first, to let lock-free readers know the data is invalid
       // (note there is still sort of a race condition there... but a reader always has to acquire
       // the lock before actually doing anything anyway)
-      _dataSource.Write(HeaderBaseTimestamp_Offset, 0);
-
       _header.BaseTimestamp = 0;
+
       _header.LastChangelogID = -1;
       _header.LastMessageID = -1;
-      _dataSource.Write(0, ref _header);
 
       _objectHeaders.Reset();
       _memoryPool.Reset();
@@ -109,7 +115,6 @@ namespace Xrpa {
       // set this last (and not in genHeader()) as it tells anyone accessing the header
       // without a mutex lock that the header is not yet initialized
       _header.BaseTimestamp = GetCurrentClockTimeMicroseconds();
-      _dataSource.Write(HeaderBaseTimestamp_Offset, _header.BaseTimestamp);
     }
 
     public int GetCurrentTimestamp() {
@@ -120,7 +125,7 @@ namespace Xrpa {
       List<DSIdentifier> ret = new();
       int count = _objectHeaders.Count;
       for (int i = 0; i < count; ++i) {
-        _objectHeaders.GetAt(i, out DSObjectHeader entry);
+        DSObjectHeader entry = _objectHeaders.GetAt(i);
         ret.Add(entry.ID);
       }
       return ret;
@@ -130,7 +135,7 @@ namespace Xrpa {
       List<DSIdentifier> ret = new();
       int count = _objectHeaders.Count;
       for (int i = 0; i < count; ++i) {
-        _objectHeaders.GetAt(i, out DSObjectHeader entry);
+        DSObjectHeader entry = _objectHeaders.GetAt(i);
         if (entry.Type == type) {
           ret.Add(entry.ID);
         }
@@ -191,8 +196,7 @@ namespace Xrpa {
         return _nullObjectHeader;
       }
 
-      _objectHeaders.GetAt(idx, out DSObjectHeader objHeader);
-      return objHeader;
+      return _objectHeaders.GetAt(idx);
     }
 
     private DSObjectHeader GetObjectHeader(DSIdentifier id, int type) {
@@ -201,7 +205,7 @@ namespace Xrpa {
         return _nullObjectHeader;
       }
 
-      _objectHeaders.GetAt(idx, out DSObjectHeader objHeader);
+      DSObjectHeader objHeader = _objectHeaders.GetAt(idx);
       if (objHeader.Type != type) {
         return _nullObjectHeader;
       }
@@ -219,14 +223,15 @@ namespace Xrpa {
         return new MemoryAccessor();
       }
 
+      int messageId = 0;
       DSMessageAccessor message = new(_messageQueue.Push(
-        DSMessageAccessor.DS_SIZE + numBytes, ref _header.LastMessageID));
+        DSMessageAccessor.DS_SIZE + numBytes, ref messageId));
       message.SetTarget(ref target);
       message.SetMessageType(messageType);
       message.SetTimestamp(
         timestamp != 0 ? (int)(timestamp - _header.BaseTimestamp) : GetCurrentTimestamp());
 
-      _dataSource.Write(HeaderLastMessageID_Offset, _header.LastMessageID);
+      _header.LastMessageID = messageId;
 
       return message.AccessMessageData();
     }
@@ -272,12 +277,13 @@ namespace Xrpa {
       _objectHeaders.InsertPresorted(ref objHeader, idx);
 
       // add entry to log
-      DSChangeEventAccessor changeEvent = new(_changeLog.Push(DSChangeEventAccessor.DS_SIZE, ref _header.LastChangelogID));
+      int lastChangelogID = 0;
+      DSChangeEventAccessor changeEvent = new(_changeLog.Push(DSChangeEventAccessor.DS_SIZE, ref lastChangelogID));
       changeEvent.SetChangeType(DSChangeType.CreateObject);
       changeEvent.SetTarget(ref objHeader);
       changeEvent.SetTimestamp(GetCurrentTimestamp());
 
-      _dataSource.Write(HeaderLastChangelogID_Offset, _header.LastChangelogID);
+      _header.LastChangelogID = lastChangelogID;
 
       mem.WriteToZeros();
 
@@ -298,13 +304,14 @@ namespace Xrpa {
       }
 
       // add entry to log
-      DSChangeEventAccessor changeEvent = new(_changeLog.Push(DSChangeEventAccessor.DS_SIZE + 8, ref _header.LastChangelogID));
+      int lastChangelogID = 0;
+      DSChangeEventAccessor changeEvent = new(_changeLog.Push(DSChangeEventAccessor.DS_SIZE + 8, ref lastChangelogID));
       changeEvent.SetChangeType(DSChangeType.UpdateObject);
       changeEvent.SetTarget(ref objHeader);
       changeEvent.SetTimestamp(GetCurrentTimestamp());
       changeEvent.SetChangedFields(fieldMask);
 
-      _dataSource.Write(HeaderLastChangelogID_Offset, _header.LastChangelogID);
+      _header.LastChangelogID = lastChangelogID;
 
       return GetObjectFromHeader(objHeader);
     }
@@ -317,19 +324,20 @@ namespace Xrpa {
       }
 
       // free memoryPool memory
-      _objectHeaders.GetAt(idx, out DSObjectHeader objHeader);
+      DSObjectHeader objHeader = _objectHeaders.GetAt(idx);
       _memoryPool.Free(objHeader.PoolOffset);
 
       // remove from objectHeaders
       _objectHeaders.RemoveIndex(idx);
 
       // add entry to log
-      DSChangeEventAccessor changeEvent = new(_changeLog.Push(DSChangeEventAccessor.DS_SIZE, ref _header.LastChangelogID));
+      int lastChangelogID = 0;
+      DSChangeEventAccessor changeEvent = new(_changeLog.Push(DSChangeEventAccessor.DS_SIZE, ref lastChangelogID));
       changeEvent.SetChangeType(DSChangeType.DeleteObject);
       changeEvent.SetTarget(ref objHeader);
       changeEvent.SetTimestamp(GetCurrentTimestamp());
 
-      _dataSource.Write(HeaderLastChangelogID_Offset, _header.LastChangelogID);
+      _header.LastChangelogID = lastChangelogID;
 
       // clear out all changelog pointers to the target memory location since they are now invalid
       int changeCount = _changeLog.Count;
@@ -339,39 +347,21 @@ namespace Xrpa {
       }
     }
 
-    public static DSHeader GenHeader(DatasetConfig config) {
-      DSHeader header = new();
-      header.DatasetVersion = DATASET_VERSION;
-      header.SchemaHash = config.SchemaHash;
-      header.TotalBytes = Marshal.SizeOf(typeof(DSHeader));
-      header.BaseTimestamp = 0; // set for real in InitContents()
-      header.LastChangelogID = -1;
-      header.LastMessageID = -1;
-
-      header.ObjectHeadersRegion = header.TotalBytes;
-      header.TotalBytes += DSObjectHeaderArray.GetMemSize(config.MaxObjectCount);
-
-      header.MemoryPoolRegion = header.TotalBytes;
-      header.TotalBytes += PlacedMemoryAllocator.GetMemSize(config.MemPoolSize);
-
-      header.ChangelogRegion = header.TotalBytes;
-      header.TotalBytes += PlacedRingBuffer.GetMemSize(config.ChangelogPoolSize);
-
-      header.MessageQueueRegion = header.TotalBytes;
-      header.TotalBytes += PlacedRingBuffer.GetMemSize(config.MessagePoolSize);
-
-      return header;
+    public static int GetTotalBytes(DatasetConfig config) {
+      int totalBytes = DSHeader.DS_SIZE;
+      totalBytes += DSObjectHeaderArray.GetMemSize(config.MaxObjectCount, DSObjectHeader.DS_SIZE);
+      totalBytes += PlacedMemoryAllocator.GetMemSize(config.MemPoolSize);
+      totalBytes += PlacedRingBuffer.GetMemSize(config.ChangelogPoolSize);
+      totalBytes += PlacedRingBuffer.GetMemSize(config.MessagePoolSize);
+      return totalBytes;
     }
 
-    public static bool VersionCheck(System.IO.UnmanagedMemoryAccessor memView, DatasetConfig config) {
-      MemoryAccessor memAccessor = new(memView, 0, memView.Capacity);
-      memView.Read(HeaderDatasetVersion_Offset, out int datasetVersion);
-      memView.Read(HeaderBaseTimestamp_Offset, out ulong baseTimestamp);
-      DSHashValue schemaHash = DSHashValue.ReadValue(memAccessor, HeaderSchemaHash_Offset);
-      return baseTimestamp != 0 && datasetVersion == DATASET_VERSION && schemaHash == config.SchemaHash;
+    public static bool VersionCheck(MemoryAccessor memAccessor, DatasetConfig config) {
+      DSHeader header = new(memAccessor);
+      return header.BaseTimestamp != 0 && header.DatasetVersion == DATASET_VERSION && header.SchemaHash == config.SchemaHash;
     }
 
-    private readonly System.IO.UnmanagedMemoryAccessor _dataSource;
+    private readonly MemoryAccessor _memAccessor;
 
     private DSHeader _header;
     private DSObjectHeaderArray _objectHeaders;

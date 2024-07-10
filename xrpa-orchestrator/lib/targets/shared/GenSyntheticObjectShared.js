@@ -146,7 +146,7 @@ function genDestroyObjectsBody(ctx, codegen, objectDef, includes) {
     const storeVarName = storeToMemberName(codegen, ctx.storeDef.apiname);
     for (const objDef of objectDef.objDefs) {
         const { reconcilerName, objVarName } = getInfoForObj(ctx, codegen, objDef, includes);
-        const objId = codegen.genDerefMethodCall(objVarName, "getDSID", []);
+        const objId = codegen.genDerefMethodCall(objVarName, "getXrpaId", []);
         lines.unshift(`if (${codegen.genNonNullCheck(objVarName)}) {`, `  ${codegen.genDerefMethodCall(codegen.genDeref(storeVarName, reconcilerName), "removeObject", [objId])};`, `  ${objVarName} = ${codegen.getNullValue()};`, `}`);
     }
     return lines;

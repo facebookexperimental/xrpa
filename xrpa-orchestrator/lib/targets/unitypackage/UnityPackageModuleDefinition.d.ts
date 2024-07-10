@@ -16,7 +16,7 @@
 
 
 import { DataMapDefinition } from "../../shared/DataMap";
-import { ComponentProperties, IndexedReconciledParams } from "../../shared/DataStore";
+import { ComponentProperties, IndexConfiguration } from "../../shared/DataStore";
 import { FileWriter } from "../../shared/FileWriter";
 import { TypeSpec } from "../../shared/TargetCodeGen";
 import { CollectionTypeDefinition } from "../../shared/TypeDefinition";
@@ -26,7 +26,7 @@ export declare class UnityPackageModuleDefinition extends CsharpModuleDefinition
     readonly packagesRoot: string;
     readonly packageInfo: PackageInfo;
     constructor(datamap: DataMapDefinition, packagesRoot: string, packageInfo: PackageInfo);
-    setCollectionAsInbound(type: CollectionTypeDefinition, reconciledTo: TypeSpec | undefined, indexedReconciled: IndexedReconciledParams | undefined): void;
+    setCollectionAsInbound(type: CollectionTypeDefinition, reconciledTo: TypeSpec | undefined, indexes: Array<IndexConfiguration> | undefined): void;
     setCollectionAsOutbound(type: CollectionTypeDefinition, componentProps: ComponentProperties): void;
     doCodeGen(): FileWriter;
 }

@@ -21,28 +21,37 @@ exports.DataStoreDefinition = exports.OutputReconcilerDefinition = exports.Input
 const DataModel_1 = require("./DataModel");
 const Helpers_1 = require("./Helpers");
 const TypeDefinition_1 = require("./TypeDefinition");
-function validateFieldNames(fields, fieldAccessorNameOverrides, componentProps) {
-    for (const fieldName in fieldAccessorNameOverrides) {
-        (0, Helpers_1.assertIsKeyOf)(fieldName, fields);
-    }
-    if (componentProps.ephemeralProperties) {
-        for (const fieldName of componentProps.ephemeralProperties) {
-            (0, Helpers_1.assertIsKeyOf)(fieldName, fields);
-        }
-    }
-    if (componentProps.fieldToPropertyBindings) {
-        for (const fieldName in componentProps.fieldToPropertyBindings) {
-            (0, Helpers_1.assertIsKeyOf)(fieldName, fields);
-        }
-    }
-}
 class BaseReconcilerDefinition {
-    constructor(type, inboundFields, outboundFields, fieldAccessorNameOverrides, componentProps) {
+    constructor(type, inboundFields, outboundFields, fieldAccessorNameOverrides, componentProps, indexConfigs) {
         this.type = type;
         this.inboundFields = inboundFields;
         this.outboundFields = outboundFields;
         this.fieldAccessorNameOverrides = fieldAccessorNameOverrides;
         this.componentProps = componentProps;
+        this.indexConfigs = indexConfigs;
+        const fields = this.type.getAllFields();
+        for (const fieldName of (inboundFields ?? [])) {
+            (0, Helpers_1.assertIsKeyOf)(fieldName, fields);
+        }
+        for (const fieldName of (outboundFields ?? [])) {
+            (0, Helpers_1.assertIsKeyOf)(fieldName, fields);
+        }
+        for (const fieldName in fieldAccessorNameOverrides) {
+            (0, Helpers_1.assertIsKeyOf)(fieldName, fields);
+        }
+        if (componentProps.ephemeralProperties) {
+            for (const fieldName of componentProps.ephemeralProperties) {
+                (0, Helpers_1.assertIsKeyOf)(fieldName, fields);
+            }
+        }
+        if (componentProps.fieldToPropertyBindings) {
+            for (const fieldName in componentProps.fieldToPropertyBindings) {
+                (0, Helpers_1.assertIsKeyOf)(fieldName, fields);
+            }
+        }
+        for (const config of indexConfigs) {
+            (0, Helpers_1.assertIsKeyOf)(config.indexFieldName, fields);
+        }
     }
     isInboundField(fieldName) {
         return (0, Helpers_1.isExcluded)(fieldName, this.outboundFields, this.inboundFields);
@@ -67,9 +76,15 @@ class BaseReconcilerDefinition {
         const isBoundToIntrinsic = this.isFieldBoundToIntrinsic(fieldName);
         return !isBoundToIntrinsic && (0, TypeDefinition_1.typeIsClearSet)(this.getFieldSpec(fieldName).type);
     }
-    isSerializedField(fieldName, indexedFieldName) {
+    isIndexedField(fieldName) {
+        return this.indexConfigs.find(config => config.indexFieldName === fieldName) !== undefined;
+    }
+    isIndexBoundField(fieldName) {
+        return this.indexConfigs.find(config => config.boundClassName !== undefined && config.indexFieldName === fieldName) !== undefined;
+    }
+    isSerializedField(fieldName) {
         if (this.isInboundField(fieldName)) {
-            return fieldName === indexedFieldName;
+            return this.isIndexBoundField(fieldName);
         }
         return !this.isFieldBoundToIntrinsic(fieldName) && !this.isEphemeralField(fieldName) && !this.isClearSetField(fieldName);
     }
@@ -93,24 +108,30 @@ class BaseReconcilerDefinition {
         }
         return bitMask;
     }
+    getIndexedBitMask() {
+        const hasIndexedBinding = this.hasIndexedBinding();
+        const indexedFields = new Set(this.indexConfigs.map(config => config.indexFieldName));
+        let bitMask = 0;
+        const fields = this.type.getStateFields();
+        for (const fieldName in fields) {
+            if (hasIndexedBinding || indexedFields.has(fieldName)) {
+                bitMask |= this.type.getFieldBitMask(fieldName);
+            }
+        }
+        return bitMask;
+    }
+    hasIndexedBinding() {
+        return this.indexConfigs.find(config => config.boundClassName !== undefined) !== undefined;
+    }
 }
 class InputReconcilerDefinition extends BaseReconcilerDefinition {
-    constructor(type, outboundFields, fieldAccessorNameOverrides, componentProps, useGenericReconciledType = false, indexedReconciled) {
-        super(type, null, outboundFields, fieldAccessorNameOverrides, componentProps);
+    constructor(type, outboundFields, fieldAccessorNameOverrides, componentProps, useGenericReconciledType = false, indexConfigs) {
+        super(type, null, outboundFields, fieldAccessorNameOverrides, componentProps, indexConfigs);
         this.useGenericReconciledType = useGenericReconciledType;
-        this.indexedReconciled = indexedReconciled;
         this.inboundFields = null;
-        const fields = this.type.getAllFields();
-        for (const fieldName of outboundFields) {
-            (0, Helpers_1.assertIsKeyOf)(fieldName, fields);
-        }
-        validateFieldNames(fields, fieldAccessorNameOverrides, componentProps);
-        if (this.indexedReconciled) {
-            (0, Helpers_1.assertIsKeyOf)(this.indexedReconciled.fieldName, fields);
-        }
     }
     shouldGenerateConcreteReconciledType() {
-        return Boolean(this.indexedReconciled) || this.useGenericReconciledType;
+        return this.useGenericReconciledType || this.hasIndexedBinding();
     }
     getDataStoreAccessorName() {
         return this.type.getName() + "In";
@@ -118,14 +139,9 @@ class InputReconcilerDefinition extends BaseReconcilerDefinition {
 }
 exports.InputReconcilerDefinition = InputReconcilerDefinition;
 class OutputReconcilerDefinition extends BaseReconcilerDefinition {
-    constructor(type, inboundFields, fieldAccessorNameOverrides, componentProps) {
-        super(type, inboundFields, null, fieldAccessorNameOverrides, componentProps);
+    constructor(type, inboundFields, fieldAccessorNameOverrides, componentProps, indexConfigs) {
+        super(type, inboundFields, null, fieldAccessorNameOverrides, componentProps, indexConfigs);
         this.outboundFields = null;
-        const fields = this.type.getAllFields();
-        for (const fieldName of inboundFields) {
-            (0, Helpers_1.assertIsKeyOf)(fieldName, fields);
-        }
-        validateFieldNames(fields, fieldAccessorNameOverrides, componentProps);
     }
     getDataStoreAccessorName() {
         return this.type.getName() + "Out";
@@ -151,11 +167,8 @@ class DataStoreDefinition {
         if (!(0, TypeDefinition_1.typeIsCollection)(type)) {
             throw new Error(`Type ${params.type} is not a collection`);
         }
-        if (params.reconciledTo && params.indexedReconciled) {
-            throw new Error("Cannot specify both reconciledTo and indexedReconciled");
-        }
-        const inputDef = new InputReconcilerDefinition(type, params.outboundFields ?? [], params.fieldAccessorNameOverrides ?? {}, params.componentProps ?? {}, params.useGenericReconciledType ?? false, params.indexedReconciled);
-        this.moduleDef.setCollectionAsInbound(type, params.reconciledTo, inputDef.indexedReconciled);
+        const inputDef = new InputReconcilerDefinition(type, params.outboundFields ?? [], params.fieldAccessorNameOverrides ?? {}, params.componentProps ?? {}, params.useGenericReconciledType ?? false, params.indexes ?? []);
+        this.moduleDef.setCollectionAsInbound(type, params.reconciledTo, inputDef.indexConfigs);
         this.inputs.push(inputDef);
         return inputDef;
     }
@@ -170,13 +183,16 @@ class DataStoreDefinition {
         if (!(0, TypeDefinition_1.typeIsCollection)(type)) {
             throw new Error(`Type ${params.type} is not a collection`);
         }
-        const outputDef = new OutputReconcilerDefinition(type, params.inboundFields ?? [], params.fieldAccessorNameOverrides ?? {}, params.componentProps ?? {});
+        const outputDef = new OutputReconcilerDefinition(type, params.inboundFields ?? [], params.fieldAccessorNameOverrides ?? {}, params.componentProps ?? {}, params.indexes ?? []);
         this.moduleDef.setCollectionAsOutbound(type, outputDef.componentProps);
         this.outputs.push(outputDef);
         return outputDef;
     }
     getOutputReconcilers() {
         return this.outputs;
+    }
+    getAllReconcilers() {
+        return [...this.inputs, ...this.outputs];
     }
     addSyntheticObject(name, objectDef) {
         this.syntheticObjects[name] = objectDef;

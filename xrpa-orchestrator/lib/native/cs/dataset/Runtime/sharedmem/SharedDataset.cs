@@ -18,7 +18,7 @@ using System.Runtime.InteropServices;
 
 namespace Xrpa {
 
-  public class SharedDataset : DatasetInterface {
+  unsafe public class SharedDataset : DatasetInterface {
     public SharedDataset(string name, DatasetConfig config) {
       _datasetName = name;
       _datasetConfig = config;
@@ -33,59 +33,73 @@ namespace Xrpa {
     }
 
     public bool Initialize() {
-      DSHeader header = DatasetAccessor.GenHeader(_datasetConfig);
+      int totalBytes = DatasetAccessor.GetTotalBytes(_datasetConfig);
 
-      bool didCreate = _memoryBlock.OpenMemory(_datasetName, header.TotalBytes);
+      _isInitialized = false;
+      bool didCreate = _memoryBlock.OpenMemory(_datasetName, totalBytes);
 
       if (didCreate) {
-        bool didLock = Acquire(5000, accessor => accessor.InitContents(header, _datasetConfig));
+        bool didLock = Acquire(5000, accessor => accessor.InitContents(_datasetConfig));
         if (!didLock) {
           return false;
         }
       } else {
         // lock-free version check against the dataset's metadata
-        var memView = _memoryBlock.UnsafeAccess();
-        if (memView == null || !DatasetAccessor.VersionCheck(memView, _datasetConfig)) {
+        var memAccessor = _memoryBlock.AcquireUnsafeAccess();
+        if (memAccessor == null || !DatasetAccessor.VersionCheck(memAccessor, _datasetConfig)) {
           // TODO log a warning for the version mismatch? it isn't a hard failure but it will be
           // confusing without a log message
+          _memoryBlock.ReleaseUnsafeAccess();
           return false;
         }
+        _memoryBlock.ReleaseUnsafeAccess();
       }
+      _isInitialized = true;
       return true;
     }
 
     public override bool CheckSchemaHash(DSHashValue schemaHash) {
-      var memView = _memoryBlock?.UnsafeAccess();
-      if (memView == null) {
+      var memAccessor = _memoryBlock?.AcquireUnsafeAccess();
+      if (memAccessor == null) {
         return false;
       }
-      MemoryAccessor memAccessor = new(memView, 0, memView.Capacity);
-      DSHashValue headerSchemaHash = DSHashValue.ReadValue(memAccessor, DatasetAccessor.HeaderSchemaHash_Offset);
-      return headerSchemaHash == schemaHash;
+      DSHeader header = new(memAccessor);
+      bool ret = header.SchemaHash == schemaHash;
+      _memoryBlock.ReleaseUnsafeAccess();
+      return ret;
     }
 
     public override ulong GetBaseTimestamp() {
-      var memView = _memoryBlock?.UnsafeAccess();
-      if (memView == null) {
+      var memAccessor = _memoryBlock?.AcquireUnsafeAccess();
+      if (memAccessor == null) {
         return 0;
       }
-      return memView.ReadUInt64(DatasetAccessor.HeaderBaseTimestamp_Offset);
+      DSHeader header = new(memAccessor);
+      ulong ret = header.BaseTimestamp;
+      _memoryBlock.ReleaseUnsafeAccess();
+      return ret;
     }
 
     public override int GetLastChangelogID() {
-      var memView = _memoryBlock?.UnsafeAccess();
-      if (memView == null) {
+      var memAccessor = _memoryBlock?.AcquireUnsafeAccess();
+      if (memAccessor == null) {
         return 0;
       }
-      return memView.ReadInt32(DatasetAccessor.HeaderLastChangelogID_Offset);
+      DSHeader header = new(memAccessor);
+      int ret = header.LastChangelogID;
+      _memoryBlock.ReleaseUnsafeAccess();
+      return ret;
     }
 
     public override int GetLastMessageID() {
-      var memView = _memoryBlock?.UnsafeAccess();
-      if (memView == null) {
+      var memAccessor = _memoryBlock?.AcquireUnsafeAccess();
+      if (memAccessor == null) {
         return 0;
       }
-      return memView.ReadInt32(DatasetAccessor.HeaderLastMessageID_Offset);
+      DSHeader header = new(memAccessor);
+      int ret = header.LastMessageID;
+      _memoryBlock.ReleaseUnsafeAccess();
+      return ret;
     }
 
     public override bool Acquire(int timeoutMS, System.Action<DatasetAccessor> func) {
@@ -99,7 +113,7 @@ namespace Xrpa {
         if (lockedMemView == null) {
           return false;
         }
-        using (var accessor = new DatasetAccessor(lockedMemView.View)) {
+        using (var accessor = new DatasetAccessor(lockedMemView.Memory, !_isInitialized)) {
           func(accessor);
         }
         return true;
@@ -109,6 +123,7 @@ namespace Xrpa {
     private readonly string _datasetName;
     private readonly DatasetConfig _datasetConfig;
     private SharedMemoryBlock _memoryBlock;
+    private bool _isInitialized = false;
   }
 
 }

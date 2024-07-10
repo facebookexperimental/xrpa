@@ -114,4 +114,5 @@ export declare function ParametricEqualizer(params: {
 export declare function LowPassFilter(signal: ISignalNodeType, cutoffFrequency: NonSignalNumericValue): ISignalNodeType;
 export declare function HighPassFilter(signal: ISignalNodeType, cutoffFrequency: NonSignalNumericValue): ISignalNodeType;
 export declare function BandPassFilter(signal: ISignalNodeType, centerFrequency: NonSignalNumericValue, q?: NonSignalNumericValue): ISignalNodeType;
+export declare function PitchShift(signal: ISignalNodeType, semitones: NonSignalNumericValue): ISignalNodeType;
 

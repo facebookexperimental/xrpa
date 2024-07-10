@@ -29,10 +29,10 @@ const GenDataStore_1 = require("../cpp/GenDataStore");
 const GenWriteReconcilerDataStore_1 = require("../cpp/GenWriteReconcilerDataStore");
 const GenDataStoreSubsystem_1 = require("./GenDataStoreSubsystem");
 const SceneComponentShared_1 = require("./SceneComponentShared");
+const GenReadReconcilerDataStore_1 = require("../cpp/GenReadReconcilerDataStore");
 const PROXY_OBJ = "reconciledObj_";
 function genComponentInit(ctx, includes, reconcilerDef) {
-    (0, assert_1.default)(reconcilerDef.indexedReconciled);
-    const indexMemberName = (0, SceneComponentShared_1.getFieldMemberName)(reconcilerDef, reconcilerDef.indexedReconciled.fieldName);
+    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `GetDataStoreSubsystem()->DataStore->${reconcilerDef.getDataStoreAccessorName()}`, "this", SceneComponentShared_1.getFieldMemberName);
     return [
         `if (dsIsInitialized_) {`,
         `  return;`,
@@ -40,41 +40,35 @@ function genComponentInit(ctx, includes, reconcilerDef) {
         `dsIsInitialized_ = true;`,
         `changeBits_ = ${reconcilerDef.getOutboundChangeBits()};`,
         ``,
-        ...(0, SceneComponentShared_1.genFieldInitializers)(ctx, includes, reconcilerDef, reconcilerDef.indexedReconciled.fieldName),
+        ...(0, SceneComponentShared_1.genFieldInitializers)(ctx, includes, reconcilerDef),
         ``,
         ...(0, SceneComponentShared_1.genTransformInitializers)(ctx, includes, reconcilerDef),
         ``,
-        `GetDataStoreSubsystem()->DataStore->${reconcilerDef.getDataStoreAccessorName()}->addIndexReconciledObject(${indexMemberName}, this);`,
+        ...Object.values(bindingCalls).map(bindings => bindings.addBinding),
     ];
 }
 function genComponentDeinit(ctx, reconcilerDef) {
-    (0, assert_1.default)(reconcilerDef.indexedReconciled);
-    const indexMemberName = (0, SceneComponentShared_1.getFieldMemberName)(reconcilerDef, reconcilerDef.indexedReconciled.fieldName);
+    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `GetDataStoreSubsystem()->DataStore->${reconcilerDef.getDataStoreAccessorName()}`, "this", SceneComponentShared_1.getFieldMemberName);
     return [
         `if (!dsIsInitialized_) {`,
         `  return;`,
         `}`,
-        `GetDataStoreSubsystem()->DataStore->${reconcilerDef.getDataStoreAccessorName()}->removeIndexReconciledObject(${indexMemberName});`,
+        ...Object.values(bindingCalls).map(bindings => bindings.removeBinding),
         `dsIsInitialized_ = false;`,
     ];
 }
 function getFieldSetterHooks(ctx, reconcilerDef) {
-    (0, assert_1.default)(reconcilerDef.indexedReconciled);
-    const fieldName = reconcilerDef.indexedReconciled.fieldName;
-    const indexMemberName = (0, SceneComponentShared_1.getFieldMemberName)(reconcilerDef, fieldName);
-    return {
-        [fieldName]: {
-            preSet: [
-                `GetDataStoreSubsystem()->DataStore->${reconcilerDef.getDataStoreAccessorName()}->removeIndexReconciledObject(${indexMemberName});`
-            ],
-            postSet: [
-                `GetDataStoreSubsystem()->DataStore->${reconcilerDef.getDataStoreAccessorName()}->addIndexReconciledObject(${indexMemberName}, this);`,
-            ],
-        }
-    };
+    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `GetDataStoreSubsystem()->DataStore->${reconcilerDef.getDataStoreAccessorName()}`, "this", SceneComponentShared_1.getFieldMemberName);
+    const ret = {};
+    for (const fieldName in bindingCalls) {
+        ret[fieldName] = {
+            preSet: [bindingCalls[fieldName].removeBinding],
+            postSet: [bindingCalls[fieldName].addBinding],
+        };
+    }
+    return ret;
 }
 function genIndexedSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderDir) {
-    (0, assert_1.default)(reconcilerDef.indexedReconciled);
     const baseComponentType = (0, Helpers_1.filterToString)(reconcilerDef.componentProps.basetype) ?? "SceneComponent";
     const headerIncludes = new CppCodeGenImpl_1.CppIncludeAggregator([
         `Components/${baseComponentType}.h`,
@@ -102,7 +96,6 @@ function genIndexedSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, out
     ]);
     const reconciledType = reconcilerDef.type.getLocalType(ctx.namespace, cppIncludes);
     const reconciledTypePtr = reconcilerDef.type.getLocalTypePtr(ctx.namespace, cppIncludes);
-    const indexedFieldName = reconcilerDef.indexedReconciled.fieldName;
     const outboundChangeBits = reconcilerDef.getOutboundChangeBits();
     const setterHooks = getFieldSetterHooks(ctx, reconcilerDef);
     const forwardDeclarations = [
@@ -132,21 +125,37 @@ function genIndexedSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, out
         },
         separateImplementation: true,
     });
-    (0, SceneComponentShared_1.genFieldProperties)(classSpec, { ctx, reconcilerDef, setterHooks, indexedFieldName, proxyObj: PROXY_OBJ, separateImplementation: true });
+    (0, SceneComponentShared_1.genFieldProperties)(classSpec, { ctx, reconcilerDef, setterHooks, proxyObj: PROXY_OBJ, separateImplementation: true });
     classSpec.methods.push({
-        name: "setDSReconciledObj",
+        name: "addXrpaBinding",
+        parameters: [{
+                name: "reconciledObj",
+                type: `const ${reconciledTypePtr}&`,
+            }],
+        returnType: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.bool.typename,
+        body: [
+            `if (${PROXY_OBJ} != nullptr) {`,
+            `  return false;`,
+            `}`,
+            `${PROXY_OBJ} = reconciledObj;`,
+            ...((outboundChangeBits !== 0 ? [
+                `changeBits_ = ${outboundChangeBits};`,
+                `${PROXY_OBJ}->setDirty(changeBits_);`,
+            ] : [])),
+            `return true;`,
+        ],
+        separateImplementation: true,
+    });
+    classSpec.methods.push({
+        name: "removeXrpaBinding",
         parameters: [{
                 name: "reconciledObj",
                 type: `const ${reconciledTypePtr}&`,
             }],
         body: [
-            `${PROXY_OBJ} = reconciledObj;`,
-            ...((outboundChangeBits !== 0 ? [
-                `if (${PROXY_OBJ}) {`,
-                `  changeBits_ = ${outboundChangeBits};`,
-                `  ${PROXY_OBJ}->setDirty();`,
-                `}`,
-            ] : [])),
+            `if (${PROXY_OBJ} == reconciledObj) {`,
+            `  ${PROXY_OBJ} = nullptr;`,
+            `}`,
         ],
         separateImplementation: true,
     });
@@ -168,7 +177,7 @@ function genIndexedSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, out
                 name: "fieldsChanged",
                 type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
             }],
-        body: includes => (0, SceneComponentShared_1.genProcessUpdateBody)({ ctx, includes, reconcilerDef, indexedFieldName, proxyObj: PROXY_OBJ }),
+        body: includes => (0, SceneComponentShared_1.genProcessUpdateBody)({ ctx, includes, reconcilerDef, proxyObj: PROXY_OBJ }),
         isVirtual: true,
         separateImplementation: true,
     });

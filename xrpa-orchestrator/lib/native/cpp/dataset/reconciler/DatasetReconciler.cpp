@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <chrono>
 #include <stdexcept>
+#include <unordered_set>
 
 using namespace std::chrono_literals;
 
@@ -28,9 +29,8 @@ namespace Xrpa {
 DatasetReconciler::DatasetReconciler(
     std::weak_ptr<DatasetInterface> dataset,
     const DSHashValue& schemaHash,
-    int typeCount,
     int messageDataPoolSize)
-    : dataset_(dataset), inboundReconcilers_(typeCount), outboundReconcilers_(typeCount) {
+    : dataset_(dataset) {
   auto datasetPtr = dataset_.lock();
   if (datasetPtr && !datasetPtr->checkSchemaHash(schemaHash)) {
     throw std::runtime_error("Schema hash mismatch");
@@ -42,6 +42,14 @@ DatasetReconciler::DatasetReconciler(
   if (messageDataPoolSize > 0) {
     messageDataPool_ = static_cast<uint8_t*>(malloc(messageDataPoolSize));
   }
+}
+
+void DatasetReconciler::registerCollection(std::shared_ptr<CollectionInterface> collection) {
+  auto collectionId = collection->getId();
+  if (collection->isLocalOwned()) {
+    pendingCollectionClears_.emplace_back(collectionId);
+  }
+  collections_.try_emplace(collectionId, std::move(collection));
 }
 
 void DatasetReconciler::sendOutboundMessages(DatasetAccessor* accessor) {
@@ -68,28 +76,22 @@ void DatasetReconciler::dispatchInboundMessages(DatasetAccessor* accessor) {
   int32_t oldestTimestamp = accessor->getCurrentTimestamp() - messageLifetime_;
 
   auto messageQueue = accessor->getMessageQueue();
-  auto nextIndex = messageQueue->getIndexForID(lastHandledMessageID_ + 1);
-  for (int32_t i = nextIndex; i < messageQueue->count; ++i) {
-    auto message = DSMessageAccessor(messageQueue->getAt(i));
+  while (messageIter_.hasNext(messageQueue)) {
+    auto message = DSMessageAccessor(messageIter_.next(messageQueue));
     auto timestamp = message.getTimestamp();
     if (timestamp < oldestTimestamp) {
       continue;
     }
 
     auto id = message.getTargetID();
-    auto type = message.getTargetType();
+    auto collectionId = message.getTargetType();
     auto messageType = message.getMessageType();
     auto messageData = message.accessMessageData();
 
-    if (auto* reconcilerPtr = inboundReconcilers_[type].get()) {
-      reconcilerPtr->processMessage(id, messageType, timestamp, messageData);
-    }
-    if (auto* reconcilerPtr = outboundReconcilers_[type].get()) {
-      reconcilerPtr->processMessage(id, messageType, timestamp, messageData);
+    if (auto iter = collections_.find(collectionId); iter != collections_.end()) {
+      iter->second->processMessage(id, messageType, timestamp, messageData);
     }
   }
-
-  lastHandledMessageID_ = messageQueue->getMaxID();
 }
 
 void DatasetReconciler::tick() {
@@ -98,23 +100,16 @@ void DatasetReconciler::tick() {
     return;
   }
 
-  for (auto& reconciler : inboundReconcilers_) {
-    if (auto* reconcilerPtr = reconciler.get()) {
-      reconcilerPtr->tick();
-    }
-  }
-  for (auto& reconciler : outboundReconcilers_) {
-    if (auto* reconcilerPtr = reconciler.get()) {
-      reconcilerPtr->tick();
-    }
+  for (auto& iter : collections_) {
+    iter.second->tick();
   }
 
-  bool bHasOutboundMessages = outboundMessages_.size() > 0;
-  bool bHasOutboundChanges = pendingTypeClears_.size() > 0 || pendingWrites_.size() > 0;
+  bool bHasOutboundMessages = !outboundMessages_.empty();
+  bool bHasOutboundChanges = !pendingCollectionClears_.empty() || !pendingWrites_.empty();
 
   // non-blocking check for inbound changes
-  bool bHasInboundChanges = dataset->getLastChangelogID() != lastChangelogID_;
-  bool bHasInboundMessages = dataset->getLastMessageID() != lastHandledMessageID_;
+  bool bHasInboundChanges = changelogIter_.hasNext(dataset->getLastChangelogID());
+  bool bHasInboundMessages = messageIter_.hasNext(dataset->getLastMessageID());
 
   if (!bHasInboundChanges && !bHasInboundMessages && !bHasOutboundChanges &&
       !bHasOutboundMessages) {
@@ -125,15 +120,14 @@ void DatasetReconciler::tick() {
   auto didLock = dataset->acquire(1ms, [&](DatasetAccessor* accessor) {
     // process inbound changes
     auto changelog = accessor->getChangeLog();
-    if (changelog->getMinID() > lastChangelogID_) {
+    if (changelogIter_.hasMissedEntries(changelog)) {
       // more changes came in between tick() calls than the changelog can hold, so reconcile the
       // entire dataset
-      // NOTE: this block also hits on the first tick
       reconcileInboundFromIndex(accessor);
+      changelogIter_.setToEnd(changelog);
     } else {
       reconcileInboundFromChangelog(accessor, changelog);
     }
-    lastChangelogID_ = changelog->getMaxID();
 
     // dispatch inbound messages
     dispatchInboundMessages(accessor);
@@ -161,43 +155,34 @@ void DatasetReconciler::shutdown() {
   // acquire lock
   dataset->acquire(1ms, [&](DatasetAccessor* accessor) {
     // delete all outbound objects from the dataset
-    for (auto& reconciler : outboundReconcilers_) {
-      if (auto* reconcilerPtr = reconciler.get()) {
-        auto type = reconcilerPtr->getType();
-        auto existingIDs = accessor->getAllObjectIDsByType(type);
-        for (auto& id : existingIDs) {
-          accessor->deleteObject(id);
-        }
+    for (auto& iter : collections_) {
+      auto collectionId = iter.second->getId();
+      auto objectIds = accessor->getAllObjectIDsByType(collectionId);
+      for (auto& id : objectIds) {
+        accessor->deleteObject(id);
       }
     }
   });
 }
 
 void DatasetReconciler::reconcileOutboundChanges(DatasetAccessor* accessor) {
-  for (auto type : pendingTypeClears_) {
-    auto existingIDs = accessor->getAllObjectIDsByType(type);
-    for (auto& id : existingIDs) {
+  for (auto collectionId : pendingCollectionClears_) {
+    auto objectIds = accessor->getAllObjectIDsByType(collectionId);
+    for (auto& id : objectIds) {
       accessor->deleteObject(id);
     }
   }
-  pendingTypeClears_.clear();
+  pendingCollectionClears_.clear();
 
   for (auto& pendingWrite : pendingWrites_) {
-    auto& id = pendingWrite.id_;
-    if (auto* reconcilerPtr = inboundReconcilers_[pendingWrite.type_].get()) {
-      reconcilerPtr->writeChanges(accessor, id);
-    }
-    if (auto* reconcilerPtr = outboundReconcilers_[pendingWrite.type_].get()) {
-      reconcilerPtr->writeChanges(accessor, id);
+    if (auto iter = collections_.find(pendingWrite.collectionId_); iter != collections_.end()) {
+      iter->second->writeChanges(accessor, pendingWrite.id_);
     }
   }
   pendingWrites_.clear();
 }
 
 void DatasetReconciler::reconcileInboundFromIndex(DatasetAccessor* accessor) {
-  // increment reconcileID
-  ++reconcileID_;
-
   // sort the index by timestamp so that we can iterate over it in creation order
   auto objectIndex = accessor->getObjectIndex();
   std::vector<const DSObjectHeader*> sortedHeaderPtrs;
@@ -209,34 +194,31 @@ void DatasetReconciler::reconcileInboundFromIndex(DatasetAccessor* accessor) {
     return a->createTimestamp < b->createTimestamp;
   });
 
-  // sweep through the sorted index, reconciling each object and marking them with the reconcileID
+  // sweep through the sorted index, reconciling each object and keeping track of the IDs
+  std::unordered_set<DSIdentifier> reconciledIds;
   for (auto objHeader : sortedHeaderPtrs) {
     auto& id = objHeader->id;
-    auto type = objHeader->type;
+    auto collectionId = objHeader->type;
     auto objAccessor = accessor->getObjectFromHeader(objHeader);
-    if (auto* reconcilerPtr = inboundReconcilers_[type].get()) {
-      reconcilerPtr->processFullReconcile(id, objAccessor, reconcileID_);
-    }
-    if (auto* reconcilerPtr = outboundReconcilers_[type].get()) {
-      reconcilerPtr->processUpdate(id, objAccessor, ~0ULL);
+    if (auto iter = collections_.find(collectionId); iter != collections_.end()) {
+      iter->second->processUpsert(id, objAccessor);
+      reconciledIds.emplace(id);
     }
   }
 
-  // delete any reconciled value that was not marked above
-  for (auto& reconciler : inboundReconcilers_) {
-    if (auto* reconcilerPtr = reconciler.get()) {
-      reconcilerPtr->endFullReconcile(reconcileID_);
-    }
+  // delete all unreconciled objects
+  for (auto& iter : collections_) {
+    iter.second->processFullReconcile(reconciledIds);
   }
 }
 
 void DatasetReconciler::reconcileInboundFromChangelog(
     DatasetAccessor* accessor,
     PlacedRingBuffer* changelog) {
-  for (int32_t i = changelog->getIndexForID(lastChangelogID_) + 1; i < changelog->count; ++i) {
-    auto entry = DSChangeEventAccessor(changelog->getAt(i));
+  while (changelogIter_.hasNext(changelog)) {
+    auto entry = DSChangeEventAccessor(changelogIter_.next(changelog));
     auto id = entry.getTargetID();
-    auto type = entry.getTargetType();
+    auto collectionId = entry.getTargetType();
     auto poolOffset = entry.getTargetPoolOffset();
     auto changeType = entry.getChangeType();
 
@@ -244,8 +226,8 @@ void DatasetReconciler::reconcileInboundFromChangelog(
       case DSChangeType::CreateObject: {
         auto objAccessor = accessor->getObjectFromOffset(poolOffset);
         if (!objAccessor.isNull()) {
-          if (auto* reconcilerPtr = inboundReconcilers_[type].get()) {
-            reconcilerPtr->processCreate(id, objAccessor, reconcileID_);
+          if (auto iter = collections_.find(collectionId); iter != collections_.end()) {
+            iter->second->processCreate(id, objAccessor);
           }
         }
         break;
@@ -258,19 +240,16 @@ void DatasetReconciler::reconcileInboundFromChangelog(
         auto changedFields = entry.getChangedFields();
         auto objAccessor = accessor->getObjectFromOffset(poolOffset);
         if (!objAccessor.isNull()) {
-          if (auto* reconcilerPtr = inboundReconcilers_[type].get()) {
-            reconcilerPtr->processUpdate(id, objAccessor, changedFields, reconcileID_);
-          }
-          if (auto* reconcilerPtr = outboundReconcilers_[type].get()) {
-            reconcilerPtr->processUpdate(id, objAccessor, changedFields);
+          if (auto iter = collections_.find(collectionId); iter != collections_.end()) {
+            iter->second->processUpdate(id, objAccessor, changedFields);
           }
         }
         break;
       }
 
       case DSChangeType::DeleteObject: {
-        if (auto* reconcilerPtr = inboundReconcilers_[type].get()) {
-          reconcilerPtr->processDelete(id);
+        if (auto iter = collections_.find(collectionId); iter != collections_.end()) {
+          iter->second->processDelete(id);
         }
         break;
       }

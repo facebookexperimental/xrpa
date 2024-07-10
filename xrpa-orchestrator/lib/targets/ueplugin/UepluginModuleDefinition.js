@@ -57,11 +57,13 @@ class UepluginModuleDefinition extends CppModuleDefinition_1.CppModuleDefinition
     createStruct(name, apiname, fields, localTypeOverride) {
         return new UeTypeDefinitions_1.StructTypeUe(this.codegen, name, apiname, undefined, fields, localTypeOverride);
     }
-    setCollectionAsInbound(type, reconciledTo, indexedReconciled) {
-        if (indexedReconciled) {
-            indexedReconciled.indexedTypeName = (0, SceneComponentShared_1.getComponentClassName)(null, type);
+    setCollectionAsInbound(type, reconciledTo, indexes) {
+        for (const index of (indexes ?? [])) {
+            if (index.boundClassName === "") {
+                index.boundClassName = (0, SceneComponentShared_1.getComponentClassName)(null, type);
+            }
         }
-        super.setCollectionAsInbound(type, reconciledTo, indexedReconciled);
+        super.setCollectionAsInbound(type, reconciledTo, indexes);
     }
     setCollectionAsOutbound(type, componentProps) {
         if ((0, Helpers_1.filterToString)(componentProps.basetype)?.endsWith("Component")) {
@@ -115,7 +117,7 @@ class UepluginModuleDefinition extends CppModuleDefinition_1.CppModuleDefinition
                 }
             }
             for (const accessor of storeDef.getInputReconcilers()) {
-                if (accessor.indexedReconciled) {
+                if (accessor.hasIndexedBinding()) {
                     (0, GenIndexedSceneComponent_1.genIndexedSceneComponent)(ctx, fileWriter, accessor, data.privateSrcDir, data.publicSrcDir);
                 }
             }

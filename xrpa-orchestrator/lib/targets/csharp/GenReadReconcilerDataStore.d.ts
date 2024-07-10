@@ -16,10 +16,13 @@
 
 
 import { ClassSpec } from "../../shared/ClassSpec";
+import { InputReconcilerDefinition, OutputReconcilerDefinition } from "../../shared/DataStore";
 import { IncludeAggregator } from "../../shared/Helpers";
-import { CollectionTypeDefinition } from "../../shared/TypeDefinition";
 import { GenDataStoreContext } from "../shared/GenDataStoreShared";
 export declare function genInboundReconciledTypes(ctx: GenDataStoreContext, includesIn: IncludeAggregator): ClassSpec[];
-export declare function getInboundReconcilerClassName(ctx: GenDataStoreContext, typeDef: CollectionTypeDefinition): string;
-export declare function genInboundTypeReconcilers(ctx: GenDataStoreContext, includes: IncludeAggregator): ClassSpec[];
+export declare function genObjectCollectionClasses(ctx: GenDataStoreContext, includesIn: IncludeAggregator): ClassSpec[];
+export declare function genIndexedBindingCalls<T extends InputReconcilerDefinition | OutputReconcilerDefinition>(ctx: GenDataStoreContext, reconcilerDef: T, dataStorePtr: string, boundObjPtr: string, getFieldMemberName: (reconcilerDef: T, fieldName: string) => string): Record<string, {
+    addBinding: string;
+    removeBinding: string;
+}>;
 

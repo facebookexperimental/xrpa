@@ -48,7 +48,6 @@ const assert_1 = __importDefault(require("assert"));
 const ClassSpec_1 = require("../../shared/ClassSpec");
 const Helpers_1 = require("../../shared/Helpers");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
-const TypeValue_1 = require("../../shared/TypeValue");
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
 const CppCodeGenImpl = __importStar(require("./CppCodeGenImpl"));
 const CppDatasetLibraryTypes_1 = require("./CppDatasetLibraryTypes");
@@ -57,19 +56,20 @@ const GenMessageAccessors_1 = require("./GenMessageAccessors");
 const GenDataStore_1 = require("./GenDataStore");
 const GenSignalAccessors_1 = require("./GenSignalAccessors");
 function genFieldSetDirty(params) {
+    const changeBit = params.typeDef.getChangedBit(params.ctx.namespace, params.includes, params.fieldName);
     if (params.proxyObj) {
         return [
-            `if (${params.proxyObj}) {`,
-            `  changeBits_ |= ${params.typeDef.getChangedBit(params.ctx.namespace, params.includes, params.fieldName)};`,
-            `  ${params.proxyObj}->setDirty();`,
+            `if (${params.proxyObj} && (changeBits_ & ${changeBit}) == 0) {`,
+            `  changeBits_ |= ${changeBit};`,
+            `  ${params.proxyObj}->setDirty(${changeBit});`,
             `}`,
         ];
     }
     else {
         return [
-            `if (reconciler_) {`,
-            `  changeBits_ |= ${params.typeDef.getChangedBit(params.ctx.namespace, params.includes, params.fieldName)};`,
-            `  reconciler_->setDirty(getDSID());`,
+            `if (collection_ && (changeBits_ & ${changeBit}) == 0) {`,
+            `  changeBits_ |= ${changeBit};`,
+            `  collection_->setDirty(getXrpaId(), ${changeBit});`,
             `}`,
         ];
     }
@@ -127,6 +127,17 @@ function genWriteFieldSetters(classSpec, params) {
                 ...genFieldSetDirty({ ...params, includes }),
             ],
             separateImplementation: true,
+        });
+        classSpec.methods.push({
+            name: setterName + "Id",
+            parameters: [{
+                    name: params.fieldName,
+                    type: fieldType,
+                }],
+            body: includes => [
+                `${fieldVar} = ${params.fieldName};`,
+                ...genFieldSetDirty({ ...params, includes }),
+            ],
         });
     }
     else {
@@ -215,17 +226,17 @@ function genWriteFunctionBody(params) {
             ...(params.canCreate ? [
                 `${writeAccessor} objAccessor;`,
                 `if (createTimestamp_) {`,
-                `  objAccessor = accessor->createObject<${writeAccessor}>(getDSID(), createTimestamp_);`,
+                `  objAccessor = accessor->createObject<${writeAccessor}>(getXrpaId(), createTimestamp_);`,
                 `  createTimestamp_ = 0;`,
                 ...(0, Helpers_1.indent)(1, initializerLines),
                 `} else if (changeBits_ != 0) {`,
-                `  objAccessor = accessor->updateObject<${writeAccessor}>(getDSID(), changeBits_);`,
+                `  objAccessor = accessor->updateObject<${writeAccessor}>(getXrpaId(), changeBits_);`,
                 `}`,
             ] : [
                 `if (changeBits_ == 0) {`,
                 `  return;`,
                 `}`,
-                `auto objAccessor = accessor->updateObject<${writeAccessor}>(getDSID(), changeBits_);`,
+                `auto objAccessor = accessor->updateObject<${writeAccessor}>(getXrpaId(), changeBits_);`,
             ]),
             `if (objAccessor.isNull()) {`,
             `  return;`,
@@ -259,21 +270,11 @@ function genOutboundReconciledTypes(ctx, includesIn) {
                     name: "id",
                     type: ctx.moduleDef.DSIdentifier,
                 }],
-            superClassInitializers: ["id", typeDef.getDSTypeID(ctx.namespace, classSpec.includes)],
+            superClassInitializers: ["id", "nullptr"],
             memberInitializers: [
                 ["createTimestamp_", CppCodeGenImpl_1.GET_CURRENT_CLOCK_TIME],
             ],
             body: [],
-        });
-        classSpec.methods.push({
-            name: "setDSReconciler",
-            parameters: [{
-                    name: "reconciler",
-                    type: CppDatasetLibraryTypes_1.OutboundTypeReconcilerInterface.getLocalType(ctx.namespace, classSpec.includes) + "*",
-                }],
-            body: [
-                "reconciler_ = reconciler;",
-            ],
         });
         genWriteFieldAccessors(classSpec, {
             ctx,
@@ -333,12 +334,6 @@ function genOutboundReconciledTypes(ctx, includesIn) {
             fieldToMemberVar: defaultFieldToMemberVar,
             canCreate: true,
             directionality: "outbound",
-            visibility: "protected",
-        });
-        classSpec.members.push({
-            name: "reconciler",
-            type: CppDatasetLibraryTypes_1.OutboundTypeReconcilerInterface.getLocalType(ctx.namespace, classSpec.includes) + "*",
-            initialValue: new TypeValue_1.CodeLiteralValue(CppCodeGenImpl, "nullptr"),
             visibility: "protected",
         });
         ret.push(classSpec);
