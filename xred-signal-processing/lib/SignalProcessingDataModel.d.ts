@@ -15,7 +15,11 @@
  */
 
 
-import { DataModelDefinition, DataStoreDefinition } from "xrpa-orchestrator";
-export declare function SignalProcessingDataModel(datamodel: DataModelDefinition): void;
-export declare function setupSignalProcessingDataStore(datastore: DataStoreDefinition): void;
+import { BaseModuleOptions, ModuleBinding } from "xrpa-orchestrator";
+import { SignalGraph } from "./SignalProcessingTypes";
+interface BindingOptions extends BaseModuleOptions {
+    effects?: Record<string, SignalGraph>;
+}
+export declare const XredSignalProcessing: ModuleBinding<BindingOptions>;
+export {};
 

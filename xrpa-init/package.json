@@ -10,7 +10,8 @@
     "lint": "eslint --ext .ts,.tsx ./src",
     "update": "ts-node ./js/index.ts",
     "SignalProcessing": "xrpa/xred-signal-processing/bin/FbaProcessing.exe",
-    "SignalOutput": "xrpa/xred-signal-output/bin/XredOutput.exe"
+    "SignalOutput": "xrpa/xred-signal-output/bin/XredOutput.exe",
+    "STO": "xrpa/xred-tracking/bin/PulsarSTO.exe"
   },
   "devDependencies": {
     "@types/node": "18.11.18",
@@ -24,7 +25,8 @@
   "dependencies": {
     "xred-signal-output": "file:./xrpa/xred-signal-output",
     "xred-signal-processing": "file:./xrpa/xred-signal-processing",
-    "xrpa-orchestrator": "file:./xrpa/xrpa-orchestrator",
-    "xrpa-unity-integration": "file:./xrpa/xrpa-unity-integration"
+    "xred-tactile-pressure": "file:./xrpa/xred-tactile-pressure",
+    "xred-tracking": "file:./xrpa/xred-tracking",
+    "xrpa-orchestrator": "file:./xrpa/xrpa-orchestrator"
   }
 }

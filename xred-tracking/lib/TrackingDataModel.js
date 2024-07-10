@@ -17,7 +17,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TrackingDataModel = void 0;
+exports.XredTracking = void 0;
 const xrpa_orchestrator_1 = require("xrpa-orchestrator");
 function TrackingDataModel(datamodel) {
     datamodel.setStoredCoordinateSystem(xrpa_orchestrator_1.UnityCoordinateSystem);
@@ -39,5 +39,46 @@ function TrackingDataModel(datamodel) {
         },
     });
 }
-exports.TrackingDataModel = TrackingDataModel;
+exports.XredTracking = {
+    name: "Tracking",
+    companyName: "Xred",
+    setupDataStore(moduleDef, binding) {
+        const datastore = moduleDef.addDataStore({
+            dataset: this.name,
+            datamodel: TrackingDataModel,
+        });
+        if ((0, xrpa_orchestrator_1.isModuleBindingConfig)(binding)) {
+            datastore.addOutputReconciler({
+                type: "TrackedObject",
+                inboundFields: ["ResetPose"],
+            });
+        }
+        else if ((0, xrpa_orchestrator_1.isGameEngineBindingConfig)(binding)) {
+            const poseFromComponentTransform = {
+                position: binding.intrinsicPositionProperty,
+                orientation: binding.intrinsicRotationProperty,
+            };
+            datastore.addInputReconciler({
+                type: "TrackedObject",
+                outboundFields: ["ResetPose"],
+                indexes: [{
+                        indexFieldName: "name",
+                        boundClassName: "",
+                    }],
+                componentProps: {
+                    basetype: binding.componentBaseClass,
+                    fieldToPropertyBindings: {
+                        pose: poseFromComponentTransform,
+                    },
+                },
+            });
+        }
+        else if ((0, xrpa_orchestrator_1.isCallerBindingConfig)(binding)) {
+            datastore.addInputReconciler({
+                type: "TrackedObject",
+                outboundFields: ["ResetPose"],
+            });
+        }
+    }
+};
 //# sourceMappingURL=TrackingDataModel.js.map

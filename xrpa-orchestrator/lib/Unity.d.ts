@@ -15,6 +15,7 @@
  */
 
 
+import { BaseModuleOptions, ModuleBinding } from "./EngineBindings";
 import { CoordinateSystemDef } from "./shared/CoordinateTransformer";
 import { ArrayTypeSpec, TypeMap } from "./shared/TypeDefinition";
 import { PackageInfo } from "./targets/unitypackage/GenPackage";
@@ -29,4 +30,11 @@ export declare function UnityPackageModule(name: string, params: {
     typeMap?: TypeMap;
     arrayType?: ArrayTypeSpec;
 }): UnityPackageModuleDefinition;
+export declare class UnityProjectContext {
+    readonly projectPath: string;
+    packages: UnityPackageModuleDefinition[];
+    constructor(projectPath: string);
+    addBindings<ModuleOptions extends BaseModuleOptions>(moduleToBind: ModuleBinding<ModuleOptions>, options?: ModuleOptions): void;
+}
+export declare function UnityProject(projectPath: string, callback: (unity: UnityProjectContext) => void): Promise<void>;
 

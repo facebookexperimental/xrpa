@@ -32,6 +32,7 @@ export { UepluginModuleDefinition } from "./targets/ueplugin/UepluginModuleDefin
 export { UnityPackageModuleDefinition } from "./targets/unitypackage/UnityPackageModuleDefinition";
 export * from "./ConvenienceWrappers";
 export * from "./Eigen";
+export * from "./EngineBindings";
 export * from "./Unity";
 export * from "./UnrealEngine";
 

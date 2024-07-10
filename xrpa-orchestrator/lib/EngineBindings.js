@@ -17,7 +17,20 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.XredTactilePressure = void 0;
-var TactilePressureDataModel_1 = require("./TactilePressureDataModel");
-Object.defineProperty(exports, "XredTactilePressure", { enumerable: true, get: function () { return TactilePressureDataModel_1.XredTactilePressure; } });
-//# sourceMappingURL=index.js.map
+exports.isGameEngineBindingConfig = exports.isCallerBindingConfig = exports.isModuleBindingConfig = void 0;
+function isModuleBindingConfig(binding) {
+    return binding === undefined;
+}
+exports.isModuleBindingConfig = isModuleBindingConfig;
+function isCallerBindingConfig(binding) {
+    return binding !== undefined;
+}
+exports.isCallerBindingConfig = isCallerBindingConfig;
+function isGameEngineBindingConfig(binding) {
+    if (binding === undefined) {
+        return false;
+    }
+    return typeof binding.componentBaseClass === "string";
+}
+exports.isGameEngineBindingConfig = isGameEngineBindingConfig;
+//# sourceMappingURL=EngineBindings.js.map

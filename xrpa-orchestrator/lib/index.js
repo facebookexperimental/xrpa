@@ -66,6 +66,7 @@ var UnityPackageModuleDefinition_1 = require("./targets/unitypackage/UnityPackag
 Object.defineProperty(exports, "UnityPackageModuleDefinition", { enumerable: true, get: function () { return UnityPackageModuleDefinition_1.UnityPackageModuleDefinition; } });
 __exportStar(require("./ConvenienceWrappers"), exports);
 __exportStar(require("./Eigen"), exports);
+__exportStar(require("./EngineBindings"), exports);
 __exportStar(require("./Unity"), exports);
 __exportStar(require("./UnrealEngine"), exports);
 //# sourceMappingURL=index.js.map

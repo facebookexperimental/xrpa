@@ -16,10 +16,15 @@
 
 "use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UepluginModule = exports.UnrealArrayType = exports.UnrealTypeMap = exports.UnrealCoordinateSystem = void 0;
+exports.UnrealProject = exports.UnrealProjectContext = exports.UepluginModule = exports.UnrealArrayType = exports.UnrealTypeMap = exports.UnrealCoordinateSystem = void 0;
+const path_1 = __importDefault(require("path"));
 const CoordinateTransformer_1 = require("./shared/CoordinateTransformer");
 const DataMap_1 = require("./shared/DataMap");
+const FileWriter_1 = require("./shared/FileWriter");
 const UepluginModuleDefinition_1 = require("./targets/ueplugin/UepluginModuleDefinition");
 exports.UnrealCoordinateSystem = {
     up: CoordinateTransformer_1.CoordAxis.posZ,
@@ -100,4 +105,35 @@ function UepluginModule(name, params) {
     return new UepluginModuleDefinition_1.UepluginModuleDefinition(name, datamap, params.pluginsRoot, params.pluginDeps ?? []);
 }
 exports.UepluginModule = UepluginModule;
+const UnrealBindingConfig = {
+    componentBaseClass: "SceneComponent",
+    intrinsicPositionProperty: "Location",
+    intrinsicRotationProperty: "Rotation",
+    intrinsicParentProperty: "Parent",
+    intrinsicGameObjectProperty: "Parent",
+};
+class UnrealProjectContext {
+    constructor(projectPath) {
+        this.projectPath = projectPath;
+        this.plugins = [];
+    }
+    addBindings(moduleToBind, options) {
+        const companyName = options?.upperCaseCompanyName ? moduleToBind.companyName.toLocaleUpperCase() : moduleToBind.companyName;
+        const plugin = UepluginModule(companyName + moduleToBind.name, {
+            pluginsRoot: path_1.default.join(this.projectPath, "Plugins"),
+            pluginDeps: options?.pluginDeps ?? [],
+        });
+        moduleToBind.setupDataStore(plugin, UnrealBindingConfig, options);
+        this.plugins.push(plugin);
+    }
+}
+exports.UnrealProjectContext = UnrealProjectContext;
+async function UnrealProject(projectPath, callback) {
+    const unreal = new UnrealProjectContext(projectPath);
+    callback(unreal);
+    const fileWriter = new FileWriter_1.FileWriter();
+    unreal.plugins.forEach(pkg => fileWriter.merge(pkg.doCodeGen()));
+    await fileWriter.finalize(path_1.default.join(projectPath, "xrpa-manifest.json"));
+}
+exports.UnrealProject = UnrealProject;
 //# sourceMappingURL=UnrealEngine.js.map

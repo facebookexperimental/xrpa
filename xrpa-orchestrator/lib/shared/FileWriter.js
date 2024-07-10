@@ -53,6 +53,7 @@ class FileWriter {
         for (const filename in fileWriter.manifest) {
             this.manifest[filename] = fileWriter.manifest[filename];
         }
+        this.foldersToCopy.push(...fileWriter.foldersToCopy);
     }
     copyFolderContents(srcFolder, dstFolder, preprocessor) {
         this.foldersToCopy.push({ srcFolder, dstFolder, preprocessor });

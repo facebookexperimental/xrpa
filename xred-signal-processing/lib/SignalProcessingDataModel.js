@@ -17,7 +17,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setupSignalProcessingDataStore = exports.SignalProcessingDataModel = void 0;
+exports.XredSignalProcessing = void 0;
 const xrpa_orchestrator_1 = require("xrpa-orchestrator");
 function SignalProcessingDataModel(datamodel) {
     datamodel.setStoredCoordinateSystem(xrpa_orchestrator_1.UnityCoordinateSystem);
@@ -287,64 +287,134 @@ function SignalProcessingDataModel(datamodel) {
         },
     });
 }
-exports.SignalProcessingDataModel = SignalProcessingDataModel;
-// this is a hacky temporary fix until we have proper direcionality in the data model
-function setupSignalProcessingDataStore(datastore) {
-    datastore.addOutputReconciler({
-        type: "SignalEvent",
-        inboundFields: ["receiveEvent"],
-    });
-    datastore.addOutputReconciler({
-        type: "SignalEventCombiner",
-    });
-    datastore.addOutputReconciler({
-        type: "SignalSource",
-    });
-    datastore.addOutputReconciler({
-        type: "SignalSourceFile",
-    });
-    datastore.addOutputReconciler({
-        type: "SignalChannelRouter",
-    });
-    datastore.addOutputReconciler({
-        type: "SignalChannelSelect",
-    });
-    datastore.addOutputReconciler({
-        type: "SignalChannelStack",
-    });
-    datastore.addOutputReconciler({
-        type: "SignalCurve",
-    });
-    datastore.addOutputReconciler({
-        type: "SignalDelay",
-    });
-    datastore.addOutputReconciler({
-        type: "SignalFeedback",
-    });
-    datastore.addOutputReconciler({
-        type: "SignalMathOp",
-    });
-    datastore.addOutputReconciler({
-        type: "SignalMultiplexer",
-    });
-    datastore.addOutputReconciler({
-        type: "SignalOscillator",
-    });
-    datastore.addOutputReconciler({
-        type: "SignalParametricEqualizer",
-    });
-    datastore.addOutputReconciler({
-        type: "SignalPitchShift",
-    });
-    datastore.addOutputReconciler({
-        type: "SignalSoftClip",
-    });
-    datastore.addOutputReconciler({
-        type: "SignalOutputData",
-    });
-    datastore.addOutputReconciler({
-        type: "SignalOutputDevice",
-    });
-}
-exports.setupSignalProcessingDataStore = setupSignalProcessingDataStore;
+exports.XredSignalProcessing = {
+    name: "SignalProcessing",
+    companyName: "Xred",
+    setupDataStore(moduleDef, binding, options) {
+        const datastore = moduleDef.addDataStore({
+            dataset: this.name,
+            datamodel: SignalProcessingDataModel,
+        });
+        if ((0, xrpa_orchestrator_1.isModuleBindingConfig)(binding)) {
+            datastore.addInputReconciler({
+                type: "SignalEvent",
+                outboundFields: ["receiveEvent"],
+            });
+            datastore.addInputReconciler({
+                type: "SignalEventCombiner",
+            });
+            datastore.addInputReconciler({
+                type: "SignalSource",
+            });
+            datastore.addInputReconciler({
+                type: "SignalSourceFile",
+            });
+            datastore.addInputReconciler({
+                type: "SignalChannelRouter",
+            });
+            datastore.addInputReconciler({
+                type: "SignalChannelSelect",
+            });
+            datastore.addInputReconciler({
+                type: "SignalChannelStack",
+            });
+            datastore.addInputReconciler({
+                type: "SignalCurve",
+            });
+            datastore.addInputReconciler({
+                type: "SignalDelay",
+            });
+            datastore.addInputReconciler({
+                type: "SignalFeedback",
+            });
+            datastore.addInputReconciler({
+                type: "SignalMathOp",
+            });
+            datastore.addInputReconciler({
+                type: "SignalMultiplexer",
+            });
+            datastore.addInputReconciler({
+                type: "SignalOscillator",
+            });
+            datastore.addInputReconciler({
+                type: "SignalParametricEqualizer",
+            });
+            datastore.addInputReconciler({
+                type: "SignalPitchShift",
+            });
+            datastore.addInputReconciler({
+                type: "SignalSoftClip",
+            });
+            datastore.addInputReconciler({
+                type: "SignalOutputData",
+                outboundFields: ["data"],
+            });
+            datastore.addInputReconciler({
+                type: "SignalOutputDevice",
+                outboundFields: ["foundMatch"],
+            });
+        }
+        else if ((0, xrpa_orchestrator_1.isCallerBindingConfig)(binding)) {
+            datastore.addOutputReconciler({
+                type: "SignalEvent",
+                inboundFields: ["receiveEvent"],
+            });
+            datastore.addOutputReconciler({
+                type: "SignalEventCombiner",
+            });
+            datastore.addOutputReconciler({
+                type: "SignalSource",
+            });
+            datastore.addOutputReconciler({
+                type: "SignalSourceFile",
+            });
+            datastore.addOutputReconciler({
+                type: "SignalChannelRouter",
+            });
+            datastore.addOutputReconciler({
+                type: "SignalChannelSelect",
+            });
+            datastore.addOutputReconciler({
+                type: "SignalChannelStack",
+            });
+            datastore.addOutputReconciler({
+                type: "SignalCurve",
+            });
+            datastore.addOutputReconciler({
+                type: "SignalDelay",
+            });
+            datastore.addOutputReconciler({
+                type: "SignalFeedback",
+            });
+            datastore.addOutputReconciler({
+                type: "SignalMathOp",
+            });
+            datastore.addOutputReconciler({
+                type: "SignalMultiplexer",
+            });
+            datastore.addOutputReconciler({
+                type: "SignalOscillator",
+            });
+            datastore.addOutputReconciler({
+                type: "SignalParametricEqualizer",
+            });
+            datastore.addOutputReconciler({
+                type: "SignalPitchShift",
+            });
+            datastore.addOutputReconciler({
+                type: "SignalSoftClip",
+            });
+            datastore.addOutputReconciler({
+                type: "SignalOutputData",
+            });
+            datastore.addOutputReconciler({
+                type: "SignalOutputDevice",
+            });
+            const effects = options?.effects ?? {};
+            for (const key in effects) {
+                datastore.addSyntheticObject(key, effects[key]);
+            }
+        }
+    }
+};
 //# sourceMappingURL=SignalProcessingDataModel.js.map

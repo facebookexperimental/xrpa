@@ -17,7 +17,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SignalOutputDataModel = void 0;
+exports.XredSignalOutput = void 0;
 const xrpa_orchestrator_1 = require("xrpa-orchestrator");
 function SignalOutputDataModel(datamodel) {
     datamodel.setStoredCoordinateSystem(xrpa_orchestrator_1.UnityCoordinateSystem);
@@ -53,5 +53,31 @@ function SignalOutputDataModel(datamodel) {
         },
     });
 }
-exports.SignalOutputDataModel = SignalOutputDataModel;
+exports.XredSignalOutput = {
+    name: "SignalOutput",
+    companyName: "Xred",
+    setupDataStore(moduleDef, binding) {
+        const datastore = moduleDef.addDataStore({
+            dataset: this.name,
+            datamodel: SignalOutputDataModel,
+        });
+        if ((0, xrpa_orchestrator_1.isModuleBindingConfig)(binding)) {
+            datastore.addOutputReconciler({
+                type: "SignalOutputDevice",
+            });
+            datastore.addInputReconciler({
+                type: "SignalOutputSource",
+            });
+        }
+        else if ((0, xrpa_orchestrator_1.isCallerBindingConfig)(binding)) {
+            datastore.addInputReconciler({
+                type: "SignalOutputDevice",
+                useGenericReconciledType: true,
+            });
+            datastore.addOutputReconciler({
+                type: "SignalOutputSource",
+            });
+        }
+    }
+};
 //# sourceMappingURL=SignalOutputDataModel.js.map

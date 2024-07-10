@@ -15,8 +15,8 @@
  */
 
 import path from "path";
-import { SignalGraph } from "xred-signal-processing";
-import { xrpaUnityCodeGen } from "xrpa-unity-integration";
+import { XredSignalOutput } from "xred-signal-output";
+import { SignalGraph, XredSignalProcessing } from "xred-signal-processing";
 
 import { TestEffect } from "./TestEffect";
 
@@ -25,8 +25,10 @@ const UnityEffects: Record<string, SignalGraph> = {
   TestEffect: TestEffect(),
 };
 
-const packagesRoot = path.join(__dirname, "..", "Packages");
-xrpaUnityCodeGen(packagesRoot, UnityEffects).catch((e) => {
+UnityProject(path.join(__dirname, ".."), unity => {
+  unity.addBindings(XredSignalOutput);
+  unity.addBindings(XredSignalProcessing, { effects: UnityEffects });
+}).catch((e) => {
   console.error(e);
   process.exit(1);
 }).then(() => {

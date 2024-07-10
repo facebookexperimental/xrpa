@@ -15,5 +15,5 @@
  */
 
 
-export { setupTactilePressureDataStore, TactilePressureDataModel } from "./TactilePressureDataModel";
+export { XredTactilePressure } from "./TactilePressureDataModel";
 

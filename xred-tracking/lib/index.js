@@ -17,7 +17,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TrackingDataModel = void 0;
+exports.XredTracking = void 0;
 var TrackingDataModel_1 = require("./TrackingDataModel");
-Object.defineProperty(exports, "TrackingDataModel", { enumerable: true, get: function () { return TrackingDataModel_1.TrackingDataModel; } });
+Object.defineProperty(exports, "XredTracking", { enumerable: true, get: function () { return TrackingDataModel_1.XredTracking; } });
 //# sourceMappingURL=index.js.map

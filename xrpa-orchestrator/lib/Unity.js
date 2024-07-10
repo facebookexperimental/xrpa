@@ -16,10 +16,15 @@
 
 "use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UnityPackageModule = exports.UnityArrayType = exports.UnityTypeMap = exports.UnityCoordinateSystem = void 0;
+exports.UnityProject = exports.UnityProjectContext = exports.UnityPackageModule = exports.UnityArrayType = exports.UnityTypeMap = exports.UnityCoordinateSystem = void 0;
+const path_1 = __importDefault(require("path"));
 const CoordinateTransformer_1 = require("./shared/CoordinateTransformer");
 const DataMap_1 = require("./shared/DataMap");
+const FileWriter_1 = require("./shared/FileWriter");
 const UnityPackageModuleDefinition_1 = require("./targets/unitypackage/UnityPackageModuleDefinition");
 exports.UnityCoordinateSystem = {
     up: CoordinateTransformer_1.CoordAxis.posY,
@@ -65,4 +70,42 @@ function UnityPackageModule(name, params) {
     });
 }
 exports.UnityPackageModule = UnityPackageModule;
+const UnityBindingConfig = {
+    componentBaseClass: "MonoBehaviour",
+    intrinsicPositionProperty: "position",
+    intrinsicRotationProperty: "rotation",
+    intrinsicParentProperty: "Parent",
+    intrinsicGameObjectProperty: "gameObject",
+};
+class UnityProjectContext {
+    constructor(projectPath) {
+        this.projectPath = projectPath;
+        this.packages = [];
+    }
+    addBindings(moduleToBind, options) {
+        const companyName = (options?.upperCaseCompanyName) ? moduleToBind.companyName.toLocaleUpperCase() : moduleToBind.companyName;
+        const pkg = UnityPackageModule(companyName + moduleToBind.name, {
+            packagesRoot: path_1.default.join(this.projectPath, "Packages"),
+            packageInfo: {
+                name: `com.${companyName.toLocaleLowerCase()}.${moduleToBind.name.toLocaleLowerCase()}`,
+                version: [1, 0, 0],
+                displayName: moduleToBind.name,
+                description: `${moduleToBind.name} Bindings`,
+                companyName,
+                dependencies: [],
+            },
+        });
+        moduleToBind.setupDataStore(pkg, UnityBindingConfig, options);
+        this.packages.push(pkg);
+    }
+}
+exports.UnityProjectContext = UnityProjectContext;
+async function UnityProject(projectPath, callback) {
+    const unity = new UnityProjectContext(projectPath);
+    callback(unity);
+    const fileWriter = new FileWriter_1.FileWriter();
+    unity.packages.forEach(pkg => fileWriter.merge(pkg.doCodeGen()));
+    await fileWriter.finalize(path_1.default.join(projectPath, "xrpa-manifest.json"));
+}
+exports.UnityProject = UnityProject;
 //# sourceMappingURL=Unity.js.map

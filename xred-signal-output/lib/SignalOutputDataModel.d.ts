@@ -15,6 +15,6 @@
  */
 
 
-import { DataModelDefinition } from "xrpa-orchestrator";
-export declare function SignalOutputDataModel(datamodel: DataModelDefinition): void;
+import { BaseModuleOptions, ModuleBinding } from "xrpa-orchestrator";
+export declare const XredSignalOutput: ModuleBinding<BaseModuleOptions>;
 

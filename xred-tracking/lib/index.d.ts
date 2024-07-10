@@ -15,5 +15,5 @@
  */
 
 
-export { TrackingDataModel } from "./TrackingDataModel";
+export { XredTracking } from "./TrackingDataModel";
 

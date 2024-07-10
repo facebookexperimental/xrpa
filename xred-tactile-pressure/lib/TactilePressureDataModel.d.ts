@@ -15,7 +15,6 @@
  */
 
 
-import { DataModelDefinition, DataStoreDefinition } from "xrpa-orchestrator";
-export declare function TactilePressureDataModel(datamodel: DataModelDefinition): void;
-export declare function setupTactilePressureDataStore(datastore: DataStoreDefinition, componentBaseType?: string | null): void;
+import { BaseModuleOptions, ModuleBinding } from "xrpa-orchestrator";
+export declare const XredTactilePressure: ModuleBinding<BaseModuleOptions>;
 

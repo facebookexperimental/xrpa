@@ -17,7 +17,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setupTactilePressureDataStore = exports.TactilePressureDataModel = void 0;
+exports.XredTactilePressure = void 0;
 const xrpa_orchestrator_1 = require("xrpa-orchestrator");
 function TactilePressureDataModel(datamodel) {
     datamodel.setStoredCoordinateSystem(xrpa_orchestrator_1.UnityCoordinateSystem);
@@ -88,68 +88,97 @@ function TactilePressureDataModel(datamodel) {
         },
     });
 }
-exports.TactilePressureDataModel = TactilePressureDataModel;
-// this is a hacky temporary fix until we have proper direcionality in the data model
-function setupTactilePressureDataStore(datastore, componentBaseType = null) {
-    const poseToComponentTransform = {
-        position: "position",
-        orientation: "rotation",
-    };
-    if (componentBaseType) {
-        datastore.addOutputReconciler({
-            type: "TactileDeviceConfig",
-            componentProps: {
-                basetype: componentBaseType,
-            },
+exports.XredTactilePressure = {
+    name: "TactilePressure",
+    companyName: "Xred",
+    setupDataStore(moduleDef, binding) {
+        const datastore = moduleDef.addDataStore({
+            dataset: this.name,
+            datamodel: TactilePressureDataModel,
         });
-        datastore.addOutputReconciler({
-            type: "TactileSurface",
-            componentProps: {
-                basetype: componentBaseType,
-                fieldToPropertyBindings: {
-                    pose: poseToComponentTransform,
+        if ((0, xrpa_orchestrator_1.isModuleBindingConfig)(binding)) {
+            datastore.addInputReconciler({
+                type: "TactileDeviceConfig",
+            });
+            datastore.addInputReconciler({
+                type: "TactileSurface",
+            });
+            datastore.addOutputReconciler({
+                type: "TactileCluster",
+                inboundFields: ["pose"],
+            });
+            datastore.addOutputReconciler({
+                type: "TactilePoint",
+                inboundFields: ["pressureOffset"],
+            });
+        }
+        else if ((0, xrpa_orchestrator_1.isGameEngineBindingConfig)(binding)) {
+            const poseToComponentTransform = {
+                position: binding.intrinsicPositionProperty,
+                orientation: binding.intrinsicRotationProperty,
+            };
+            datastore.addOutputReconciler({
+                type: "TactileDeviceConfig",
+                componentProps: {
+                    basetype: binding.componentBaseClass,
                 },
-            },
-        });
-        datastore.addInputReconciler({
-            type: "TactileCluster",
-            outboundFields: ["pose"],
-            indexes: [{
-                    indexFieldName: "name",
-                    boundClassName: "",
-                }],
-            componentProps: {
-                basetype: componentBaseType,
-                fieldToPropertyBindings: {
-                    pose: poseToComponentTransform,
+            });
+            datastore.addOutputReconciler({
+                type: "TactileSurface",
+                componentProps: {
+                    basetype: binding.componentBaseClass,
+                    fieldToPropertyBindings: {
+                        pose: poseToComponentTransform,
+                    },
                 },
-            },
-        });
-        datastore.addInputReconciler({
-            type: "TactilePoint",
-            outboundFields: ["pressureOffset"],
-            useGenericReconciledType: true,
-            indexes: [{
-                    indexFieldName: "cluster",
-                }],
-        });
+            });
+            datastore.addInputReconciler({
+                type: "TactileCluster",
+                outboundFields: ["pose"],
+                indexes: [{
+                        indexFieldName: "name",
+                        boundClassName: "",
+                    }],
+                componentProps: {
+                    basetype: binding.componentBaseClass,
+                    fieldToPropertyBindings: {
+                        pose: poseToComponentTransform,
+                    },
+                },
+            });
+            datastore.addInputReconciler({
+                type: "TactilePoint",
+                outboundFields: ["pressureOffset"],
+                useGenericReconciledType: true,
+                indexes: [{
+                        indexFieldName: "cluster",
+                    }],
+            });
+        }
+        else if ((0, xrpa_orchestrator_1.isCallerBindingConfig)(binding)) {
+            datastore.addOutputReconciler({
+                type: "TactileDeviceConfig",
+            });
+            datastore.addOutputReconciler({
+                type: "TactileSurface",
+            });
+            datastore.addInputReconciler({
+                type: "TactileCluster",
+                outboundFields: ["pose"],
+                useGenericReconciledType: true,
+                indexes: [{
+                        indexFieldName: "name",
+                    }],
+            });
+            datastore.addInputReconciler({
+                type: "TactilePoint",
+                outboundFields: ["pressureOffset"],
+                useGenericReconciledType: true,
+                indexes: [{
+                        indexFieldName: "cluster",
+                    }],
+            });
+        }
     }
-    else {
-        datastore.addInputReconciler({
-            type: "TactileDeviceConfig",
-        });
-        datastore.addInputReconciler({
-            type: "TactileSurface",
-        });
-        datastore.addOutputReconciler({
-            type: "TactileCluster",
-            inboundFields: ["pose"],
-        });
-        datastore.addOutputReconciler({
-            type: "TactilePoint",
-            inboundFields: ["pressureOffset"],
-        });
-    }
-}
-exports.setupTactilePressureDataStore = setupTactilePressureDataStore;
+};
 //# sourceMappingURL=TactilePressureDataModel.js.map

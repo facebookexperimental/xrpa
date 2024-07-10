@@ -15,6 +15,7 @@
  */
 
 
+import { BaseModuleOptions, ModuleBinding } from "./EngineBindings";
 import { CoordinateSystemDef } from "./shared/CoordinateTransformer";
 import { ArrayTypeSpec, TypeMap } from "./shared/TypeDefinition";
 import { UepluginModuleDefinition } from "./targets/ueplugin/UepluginModuleDefinition";
@@ -28,4 +29,15 @@ export declare function UepluginModule(name: string, params: {
     typeMap?: TypeMap;
     arrayType?: ArrayTypeSpec;
 }): UepluginModuleDefinition;
+interface PluginOptions {
+    pluginDeps?: [string, string][];
+}
+export declare class UnrealProjectContext {
+    readonly projectPath: string;
+    plugins: UepluginModuleDefinition[];
+    constructor(projectPath: string);
+    addBindings<ModuleOptions extends BaseModuleOptions>(moduleToBind: ModuleBinding<ModuleOptions>, options?: ModuleOptions & PluginOptions): void;
+}
+export declare function UnrealProject(projectPath: string, callback: (unreal: UnrealProjectContext) => void): Promise<void>;
+export {};
 
