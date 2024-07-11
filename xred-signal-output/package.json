@@ -1,6 +1,6 @@
 {
   "name": "xred-signal-output",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Signal output device interface",
   "main": "lib/index.js",
   "license": "Apache-2.0",

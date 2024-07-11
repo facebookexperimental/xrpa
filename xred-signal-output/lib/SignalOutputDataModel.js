@@ -69,6 +69,21 @@ exports.XredSignalOutput = {
                 type: "SignalOutputSource",
             });
         }
+        else if ((0, xrpa_orchestrator_1.isGameEngineBindingConfig)(binding)) {
+            datastore.addInputReconciler({
+                type: "SignalOutputDevice",
+                indexes: [{
+                        indexFieldName: "name",
+                        boundClassName: "",
+                    }],
+                componentProps: {
+                    basetype: binding.componentBaseClass,
+                },
+            });
+            datastore.addOutputReconciler({
+                type: "SignalOutputSource",
+            });
+        }
         else if ((0, xrpa_orchestrator_1.isCallerBindingConfig)(binding)) {
             datastore.addInputReconciler({
                 type: "SignalOutputDevice",
