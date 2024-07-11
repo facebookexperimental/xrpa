@@ -17,6 +17,7 @@
 import path from "path";
 import { XredSignalOutput } from "xred-signal-output";
 import { SignalGraph, XredSignalProcessing } from "xred-signal-processing";
+import { UnityProject } from "xrpa-orchestrator";
 
 import { TestEffect } from "./TestEffect";
 
