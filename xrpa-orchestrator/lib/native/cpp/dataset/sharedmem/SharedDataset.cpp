@@ -92,22 +92,22 @@ bool SharedDataset::acquire(
 }
 
 bool SharedDataset::checkSchemaHash(const DSHashValue& schemaHash) const {
-  auto header = reinterpret_cast<const DSHeader*>(memoryBlock_.memBuffer);
+  const auto* header = reinterpret_cast<const DSHeader*>(memoryBlock_.memBuffer);
   return header != nullptr ? header->schemaHash == schemaHash : false;
 }
 
 uint64_t SharedDataset::getBaseTimestamp() const {
-  auto header = reinterpret_cast<const DSHeader*>(memoryBlock_.memBuffer);
+  const auto* header = reinterpret_cast<const DSHeader*>(memoryBlock_.memBuffer);
   return header != nullptr ? header->baseTimestamp : 0;
 }
 
 int32_t SharedDataset::getLastChangelogID() const {
-  auto header = reinterpret_cast<const DSHeader*>(memoryBlock_.memBuffer);
+  const auto* header = reinterpret_cast<const DSHeader*>(memoryBlock_.memBuffer);
   return header != nullptr ? header->lastChangelogID : 0;
 }
 
 int32_t SharedDataset::getLastMessageID() const {
-  auto header = reinterpret_cast<const DSHeader*>(memoryBlock_.memBuffer);
+  const auto* header = reinterpret_cast<const DSHeader*>(memoryBlock_.memBuffer);
   return header != nullptr ? header->lastMessageID : 0;
 }
 

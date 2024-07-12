@@ -18,7 +18,7 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.XredSignalProcessing = void 0;
-const xrpa_orchestrator_1 = require("xrpa-orchestrator");
+const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 function SignalProcessingDataModel(datamodel) {
     datamodel.setStoredCoordinateSystem(xrpa_orchestrator_1.UnityCoordinateSystem);
     const SignalEvent = datamodel.addCollection({

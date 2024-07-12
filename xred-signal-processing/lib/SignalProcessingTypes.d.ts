@@ -15,7 +15,7 @@
  */
 
 
-import { XrpaObjectDef, XrpaParamDef, XrpaSyntheticObject } from "xrpa-orchestrator";
+import { XrpaObjectDef, XrpaParamDef, XrpaSyntheticObject } from "@xrpa/xrpa-orchestrator";
 export declare class CountParamType extends XrpaParamDef {
     constructor(name: string, defaultValue?: number, description?: string);
 }

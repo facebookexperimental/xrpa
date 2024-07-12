@@ -15,7 +15,7 @@
  */
 
 
-import { BaseModuleOptions, ModuleBinding } from "xrpa-orchestrator";
+import { BaseModuleOptions, ModuleBinding } from "@xrpa/xrpa-orchestrator";
 import { SignalGraph } from "./SignalProcessingTypes";
 interface BindingOptions extends BaseModuleOptions {
     effects?: Record<string, SignalGraph>;

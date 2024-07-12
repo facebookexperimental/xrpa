@@ -15,6 +15,6 @@
  */
 
 
-import { BaseModuleOptions, ModuleBinding } from "xrpa-orchestrator";
+import { BaseModuleOptions, ModuleBinding } from "@xrpa/xrpa-orchestrator";
 export declare const XredSignalOutput: ModuleBinding<BaseModuleOptions>;
 

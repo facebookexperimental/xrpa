@@ -24,7 +24,7 @@ import {
   StackChannels,
   strContains,
   TrapezoidCurve,
-} from "xred-signal-processing";
+} from "@xrpa/xred-signal-processing";
 
 export function TestEffect(): SignalGraph {
   // create a sawtooth wave that takes up half the period (which is 10ms)

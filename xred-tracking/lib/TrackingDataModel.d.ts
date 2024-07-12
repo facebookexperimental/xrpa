@@ -15,6 +15,6 @@
  */
 
 
-import { BaseModuleOptions, ModuleBinding } from "xrpa-orchestrator";
+import { BaseModuleOptions, ModuleBinding } from "@xrpa/xrpa-orchestrator";
 export declare const XredTracking: ModuleBinding<BaseModuleOptions>;
 

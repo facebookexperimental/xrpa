@@ -49,22 +49,22 @@ bool HeapDataset::acquire(
 }
 
 bool HeapDataset::checkSchemaHash(const DSHashValue& schemaHash) const {
-  auto header = reinterpret_cast<const DSHeader*>(memoryBlock);
+  const auto* header = reinterpret_cast<const DSHeader*>(memoryBlock);
   return header != nullptr ? header->schemaHash == schemaHash : false;
 }
 
 uint64_t HeapDataset::getBaseTimestamp() const {
-  auto header = reinterpret_cast<const DSHeader*>(memoryBlock);
+  const auto* header = reinterpret_cast<const DSHeader*>(memoryBlock);
   return header != nullptr ? header->baseTimestamp : 0;
 }
 
 int32_t HeapDataset::getLastChangelogID() const {
-  auto header = reinterpret_cast<const DSHeader*>(memoryBlock);
+  const auto* header = reinterpret_cast<const DSHeader*>(memoryBlock);
   return header != nullptr ? header->lastChangelogID : 0;
 }
 
 int32_t HeapDataset::getLastMessageID() const {
-  auto header = reinterpret_cast<const DSHeader*>(memoryBlock);
+  const auto* header = reinterpret_cast<const DSHeader*>(memoryBlock);
   return header != nullptr ? header->lastMessageID : 0;
 }
 

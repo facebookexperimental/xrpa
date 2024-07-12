@@ -18,7 +18,7 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.XredSignalOutput = void 0;
-const xrpa_orchestrator_1 = require("xrpa-orchestrator");
+const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 function SignalOutputDataModel(datamodel) {
     datamodel.setStoredCoordinateSystem(xrpa_orchestrator_1.UnityCoordinateSystem);
     const DeviceHandedness = datamodel.addEnum("DeviceHandedness", ["None", "Left", "Right"]);

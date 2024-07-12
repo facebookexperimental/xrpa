@@ -22,7 +22,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SignalGraph = exports.SignalOutputDeviceType = exports.SignalOutputDataType = exports.SignalSoftClipType = exports.SignalPitchShiftType = exports.SignalMultiplexerType = exports.SignalMathOpType = exports.SignalParametricEqualizerType = exports.SignalFeedbackType = exports.SignalDelayType = exports.SignalCurveType = exports.SignalChannelStackType = exports.SignalChannelSelectType = exports.SignalChannelRouterType = exports.SignalOscillatorType = exports.SignalSourceFileType = exports.ISignalNodeType = exports.SignalEventCombinerType = exports.SignalEventType = exports.FilterTypeEnum = exports.EventCombinerParameterMode = exports.DeviceHandednessFilterEnum = exports.SampleTypeEnum = exports.MathOperationEnum = exports.WaveformTypeEnum = exports.Vector3ParamType = exports.DistanceParamType = exports.FrequencyParamType = exports.ScalarParamType = exports.CountParamType = void 0;
 const assert_1 = __importDefault(require("assert"));
-const xrpa_orchestrator_1 = require("xrpa-orchestrator");
+const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 /* FUTURE:
 class XrpaSignal {}
 

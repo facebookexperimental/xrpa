@@ -15,9 +15,9 @@
  */
 
 import path from "path";
-import { XredSignalOutput } from "xred-signal-output";
-import { SignalGraph, XredSignalProcessing } from "xred-signal-processing";
-import { UnityProject } from "xrpa-orchestrator";
+import { XredSignalOutput } from "@xrpa/xred-signal-output";
+import { SignalGraph, XredSignalProcessing } from "@xrpa/xred-signal-processing";
+import { UnityProject } from "@xrpa/xrpa-orchestrator";
 
 import { TestEffect } from "./TestEffect";
 

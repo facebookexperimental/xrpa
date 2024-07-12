@@ -157,7 +157,7 @@ class DatasetAccessor {
       int32_t messageType,
       int32_t numBytes,
       uint64_t timestamp = 0) {
-    auto target = getObjectHeader(targetID);
+    const auto* target = getObjectHeader(targetID);
     if (!target) {
       return MemoryAccessor();
     }

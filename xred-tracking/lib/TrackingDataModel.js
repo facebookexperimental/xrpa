@@ -18,7 +18,7 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.XredTracking = void 0;
-const xrpa_orchestrator_1 = require("xrpa-orchestrator");
+const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 function TrackingDataModel(datamodel) {
     datamodel.setStoredCoordinateSystem(xrpa_orchestrator_1.UnityCoordinateSystem);
     const Pose = datamodel.addStruct("Pose", {

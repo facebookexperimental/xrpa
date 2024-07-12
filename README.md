@@ -4,23 +4,14 @@ See the [CONTRIBUTING](CONTRIBUTING.md) file for how to help out.
 
 ## Integrating with a Unity git repo
 
-### Setup Xrpa as a git submodule
-From a PowerShell prompt, change directory to the root the git repo containing your Unity project. Then run the following commands:
-
-```
-git submodule add https://github.com/facebookexperimental/xrpa xrpa
-git submodule update --init --recursive
-git add .
-git commit -m "Setup xrpa submodule"
-```
-
 ### Create package.json, configure, and install dependencies
 Run the following PowerShell commands to setup files:
 ```
-copy xrpa/xrpa-init/package.json .
-copy xrpa/xrpa-init/tsconfig.json .
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/facebookexperimental/xrpa/main/xrpa-init/package.json" -OutFile ./package.json
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/facebookexperimental/xrpa/main/xrpa-init/tsconfig.json" -OutFile ./tsconfig.json
 mkdir js
-copy xrpa/xrpa-init/*.ts js/
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/facebookexperimental/xrpa/main/xrpa-init/index.ts" -OutFile ./js/index.ts
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/facebookexperimental/xrpa/main/xrpa-init/TestEffect.ts" -OutFile ./js/TestEffect.ts
 Add-Content -Path .gitignore -Value "/node_modules/"
 ```
 
@@ -30,8 +21,6 @@ yarn
 git add .
 git commit -m "Setup xrpa config and install dependencies"
 ```
-
-Whenever you want to upgrade to the latest version of Xrpa, simply run `yarn pull-xrpa` and it will run the commands defined in the pull-xrpa script in your package.json and do the right thing.
 
 ### Create Effects
 Create effects in typescript files within the `js/` subfolder. See TestEffect.ts for an example. Include (and name) effects in `js/index.ts` for them to be available in Unity.

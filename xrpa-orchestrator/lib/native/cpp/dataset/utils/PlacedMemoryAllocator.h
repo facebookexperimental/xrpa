@@ -50,7 +50,7 @@ struct PlacedMemoryAllocator {
   void init(int32_t poolSizeIn) {
     firstFree = 0;
     poolSize = poolSizeIn;
-    auto freeNode = getAt<PMAFreeNode>(firstFree);
+    auto* freeNode = getAt<PMAFreeNode>(firstFree);
     freeNode->size = poolSize;
     freeNode->next = -1;
     freeNode->prev = -1;
@@ -72,7 +72,7 @@ struct PlacedMemoryAllocator {
 
     int32_t curOffset = firstFree;
     while (curOffset >= 0) {
-      auto curNode = getAt<PMAFreeNode>(curOffset);
+      auto* curNode = getAt<PMAFreeNode>(curOffset);
       int32_t curSize = curNode->size;
       if (curSize >= sizeNeeded && (foundOffset < 0 || curSize < foundSize)) {
         foundOffset = curOffset;
@@ -86,7 +86,7 @@ struct PlacedMemoryAllocator {
 
     // as soon as we start writing to memory, foundNode will become invalid, so we need to copy the
     // data out first (the memory regions may be aliased - FreeNode is bigger than AllocNode)
-    auto foundNode = getAt<PMAFreeNode>(foundOffset);
+    auto* foundNode = getAt<PMAFreeNode>(foundOffset);
     int32_t foundPrev = foundNode->prev;
     int32_t foundNext = foundNode->next;
     if (foundSize - sizeNeeded > PMA_SPLIT_THRESHOLD) {
@@ -101,14 +101,14 @@ struct PlacedMemoryAllocator {
       getAt<PMAAllocNode>(foundOffset)->size = sizeNeeded;
     } else {
       // fixup linked list to remove foundNode
-      auto prevNode = getAt<PMAFreeNode>(foundPrev);
+      auto* prevNode = getAt<PMAFreeNode>(foundPrev);
       if (prevNode) {
         prevNode->next = foundNext;
       } else {
         firstFree = foundNext;
       }
 
-      auto nextNode = getAt<PMAFreeNode>(foundNext);
+      auto* nextNode = getAt<PMAFreeNode>(foundNext);
       if (nextNode) {
         nextNode->prev = foundPrev;
       }
@@ -149,13 +149,13 @@ struct PlacedMemoryAllocator {
     int32_t prevOffset = -1;
     int32_t nextOffset = firstFree;
     while (nextOffset >= 0 && nodeOffset > nextOffset) {
-      auto nextNode = getAt<PMAFreeNode>(nextOffset);
+      auto* nextNode = getAt<PMAFreeNode>(nextOffset);
       prevOffset = nextOffset;
       nextOffset = nextNode->next;
     }
 
     // merge with prev node if adjacent
-    auto prevNode = getAt<PMAFreeNode>(prevOffset);
+    auto* prevNode = getAt<PMAFreeNode>(prevOffset);
     if (prevNode && nodeOffset == prevOffset + prevNode->size) {
       nodeOffset = prevOffset;
       prevOffset = prevNode->prev;
@@ -164,13 +164,13 @@ struct PlacedMemoryAllocator {
 
     // merge with next node if adjacent
     if (nextOffset == nodeOffset + size) {
-      auto nextNode = getAt<PMAFreeNode>(nextOffset);
+      auto* nextNode = getAt<PMAFreeNode>(nextOffset);
       nextOffset = nextNode->next;
       size += nextNode->size;
     }
 
     // create new node in linked list
-    auto node = getAt<PMAFreeNode>(nodeOffset);
+    auto* node = getAt<PMAFreeNode>(nodeOffset);
     node->size = size;
     node->prev = prevOffset;
     node->next = nextOffset;
@@ -214,14 +214,14 @@ struct PlacedMemoryAllocator {
     auto offset = ptrToOffset(node);
     xrpaDebugBoundsAssert(offset, sizeof(PMAFreeNode), 0, poolSize);
 
-    auto prevNode = getAt<PMAFreeNode>(node->prev);
+    auto* prevNode = getAt<PMAFreeNode>(node->prev);
     if (prevNode) {
       prevNode->next = offset;
     } else {
       firstFree = offset;
     }
 
-    auto nextNode = getAt<PMAFreeNode>(node->next);
+    auto* nextNode = getAt<PMAFreeNode>(node->next);
     if (nextNode) {
       nextNode->prev = offset;
     }
@@ -232,7 +232,7 @@ struct PlacedMemoryAllocator {
     xrpaDebugAssert(curOffset >= -1, "PlacedMemoryAllocator.ValidateFreeNodes failed");
 
     while (curOffset >= 0) {
-      auto curNode = getAt<PMAFreeNode>(curOffset);
+      auto* curNode = getAt<PMAFreeNode>(curOffset);
 
       xrpaDebugAssert(curNode->size > 0, "PlacedMemoryAllocator.ValidateFreeNodes failed");
       xrpaDebugAssert(curNode->prev < curOffset, "PlacedMemoryAllocator.ValidateFreeNodes failed");

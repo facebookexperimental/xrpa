@@ -75,7 +75,7 @@ void DatasetReconciler::dispatchInboundMessages(DatasetAccessor* accessor) {
 
   int32_t oldestTimestamp = accessor->getCurrentTimestamp() - messageLifetime_;
 
-  auto messageQueue = accessor->getMessageQueue();
+  auto* messageQueue = accessor->getMessageQueue();
   while (messageIter_.hasNext(messageQueue)) {
     auto message = DSMessageAccessor(messageIter_.next(messageQueue));
     auto timestamp = message.getTimestamp();
@@ -119,7 +119,7 @@ void DatasetReconciler::tick() {
   // acquire lock
   auto didLock = dataset->acquire(1ms, [&](DatasetAccessor* accessor) {
     // process inbound changes
-    auto changelog = accessor->getChangeLog();
+    auto* changelog = accessor->getChangeLog();
     if (changelogIter_.hasMissedEntries(changelog)) {
       // more changes came in between tick() calls than the changelog can hold, so reconcile the
       // entire dataset
@@ -180,7 +180,7 @@ void DatasetReconciler::reconcileOutboundChanges(DatasetAccessor* accessor) {
 
 void DatasetReconciler::reconcileInboundFromIndex(DatasetAccessor* accessor) {
   // sort the index by timestamp so that we can iterate over it in creation order
-  auto objectIndex = accessor->getObjectIndex();
+  const auto* objectIndex = accessor->getObjectIndex();
   std::vector<const DSObjectHeader*> sortedHeaderPtrs;
   for (int32_t i = 0; i < objectIndex->count; ++i) {
     sortedHeaderPtrs.push_back(&objectIndex->getAt(i));
@@ -192,8 +192,8 @@ void DatasetReconciler::reconcileInboundFromIndex(DatasetAccessor* accessor) {
 
   // sweep through the sorted index, reconciling each object and keeping track of the IDs
   std::unordered_set<DSIdentifier> reconciledIds;
-  for (auto objHeader : sortedHeaderPtrs) {
-    auto& id = objHeader->id;
+  for (const auto* objHeader : sortedHeaderPtrs) {
+    const auto& id = objHeader->id;
     auto collectionId = objHeader->type;
     auto objAccessor = accessor->getObjectFromHeader(objHeader);
     if (auto iter = collections_.find(collectionId); iter != collections_.end()) {
