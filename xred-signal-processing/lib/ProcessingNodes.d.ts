@@ -70,6 +70,12 @@ export declare function RouteToChannel(params: {
 }): ISignalNodeType;
 export declare function SelectChannel(signal: ISignalNodeType, channelIdx: number): ISignalNodeType;
 export declare function StackChannels(signal0: ISignalNodeType, ...otherSignals: ISignalNodeType[]): ISignalNodeType;
+export declare function RepeatAndStack(signal: ISignalNodeType, count: number): ISignalNodeType;
+export declare function ClickPulse(params: {
+    preDelay?: NonSignalNumericValue;
+    pulseWidth?: NonSignalNumericValue;
+    startEvent?: FiresEvent;
+}): SignalCurveType;
 export declare function TrapezoidCurve(params: {
     softCurve?: boolean;
     lowValue?: NonSignalNumericValue;

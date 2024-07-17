@@ -40,7 +40,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PitchShift = exports.BandPassFilter = exports.HighPassFilter = exports.LowPassFilter = exports.ParametricEqualizer = exports.Feedback = exports.Delay = exports.Sequence = exports.AudioStream = exports.AdsrEnvelope = exports.TrapezoidCurve = exports.StackChannels = exports.SelectChannel = exports.RouteToChannel = exports.SoftClip = exports.CustomWave = exports.WhiteNoise = exports.SquareWave = exports.TriangleWave = exports.SawtoothWave = exports.SineWave = exports.OutputDevice = void 0;
+exports.PitchShift = exports.BandPassFilter = exports.HighPassFilter = exports.LowPassFilter = exports.ParametricEqualizer = exports.Feedback = exports.Delay = exports.Sequence = exports.AudioStream = exports.AdsrEnvelope = exports.TrapezoidCurve = exports.ClickPulse = exports.RepeatAndStack = exports.StackChannels = exports.SelectChannel = exports.RouteToChannel = exports.SoftClip = exports.CustomWave = exports.WhiteNoise = exports.SquareWave = exports.TriangleWave = exports.SawtoothWave = exports.SineWave = exports.OutputDevice = void 0;
 const path = __importStar(require("path"));
 const MathOps_1 = require("./MathOps");
 const SignalProcessingTypes_1 = require("./SignalProcessingTypes");
@@ -132,7 +132,7 @@ function CustomWave(params) {
         node = (0, MathOps_1.Multiply)(node, params.amplitude);
     }
     if (params.channelCount !== undefined && params.channelCount > 1) {
-        node = StackChannels(node, ...Array(params.channelCount - 1).fill(node));
+        node = RepeatAndStack(node, params.channelCount);
     }
     return node;
 }
@@ -164,6 +164,33 @@ function StackChannels(signal0, ...otherSignals) {
     return node;
 }
 exports.StackChannels = StackChannels;
+function RepeatAndStack(signal, count) {
+    if (count <= 1) {
+        return signal;
+    }
+    return StackChannels(signal, ...Array(count - 1).fill(signal));
+}
+exports.RepeatAndStack = RepeatAndStack;
+function ClickPulse(params) {
+    return new SignalProcessingTypes_1.SignalCurveType({
+        startEvent: params.startEvent,
+        startValue: 0,
+        segments: [{
+                endValue: 0,
+                timeLength: params.preDelay ?? 0,
+            }, {
+                endValue: 1,
+                timeLength: 0,
+            }, {
+                endValue: 1,
+                timeLength: params.pulseWidth ?? 0.05,
+            }, {
+                endValue: 0,
+                timeLength: 0,
+            }],
+    });
+}
+exports.ClickPulse = ClickPulse;
 function TrapezoidCurve(params) {
     const fullParams = {
         softCurve: false,
