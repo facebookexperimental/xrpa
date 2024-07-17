@@ -50,30 +50,44 @@ const GenDataStoreSubsystem_1 = require("./GenDataStoreSubsystem");
 const MonoBehaviourShared_1 = require("./MonoBehaviourShared");
 function genParameterAccessors(ctx, classSpec, objectDef) {
     const spawnInitializerLines = [];
+    const validateLines = [];
+    const currentObj = (0, CsharpCodeGenImpl_1.privateMember)("currentObj");
     const paramsStruct = new StructType_1.StructType(CsharpCodeGenImpl, "SyntheticObjectParams", CsharpCodeGenImpl_1.XRPA_NAMESPACE, undefined, objectDef.buildStructSpec(ctx.storeDef.datamodel));
     const fields = paramsStruct.getAllFields();
     for (const paramName in fields) {
         const memberName = (0, Helpers_1.upperFirst)(paramName);
+        const memberFieldName = (0, CsharpCodeGenImpl_1.privateMember)(memberName);
         const fieldType = fields[paramName].type;
+        const objGetterName = `Get${(0, Helpers_1.upperFirst)(paramName)}`;
         const objSetterName = `Set${(0, Helpers_1.upperFirst)(paramName)}`;
         const decorations = [
             "[SerializeField]"
         ];
-        paramsStruct.declareLocalFieldClassMember(classSpec, paramName, (0, CsharpCodeGenImpl_1.privateMember)(memberName), true, decorations, "private");
+        paramsStruct.declareLocalFieldClassMember(classSpec, paramName, memberFieldName, true, decorations, "private");
         spawnInitializerLines.push(`${(0, CsharpCodeGenImpl_1.genDerefMethodCall)("ret", objSetterName, [memberName])};`);
         classSpec.members.push({
             name: memberName,
             type: fieldType,
-            getter: (0, CsharpCodeGenImpl_1.privateMember)(memberName),
+            getter: memberFieldName,
             setter: [
                 // set the local member value
-                `${(0, CsharpCodeGenImpl_1.privateMember)(memberName)} = value;`,
-                `if (${(0, CsharpCodeGenImpl_1.genNonNullCheck)((0, CsharpCodeGenImpl_1.privateMember)("currentObj"))}) {`,
-                `  ${(0, CsharpCodeGenImpl_1.genDerefMethodCall)((0, CsharpCodeGenImpl_1.privateMember)("currentObj"), objSetterName, ["value"])};`,
+                `${memberFieldName} = value;`,
+                `if (${(0, CsharpCodeGenImpl_1.genNonNullCheck)(currentObj)}) {`,
+                `  ${(0, CsharpCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, ["value"])};`,
                 `}`,
             ],
         });
+        validateLines.push(`if (!${(0, CsharpCodeGenImpl_1.genDerefMethodCall)(currentObj, objGetterName, [])}.Equals(${memberFieldName})) {`, `  ${(0, CsharpCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, [memberFieldName])};`, `}`);
     }
+    classSpec.methods.push({
+        name: "OnValidate",
+        body: [
+            `if (${(0, CsharpCodeGenImpl_1.genNonNullCheck)(currentObj)}) {`,
+            ...(0, Helpers_1.indent)(1, validateLines),
+            `}`,
+        ],
+        visibility: "private",
+    });
     return {
         spawnInitializerLines,
     };

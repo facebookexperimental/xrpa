@@ -127,11 +127,11 @@ function genWriteFieldProperty(classSpec, params) {
         const clearName = overrideParams?.[1] ?? `Clear${pascalFieldName}`;
         classSpec.methods.push({
             name: setterName,
-            body: includes => (0, GenWriteReconcilerDataStore_1.genClearSetSetterFunctionBody)({ ...params, includes, fieldType, fieldVar: (0, CsharpCodeGenImpl_1.privateMember)(params.memberName), typeDef: typeDef }),
+            body: includes => (0, GenWriteReconcilerDataStore_1.genClearSetSetterFunctionBody)({ ...params, includes, fieldType, fieldVar: (0, CsharpCodeGenImpl_1.privateMember)(params.memberName), typeDef }),
         });
         classSpec.methods.push({
             name: clearName,
-            body: includes => (0, GenWriteReconcilerDataStore_1.genClearSetClearFunctionBody)({ ...params, includes, fieldType, fieldVar: (0, CsharpCodeGenImpl_1.privateMember)(params.memberName), typeDef: typeDef }),
+            body: includes => (0, GenWriteReconcilerDataStore_1.genClearSetClearFunctionBody)({ ...params, includes, fieldType, fieldVar: (0, CsharpCodeGenImpl_1.privateMember)(params.memberName), typeDef }),
         });
     }
     classSpec.members.push({
@@ -142,9 +142,12 @@ function genWriteFieldProperty(classSpec, params) {
             ...(params.setterHooks?.[params.fieldName]?.preSet ?? []),
             `${(0, CsharpCodeGenImpl_1.privateMember)(params.memberName)} = value;`,
             ...(params.setterHooks?.[params.fieldName]?.postSet ?? []),
-            ...(params.needsSetDirty ? (0, GenWriteReconcilerDataStore_1.genFieldSetDirty)({ ...params, includes: classSpec.includes, typeDef: typeDef }) : []),
+            ...(params.needsSetDirty ? (0, GenWriteReconcilerDataStore_1.genFieldSetDirty)({ ...params, includes: classSpec.includes, typeDef }) : []),
         ],
     });
+    if (isSerialized && hasSetter && params.needsSetDirty) {
+        params.validateLines.push(...(0, GenWriteReconcilerDataStore_1.genFieldSetDirty)({ ...params, includes: classSpec.includes, typeDef }));
+    }
     if (params.reconcilerDef.isIndexedField(params.fieldName)) {
         classSpec.methods.push({
             name: (0, GenDataStoreShared_1.fieldGetterFuncName)(CsharpCodeGenImpl, params.reconcilerDef.type.getStateFields(), params.fieldName),
@@ -168,16 +171,24 @@ function genReadFieldProperty(classSpec, params) {
     });
 }
 function genFieldProperties(classSpec, params) {
+    const validateLines = [];
     const fields = params.reconcilerDef.type.getStateFields();
     for (const fieldName in fields) {
         const memberName = getFieldMemberName(params.reconcilerDef, fieldName);
         const isOutboundField = params.reconcilerDef.isOutboundField(fieldName);
         if (params.reconcilerDef.isIndexBoundField(fieldName) || isOutboundField) {
-            genWriteFieldProperty(classSpec, { ...params, fieldName, memberName, needsSetDirty: isOutboundField });
+            genWriteFieldProperty(classSpec, { ...params, fieldName, memberName, needsSetDirty: isOutboundField, validateLines });
         }
         else {
             genReadFieldProperty(classSpec, { ...params, fieldName, memberName });
         }
+    }
+    if (validateLines.length > 0) {
+        classSpec.methods.push({
+            name: "OnValidate",
+            body: validateLines,
+            visibility: "private",
+        });
     }
 }
 exports.genFieldProperties = genFieldProperties;
