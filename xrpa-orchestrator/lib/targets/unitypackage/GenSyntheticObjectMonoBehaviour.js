@@ -50,6 +50,7 @@ const GenDataStoreSubsystem_1 = require("./GenDataStoreSubsystem");
 const MonoBehaviourShared_1 = require("./MonoBehaviourShared");
 function genParameterAccessors(ctx, classSpec, objectDef) {
     const spawnInitializerLines = [];
+    const runInitializerLines = [];
     const validateLines = [];
     const currentObj = (0, CsharpCodeGenImpl_1.privateMember)("currentObj");
     const paramsStruct = new StructType_1.StructType(CsharpCodeGenImpl, "SyntheticObjectParams", CsharpCodeGenImpl_1.XRPA_NAMESPACE, undefined, objectDef.buildStructSpec(ctx.storeDef.datamodel));
@@ -65,6 +66,7 @@ function genParameterAccessors(ctx, classSpec, objectDef) {
         ];
         paramsStruct.declareLocalFieldClassMember(classSpec, paramName, memberFieldName, true, decorations, "private");
         spawnInitializerLines.push(`${(0, CsharpCodeGenImpl_1.genDerefMethodCall)("ret", objSetterName, [memberName])};`);
+        runInitializerLines.push(`${(0, CsharpCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, [memberName])};`);
         classSpec.members.push({
             name: memberName,
             type: fieldType,
@@ -90,6 +92,7 @@ function genParameterAccessors(ctx, classSpec, objectDef) {
     });
     return {
         spawnInitializerLines,
+        runInitializerLines,
     };
 }
 function genSyntheticObjectMonoBehaviour(ctx, fileWriter, outDir, syntheticObjectName, objectDef) {
@@ -107,7 +110,7 @@ function genSyntheticObjectMonoBehaviour(ctx, fileWriter, outDir, syntheticObjec
         visibility: "public",
         decorations: ["[SerializeField]"]
     });
-    const { spawnInitializerLines } = genParameterAccessors(ctx, classSpec, objectDef);
+    const { spawnInitializerLines, runInitializerLines } = genParameterAccessors(ctx, classSpec, objectDef);
     classSpec.members.push({
         name: "currentObj",
         type: (0, CsharpCodeGenImpl_1.genObjectPtrType)(syntheticObjectClass),
@@ -135,6 +138,7 @@ function genSyntheticObjectMonoBehaviour(ctx, fileWriter, outDir, syntheticObjec
             return [
                 `Stop();`,
                 `${(0, CsharpCodeGenImpl_1.privateMember)("currentObj")} = ${(0, CsharpCodeGenImpl_1.genCreateObject)(syntheticObjectClass, [`${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.Instance.DataStore`])};`,
+                ...runInitializerLines,
             ];
         },
         visibility: "public",

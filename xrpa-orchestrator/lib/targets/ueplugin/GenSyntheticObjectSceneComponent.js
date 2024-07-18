@@ -51,6 +51,8 @@ const SceneComponentShared_1 = require("./SceneComponentShared");
 function genParameterAccessors(ctx, classSpec, objectDef, cppIncludes) {
     const initializerLines = [];
     const spawnInitializerLines = [];
+    const runInitializerLines = [];
+    const currentObj = (0, CppCodeGenImpl_1.privateMember)("currentObj");
     const paramsStruct = new StructType_1.StructType(CppCodeGenImpl, "SyntheticObjectParams", CppCodeGenImpl_1.XRPA_NAMESPACE, undefined, objectDef.buildStructSpec(ctx.storeDef.datamodel));
     const fields = paramsStruct.getAllFields();
     for (const paramName in fields) {
@@ -64,6 +66,7 @@ function genParameterAccessors(ctx, classSpec, objectDef, cppIncludes) {
         paramsStruct.declareLocalFieldClassMember(classSpec, paramName, memberName, true, decorations, "public");
         initializerLines.push(...paramsStruct.resetLocalFieldVarToDefault(ctx.namespace, cppIncludes, paramName, memberName));
         spawnInitializerLines.push(`${(0, CppCodeGenImpl_1.genDerefMethodCall)("ret", objSetterName, [memberName])};`);
+        runInitializerLines.push(`${(0, CppCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, [memberName])};`);
         classSpec.methods.push({
             name: setterName,
             parameters: [{
@@ -73,8 +76,8 @@ function genParameterAccessors(ctx, classSpec, objectDef, cppIncludes) {
             body: () => [
                 // set the local member value
                 `${memberName} = ${paramName};`,
-                `if (${(0, CppCodeGenImpl_1.genNonNullCheck)((0, CppCodeGenImpl_1.privateMember)("currentObj"))}) {`,
-                `  ${(0, CppCodeGenImpl_1.genDerefMethodCall)((0, CppCodeGenImpl_1.privateMember)("currentObj"), objSetterName, [paramName])};`,
+                `if (${(0, CppCodeGenImpl_1.genNonNullCheck)(currentObj)}) {`,
+                `  ${(0, CppCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, [paramName])};`,
                 `}`,
             ],
             separateImplementation: true,
@@ -83,6 +86,7 @@ function genParameterAccessors(ctx, classSpec, objectDef, cppIncludes) {
     return {
         initializerLines,
         spawnInitializerLines,
+        runInitializerLines,
     };
 }
 function genSyntheticObjectSceneComponent(ctx, fileWriter, outSrcDir, outHeaderDir, syntheticObjectName, objectDef) {
@@ -124,7 +128,7 @@ function genSyntheticObjectSceneComponent(ctx, fileWriter, outSrcDir, outHeaderD
         visibility: "public",
         decorations: ["UPROPERTY(EditAnywhere, BlueprintReadWrite)"]
     });
-    const { initializerLines, spawnInitializerLines } = genParameterAccessors(ctx, classSpec, objectDef, cppIncludes);
+    const { initializerLines, spawnInitializerLines, runInitializerLines } = genParameterAccessors(ctx, classSpec, objectDef, cppIncludes);
     classSpec.constructors.push({
         body: initializerLines,
         separateImplementation: true,
@@ -177,6 +181,7 @@ function genSyntheticObjectSceneComponent(ctx, fileWriter, outSrcDir, outHeaderD
             return [
                 `Stop();`,
                 `${(0, CppCodeGenImpl_1.privateMember)("currentObj")} = ${(0, CppCodeGenImpl_1.genCreateObject)(syntheticObjectClass, ["GetDataStoreSubsystem()->DataStore"])};`,
+                ...runInitializerLines,
             ];
         },
         visibility: "public",
