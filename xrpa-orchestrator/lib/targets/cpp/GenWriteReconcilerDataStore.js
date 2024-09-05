@@ -55,6 +55,7 @@ const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
 const GenMessageAccessors_1 = require("./GenMessageAccessors");
 const GenDataStore_1 = require("./GenDataStore");
 const GenSignalAccessors_1 = require("./GenSignalAccessors");
+const GenReadReconcilerDataStore_1 = require("./GenReadReconcilerDataStore");
 function genFieldSetDirty(params) {
     const changeBit = params.typeDef.getChangedBit(params.ctx.namespace, params.includes, params.fieldName);
     if (params.proxyObj) {
@@ -299,18 +300,51 @@ function genOutboundReconciledTypes(ctx, includesIn) {
                 proxyObj: null,
             }),
         });
-        classSpec.methods.push({
-            name: "processDSUpdate",
-            parameters: [{
-                    name: "value",
-                    type: `const ${typeDef.getReadAccessorType(ctx.namespace, classSpec.includes)}&`,
-                }, {
-                    name: "fieldsChanged",
-                    type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
-                }],
-            body: [],
-            isAbstract: reconcilerDef.getInboundChangeBits() !== 0,
-        });
+        if (reconcilerDef.shouldGenerateConcreteReconciledType()) {
+            classSpec.methods.push({
+                name: "processDSUpdate",
+                parameters: [{
+                        name: "value",
+                        type: `const ${typeDef.getReadAccessorType(ctx.namespace, classSpec.includes)}&`,
+                    }, {
+                        name: "fieldsChanged",
+                        type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
+                    }],
+                body: includes => (0, GenReadReconcilerDataStore_1.genProcessUpdateFunctionBodyForConcreteReconciledType)(ctx, includes, typeDef, reconcilerDef),
+            });
+            genWriteFieldAccessors(classSpec, {
+                ctx,
+                reconcilerDef,
+                fieldToMemberVar: defaultFieldToMemberVar,
+                fieldAccessorNameOverrides: {},
+                gettersOnly: true,
+                directionality: "inbound",
+                proxyObj: null,
+            });
+            (0, GenDataStoreShared_1.genFieldProperties)(classSpec, {
+                codegen: CppCodeGenImpl,
+                reconcilerDef,
+                fieldToMemberVar: defaultFieldToMemberVar,
+                canCreate: false,
+                canChange: false,
+                directionality: "inbound",
+                visibility: "private",
+            });
+        }
+        else {
+            classSpec.methods.push({
+                name: "processDSUpdate",
+                parameters: [{
+                        name: "value",
+                        type: `const ${typeDef.getReadAccessorType(ctx.namespace, classSpec.includes)}&`,
+                    }, {
+                        name: "fieldsChanged",
+                        type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
+                    }],
+                body: [],
+                isAbstract: reconcilerDef.getInboundChangeBits() !== 0,
+            });
+        }
         (0, GenMessageAccessors_1.genMessageFieldAccessors)(classSpec, {
             ctx,
             reconcilerDef,

@@ -142,6 +142,7 @@ class SignalDataType extends PrimitiveType_1.PrimitiveType {
 function genPrimitiveTypes(codegen, typeMap) {
     return {
         [BuiltinType.Boolean]: new BooleanType(codegen),
+        // TODO maybe rename Count -> WholeNumber, and then add Count back as a semantic type instead? (constrained to >= 0)
         [BuiltinType.Count]: new PrimitiveType_1.PrimitiveType(codegen, BuiltinType.Count, codegen.PRIMITIVE_INTRINSICS.int32, typeMap[BuiltinType.Count] ?? codegen.PRIMITIVE_INTRINSICS.int, 4, true, new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.int32.typename, 0)),
         [BuiltinType.BitField]: new PrimitiveType_1.PrimitiveType(codegen, BuiltinType.BitField, codegen.PRIMITIVE_INTRINSICS.uint64, codegen.PRIMITIVE_INTRINSICS.uint64, 8, true, new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.uint64.typename, 0)),
         [BuiltinType.Timestamp]: new TimestampType(codegen, typeMap[BuiltinType.Timestamp] ?? codegen.PRIMITIVE_INTRINSICS.microseconds),
@@ -152,36 +153,36 @@ function genPrimitiveTypes(codegen, typeMap) {
 }
 exports.genPrimitiveTypes = genPrimitiveTypes;
 /*****************************************************/
-function getSemanticType(codegen, typeName, apiname, datamodel) {
+function getSemanticType(codegen, typeName, apiname, typeMap, localCoordinateSystem, storedCoordinateSystem) {
     const conversionData = {
         apiname,
-        toLocalTransform: (0, CoordinateTransformer_1.buildCoordTransformer)(datamodel.storedCoordinateSystem, datamodel.localCoordinateSystem, codegen.UNIT_TRANSFORMER),
-        fromLocalTransform: (0, CoordinateTransformer_1.buildCoordTransformer)(datamodel.localCoordinateSystem, datamodel.storedCoordinateSystem, codegen.UNIT_TRANSFORMER),
+        toLocalTransform: (0, CoordinateTransformer_1.buildCoordTransformer)(storedCoordinateSystem, localCoordinateSystem, codegen.UNIT_TRANSFORMER),
+        fromLocalTransform: (0, CoordinateTransformer_1.buildCoordTransformer)(localCoordinateSystem, storedCoordinateSystem, codegen.UNIT_TRANSFORMER),
     };
     const ByteType = new PrimitiveType_1.PrimitiveType(codegen, "byte", codegen.PRIMITIVE_INTRINSICS.uint8, codegen.PRIMITIVE_INTRINSICS.uint8, 4, true, new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.uint8.typename, 0));
     const FloatType = new PrimitiveType_1.PrimitiveType(codegen, "float", codegen.PRIMITIVE_INTRINSICS.float32, codegen.PRIMITIVE_INTRINSICS.float32, 4, true, new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.float32.typename, 0));
     switch (typeName) {
         case BuiltinType.Scalar:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Scalar, datamodel.typeMap[BuiltinType.Scalar] ?? codegen.PRIMITIVE_INTRINSICS.float32, {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Scalar, typeMap[BuiltinType.Scalar] ?? codegen.PRIMITIVE_INTRINSICS.float32, {
                 value: { type: FloatType, defaultValue: 1, description: undefined },
             }, conversionData, {
                 isScalar: true,
             });
         case BuiltinType.Angle:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Angle, datamodel.typeMap[BuiltinType.Angle] ?? codegen.PRIMITIVE_INTRINSICS.float32, {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Angle, typeMap[BuiltinType.Angle] ?? codegen.PRIMITIVE_INTRINSICS.float32, {
                 value: { type: FloatType, defaultValue: 0, description: undefined },
             }, conversionData, {
                 units: CoordinateTransformer_1.UnitType.angular,
             });
         case BuiltinType.Distance:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Distance, datamodel.typeMap[BuiltinType.Distance] ?? codegen.PRIMITIVE_INTRINSICS.float32, {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Distance, typeMap[BuiltinType.Distance] ?? codegen.PRIMITIVE_INTRINSICS.float32, {
                 value: { type: FloatType, defaultValue: 0, description: undefined },
             }, conversionData, {
                 units: CoordinateTransformer_1.UnitType.spatial,
                 isScalar: true,
             });
         case BuiltinType.Matrix3x2:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Matrix3x2, datamodel.typeMap[BuiltinType.Matrix3x2], {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Matrix3x2, typeMap[BuiltinType.Matrix3x2], {
                 col0_row0: { type: FloatType, defaultValue: 1, description: undefined },
                 col0_row1: { type: FloatType, defaultValue: 0, description: undefined },
                 col1_row0: { type: FloatType, defaultValue: 0, description: undefined },
@@ -190,19 +191,19 @@ function getSemanticType(codegen, typeName, apiname, datamodel) {
                 col2_row1: { type: FloatType, defaultValue: 0, description: undefined },
             }, conversionData, {});
         case BuiltinType.Vector2:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Vector2, datamodel.typeMap[BuiltinType.Vector2], {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Vector2, typeMap[BuiltinType.Vector2], {
                 x: { type: FloatType, defaultValue: 0, description: undefined },
                 y: { type: FloatType, defaultValue: 0, description: undefined },
             }, conversionData, {
                 units: CoordinateTransformer_1.UnitType.spatial,
             });
         case BuiltinType.UnitVector2:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.UnitVector2, datamodel.typeMap[BuiltinType.UnitVector2], {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.UnitVector2, typeMap[BuiltinType.UnitVector2], {
                 x: { type: FloatType, defaultValue: 0, description: undefined },
                 y: { type: FloatType, defaultValue: 1, description: undefined },
             }, conversionData, {});
         case BuiltinType.Distance2:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Distance2, datamodel.typeMap[BuiltinType.Distance2], {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Distance2, typeMap[BuiltinType.Distance2], {
                 x: { type: FloatType, defaultValue: 0, description: undefined },
                 y: { type: FloatType, defaultValue: 0, description: undefined },
             }, conversionData, {
@@ -210,14 +211,14 @@ function getSemanticType(codegen, typeName, apiname, datamodel) {
                 isScalar: true,
             });
         case BuiltinType.Scale2:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Scale2, datamodel.typeMap[BuiltinType.Scale2], {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Scale2, typeMap[BuiltinType.Scale2], {
                 x: { type: FloatType, defaultValue: 1, description: undefined },
                 y: { type: FloatType, defaultValue: 1, description: undefined },
             }, conversionData, {
                 isScalar: true,
             });
         case BuiltinType.Matrix4x3:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Matrix4x3, datamodel.typeMap[BuiltinType.Matrix4x3], {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Matrix4x3, typeMap[BuiltinType.Matrix4x3], {
                 col0_row0: { type: FloatType, defaultValue: 1, description: undefined },
                 col0_row1: { type: FloatType, defaultValue: 0, description: undefined },
                 col0_row2: { type: FloatType, defaultValue: 0, description: undefined },
@@ -234,7 +235,7 @@ function getSemanticType(codegen, typeName, apiname, datamodel) {
                 coordMatrixDims: [4, 3],
             });
         case BuiltinType.Matrix4x4:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Matrix4x4, datamodel.typeMap[BuiltinType.Matrix4x4], {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Matrix4x4, typeMap[BuiltinType.Matrix4x4], {
                 col0_row0: { type: FloatType, defaultValue: 1, description: undefined },
                 col0_row1: { type: FloatType, defaultValue: 0, description: undefined },
                 col0_row2: { type: FloatType, defaultValue: 0, description: undefined },
@@ -255,7 +256,7 @@ function getSemanticType(codegen, typeName, apiname, datamodel) {
                 coordMatrixDims: [4, 4],
             });
         case BuiltinType.Quaternion:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Quaternion, datamodel.typeMap[BuiltinType.Quaternion], {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Quaternion, typeMap[BuiltinType.Quaternion], {
                 x: { type: FloatType, defaultValue: 0, description: undefined },
                 y: { type: FloatType, defaultValue: 0, description: undefined },
                 z: { type: FloatType, defaultValue: 0, description: undefined },
@@ -265,7 +266,7 @@ function getSemanticType(codegen, typeName, apiname, datamodel) {
                 flipSignWithHandedness: true,
             });
         case BuiltinType.EulerAngles:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.EulerAngles, datamodel.typeMap[BuiltinType.EulerAngles], {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.EulerAngles, typeMap[BuiltinType.EulerAngles], {
                 yaw: { type: FloatType, defaultValue: 0, description: undefined },
                 pitch: { type: FloatType, defaultValue: 0, description: undefined },
                 roll: { type: FloatType, defaultValue: 0, description: undefined },
@@ -273,7 +274,7 @@ function getSemanticType(codegen, typeName, apiname, datamodel) {
                 units: CoordinateTransformer_1.UnitType.angular,
             });
         case BuiltinType.Vector3:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Vector3, datamodel.typeMap[BuiltinType.Vector3], {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Vector3, typeMap[BuiltinType.Vector3], {
                 x: { type: FloatType, defaultValue: 0, description: undefined },
                 y: { type: FloatType, defaultValue: 0, description: undefined },
                 z: { type: FloatType, defaultValue: 0, description: undefined },
@@ -282,7 +283,7 @@ function getSemanticType(codegen, typeName, apiname, datamodel) {
                 isCoords: true,
             });
         case BuiltinType.UnitVector3:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.UnitVector3, datamodel.typeMap[BuiltinType.UnitVector3], {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.UnitVector3, typeMap[BuiltinType.UnitVector3], {
                 x: { type: FloatType, defaultValue: 0, description: undefined },
                 y: { type: FloatType, defaultValue: 0, description: undefined },
                 z: { type: FloatType, defaultValue: 1, description: undefined },
@@ -290,7 +291,7 @@ function getSemanticType(codegen, typeName, apiname, datamodel) {
                 isCoords: true,
             });
         case BuiltinType.Distance3:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Distance3, datamodel.typeMap[BuiltinType.Distance3], {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Distance3, typeMap[BuiltinType.Distance3], {
                 x: { type: FloatType, defaultValue: 0, description: undefined },
                 y: { type: FloatType, defaultValue: 0, description: undefined },
                 z: { type: FloatType, defaultValue: 0, description: undefined },
@@ -300,7 +301,7 @@ function getSemanticType(codegen, typeName, apiname, datamodel) {
                 isCoords: true,
             });
         case BuiltinType.Scale3:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Scale3, datamodel.typeMap[BuiltinType.Scale3], {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.Scale3, typeMap[BuiltinType.Scale3], {
                 x: { type: FloatType, defaultValue: 1, description: undefined },
                 y: { type: FloatType, defaultValue: 1, description: undefined },
                 z: { type: FloatType, defaultValue: 1, description: undefined },
@@ -309,14 +310,14 @@ function getSemanticType(codegen, typeName, apiname, datamodel) {
                 isCoords: true,
             });
         case BuiltinType.ColorSRGBA:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.ColorSRGBA, datamodel.typeMap[BuiltinType.ColorSRGBA], {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.ColorSRGBA, typeMap[BuiltinType.ColorSRGBA], {
                 r: { type: ByteType, defaultValue: 255, description: undefined },
                 g: { type: ByteType, defaultValue: 255, description: undefined },
                 b: { type: ByteType, defaultValue: 255, description: undefined },
                 a: { type: ByteType, defaultValue: 255, description: undefined },
             }, conversionData, {});
         case BuiltinType.ColorLinear:
-            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.ColorLinear, datamodel.typeMap[BuiltinType.ColorLinear], {
+            return new NumericSemanticType_1.NumericSemanticType(codegen, BuiltinType.ColorLinear, typeMap[BuiltinType.ColorLinear], {
                 r: { type: FloatType, defaultValue: 1, description: undefined },
                 g: { type: FloatType, defaultValue: 1, description: undefined },
                 b: { type: FloatType, defaultValue: 1, description: undefined },

@@ -1,6 +1,6 @@
 {
   "name": "@xrpa/xrpa-orchestrator",
-  "version": "1.3.3",
+  "version": "1.4.0",
   "description": "Xrpa Orchestrator",
   "main": "lib/index.js",
   "license": "Apache-2.0",
@@ -8,6 +8,7 @@
     "lib/**/*"
   ],
   "dependencies": {
-    "fs-extra": "^11.1.0"
+    "fs-extra": "^11.1.0",
+    "simply-immutable": "^2.1.1"
   }
 }

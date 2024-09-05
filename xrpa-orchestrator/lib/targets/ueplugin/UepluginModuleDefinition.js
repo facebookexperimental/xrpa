@@ -27,28 +27,28 @@ const FileWriter_1 = require("../../shared/FileWriter");
 const Helpers_1 = require("../../shared/Helpers");
 const CppCodeGenImpl_1 = require("../cpp/CppCodeGenImpl");
 const CppModuleDefinition_1 = require("../cpp/CppModuleDefinition");
+const GenDataflowProgram_1 = require("../cpp/GenDataflowProgram");
 const GenDataStore_1 = require("../cpp/GenDataStore");
-const GenSyntheticObject_1 = require("../cpp/GenSyntheticObject");
 const GenTypesHeader_1 = require("../cpp/GenTypesHeader");
 const GenBlueprintTypes_1 = require("./GenBlueprintTypes");
-const GenModuleSubsystem_1 = require("./GenModuleSubsystem");
+const GenDataflowProgramSpawner_1 = require("./GenDataflowProgramSpawner");
 const GenDataStoreSubsystem_1 = require("./GenDataStoreSubsystem");
 const GenPlugin_1 = require("./GenPlugin");
 const GenIndexedSceneComponent_1 = require("./GenIndexedSceneComponent");
 const GenSceneComponent_1 = require("./GenSceneComponent");
-const GenSyntheticObjectSceneComponent_1 = require("./GenSyntheticObjectSceneComponent");
+const GenTransportSubsystem_1 = require("./GenTransportSubsystem");
 const SceneComponentShared_1 = require("./SceneComponentShared");
 const UeTypeDefinitions_1 = require("./UeTypeDefinitions");
 class UepluginModuleDefinition extends CppModuleDefinition_1.CppModuleDefinition {
-    constructor(name, datamap, pluginsRoot, pluginDeps) {
+    constructor(name, datamap, projectRoot, pluginsConfig) {
         super(name, datamap, "", undefined, {
             includes: [
                 { filename: "Engine.h" },
             ],
             code: "FGuid::NewGuid()",
         });
-        this.pluginsRoot = pluginsRoot;
-        this.pluginDeps = pluginDeps;
+        this.projectRoot = projectRoot;
+        this.pluginsConfig = pluginsConfig;
     }
     createEnum(name, apiname, enumValues, localTypeOverride) {
         (0, assert_1.default)(!localTypeOverride, `localTypeOverride must be undefined for UE enums`);
@@ -84,12 +84,14 @@ class UepluginModuleDefinition extends CppModuleDefinition_1.CppModuleDefinition
     }
     doCodeGen() {
         const fileWriter = new FileWriter_1.FileWriter();
-        const pluginRootDir = path_1.default.join(this.pluginsRoot, this.name);
-        // generate plugin directory structure and files
-        const data = (0, GenPlugin_1.genPlugin)(fileWriter, pluginRootDir, this.name, this.pluginDeps);
-        // generate ModuleSubsystem
-        (0, GenModuleSubsystem_1.genModuleSubsystem)(fileWriter, data.privateSrcDir, this);
+        const pluginsDir = path_1.default.join(this.projectRoot, "Plugins");
         for (const storeDef of this.getDataStores()) {
+            const pluginConfig = this.pluginsConfig[storeDef.apiname];
+            const pluginRootDir = path_1.default.join(pluginsDir, pluginConfig.pluginName);
+            // generate plugin directory structure and files
+            const data = (0, GenPlugin_1.genPlugin)(fileWriter, pluginRootDir, pluginConfig.pluginName, pluginConfig.deps);
+            // generate TransportSubsytem
+            (0, GenTransportSubsystem_1.genTransportSubsystem)(fileWriter, data.privateSrcDir, storeDef, pluginConfig.pluginName);
             // generate DS types using cpp codegen
             (0, GenTypesHeader_1.genTypesHeader)(fileWriter, data.privateSrcDir, storeDef);
             // generate DataStore files using cpp codegen
@@ -99,44 +101,59 @@ class UepluginModuleDefinition extends CppModuleDefinition_1.CppModuleDefinition
                 namespace: this.codegen.getDataStoreName(storeDef.apiname),
             };
             (0, GenDataStore_1.genDataStore)(fileWriter, data.privateSrcDir, ctx);
-            // generate synthetic objects
-            const syntheticObjects = storeDef.getSyntheticObjects();
-            for (const name in syntheticObjects) {
-                (0, GenSyntheticObject_1.genSyntheticObject)(ctx, fileWriter, data.publicSrcDir, name, syntheticObjects[name]);
-                (0, GenSyntheticObjectSceneComponent_1.genSyntheticObjectSceneComponent)(ctx, fileWriter, data.privateSrcDir, data.publicSrcDir, name, syntheticObjects[name]);
-            }
             // generate DataStore subsystem files
-            (0, GenDataStoreSubsystem_1.genDataStoreSubsystem)(fileWriter, data.privateSrcDir, this, storeDef);
+            (0, GenDataStoreSubsystem_1.genDataStoreSubsystem)(fileWriter, data.privateSrcDir, storeDef, pluginConfig.pluginName);
             // generate Blueprint-compatible versions of DS types, where needed
             ctx.namespace = "";
             (0, GenBlueprintTypes_1.genBlueprintTypes)(fileWriter, data.privateSrcDir, data.publicSrcDir, ctx);
             // generate UE reconciler classes
             for (const accessor of storeDef.getOutputReconcilers()) {
                 if ((0, Helpers_1.filterToString)(accessor.componentProps.basetype)?.endsWith("Component")) {
-                    (0, GenSceneComponent_1.genSceneComponent)(ctx, fileWriter, accessor, data.privateSrcDir, data.publicSrcDir);
+                    (0, GenSceneComponent_1.genSceneComponent)(ctx, fileWriter, accessor, data.privateSrcDir, data.publicSrcDir, pluginConfig.pluginName);
                 }
             }
             for (const accessor of storeDef.getInputReconcilers()) {
                 if (accessor.hasIndexedBinding()) {
-                    (0, GenIndexedSceneComponent_1.genIndexedSceneComponent)(ctx, fileWriter, accessor, data.privateSrcDir, data.publicSrcDir);
+                    (0, GenIndexedSceneComponent_1.genIndexedSceneComponent)(ctx, fileWriter, accessor, data.privateSrcDir, data.publicSrcDir, pluginConfig.pluginName);
                 }
             }
+            // copy over the Xrpa runtime files
+            fileWriter.copyFolderContents((0, Helpers_1.getRuntimeSrcPath)("cpp"), path_1.default.join(data.publicSrcDir, "xrpa-runtime"), (srcRelPath, fileExt, fileData) => {
+                if (srcRelPath.startsWith("external_utils/")) {
+                    return null;
+                }
+                if (srcRelPath.endsWith("BUCK")) {
+                    return null;
+                }
+                if (fileExt === ".cpp" || fileExt === ".h") {
+                    return (0, CppCodeGenImpl_1.injectGeneratedTag)(fileData);
+                }
+                return fileData;
+            });
+            fileWriter.copyFolderContents((0, Helpers_1.getRuntimeSrcPath)("ue"), path_1.default.join(data.publicSrcDir, "xrpa-runtime"), (_srcRelPath, fileExt, fileData) => {
+                if (fileExt === ".cpp" || fileExt === ".h") {
+                    return (0, CppCodeGenImpl_1.injectGeneratedTag)(fileData);
+                }
+                return fileData;
+            });
         }
-        fileWriter.copyFolderContents(path_1.default.join(__dirname, "../../native/cpp/dataset"), path_1.default.join(data.publicSrcDir, "dataset"), (srcRelPath, fileExt, fileData) => {
-            if (srcRelPath.startsWith("external_utils/")) {
-                return null;
+        // generate dataflow programs
+        const dataflowPrograms = this.getDataflowPrograms();
+        if (dataflowPrograms.length) {
+            const srcDir = path_1.default.join(this.projectRoot, "Source", this.name);
+            const privateSrcDir = path_1.default.join(srcDir, "Private", "XrpaDataflow");
+            const publicSrcDir = path_1.default.join(srcDir, "Public", "XrpaDataflow");
+            for (const dataflowDef of dataflowPrograms) {
+                (0, GenDataflowProgram_1.genDataflowProgram)({
+                    namespace: "XrpaDataflow",
+                    moduleDef: this,
+                }, fileWriter, publicSrcDir, dataflowDef);
+                (0, GenDataflowProgramSpawner_1.genDataflowProgramSpawner)({
+                    namespace: "XrpaDataflow",
+                    moduleDef: this,
+                }, fileWriter, privateSrcDir, publicSrcDir, dataflowDef, this.name);
             }
-            if (fileExt === ".cpp" || fileExt === ".h") {
-                return (0, CppCodeGenImpl_1.injectGeneratedTag)(fileData);
-            }
-            return fileData;
-        });
-        fileWriter.copyFolderContents(path_1.default.join(__dirname, "../../native/ue/dataset"), path_1.default.join(data.publicSrcDir, "dataset"), (_srcRelPath, fileExt, fileData) => {
-            if (fileExt === ".cpp" || fileExt === ".h") {
-                return (0, CppCodeGenImpl_1.injectGeneratedTag)(fileData);
-            }
-            return fileData;
-        });
+        }
         return fileWriter;
     }
 }

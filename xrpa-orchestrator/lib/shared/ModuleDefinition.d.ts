@@ -18,6 +18,7 @@
 import { BuiltinType } from "./BuiltinTypes";
 import { CodeGen } from "./CodeGen";
 import { CoordinateSystemDef } from "./CoordinateTransformer";
+import { DataflowProgramDefinition } from "./DataflowProgramDefinition";
 import { DataMapDefinition } from "./DataMap";
 import { DataModelDefinition } from "./DataModel";
 import { ComponentProperties, DataStoreDefinition, IndexConfiguration } from "./DataStore";
@@ -42,6 +43,7 @@ export declare abstract class ModuleDefinition implements CodeGen {
     private settingsType;
     private settingsSpec;
     protected primitiveTypes: Record<string, TypeDefinition>;
+    private dataflowPrograms;
     readonly DSIdentifier: StructType;
     constructor(codegen: TargetCodeGenImpl, name: string, datamap: DataMapDefinition, guidGen: GuidGenSpec);
     protected abstract createDSIdentifier(): StructTypeDefinition;
@@ -54,8 +56,9 @@ export declare abstract class ModuleDefinition implements CodeGen {
         datamodel?: (datamodel: DataModelDefinition) => void;
     }): DataStoreDefinition;
     getDataStores(): ReadonlyArray<DataStoreDefinition>;
+    getDataStore(name: string): DataStoreDefinition;
     addSetting(name: string, setting: UserTypeSpec): void;
-    private convertUserTypeSpec;
+    convertUserTypeSpec(typeSpec: UserTypeSpec): FieldTypeSpec;
     getSettings(): StructTypeDefinition;
     BooleanField(defaultValue?: boolean, description?: string): FieldTypeSpec;
     ScalarField(defaultValue?: number, description?: string): FieldTypeSpec;
@@ -63,7 +66,7 @@ export declare abstract class ModuleDefinition implements CodeGen {
     BitFieldField(defaultValue?: number, description?: string): FieldTypeSpec;
     StringField(defaultValue?: string, description?: string): FieldTypeSpec;
     getPrimitiveTypeDefinition(typeName: string): TypeDefinition;
-    getBuiltinTypeDefinition(typeName: BuiltinType, apiname: string, datamodel: DataModelDefinition): TypeDefinition;
+    getBuiltinTypeDefinition(typeName: BuiltinType, apiname?: string, datamodel?: DataModelDefinition): TypeDefinition;
     createEnum(name: string, apiname: string, enumValues: Record<string, number>, localTypeOverride: TypeSpec | undefined): TypeDefinition;
     createReference(toType: InterfaceTypeDefinition): TypeDefinition;
     createStruct(name: string, apiname: string, fields: StructSpec, localTypeOverride: TypeSpec | undefined): StructTypeDefinition;
@@ -74,6 +77,8 @@ export declare abstract class ModuleDefinition implements CodeGen {
     createFixedString(name: string, apiname: string, maxBytes: number): TypeDefinition;
     setCollectionAsInbound(type: CollectionTypeDefinition, reconciledTo: TypeSpec | undefined, _indexes: Array<IndexConfiguration> | undefined): void;
     setCollectionAsOutbound(type: CollectionTypeDefinition, _componentProps: ComponentProperties): void;
+    addDataflowProgram(programDef: DataflowProgramDefinition): void;
+    getDataflowPrograms(): Array<DataflowProgramDefinition>;
     abstract doCodeGen(): FileWriter;
 }
 

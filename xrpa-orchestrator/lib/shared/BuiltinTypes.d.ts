@@ -15,8 +15,7 @@
  */
 
 
-import { CoordTransformer } from "./CoordinateTransformer";
-import { DataModelDefinition } from "./DataModel";
+import { CoordinateSystemDef, CoordTransformer } from "./CoordinateTransformer";
 import { TargetCodeGenImpl } from "./TargetCodeGen";
 import { TypeDefinition, TypeMap } from "./TypeDefinition";
 export declare enum BuiltinType {
@@ -54,5 +53,5 @@ export declare function isBuiltinType(typeName: string): typeName is BuiltinType
 /*****************************************************/
 export declare function genPrimitiveTypes(codegen: TargetCodeGenImpl, typeMap: TypeMap): Record<string, TypeDefinition>;
 /*****************************************************/
-export declare function getSemanticType(codegen: TargetCodeGenImpl, typeName: BuiltinType, apiname: string, datamodel: DataModelDefinition): TypeDefinition | null;
+export declare function getSemanticType(codegen: TargetCodeGenImpl, typeName: BuiltinType, apiname: string, typeMap: TypeMap, localCoordinateSystem: CoordinateSystemDef, storedCoordinateSystem: CoordinateSystemDef): TypeDefinition | null;
 

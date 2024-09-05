@@ -142,7 +142,7 @@ function writePluginModuleHeader(fileWriter, outDir, pluginName) {
     ];
     fileWriter.writeFile(path_1.default.join(outDir, `${pluginName}.h`), lines);
 }
-function genPlugin(fileWriter, pluginRoot, pluginName, pluginDeps) {
+function genPlugin(fileWriter, pluginRoot, pluginName, pluginDeps = []) {
     const resourcesDir = path_1.default.join(pluginRoot, "Resources");
     const privateSrcDir = path_1.default.join(pluginRoot, "Source", pluginName, "Private");
     const publicSrcDir = path_1.default.join(pluginRoot, "Source", pluginName, "Public");

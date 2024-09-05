@@ -26,21 +26,21 @@ const FileWriter_1 = require("../../shared/FileWriter");
 const Helpers_1 = require("../../shared/Helpers");
 const CsharpCodeGenImpl_1 = require("../csharp/CsharpCodeGenImpl");
 const CsharpModuleDefinition_1 = require("../csharp/CsharpModuleDefinition");
+const GenDataflowProgram_1 = require("../csharp/GenDataflowProgram");
 const GenDataStore_1 = require("../csharp/GenDataStore");
-const GenSyntheticObject_1 = require("../csharp/GenSyntheticObject");
 const GenTypesDefinitions_1 = require("../csharp/GenTypesDefinitions");
+const GenDataflowProgramSpawner_1 = require("./GenDataflowProgramSpawner");
 const GenDataStoreSubsystem_1 = require("./GenDataStoreSubsystem");
 const GenIndexedMonoBehaviour_1 = require("./GenIndexedMonoBehaviour");
-const GenModuleSubsystem_1 = require("./GenModuleSubsystem");
 const GenMonoBehaviour_1 = require("./GenMonoBehaviour");
 const GenPackage_1 = require("./GenPackage");
-const GenSyntheticObjectMonoBehaviour_1 = require("./GenSyntheticObjectMonoBehaviour");
+const GenTransportSubsystem_1 = require("./GenTransportSubsystem");
 const MonoBehaviourShared_1 = require("./MonoBehaviourShared");
 class UnityPackageModuleDefinition extends CsharpModuleDefinition_1.CsharpModuleDefinition {
-    constructor(datamap, packagesRoot, packageInfo) {
-        super(datamap, packageInfo.packageName, "");
-        this.packagesRoot = packagesRoot;
-        this.packageInfo = packageInfo;
+    constructor(name, datamap, projectRoot, packageInfos) {
+        super(datamap, name, "");
+        this.projectRoot = projectRoot;
+        this.packageInfos = packageInfos;
     }
     setCollectionAsInbound(type, reconciledTo, indexes) {
         for (const index of (indexes ?? [])) {
@@ -67,12 +67,14 @@ class UnityPackageModuleDefinition extends CsharpModuleDefinition_1.CsharpModule
     }
     doCodeGen() {
         const fileWriter = new FileWriter_1.FileWriter();
-        const packageRootDir = path_1.default.join(this.packagesRoot, this.name);
-        // generate package directory structure and files
-        const { runtimeDir } = (0, GenPackage_1.genPackage)(fileWriter, packageRootDir, this.packageInfo);
-        // generate ModuleSubsystem
-        (0, GenModuleSubsystem_1.genModuleSubsystem)(fileWriter, runtimeDir, this);
+        const packagesDir = path_1.default.join(this.projectRoot, "Packages");
         for (const storeDef of this.getDataStores()) {
+            const packageInfo = this.packageInfos[storeDef.apiname];
+            const packageRootDir = path_1.default.join(packagesDir, packageInfo.packageName);
+            // generate package directory structure and files
+            const { runtimeDir } = (0, GenPackage_1.genPackage)(fileWriter, packageRootDir, packageInfo);
+            // generate TransportSubsystem
+            (0, GenTransportSubsystem_1.genTransportSubsystem)(fileWriter, runtimeDir, storeDef);
             // generate DS types using csharp codegen
             (0, GenTypesDefinitions_1.genTypesDefinitions)(fileWriter, runtimeDir, storeDef);
             // generate DataStore files using csharp codegen
@@ -82,14 +84,8 @@ class UnityPackageModuleDefinition extends CsharpModuleDefinition_1.CsharpModule
                 namespace: this.codegen.getDataStoreName(storeDef.apiname),
             };
             (0, GenDataStore_1.genDataStore)(fileWriter, runtimeDir, ctx);
-            // generate synthetic objects
-            const syntheticObjects = storeDef.getSyntheticObjects();
-            for (const name in syntheticObjects) {
-                (0, GenSyntheticObject_1.genSyntheticObject)(ctx, fileWriter, runtimeDir, name, syntheticObjects[name]);
-                (0, GenSyntheticObjectMonoBehaviour_1.genSyntheticObjectMonoBehaviour)(ctx, fileWriter, runtimeDir, name, syntheticObjects[name]);
-            }
             // generate DataStore subsystem files
-            (0, GenDataStoreSubsystem_1.genDataStoreSubsystem)(fileWriter, runtimeDir, this, storeDef);
+            (0, GenDataStoreSubsystem_1.genDataStoreSubsystem)(fileWriter, runtimeDir, storeDef);
             ctx.namespace = "";
             // generate Unity component classes
             for (const accessor of storeDef.getOutputReconcilers()) {
@@ -103,12 +99,28 @@ class UnityPackageModuleDefinition extends CsharpModuleDefinition_1.CsharpModule
                 }
             }
         }
-        fileWriter.copyFolderContents(path_1.default.join(__dirname, "../../native/cs/dataset"), path_1.default.join(this.packagesRoot, "Xrpa"), (_srcRelPath, fileExt, fileData) => {
+        // create the Xrpa runtime package
+        fileWriter.copyFolderContents((0, Helpers_1.getRuntimeSrcPath)("cs"), path_1.default.join(packagesDir, "Xrpa"), (_srcRelPath, fileExt, fileData) => {
             if (fileExt === ".cs") {
                 return (0, CsharpCodeGenImpl_1.injectGeneratedTag)(fileData);
             }
             return fileData;
         });
+        // generate dataflow programs
+        const dataflowPrograms = this.getDataflowPrograms();
+        if (dataflowPrograms.length) {
+            const dataflowRootDir = path_1.default.join(this.projectRoot, "Assets", "XrpaDataflow");
+            for (const dataflowDef of dataflowPrograms) {
+                (0, GenDataflowProgram_1.genDataflowProgram)({
+                    namespace: "XrpaDataflow",
+                    moduleDef: this,
+                }, fileWriter, dataflowRootDir, dataflowDef);
+                (0, GenDataflowProgramSpawner_1.genDataflowProgramSpawner)({
+                    namespace: "XrpaDataflow",
+                    moduleDef: this,
+                }, fileWriter, dataflowRootDir, dataflowDef);
+            }
+        }
         return fileWriter;
     }
 }

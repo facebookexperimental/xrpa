@@ -20,16 +20,16 @@ import { FileWriter } from "../../shared/FileWriter";
 import { ModuleDefinition } from "../../shared/ModuleDefinition";
 import { GuidGenSpec } from "../../shared/TargetCodeGen";
 import { StructTypeDefinition } from "../../shared/TypeDefinition";
+export interface ModuleBuckConfig {
+    target: string;
+    oncall: string;
+}
 export declare class CppModuleDefinition extends ModuleDefinition {
+    readonly genOutputDir: string;
+    readonly buckDef?: ModuleBuckConfig | undefined;
     readonly libDir: string;
-    readonly buckDef?: {
-        target: string;
-        oncall: string;
-    } | undefined;
-    constructor(name: string, datamap: DataMapDefinition, libDir: string, buckDef?: {
-        target: string;
-        oncall: string;
-    } | undefined, guidGen?: GuidGenSpec);
+    readonly runtimeDir: string;
+    constructor(name: string, datamap: DataMapDefinition, genOutputDir: string, buckDef?: ModuleBuckConfig | undefined, guidGen?: GuidGenSpec);
     protected createDSIdentifier(): StructTypeDefinition;
     doCodeGen(): FileWriter;
     private genBuckFile;

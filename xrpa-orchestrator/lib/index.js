@@ -31,7 +31,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UnityPackageModuleDefinition = exports.UepluginModuleDefinition = exports.CppStandalone = exports.CppModuleDefinition = exports.ModuleDefinition = exports.runProcess = exports.buckRunPackage = exports.buckRun = exports.buckBuild = exports.FileWriter = exports.DataStoreDefinition = exports.DataModelDefinition = exports.DataMapDefinition = exports.SpatialUnitType = exports.CoordAxis = exports.AngularUnitType = exports.isBuiltinType = exports.BuiltinType = void 0;
+exports.UnityPackageModuleDefinition = exports.UepluginModuleDefinition = exports.CppStandalone = exports.CppModuleDefinition = exports.ModuleDefinition = exports.runProcess = exports.buckRunPackage = exports.buckRun = exports.buckBuild = exports.FileWriter = exports.DataStoreDefinition = exports.DataModelDefinition = exports.SpatialUnitType = exports.CoordAxis = exports.AngularUnitType = exports.isBuiltinType = exports.BuiltinType = void 0;
 var BuiltinTypes_1 = require("./shared/BuiltinTypes");
 Object.defineProperty(exports, "BuiltinType", { enumerable: true, get: function () { return BuiltinTypes_1.BuiltinType; } });
 Object.defineProperty(exports, "isBuiltinType", { enumerable: true, get: function () { return BuiltinTypes_1.isBuiltinType; } });
@@ -39,8 +39,6 @@ var CoordinateTransformer_1 = require("./shared/CoordinateTransformer");
 Object.defineProperty(exports, "AngularUnitType", { enumerable: true, get: function () { return CoordinateTransformer_1.AngularUnitType; } });
 Object.defineProperty(exports, "CoordAxis", { enumerable: true, get: function () { return CoordinateTransformer_1.CoordAxis; } });
 Object.defineProperty(exports, "SpatialUnitType", { enumerable: true, get: function () { return CoordinateTransformer_1.SpatialUnitType; } });
-var DataMap_1 = require("./shared/DataMap");
-Object.defineProperty(exports, "DataMapDefinition", { enumerable: true, get: function () { return DataMap_1.DataMapDefinition; } });
 var DataModel_1 = require("./shared/DataModel");
 Object.defineProperty(exports, "DataModelDefinition", { enumerable: true, get: function () { return DataModel_1.DataModelDefinition; } });
 var DataStore_1 = require("./shared/DataStore");
@@ -54,7 +52,6 @@ Object.defineProperty(exports, "buckRunPackage", { enumerable: true, get: functi
 Object.defineProperty(exports, "runProcess", { enumerable: true, get: function () { return Helpers_1.runProcess; } });
 var ModuleDefinition_1 = require("./shared/ModuleDefinition");
 Object.defineProperty(exports, "ModuleDefinition", { enumerable: true, get: function () { return ModuleDefinition_1.ModuleDefinition; } });
-__exportStar(require("./shared/SyntheticObject"), exports);
 __exportStar(require("./shared/TypeDefinition"), exports);
 var CppModuleDefinition_1 = require("./targets/cpp/CppModuleDefinition");
 Object.defineProperty(exports, "CppModuleDefinition", { enumerable: true, get: function () { return CppModuleDefinition_1.CppModuleDefinition; } });
@@ -64,9 +61,17 @@ var UepluginModuleDefinition_1 = require("./targets/ueplugin/UepluginModuleDefin
 Object.defineProperty(exports, "UepluginModuleDefinition", { enumerable: true, get: function () { return UepluginModuleDefinition_1.UepluginModuleDefinition; } });
 var UnityPackageModuleDefinition_1 = require("./targets/unitypackage/UnityPackageModuleDefinition");
 Object.defineProperty(exports, "UnityPackageModuleDefinition", { enumerable: true, get: function () { return UnityPackageModuleDefinition_1.UnityPackageModuleDefinition; } });
-__exportStar(require("./ConvenienceWrappers"), exports);
-__exportStar(require("./Eigen"), exports);
-__exportStar(require("./EngineBindings"), exports);
+// V2 DSL:
+__exportStar(require("./XrpaLanguage"), exports);
+__exportStar(require("./ProgramInterface"), exports);
+__exportStar(require("./InterfaceTypes"), exports);
+__exportStar(require("./RuntimeEnvironment"), exports);
+__exportStar(require("./Coordinates"), exports);
+__exportStar(require("./GameEngine"), exports);
+__exportStar(require("./NativeProgram"), exports);
+__exportStar(require("./DataflowProgram"), exports);
 __exportStar(require("./Unity"), exports);
 __exportStar(require("./UnrealEngine"), exports);
+__exportStar(require("./ConvenienceWrappers"), exports);
+__exportStar(require("./Eigen"), exports);
 //# sourceMappingURL=index.js.map

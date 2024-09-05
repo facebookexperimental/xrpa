@@ -46,8 +46,8 @@ const FileWriter_1 = require("../../shared/FileWriter");
 const ModuleDefinition_1 = require("../../shared/ModuleDefinition");
 const CsharpCodeGenImpl = __importStar(require("./CsharpCodeGenImpl"));
 const CsharpCodeGenImpl_1 = require("./CsharpCodeGenImpl");
+const GenDataflowProgram_1 = require("./GenDataflowProgram");
 const GenDataStore_1 = require("./GenDataStore");
-const GenSyntheticObject_1 = require("./GenSyntheticObject");
 const GenTypesDefinitions_1 = require("./GenTypesDefinitions");
 class CsharpModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
     constructor(datamap, name, outputDir, guidGen) {
@@ -79,10 +79,13 @@ class CsharpModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
                 namespace: this.codegen.getDataStoreName(storeDef.apiname),
             };
             (0, GenDataStore_1.genDataStore)(fileWriter, this.outputDir, ctx);
-            const syntheticObjects = storeDef.getSyntheticObjects();
-            for (const name in syntheticObjects) {
-                (0, GenSyntheticObject_1.genSyntheticObject)(ctx, fileWriter, this.outputDir, name, syntheticObjects[name]);
-            }
+        }
+        const dataflowPrograms = this.getDataflowPrograms();
+        for (const name in dataflowPrograms) {
+            (0, GenDataflowProgram_1.genDataflowProgram)({
+                namespace: "XrpaDataflowPrograms",
+                moduleDef: this,
+            }, fileWriter, this.outputDir, dataflowPrograms[name]);
         }
         return fileWriter;
     }

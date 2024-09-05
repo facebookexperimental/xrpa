@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genModuleClass = exports.genDatasetDeinitializers = exports.genDatasetDeclarations = exports.getDatasetVarName = exports.getModuleHeaderName = void 0;
+exports.genModuleClass = exports.genDatasetDeclarations = exports.genDatasetDeclaration = exports.getDatasetVarName = exports.getModuleHeaderName = void 0;
 const path_1 = __importDefault(require("path"));
 const Helpers_1 = require("../../shared/Helpers");
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
@@ -29,10 +29,18 @@ function getModuleHeaderName(moduleDef) {
     return `${moduleDef.name}Module.h`;
 }
 exports.getModuleHeaderName = getModuleHeaderName;
-function getDatasetVarName(moduleDef, storeDef) {
-    return `${moduleDef.name}${storeDef.dataset}Dataset`;
+function getDatasetVarName(storeDef) {
+    return `${storeDef.dataset}Dataset`;
 }
 exports.getDatasetVarName = getDatasetVarName;
+function genDatasetDeclaration(storeDef, namespace, includes, semicolonTerminate) {
+    includes.addFile({
+        filename: "<memory>",
+        typename: "std::shared_ptr",
+    });
+    return `std::shared_ptr<${CppDatasetLibraryTypes_1.DatasetInterface.getLocalType(namespace, includes)}> ${getDatasetVarName(storeDef)}` + (semicolonTerminate ? ";" : "");
+}
+exports.genDatasetDeclaration = genDatasetDeclaration;
 function genDatasetDeclarations(moduleDef, namespace, includes, semicolonTerminate) {
     const lines = [];
     includes.addFile({
@@ -40,19 +48,11 @@ function genDatasetDeclarations(moduleDef, namespace, includes, semicolonTermina
         typename: "std::shared_ptr",
     });
     for (const storeDef of moduleDef.getDataStores()) {
-        lines.push(`std::shared_ptr<${CppDatasetLibraryTypes_1.DatasetInterface.getLocalType(namespace, includes)}> ${getDatasetVarName(moduleDef, storeDef)}` + (semicolonTerminate ? ";" : ""));
+        lines.push(genDatasetDeclaration(storeDef, namespace, includes, semicolonTerminate));
     }
     return lines;
 }
 exports.genDatasetDeclarations = genDatasetDeclarations;
-function genDatasetDeinitializers(moduleDef) {
-    const lines = [];
-    for (const storeDef of moduleDef.getDataStores()) {
-        lines.push(`${getDatasetVarName(moduleDef, storeDef)}.reset();`);
-    }
-    return lines;
-}
-exports.genDatasetDeinitializers = genDatasetDeinitializers;
 function genDataStoreInits(moduleDef, includes) {
     return moduleDef.getDataStores().map(storeDef => {
         const dataStoreName = (0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname);
@@ -60,7 +60,7 @@ function genDataStoreInits(moduleDef, includes) {
             filename: (0, CppCodeGenImpl_1.getDataStoreHeaderName)(storeDef.apiname),
             namespace: dataStoreName,
         });
-        return `${(0, Helpers_1.lowerFirst)(dataStoreName)} = std::make_shared<${dataStoreName}::${dataStoreName}>(${getDatasetVarName(moduleDef, storeDef)});`;
+        return `${(0, Helpers_1.lowerFirst)(dataStoreName)} = std::make_shared<${dataStoreName}::${dataStoreName}>(${getDatasetVarName(storeDef)});`;
     });
 }
 function genDataStoreDecls(moduleDef) {

@@ -17,7 +17,6 @@
 
 import { DataStoreDefinition } from "../../shared/DataStore";
 import { FileWriter } from "../../shared/FileWriter";
-import { ModuleDefinition } from "../../shared/ModuleDefinition";
 export declare function getDataStoreSubsystemName(storeDef: DataStoreDefinition): string;
-export declare function genDataStoreSubsystem(fileWriter: FileWriter, outSrcDir: string, moduleDef: ModuleDefinition, storeDef: DataStoreDefinition): void;
+export declare function genDataStoreSubsystem(fileWriter: FileWriter, outSrcDir: string, storeDef: DataStoreDefinition): void;
 

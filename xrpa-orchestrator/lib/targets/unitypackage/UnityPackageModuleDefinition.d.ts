@@ -23,9 +23,9 @@ import { CollectionTypeDefinition } from "../../shared/TypeDefinition";
 import { CsharpModuleDefinition } from "../csharp/CsharpModuleDefinition";
 import { PackageInfo } from "./GenPackage";
 export declare class UnityPackageModuleDefinition extends CsharpModuleDefinition {
-    readonly packagesRoot: string;
-    readonly packageInfo: PackageInfo;
-    constructor(datamap: DataMapDefinition, packagesRoot: string, packageInfo: PackageInfo);
+    readonly projectRoot: string;
+    readonly packageInfos: Record<string, PackageInfo>;
+    constructor(name: string, datamap: DataMapDefinition, projectRoot: string, packageInfos: Record<string, PackageInfo>);
     setCollectionAsInbound(type: CollectionTypeDefinition, reconciledTo: TypeSpec | undefined, indexes: Array<IndexConfiguration> | undefined): void;
     setCollectionAsOutbound(type: CollectionTypeDefinition, componentProps: ComponentProperties): void;
     doCodeGen(): FileWriter;

@@ -16,12 +16,13 @@
 
 
 /// <reference types="node" />
+import { AsyncThunk } from "./Helpers";
 type PreprocessorFunc = (srcRelPath: string, fileExt: string, fileData: Buffer) => Buffer | null;
 export declare class FileWriter {
     private manifest;
     private foldersToCopy;
-    writeFile(filename: string, lines: string[]): void;
-    writeFileBase64(filename: string, data: string): void;
+    writeFile(filename: string, contents: AsyncThunk<string[]>): void;
+    writeFileBase64(filename: string, data: AsyncThunk<string>): void;
     merge(fileWriter: FileWriter): void;
     copyFolderContents(srcFolder: string, dstFolder: string, preprocessor?: PreprocessorFunc): void;
     finalize(manifestFilename: string): Promise<void>;

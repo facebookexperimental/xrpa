@@ -23,17 +23,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.genDataStoreSubsystem = exports.getDataStoreSubsystemName = void 0;
 const path_1 = __importDefault(require("path"));
 const CsharpCodeGenImpl_1 = require("../csharp/CsharpCodeGenImpl");
-const GenModuleSubsystem_1 = require("./GenModuleSubsystem");
+const GenTransportSubsystem_1 = require("./GenTransportSubsystem");
 const UnityHelpers_1 = require("./UnityHelpers");
 function getDataStoreSubsystemName(storeDef) {
     return `${(0, CsharpCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}Subsystem`;
 }
 exports.getDataStoreSubsystemName = getDataStoreSubsystemName;
-function genDataStoreSubsystem(fileWriter, outSrcDir, moduleDef, storeDef) {
+function genDataStoreSubsystem(fileWriter, outSrcDir, storeDef) {
     const className = getDataStoreSubsystemName(storeDef);
     const dataStoreName = (0, CsharpCodeGenImpl_1.getDataStoreName)(storeDef.apiname);
     const lines = (0, UnityHelpers_1.genUnitySingleton)(className, [
-        `DataStore = new ${dataStoreName}.${dataStoreName}(${(0, GenModuleSubsystem_1.getModuleSubsystemName)(moduleDef)}.Instance.${(0, GenModuleSubsystem_1.getDatasetVarName)(moduleDef, storeDef)});`,
+        `DataStore = new ${dataStoreName}.${dataStoreName}(${(0, GenTransportSubsystem_1.getTransportSubsystemName)(storeDef)}.Instance.${(0, GenTransportSubsystem_1.getDatasetVarName)(storeDef)});`,
     ], [
         `DataStore?.Shutdown();`,
         `DataStore = null;`,

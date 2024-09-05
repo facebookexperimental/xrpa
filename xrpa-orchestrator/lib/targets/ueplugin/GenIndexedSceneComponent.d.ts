@@ -18,5 +18,5 @@
 import { InputReconcilerDefinition } from "../../shared/DataStore";
 import { FileWriter } from "../../shared/FileWriter";
 import { GenDataStoreContext } from "../shared/GenDataStoreShared";
-export declare function genIndexedSceneComponent(ctx: GenDataStoreContext, fileWriter: FileWriter, reconcilerDef: InputReconcilerDefinition, outSrcDir: string, outHeaderDir: string): void;
+export declare function genIndexedSceneComponent(ctx: GenDataStoreContext, fileWriter: FileWriter, reconcilerDef: InputReconcilerDefinition, outSrcDir: string, outHeaderDir: string, pluginName: string): void;
 

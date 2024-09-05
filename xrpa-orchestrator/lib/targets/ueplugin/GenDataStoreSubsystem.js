@@ -24,18 +24,18 @@ exports.genDataStoreSubsystem = exports.getDataStoreSubsystemName = void 0;
 const path_1 = __importDefault(require("path"));
 const CppCodeGenImpl_1 = require("../cpp/CppCodeGenImpl");
 const GenModuleClass_1 = require("../cpp/GenModuleClass");
-const GenModuleSubsystem_1 = require("./GenModuleSubsystem");
+const GenTransportSubsystem_1 = require("./GenTransportSubsystem");
 function getDataStoreSubsystemName(storeDef) {
     return `${(0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}Subsystem`;
 }
 exports.getDataStoreSubsystemName = getDataStoreSubsystemName;
-function genDataStoreSubsystem(fileWriter, outSrcDir, moduleDef, storeDef) {
+function genDataStoreSubsystem(fileWriter, outSrcDir, storeDef, pluginName) {
     const name = getDataStoreSubsystemName(storeDef);
     const dataStoreName = (0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname);
     const cppLines = [
         ...CppCodeGenImpl_1.HEADER,
         `#include "${name}.h"`,
-        `#include "${(0, GenModuleSubsystem_1.getModuleSubsystemName)(moduleDef)}.h"`,
+        `#include "${(0, GenTransportSubsystem_1.getTransportSubsystemName)(storeDef)}.h"`,
         ``,
         `U${name}::U${name}() {}`,
         ``,
@@ -46,7 +46,7 @@ function genDataStoreSubsystem(fileWriter, outSrcDir, moduleDef, storeDef) {
         `void U${name}::Initialize(FSubsystemCollectionBase& Collection) {`,
         `  Super::Initialize(Collection);`,
         ``,
-        `  DataStore = std::make_shared<${dataStoreName}::${dataStoreName}>(GEngine->GetEngineSubsystem<U${(0, GenModuleSubsystem_1.getModuleSubsystemName)(moduleDef)}>()->${(0, GenModuleClass_1.getDatasetVarName)(moduleDef, storeDef)});`,
+        `  DataStore = std::make_shared<${dataStoreName}::${dataStoreName}>(GEngine->GetEngineSubsystem<U${(0, GenTransportSubsystem_1.getTransportSubsystemName)(storeDef)}>()->${(0, GenModuleClass_1.getDatasetVarName)(storeDef)});`,
         `}`,
         ``,
         `void U${name}::Deinitialize() {`,
@@ -73,7 +73,7 @@ function genDataStoreSubsystem(fileWriter, outSrcDir, moduleDef, storeDef) {
         `#include "${name}.generated.h"`,
         ``,
         `UCLASS()`,
-        `class ${moduleDef.name.toUpperCase()}_API U${name} : public UTickableWorldSubsystem {`,
+        `class ${pluginName.toUpperCase()}_API U${name} : public UTickableWorldSubsystem {`,
         `  GENERATED_BODY()`,
         ``,
         ` public:`,

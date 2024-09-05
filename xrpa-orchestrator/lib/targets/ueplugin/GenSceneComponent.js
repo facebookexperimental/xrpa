@@ -97,7 +97,7 @@ function genDataStoreObjectAccessors(ctx, classSpec) {
         visibility: "protected",
     });
 }
-function genInterfaceComponentClass(ctx, fileWriter, type, outSrcDir, outHeaderDir, baseComponentType, headerIncludes) {
+function genInterfaceComponentClass(ctx, fileWriter, type, outSrcDir, outHeaderDir, pluginName, baseComponentType, headerIncludes) {
     const componentClassName = (0, SceneComponentShared_1.getComponentClassName)(null, type);
     const componentName = componentClassName.slice(1);
     const classSpec = new ClassSpec_1.ClassSpec({
@@ -109,9 +109,9 @@ function genInterfaceComponentClass(ctx, fileWriter, type, outSrcDir, outHeaderD
             `CoreMinimal.h`,
         ]),
         decorations: [
-            `UCLASS(ClassGroup = ${ctx.moduleDef.name})`,
+            `UCLASS(ClassGroup = ${pluginName})`,
         ],
-        classNameDecoration: `${ctx.moduleDef.name.toUpperCase()}_API`,
+        classNameDecoration: `${pluginName.toUpperCase()}_API`,
         classEarlyInject: ["GENERATED_BODY()"],
     });
     classSpec.constructors.push({
@@ -136,7 +136,7 @@ function genInterfaceComponentClass(ctx, fileWriter, type, outSrcDir, outHeaderD
     headerIncludes?.addFile({ filename: `${componentName}.h` });
     return `${componentClassName}`;
 }
-function genSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderDir) {
+function genSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderDir, pluginName) {
     const baseComponentType = (0, Helpers_1.filterToString)(reconcilerDef.componentProps.basetype) ?? "SceneComponent";
     const headerIncludes = new CppCodeGenImpl_1.CppIncludeAggregator([
         `Components/${baseComponentType}.h`,
@@ -147,7 +147,7 @@ function genSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderD
     ]);
     let parentClass = `U${baseComponentType}`;
     if (reconcilerDef.type.interfaceType) {
-        parentClass = genInterfaceComponentClass(ctx, fileWriter, reconcilerDef.type.interfaceType, outSrcDir, outHeaderDir, baseComponentType, headerIncludes);
+        parentClass = genInterfaceComponentClass(ctx, fileWriter, reconcilerDef.type.interfaceType, outSrcDir, outHeaderDir, pluginName, baseComponentType, headerIncludes);
     }
     const componentClassName = (0, SceneComponentShared_1.getComponentClassName)(null, reconcilerDef.type, reconcilerDef.componentProps.idName);
     const componentName = componentClassName.slice(1);
@@ -175,9 +175,9 @@ function genSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderD
         namespace: ctx.namespace,
         includes: headerIncludes,
         decorations: [
-            `UCLASS(ClassGroup = ${ctx.moduleDef.name}${classMeta})`,
+            `UCLASS(ClassGroup = ${pluginName}${classMeta})`,
         ],
-        classNameDecoration: `${ctx.moduleDef.name.toUpperCase()}_API`,
+        classNameDecoration: `${pluginName.toUpperCase()}_API`,
         classEarlyInject: ["GENERATED_BODY()"],
     });
     classSpec.constructors.push({

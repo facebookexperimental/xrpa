@@ -15,26 +15,13 @@
  */
 
 
-import { BaseModuleOptions, ModuleBinding } from "./EngineBindings";
+import { RuntimeEnvironmentContext } from "./RuntimeEnvironment";
 import { CoordinateSystemDef } from "./shared/CoordinateTransformer";
-import { ArrayTypeSpec, TypeMap } from "./shared/TypeDefinition";
-import { PackageInfo } from "./targets/unitypackage/GenPackage";
-import { UnityPackageModuleDefinition } from "./targets/unitypackage/UnityPackageModuleDefinition";
+import { ArrayTypeSpec } from "./shared/TypeDefinition";
 export declare const UnityCoordinateSystem: CoordinateSystemDef;
-export declare const UnityTypeMap: TypeMap;
 export declare const UnityArrayType: ArrayTypeSpec;
-export declare function UnityPackageModule(name: string, params: {
-    packagesRoot: string;
-    packageInfo: Omit<PackageInfo, "packageName">;
-    coordinateSystem?: CoordinateSystemDef;
-    typeMap?: TypeMap;
-    arrayType?: ArrayTypeSpec;
-}): UnityPackageModuleDefinition;
-export declare class UnityProjectContext {
-    readonly projectPath: string;
-    packages: UnityPackageModuleDefinition[];
-    constructor(projectPath: string);
-    addBindings<ModuleOptions extends BaseModuleOptions>(moduleToBind: ModuleBinding<ModuleOptions>, options?: ModuleOptions): void;
+export interface UnityRuntimeContext extends RuntimeEnvironmentContext {
+    __UnityRuntime: true;
 }
-export declare function UnityProject(projectPath: string, callback: (unity: UnityProjectContext) => void): Promise<void>;
+export declare function UnityProject(projectPath: string, projectName: string, callback: (ctx: UnityRuntimeContext) => void): Promise<void>;
 

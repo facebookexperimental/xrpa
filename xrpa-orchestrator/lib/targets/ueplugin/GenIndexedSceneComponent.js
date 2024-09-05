@@ -68,7 +68,7 @@ function getFieldSetterHooks(ctx, reconcilerDef) {
     }
     return ret;
 }
-function genIndexedSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderDir) {
+function genIndexedSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderDir, pluginName) {
     const baseComponentType = (0, Helpers_1.filterToString)(reconcilerDef.componentProps.basetype) ?? "SceneComponent";
     const headerIncludes = new CppCodeGenImpl_1.CppIncludeAggregator([
         `Components/${baseComponentType}.h`,
@@ -109,9 +109,9 @@ function genIndexedSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, out
         namespace: ctx.namespace,
         includes: headerIncludes,
         decorations: [
-            `UCLASS(ClassGroup = ${ctx.moduleDef.name}${classMeta})`,
+            `UCLASS(ClassGroup = ${pluginName}${classMeta})`,
         ],
-        classNameDecoration: `${ctx.moduleDef.name.toUpperCase()}_API`,
+        classNameDecoration: `${pluginName.toUpperCase()}_API`,
         classEarlyInject: ["GENERATED_BODY()"],
     });
     classSpec.constructors.push({

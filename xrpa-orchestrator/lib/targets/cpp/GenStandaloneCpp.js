@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genStandaloneBuck = exports.genStandaloneCpp = exports.genDatasetInitializers = void 0;
+exports.genStandaloneBuck = exports.genStandaloneCpp = exports.genDatasetDeinitializer = exports.genDatasetInitializer = void 0;
 const path_1 = __importDefault(require("path"));
 const Helpers_1 = require("../../shared/Helpers");
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
@@ -56,16 +56,24 @@ function genStandaloneHeader(fileWriter, outdir) {
     ];
     fileWriter.writeFile(path_1.default.join(outdir, "Standalone.h"), lines);
 }
-function genDatasetInitializers(moduleDef, namespace, includes) {
-    const lines = [];
-    for (const storeDef of moduleDef.getDataStores()) {
-        const datasetVar = (0, GenModuleClass_1.getDatasetVarName)(moduleDef, storeDef);
-        includes.addFile({ filename: (0, CppCodeGenImpl_1.getTypesHeaderName)(storeDef.apiname) });
-        lines.push(`{`, `  auto local${datasetVar} = std::make_shared<${CppDatasetLibraryTypes_1.SharedDataset.getLocalType(namespace, includes)}>("${storeDef.dataset}", ${(0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}::GenDatasetConfig());`, `  local${datasetVar}->initialize();`, `  ${datasetVar} = local${datasetVar};`, `}`);
-    }
-    return lines;
+function genDatasetInitializer(storeDef, namespace, includes) {
+    const datasetVar = (0, GenModuleClass_1.getDatasetVarName)(storeDef);
+    includes.addFile({ filename: (0, CppCodeGenImpl_1.getTypesHeaderName)(storeDef.apiname) });
+    return [
+        `{`,
+        `  auto local${datasetVar} = std::make_shared<${CppDatasetLibraryTypes_1.SharedDataset.getLocalType(namespace, includes)}>("${storeDef.dataset}", ${(0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}::GenDatasetConfig());`,
+        `  local${datasetVar}->initialize();`,
+        `  ${datasetVar} = local${datasetVar};`,
+        `}`,
+    ];
 }
-exports.genDatasetInitializers = genDatasetInitializers;
+exports.genDatasetInitializer = genDatasetInitializer;
+function genDatasetDeinitializer(storeDef) {
+    return [
+        `${(0, GenModuleClass_1.getDatasetVarName)(storeDef)}.reset();`,
+    ];
+}
+exports.genDatasetDeinitializer = genDatasetDeinitializer;
 function genSettingsParsing(moduleDef) {
     const fields = moduleDef.getSettings().getAllFields();
     if ((0, Helpers_1.objectIsEmpty)(fields)) {
@@ -94,13 +102,13 @@ function genStandaloneWrapper(fileWriter, outdir, moduleDef) {
     if (!(0, Helpers_1.objectIsEmpty)(moduleDef.getSettings().getAllFields())) {
         includes.addFile({ filename: "<CLI/CLI.hpp>" });
     }
-    const datasetVars = moduleDef.getDataStores().map(storeDef => (0, GenModuleClass_1.getDatasetVarName)(moduleDef, storeDef));
+    const datasetVars = moduleDef.getDataStores().map(storeDef => (0, GenModuleClass_1.getDatasetVarName)(storeDef));
     const lines = [
         `void EntryPoint(${moduleClassName}* moduleData);`,
         ``,
         `int RunStandalone(int argc, char** argv) {`,
         ...(0, Helpers_1.indent)(1, (0, GenModuleClass_1.genDatasetDeclarations)(moduleDef, namespace, includes, true)),
-        ...(0, Helpers_1.indent)(1, genDatasetInitializers(moduleDef, namespace, includes)),
+        ...(0, Helpers_1.indent)(1, moduleDef.getDataStores().map(storeDef => genDatasetInitializer(storeDef, namespace, includes))),
         `  auto moduleData = std::make_unique<${moduleClassName}>(${datasetVars.join(", ")});`,
         ...(0, Helpers_1.indent)(1, genSettingsParsing(moduleDef)),
         ``,
@@ -121,52 +129,56 @@ function genStandaloneCpp(fileWriter, outdir, moduleDef) {
     genStandaloneWrapper(fileWriter, outdir, moduleDef);
 }
 exports.genStandaloneCpp = genStandaloneCpp;
-function genStandaloneBuck(fileWriter, outdir, buckTarget, moduleDef, oncall) {
-    const deps = [
-        `"//arvr/libraries/xred/platform/dataset/cpp:core",`,
-        `"//arvr/libraries/xred/platform/dataset/cpp:sharedmem",`,
-        `"${buckTarget}",`,
-    ];
-    if (!(0, Helpers_1.objectIsEmpty)(moduleDef.getSettings().getAllFields())) {
-        deps.push(`"//third-party/cli11:cli11",`);
-    }
-    const lines = [
-        ...CppCodeGenImpl_1.BUCK_HEADER,
-        `load("//arvr/tools/build_defs:oxx.bzl", "oxx_binary", "oxx_shared_library")`,
-        ``,
-        `oncall("${oncall}")`,
-        ``,
-        `oxx_shared_library(`,
-        `    name = "${moduleDef.name}_standalone",`,
-        `    srcs = ["StandaloneWrapper.cpp"],`,
-        `    compatible_with = [`,
-        `        "ovr_config//os:windows",`,
-        `    ],`,
-        `    link_style = "static",`,
-        `    preprocessor_flags = ["-DBUILDING_MAIN_STANDALONE"],`,
-        `    public_include_directories = ["standalone"],`,
-        `    public_raw_headers = ["Standalone.h"],`,
-        `    visibility = ["PUBLIC"],`,
-        `    deps = [`,
-        ...(0, Helpers_1.indent)(4, deps.sort()),
-        `    ],`,
-        `)`,
-        ``,
-        `oxx_binary(`,
-        `    name = "${moduleDef.name}",`,
-        `    srcs = ["MainStandalone.cpp"],`,
-        `    compatible_with = [`,
-        `        "ovr_config//os:windows",`,
-        `    ],`,
-        `    link_style = "shared",`,
-        `    visibility = ["PUBLIC"],`,
-        `    deps = [`,
-        `        ":${moduleDef.name}_standalone",`,
-        `    ],`,
-        `)`,
-        ``,
-    ];
-    fileWriter.writeFile(path_1.default.join(outdir, "BUCK"), lines);
+function genStandaloneBuck(fileWriter, outdir, runtimeDir, buckTarget, moduleDef, oncall) {
+    fileWriter.writeFile(path_1.default.join(outdir, "BUCK"), async () => {
+        const buckRoot = await (0, Helpers_1.buckRootDir)();
+        const runtimeRelPath = path_1.default.relative(buckRoot, runtimeDir);
+        const runtimeDepPath = `//${runtimeRelPath.replace(/\\/g, "/")}`;
+        const deps = [
+            `"${runtimeDepPath}:core",`,
+            `"${runtimeDepPath}:sharedmem",`,
+            `"${buckTarget}",`,
+        ];
+        if (!(0, Helpers_1.objectIsEmpty)(moduleDef.getSettings().getAllFields())) {
+            deps.push(`"//third-party/cli11:cli11",`);
+        }
+        return [
+            ...CppCodeGenImpl_1.BUCK_HEADER,
+            `load("//arvr/tools/build_defs:oxx.bzl", "oxx_binary", "oxx_shared_library")`,
+            ``,
+            `oncall("${oncall}")`,
+            ``,
+            `oxx_shared_library(`,
+            `    name = "${moduleDef.name}_standalone",`,
+            `    srcs = ["StandaloneWrapper.cpp"],`,
+            `    compatible_with = [`,
+            `        "ovr_config//os:windows",`,
+            `    ],`,
+            `    link_style = "static",`,
+            `    preprocessor_flags = ["-DBUILDING_MAIN_STANDALONE"],`,
+            `    public_include_directories = ["standalone"],`,
+            `    public_raw_headers = ["Standalone.h"],`,
+            `    visibility = ["PUBLIC"],`,
+            `    deps = [`,
+            ...(0, Helpers_1.indent)(4, deps.sort()),
+            `    ],`,
+            `)`,
+            ``,
+            `oxx_binary(`,
+            `    name = "${moduleDef.name}",`,
+            `    srcs = ["MainStandalone.cpp"],`,
+            `    compatible_with = [`,
+            `        "ovr_config//os:windows",`,
+            `    ],`,
+            `    link_style = "shared",`,
+            `    visibility = ["PUBLIC"],`,
+            `    deps = [`,
+            `        ":${moduleDef.name}_standalone",`,
+            `    ],`,
+            `)`,
+            ``,
+        ];
+    });
 }
 exports.genStandaloneBuck = genStandaloneBuck;
 //# sourceMappingURL=GenStandaloneCpp.js.map

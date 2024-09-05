@@ -20,8 +20,8 @@ import { FileWriter } from "../../shared/FileWriter";
 import { IncludeAggregator } from "../../shared/Helpers";
 import { ModuleDefinition } from "../../shared/ModuleDefinition";
 export declare function getModuleHeaderName(moduleDef: ModuleDefinition): string;
-export declare function getDatasetVarName(moduleDef: ModuleDefinition, storeDef: DataStoreDefinition): string;
+export declare function getDatasetVarName(storeDef: DataStoreDefinition): string;
+export declare function genDatasetDeclaration(storeDef: DataStoreDefinition, namespace: string, includes: IncludeAggregator, semicolonTerminate: boolean): string;
 export declare function genDatasetDeclarations(moduleDef: ModuleDefinition, namespace: string, includes: IncludeAggregator, semicolonTerminate: boolean): string[];
-export declare function genDatasetDeinitializers(moduleDef: ModuleDefinition): string[];
 export declare function genModuleClass(fileWriter: FileWriter, libDir: string, moduleDef: ModuleDefinition): void;
 

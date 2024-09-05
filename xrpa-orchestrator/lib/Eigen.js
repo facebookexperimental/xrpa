@@ -17,7 +17,10 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EigenTypeMap = void 0;
+exports.useEigenTypes = void 0;
+const ConvenienceWrappers_1 = require("./ConvenienceWrappers");
+const Coordinates_1 = require("./Coordinates");
+const RuntimeEnvironment_1 = require("./RuntimeEnvironment");
 const EigenVector2 = {
     typename: "Eigen::Vector2f",
     headerFile: "<Eigen/Eigen>",
@@ -45,15 +48,17 @@ const EigenQuaternion = {
         "z()": "z",
     },
 };
-exports.EigenTypeMap = {
-    Vector2: EigenVector2,
-    UnitVector2: EigenVector2,
-    Distance2: EigenVector2,
-    Scale2: EigenVector2,
-    Quaternion: EigenQuaternion,
-    Vector3: EigenVector3,
-    UnitVector3: EigenVector3,
-    Distance3: EigenVector3,
-    Scale3: EigenVector3,
-};
+function useEigenTypes() {
+    (0, ConvenienceWrappers_1.addBuckDependency)("//arvr/third-party/eigen:eigen3");
+    (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Vector2, EigenVector2);
+    (0, RuntimeEnvironment_1.mapType)(Coordinates_1.UnitVector2, EigenVector2);
+    (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Distance2, EigenVector2);
+    (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Scale2, EigenVector2);
+    (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Quaternion, EigenQuaternion);
+    (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Vector3, EigenVector3);
+    (0, RuntimeEnvironment_1.mapType)(Coordinates_1.UnitVector3, EigenVector3);
+    (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Distance3, EigenVector3);
+    (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Scale3, EigenVector3);
+}
+exports.useEigenTypes = useEigenTypes;
 //# sourceMappingURL=Eigen.js.map

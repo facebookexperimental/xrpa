@@ -15,10 +15,8 @@
  */
 
 
-export * from "./SignalProcessingDataModel";
-export { SignalGraph } from "./SignalProcessingTypes";
+export * from "./SignalProcessingInterface";
 export * from "./MathOps";
-export * from "./Parameters";
 export * from "./ProcessingNodes";
 export * from "./StringFilter";
 

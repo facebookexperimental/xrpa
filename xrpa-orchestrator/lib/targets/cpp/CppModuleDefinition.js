@@ -51,36 +51,44 @@ const Helpers_1 = require("../../shared/Helpers");
 const ModuleDefinition_1 = require("../../shared/ModuleDefinition");
 const CppCodeGenImpl = __importStar(require("./CppCodeGenImpl"));
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
+const GenDataflowProgram_1 = require("./GenDataflowProgram");
 const GenDataStore_1 = require("./GenDataStore");
 const GenModuleClass_1 = require("./GenModuleClass");
 const GenTypesHeader_1 = require("./GenTypesHeader");
-const GenSyntheticObject_1 = require("./GenSyntheticObject");
 class CppModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
-    constructor(name, datamap, libDir, buckDef, guidGen) {
+    constructor(name, datamap, genOutputDir, buckDef, guidGen) {
         super(CppCodeGenImpl, name, datamap, guidGen ?? {
             includes: [{
-                    filename: "<dataset/external_utils/UuidGen.h>",
+                    filename: "<xrpa-runtime/external_utils/UuidGen.h>",
                 }],
             code: (0, CppCodeGenImpl_1.nsJoin)(CppCodeGenImpl_1.XRPA_NAMESPACE, "generateDSID()"),
         });
-        this.libDir = libDir;
+        this.genOutputDir = genOutputDir;
         this.buckDef = buckDef;
+        this.libDir = path_1.default.join(this.genOutputDir, "lib");
+        this.runtimeDir = path_1.default.join(this.genOutputDir, "xrpa-runtime");
     }
     createDSIdentifier() {
         const DSIdentifier = this.createStruct("Identifier", "", {
             id0: { type: this.getPrimitiveTypeDefinition(BuiltinTypes_1.BuiltinType.BitField) },
             id1: { type: this.getPrimitiveTypeDefinition(BuiltinTypes_1.BuiltinType.BitField) },
-        }, { typename: this.codegen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "DSIdentifier"), headerFile: "<dataset/core/DatasetTypes.h>" });
-        DSIdentifier.datasetType = { typename: this.codegen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "DSIdentifier"), headerFile: "<dataset/core/DatasetTypes.h>" };
+        }, { typename: this.codegen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "DSIdentifier"), headerFile: "<xrpa-runtime/core/DatasetTypes.h>" });
+        DSIdentifier.datasetType = { typename: this.codegen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "DSIdentifier"), headerFile: "<xrpa-runtime/core/DatasetTypes.h>" };
         return DSIdentifier;
     }
     doCodeGen() {
         const fileWriter = new FileWriter_1.FileWriter();
+        fileWriter.copyFolderContents((0, Helpers_1.getRuntimeSrcPath)("cpp"), this.runtimeDir, (_srcRelPath, fileExt, fileData) => {
+            if (fileExt === ".cpp" || fileExt === ".h") {
+                return (0, CppCodeGenImpl_1.injectGeneratedTag)(fileData);
+            }
+            return fileData;
+        });
         // generate module class
         (0, GenModuleClass_1.genModuleClass)(fileWriter, this.libDir, this);
         if (this.buckDef) {
             // generate lib buck file
-            this.genBuckFile(fileWriter, this.libDir, this, this.buckDef.oncall);
+            this.genBuckFile(fileWriter, this, this.buckDef.oncall);
         }
         for (const storeDef of this.getDataStores()) {
             // generate DS types
@@ -92,37 +100,44 @@ class CppModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
                 namespace: this.codegen.getDataStoreName(storeDef.apiname),
             };
             (0, GenDataStore_1.genDataStore)(fileWriter, this.libDir, ctx);
-            const syntheticObjects = storeDef.getSyntheticObjects();
-            for (const name in syntheticObjects) {
-                (0, GenSyntheticObject_1.genSyntheticObject)(ctx, fileWriter, this.libDir, name, syntheticObjects[name]);
-            }
+        }
+        const dataflowPrograms = this.getDataflowPrograms();
+        for (const name in dataflowPrograms) {
+            (0, GenDataflowProgram_1.genDataflowProgram)({
+                namespace: "XrpaDataflowPrograms",
+                moduleDef: this,
+            }, fileWriter, this.libDir, dataflowPrograms[name]);
         }
         return fileWriter;
     }
-    genBuckFile(fileWriter, outdir, moduleDef, oncall) {
-        const deps = (moduleDef.datamap.typeBuckDeps).map(s => `"${s}",`).concat([
-            `"//arvr/libraries/xred/platform/dataset/cpp:core",`,
-            `"//arvr/libraries/xred/platform/dataset/cpp:reconciler",`,
-        ]).sort();
-        const lines = [
-            ...CppCodeGenImpl.BUCK_HEADER,
-            `load("//arvr/tools/build_defs:oxx.bzl", "oxx_static_library")`,
-            ``,
-            `oncall("${oncall}")`,
-            ``,
-            `oxx_static_library(`,
-            `    name = "${moduleDef.name}",`,
-            `    srcs = glob(["*.cpp"]),`,
-            `    public_include_directories = [".."],`,
-            `    public_raw_headers = glob(["*.h"]),`,
-            `    visibility = ["PUBLIC"],`,
-            `    deps = [`,
-            ...(0, Helpers_1.indent)(4, deps),
-            `    ],`,
-            `)`,
-            ``,
-        ];
-        fileWriter.writeFile(path_1.default.join(outdir, "BUCK"), lines);
+    genBuckFile(fileWriter, moduleDef, oncall) {
+        fileWriter.writeFile(path_1.default.join(this.libDir, "BUCK"), async () => {
+            const buckRoot = await (0, Helpers_1.buckRootDir)();
+            const runtimeRelPath = path_1.default.relative(buckRoot, this.runtimeDir);
+            const runtimeDepPath = `//${runtimeRelPath.replace(/\\/g, "/")}`;
+            const deps = (moduleDef.datamap.typeBuckDeps).map(s => `"${s}",`).concat([
+                `"${runtimeDepPath}:core",`,
+                `"${runtimeDepPath}:reconciler",`,
+            ]).sort();
+            return [
+                ...CppCodeGenImpl.BUCK_HEADER,
+                `load("//arvr/tools/build_defs:oxx.bzl", "oxx_static_library")`,
+                ``,
+                `oncall("${oncall}")`,
+                ``,
+                `oxx_static_library(`,
+                `    name = "${moduleDef.name}",`,
+                `    srcs = glob(["*.cpp"]),`,
+                `    public_include_directories = [".."],`,
+                `    public_raw_headers = glob(["*.h"]),`,
+                `    visibility = ["PUBLIC"],`,
+                `    deps = [`,
+                ...(0, Helpers_1.indent)(4, deps),
+                `    ],`,
+                `)`,
+                ``,
+            ];
+        });
     }
 }
 exports.CppModuleDefinition = CppModuleDefinition;

@@ -49,6 +49,7 @@ class ModuleDefinition {
         this.datastores = [];
         this.settingsType = null;
         this.settingsSpec = {};
+        this.dataflowPrograms = {};
         this.primitiveTypes = (0, BuiltinTypes_1.genPrimitiveTypes)(codegen, datamap.typeMap);
         this.DSIdentifier = this.createDSIdentifier();
     }
@@ -69,6 +70,11 @@ class ModuleDefinition {
     getDataStores() {
         return this.datastores;
     }
+    getDataStore(name) {
+        const ret = this.datastores.find((ds) => ds.apiname === name);
+        (0, assert_1.default)(ret !== undefined, `Datastore "${name}" not found`);
+        return ret;
+    }
     addSetting(name, setting) {
         (0, assert_1.default)(this.settingsSpec[name] === undefined, `Setting "${name}" already exists`);
         (0, assert_1.default)(!this.settingsType, "addSetting called too late");
@@ -77,7 +83,7 @@ class ModuleDefinition {
     convertUserTypeSpec(typeSpec) {
         if (typeof typeSpec === "string") {
             return {
-                type: this.getPrimitiveTypeDefinition(typeSpec),
+                type: this.getBuiltinTypeDefinition(typeSpec),
             };
         }
         else if (isTypeDefinition(typeSpec)) {
@@ -87,7 +93,7 @@ class ModuleDefinition {
         }
         else if (isUserFieldTypeSpec(typeSpec)) {
             return {
-                type: this.getPrimitiveTypeDefinition(typeSpec.type),
+                type: this.getBuiltinTypeDefinition(typeSpec.type),
                 defaultValue: typeSpec.defaultValue,
                 description: typeSpec.description,
             };
@@ -143,8 +149,11 @@ class ModuleDefinition {
         return ret;
     }
     getBuiltinTypeDefinition(typeName, apiname, datamodel) {
-        const ret = this.primitiveTypes[typeName] ?? (0, BuiltinTypes_1.getSemanticType)(this.codegen, typeName, apiname, datamodel);
-        (0, assert_1.default)(ret !== undefined, `No builtin type found for ${typeName}.`);
+        let ret = this.primitiveTypes[typeName] ?? null;
+        if (!ret) {
+            ret = (0, BuiltinTypes_1.getSemanticType)(this.codegen, typeName, apiname ?? "", datamodel ? datamodel.typeMap : this.datamap.typeMap, datamodel ? datamodel.localCoordinateSystem : this.datamap.coordinateSystem, datamodel ? datamodel.storedCoordinateSystem : this.datamap.coordinateSystem);
+        }
+        (0, assert_1.default)(ret, `No builtin type found for ${typeName}.`);
         return ret;
     }
     createEnum(name, apiname, enumValues, localTypeOverride) {
@@ -188,6 +197,12 @@ class ModuleDefinition {
             typename: this.codegen.nsJoin(namespace, `Outbound${type.getName()}`),
             headerFile: this.codegen.getDataStoreHeaderName(collection.apiname),
         };
+    }
+    addDataflowProgram(programDef) {
+        this.dataflowPrograms[programDef.interfaceName] = programDef;
+    }
+    getDataflowPrograms() {
+        return Object.values(this.dataflowPrograms);
     }
 }
 exports.ModuleDefinition = ModuleDefinition;

@@ -40,7 +40,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genIndexedBindingCalls = exports.genObjectCollectionClasses = exports.genInboundReconciledTypes = void 0;
+exports.genIndexedBindingCalls = exports.genObjectCollectionClasses = exports.genInboundReconciledTypes = exports.genProcessUpdateFunctionBodyForConcreteReconciledType = void 0;
 const ClassSpec_1 = require("../../shared/ClassSpec");
 const DataStore_1 = require("../../shared/DataStore");
 const Helpers_1 = require("../../shared/Helpers");
@@ -53,7 +53,7 @@ const GenDataStore_1 = require("./GenDataStore");
 const GenMessageAccessors_1 = require("./GenMessageAccessors");
 const GenSignalAccessors_1 = require("./GenSignalAccessors");
 const GenWriteReconcilerDataStore_1 = require("./GenWriteReconcilerDataStore");
-function genProcessUpdateFunctionBodyForIndexed(ctx, includes, typeDef, reconcilerDef) {
+function genProcessUpdateFunctionBodyForConcreteReconciledType(ctx, includes, typeDef, reconcilerDef) {
     const lines = [];
     const typeFields = typeDef.getStateFields();
     for (const fieldName in typeFields) {
@@ -67,6 +67,7 @@ function genProcessUpdateFunctionBodyForIndexed(ctx, includes, typeDef, reconcil
     }
     return lines;
 }
+exports.genProcessUpdateFunctionBodyForConcreteReconciledType = genProcessUpdateFunctionBodyForConcreteReconciledType;
 function genInboundReconciledTypes(ctx, includesIn) {
     const ret = [];
     const headerFile = (0, CppCodeGenImpl_1.getDataStoreHeaderName)(ctx.storeDef.apiname);
@@ -121,7 +122,7 @@ function genInboundReconciledTypes(ctx, includesIn) {
                         name: "fieldsChanged",
                         type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
                     }],
-                body: includes => genProcessUpdateFunctionBodyForIndexed(ctx, includes, typeDef, reconcilerDef),
+                body: includes => genProcessUpdateFunctionBodyForConcreteReconciledType(ctx, includes, typeDef, reconcilerDef),
                 isVirtual: true,
                 isFinal: true,
             });
@@ -161,6 +162,7 @@ function genInboundReconciledTypes(ctx, includesIn) {
                 directionality: "inbound",
                 visibility: "private",
             });
+            // the "check<FieldName>Changed" functions are here for index binding
             const fields = typeDef.getStateFields();
             for (const name in fields) {
                 (0, CppCodeGenImpl_1.genFieldChangedCheck)(classSpec, { parentType: typeDef, fieldName: name });

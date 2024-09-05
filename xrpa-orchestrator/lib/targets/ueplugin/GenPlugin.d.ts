@@ -16,7 +16,7 @@
 
 
 import { FileWriter } from "../../shared/FileWriter";
-export declare function genPlugin(fileWriter: FileWriter, pluginRoot: string, pluginName: string, pluginDeps: [string, string][]): {
+export declare function genPlugin(fileWriter: FileWriter, pluginRoot: string, pluginName: string, pluginDeps?: Array<[string, string]>): {
     privateSrcDir: string;
     publicSrcDir: string;
 };

@@ -139,9 +139,13 @@ class InputReconcilerDefinition extends BaseReconcilerDefinition {
 }
 exports.InputReconcilerDefinition = InputReconcilerDefinition;
 class OutputReconcilerDefinition extends BaseReconcilerDefinition {
-    constructor(type, inboundFields, fieldAccessorNameOverrides, componentProps, indexConfigs) {
+    constructor(type, inboundFields, fieldAccessorNameOverrides, componentProps, useGenericReconciledType = false, indexConfigs) {
         super(type, inboundFields, null, fieldAccessorNameOverrides, componentProps, indexConfigs);
+        this.useGenericReconciledType = useGenericReconciledType;
         this.outboundFields = null;
+    }
+    shouldGenerateConcreteReconciledType() {
+        return this.useGenericReconciledType;
     }
     getDataStoreAccessorName() {
         return this.type.getName() + "Out";
@@ -155,7 +159,6 @@ class DataStoreDefinition {
         this.typeMap = typeMap;
         this.inputs = [];
         this.outputs = [];
-        this.syntheticObjects = {};
         this.apiname = apiname ?? dataset;
         this.datamodel = new DataModel_1.DataModelDefinition(moduleDef, this);
     }
@@ -183,7 +186,7 @@ class DataStoreDefinition {
         if (!(0, TypeDefinition_1.typeIsCollection)(type)) {
             throw new Error(`Type ${params.type} is not a collection`);
         }
-        const outputDef = new OutputReconcilerDefinition(type, params.inboundFields ?? [], params.fieldAccessorNameOverrides ?? {}, params.componentProps ?? {}, params.indexes ?? []);
+        const outputDef = new OutputReconcilerDefinition(type, params.inboundFields ?? [], params.fieldAccessorNameOverrides ?? {}, params.componentProps ?? {}, params.useGenericReconciledType ?? false, params.indexes ?? []);
         this.moduleDef.setCollectionAsOutbound(type, outputDef.componentProps);
         this.outputs.push(outputDef);
         return outputDef;
@@ -193,12 +196,6 @@ class DataStoreDefinition {
     }
     getAllReconcilers() {
         return [...this.inputs, ...this.outputs];
-    }
-    addSyntheticObject(name, objectDef) {
-        this.syntheticObjects[name] = objectDef;
-    }
-    getSyntheticObjects() {
-        return this.syntheticObjects;
     }
 }
 exports.DataStoreDefinition = DataStoreDefinition;

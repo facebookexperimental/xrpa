@@ -15,20 +15,23 @@
  */
 
 import path from "path";
-import { XredSignalOutput } from "@xrpa/xred-signal-output";
-import { SignalGraph, XredSignalProcessing } from "@xrpa/xred-signal-processing";
-import { UnityProject } from "@xrpa/xrpa-orchestrator";
+import { XredSignalOutputInterface } from "@xrpa/xred-signal-output";
+import { bindExternalProgram, UnityProject } from "@xrpa/xrpa-orchestrator";
 
 import { TestEffect } from "./TestEffect";
 
-const UnityEffects: Record<string, SignalGraph> = {
+const UnityEffects = [
   // Put your effects here, for them to show up as Unity components
-  TestEffect: TestEffect(),
-};
+  TestEffect,
+];
 
-UnityProject(path.join(__dirname, ".."), unity => {
-  unity.addBindings(XredSignalOutput);
-  unity.addBindings(XredSignalProcessing, { effects: UnityEffects });
+UnityProject(path.join(__dirname, ".."), "your-project-name", () => {
+  bindExternalProgram(XredSignalOutputInterface);
+
+  for (const effect of UnityEffects) {
+    console.log(`Binding effect ${effect.interfaceName}...`);
+    bindExternalProgram(effect);
+  }
 }).catch((e) => {
   console.error(e);
   process.exit(1);

@@ -15,22 +15,7 @@
  */
 
 
-import { XrpaObjectDef, XrpaParamDef, XrpaSyntheticObject } from "@xrpa/xrpa-orchestrator";
-export declare class CountParamType extends XrpaParamDef {
-    constructor(name: string, defaultValue?: number, description?: string);
-}
-export declare class ScalarParamType extends XrpaParamDef {
-    constructor(name: string, defaultValue?: number, description?: string);
-}
-export declare class FrequencyParamType extends XrpaParamDef {
-    constructor(name: string, defaultValue?: number, description?: string);
-}
-export declare class DistanceParamType extends XrpaParamDef {
-    constructor(name: string, defaultValue?: number, description?: string);
-}
-export declare class Vector3ParamType extends XrpaParamDef {
-    constructor(name: string, description?: string);
-}
+import { Count, Distance, Scalar, XrpaDataflowForeignObjectInstantiation, XrpaDataflowGraphNode, XrpaFieldValue, XrpaProgramParam } from "@xrpa/xrpa-orchestrator";
 export interface AcceptsStartEvent {
     setStartEvent(ev: FiresEvent | null, autoStart?: boolean): void;
 }
@@ -40,8 +25,21 @@ export interface FiresDoneEvent {
 export interface FiresEvent {
     onEvent(): SignalEventType;
 }
-export type NonSignalNumericValue = CountParamType | ScalarParamType | FrequencyParamType | DistanceParamType | number;
+export type NonSignalNumericValue = XrpaProgramParam<ReturnType<typeof Count>> | XrpaProgramParam<ReturnType<typeof Scalar>> | XrpaProgramParam<ReturnType<typeof Distance>> | number;
 export type NumericValue = NonSignalNumericValue | ISignalNodeType;
+type SPFieldValue = Exclude<XrpaFieldValue, XrpaDataflowGraphNode> | SPNode;
+declare class SPNode {
+    readonly type: string;
+    dataflowNode: XrpaDataflowForeignObjectInstantiation;
+    protected fieldValues: Record<string, SPFieldValue>;
+    constructor(type: string, isBuffered?: boolean);
+    private setFieldValueInternal;
+    setField(fieldName: string, value: SPFieldValue): void;
+    setNumericField(fieldName: string, nodeFieldName: string | null, value: NumericValue | undefined): void;
+    setEventField(fieldName: string, value: SignalEventType | undefined): void;
+    getOrCreateEventField(fieldName: string, eventDependency?: SPNode): SignalEventType;
+    setStartEventField(startEvent: SignalEventType | undefined, autoStart: boolean | undefined): void;
+}
 export declare enum WaveformTypeEnum {
     Sawtooth = 0,
     Square = 1,
@@ -79,12 +77,12 @@ export declare enum FilterTypeEnum {
     HighPass = 5,
     BandPass = 6
 }
-export declare class SignalEventType extends XrpaObjectDef implements FiresEvent {
-    extraDependency: XrpaObjectDef | null;
+export declare class SignalEventType extends SPNode implements FiresEvent {
+    extraDependency: SPNode | null;
     constructor();
     onEvent(): SignalEventType;
 }
-export declare class SignalEventCombinerType extends XrpaObjectDef implements FiresEvent {
+export declare class SignalEventCombinerType extends SPNode implements FiresEvent {
     static MAX_INPUTS: number;
     constructor(params: {
         inputs: Array<FiresEvent>;
@@ -92,7 +90,7 @@ export declare class SignalEventCombinerType extends XrpaObjectDef implements Fi
     });
     onEvent(): SignalEventType;
 }
-export declare class ISignalNodeType extends XrpaObjectDef {
+export declare class ISignalNodeType extends SPNode {
     protected numOutputs: number;
     protected numOutputChannels: number;
     incrementOutputCount(): void;
@@ -216,26 +214,19 @@ export declare class SignalSoftClipType extends ISignalNodeType {
         source: ISignalNodeType;
     });
 }
-export declare class SignalOutputDataType extends XrpaObjectDef {
+export declare class SignalOutputDataType extends SPNode {
     constructor(params: {
         source: ISignalNodeType;
         sampleType: SampleTypeEnum;
         samplesPerChannelPerSec: NonSignalNumericValue;
     });
 }
-export declare class SignalOutputDeviceType extends XrpaObjectDef {
+export declare class SignalOutputDeviceType extends SPNode {
     constructor(params: {
         source: ISignalNodeType;
         deviceNameFilter: string;
         deviceHandednessFilter?: DeviceHandednessFilterEnum;
         channelOffset?: NonSignalNumericValue;
-    });
-}
-type SignalOut = SignalOutputDataType | SignalOutputDeviceType;
-export declare class SignalGraph extends XrpaSyntheticObject {
-    constructor(params: {
-        outputs: SignalOut[];
-        done?: FiresEvent;
     });
 }
 export {};

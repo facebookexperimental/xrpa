@@ -15,19 +15,18 @@
  */
 
 
+import { NativeProgramContext } from "./NativeProgram";
 import { CoordinateSystemDef } from "./shared/CoordinateTransformer";
 import { ArrayTypeSpec, TypeMap } from "./shared/TypeDefinition";
-import { CppModuleDefinition } from "./targets/cpp/CppModuleDefinition";
+import { CppModuleDefinition, ModuleBuckConfig } from "./targets/cpp/CppModuleDefinition";
 export declare function withHeader<T extends Record<string, string>>(headerFile: string, types: T): TypeMap;
 export declare const OvrCoordinateSystem: CoordinateSystemDef;
 export declare const StdVectorArrayType: ArrayTypeSpec;
-export declare function CppModule(name: string, params: {
-    coordinateSystem: CoordinateSystemDef;
-    libDir: string;
-    buckTarget: string;
-    buckOnCall: string;
-    typeMap?: TypeMap;
-    typeBuckDeps?: string[];
-    arrayType?: ArrayTypeSpec;
-}): CppModuleDefinition;
+interface BuckConfig extends ModuleBuckConfig {
+    deps?: string[];
+}
+export declare function useBuck(config: BuckConfig): void;
+export declare function addBuckDependency(dep: string): void;
+export declare function XrpaNativeCppProgram(name: string, outputDir: string, callback: (ctx: NativeProgramContext) => void): CppModuleDefinition;
+export {};
 

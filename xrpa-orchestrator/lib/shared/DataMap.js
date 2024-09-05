@@ -17,14 +17,4 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DataMapDefinition = void 0;
-class DataMapDefinition {
-    constructor(coordinateSystem, typeMap, typeBuckDeps, localArrayType) {
-        this.coordinateSystem = coordinateSystem;
-        this.typeMap = typeMap;
-        this.typeBuckDeps = typeBuckDeps;
-        this.localArrayType = localArrayType;
-    }
-}
-exports.DataMapDefinition = DataMapDefinition;
 //# sourceMappingURL=DataMap.js.map

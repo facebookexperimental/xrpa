@@ -20,11 +20,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UnrealProject = exports.UnrealProjectContext = exports.UepluginModule = exports.UnrealArrayType = exports.UnrealTypeMap = exports.UnrealCoordinateSystem = void 0;
+exports.UnrealProject = exports.PluginDeps = exports.UnrealArrayType = exports.UnrealCoordinateSystem = void 0;
 const path_1 = __importDefault(require("path"));
+const Coordinates_1 = require("./Coordinates");
+const InterfaceTypes_1 = require("./InterfaceTypes");
+const GameEngine_1 = require("./GameEngine");
+const ProgramInterfaceConverter_1 = require("./ProgramInterfaceConverter");
+const RuntimeEnvironment_1 = require("./RuntimeEnvironment");
+const XrpaLanguage_1 = require("./XrpaLanguage");
 const CoordinateTransformer_1 = require("./shared/CoordinateTransformer");
-const DataMap_1 = require("./shared/DataMap");
-const FileWriter_1 = require("./shared/FileWriter");
+const Helpers_1 = require("./shared/Helpers");
+const SceneComponentShared_1 = require("./targets/ueplugin/SceneComponentShared");
 const UepluginModuleDefinition_1 = require("./targets/ueplugin/UepluginModuleDefinition");
 exports.UnrealCoordinateSystem = {
     up: CoordinateTransformer_1.CoordAxis.posZ,
@@ -32,6 +38,14 @@ exports.UnrealCoordinateSystem = {
     forward: CoordinateTransformer_1.CoordAxis.posX,
     spatialUnit: CoordinateTransformer_1.SpatialUnitType.centimeter,
     angularUnit: CoordinateTransformer_1.AngularUnitType.degree,
+};
+exports.UnrealArrayType = {
+    headerFile: "Engine.h",
+    typename: "TArray",
+    getSize: "Num()",
+    setSize: "SetNum()",
+    removeAll: "Empty()",
+    addItem: "Add()",
 };
 const FVector2D = {
     typename: "FVector2D",
@@ -50,90 +64,84 @@ const FVector = {
         Z: "z",
     },
 };
-exports.UnrealTypeMap = {
-    String: {
-        typename: "FString",
-        headerFile: "<dataset/ue/FStringHelpers.h>",
-        conversionOperator: "FStringAdaptor",
-    },
-    Vector2: FVector2D,
-    UnitVector2: FVector2D,
-    Distance2: FVector2D,
-    Scale2: FVector2D,
-    Quaternion: {
-        typename: "FQuat",
-        headerFile: "Engine.h",
-        fieldMap: {
-            X: "x",
-            Y: "y",
-            Z: "z",
-            W: "w",
-        },
-    },
-    Vector3: FVector,
-    UnitVector3: FVector,
-    Distance3: FVector,
-    Scale3: FVector,
-    ColorSRGBA: {
-        typename: "FColor",
-        headerFile: "Engine.h",
-    },
-    ColorLinear: {
-        typename: "FLinearColor",
-        headerFile: "Engine.h",
-    },
-    EulerAngles: {
-        typename: "FRotator",
-        headerFile: "Engine.h",
-        fieldMap: {
-            Pitch: "pitch",
-            Roll: "roll",
-            Yaw: "yaw",
-        },
-    },
-};
-exports.UnrealArrayType = {
-    headerFile: "Engine.h",
-    typename: "TArray",
-    getSize: "Num()",
-    setSize: "SetNum()",
-    removeAll: "Empty()",
-    addItem: "Add()",
-};
-function UepluginModule(name, params) {
-    const datamap = new DataMap_1.DataMapDefinition(params.coordinateSystem ?? exports.UnrealCoordinateSystem, params.typeMap ?? exports.UnrealTypeMap, [], params.arrayType ?? exports.UnrealArrayType);
-    return new UepluginModuleDefinition_1.UepluginModuleDefinition(name, datamap, params.pluginsRoot, params.pluginDeps ?? []);
+function PluginDeps(ctx, pluginDeps) {
+    ctx.properties.pluginDeps = pluginDeps;
 }
-exports.UepluginModule = UepluginModule;
-const UnrealBindingConfig = {
-    componentBaseClass: "SceneComponent",
-    intrinsicPositionProperty: "Location",
-    intrinsicRotationProperty: "Rotation",
-    intrinsicParentProperty: "Parent",
-    intrinsicGameObjectProperty: "Parent",
-};
-class UnrealProjectContext {
-    constructor(projectPath) {
-        this.projectPath = projectPath;
-        this.plugins = [];
-    }
-    addBindings(moduleToBind, options) {
-        const companyName = options?.upperCaseCompanyName ? moduleToBind.companyName.toLocaleUpperCase() : moduleToBind.companyName;
-        const plugin = UepluginModule(companyName + moduleToBind.name, {
-            pluginsRoot: path_1.default.join(this.projectPath, "Plugins"),
-            pluginDeps: options?.pluginDeps ?? [],
+exports.PluginDeps = PluginDeps;
+async function UnrealProject(projectPath, projectName, callback) {
+    const ctx = (0, GameEngine_1.GameEngineConfig)({
+        __isRuntimeEnvironmentContext: true,
+        __UnrealEngineRuntime: true,
+        properties: {},
+        externalProgramInterfaces: {},
+    }, {
+        componentBaseClass: "SceneComponent",
+        intrinsicPositionProperty: SceneComponentShared_1.IntrinsicProperty.Location,
+        intrinsicRotationProperty: SceneComponentShared_1.IntrinsicProperty.Rotation,
+        intrinsicScaleProperty: SceneComponentShared_1.IntrinsicProperty.Scale3D,
+        intrinsicParentProperty: SceneComponentShared_1.IntrinsicProperty.Parent,
+        intrinsicGameObjectProperty: SceneComponentShared_1.IntrinsicProperty.Parent,
+    });
+    (0, XrpaLanguage_1.runInContext)(ctx, ctx => {
+        (0, Coordinates_1.useCoordinateSystem)(exports.UnrealCoordinateSystem);
+        (0, RuntimeEnvironment_1.mapType)(InterfaceTypes_1.String, {
+            typename: "FString",
+            headerFile: "<xrpa-runtime/ue/FStringHelpers.h>",
+            conversionOperator: "FStringAdaptor",
         });
-        moduleToBind.setupDataStore(plugin, UnrealBindingConfig, options);
-        this.plugins.push(plugin);
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Vector2, FVector2D);
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.UnitVector2, FVector2D);
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Distance2, FVector2D);
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Scale2, FVector2D);
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Quaternion, {
+            typename: "FQuat",
+            headerFile: "Engine.h",
+            fieldMap: {
+                X: "x",
+                Y: "y",
+                Z: "z",
+                W: "w",
+            },
+        });
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Vector3, FVector);
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.UnitVector3, FVector);
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Distance3, FVector);
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Scale3, FVector);
+        (0, RuntimeEnvironment_1.mapType)(InterfaceTypes_1.ColorSRGBA, {
+            typename: "FColor",
+            headerFile: "Engine.h",
+        });
+        (0, RuntimeEnvironment_1.mapType)(InterfaceTypes_1.ColorLinear, {
+            typename: "FLinearColor",
+            headerFile: "Engine.h",
+        });
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.EulerAngles, {
+            typename: "FRotator",
+            headerFile: "Engine.h",
+            fieldMap: {
+                Pitch: "pitch",
+                Roll: "roll",
+                Yaw: "yaw",
+            },
+        });
+        (0, RuntimeEnvironment_1.mapArrays)(exports.UnrealArrayType);
+        callback(ctx);
+    });
+    const pluginConfigs = {};
+    for (const name in ctx.externalProgramInterfaces) {
+        const programInterfaceCtx = ctx.externalProgramInterfaces[name];
+        const programInterface = programInterfaceCtx.programInterface;
+        const companyName = programInterfaceCtx.properties.upperCaseCompanyName ? programInterface.companyName.toLocaleUpperCase() : programInterface.companyName;
+        pluginConfigs[programInterface.interfaceName] = {
+            pluginName: `${companyName}${programInterface.interfaceName}`,
+            deps: (0, Helpers_1.filterToStringPairArray)(programInterfaceCtx.properties.pluginDeps) ?? [],
+        };
     }
-}
-exports.UnrealProjectContext = UnrealProjectContext;
-async function UnrealProject(projectPath, callback) {
-    const unreal = new UnrealProjectContext(projectPath);
-    callback(unreal);
-    const fileWriter = new FileWriter_1.FileWriter();
-    unreal.plugins.forEach(pkg => fileWriter.merge(pkg.doCodeGen()));
-    await fileWriter.finalize(path_1.default.join(projectPath, "xrpa-manifest.json"));
+    const pkg = new UepluginModuleDefinition_1.UepluginModuleDefinition(projectName, (0, RuntimeEnvironment_1.getDataMap)(ctx), projectPath, pluginConfigs);
+    for (const name in ctx.externalProgramInterfaces) {
+        (0, ProgramInterfaceConverter_1.bindProgramInterfaceToModule)(ctx, pkg, ctx.externalProgramInterfaces[name].programInterface, true);
+    }
+    await pkg.doCodeGen().finalize(path_1.default.join(projectPath, "xrpa-manifest.json"));
 }
 exports.UnrealProject = UnrealProject;
 //# sourceMappingURL=UnrealEngine.js.map

@@ -15,29 +15,14 @@
  */
 
 
-import { BaseModuleOptions, ModuleBinding } from "./EngineBindings";
+import { ExternalProgramInterfaceContext, RuntimeEnvironmentContext } from "./RuntimeEnvironment";
 import { CoordinateSystemDef } from "./shared/CoordinateTransformer";
-import { ArrayTypeSpec, TypeMap } from "./shared/TypeDefinition";
-import { UepluginModuleDefinition } from "./targets/ueplugin/UepluginModuleDefinition";
+import { ArrayTypeSpec } from "./shared/TypeDefinition";
 export declare const UnrealCoordinateSystem: CoordinateSystemDef;
-export declare const UnrealTypeMap: TypeMap;
 export declare const UnrealArrayType: ArrayTypeSpec;
-export declare function UepluginModule(name: string, params: {
-    pluginsRoot: string;
-    pluginDeps?: [string, string][];
-    coordinateSystem?: CoordinateSystemDef;
-    typeMap?: TypeMap;
-    arrayType?: ArrayTypeSpec;
-}): UepluginModuleDefinition;
-interface PluginOptions {
-    pluginDeps?: [string, string][];
+export interface UnrealEngineRuntimeContext extends RuntimeEnvironmentContext {
+    __UnrealEngineRuntime: true;
 }
-export declare class UnrealProjectContext {
-    readonly projectPath: string;
-    plugins: UepluginModuleDefinition[];
-    constructor(projectPath: string);
-    addBindings<ModuleOptions extends BaseModuleOptions>(moduleToBind: ModuleBinding<ModuleOptions>, options?: ModuleOptions & PluginOptions): void;
-}
-export declare function UnrealProject(projectPath: string, callback: (unreal: UnrealProjectContext) => void): Promise<void>;
-export {};
+export declare function PluginDeps(ctx: ExternalProgramInterfaceContext, pluginDeps: [string, string][]): void;
+export declare function UnrealProject(projectPath: string, projectName: string, callback: (ctx: UnrealEngineRuntimeContext) => void): Promise<void>;
 

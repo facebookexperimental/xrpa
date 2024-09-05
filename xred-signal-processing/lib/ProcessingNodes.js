@@ -40,18 +40,26 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PitchShift = exports.BandPassFilter = exports.HighPassFilter = exports.LowPassFilter = exports.ParametricEqualizer = exports.Feedback = exports.Delay = exports.Sequence = exports.AudioStream = exports.AdsrEnvelope = exports.TrapezoidCurve = exports.ClickPulse = exports.RepeatAndStack = exports.StackChannels = exports.SelectChannel = exports.RouteToChannel = exports.SoftClip = exports.CustomWave = exports.WhiteNoise = exports.SquareWave = exports.TriangleWave = exports.SawtoothWave = exports.SineWave = exports.OutputDevice = void 0;
+exports.PitchShift = exports.BandPassFilter = exports.HighPassFilter = exports.LowPassFilter = exports.ParametricEqualizer = exports.Feedback = exports.Delay = exports.Sequence = exports.AudioStream = exports.AdsrEnvelope = exports.TrapezoidCurve = exports.ClickPulse = exports.RepeatAndStack = exports.StackChannels = exports.SelectChannel = exports.RouteToChannel = exports.SoftClip = exports.CustomWave = exports.WhiteNoise = exports.SquareWave = exports.TriangleWave = exports.SawtoothWave = exports.SineWave = exports.DoneWhen = exports.OutputToDevice = void 0;
 const path = __importStar(require("path"));
+const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const MathOps_1 = require("./MathOps");
 const SignalProcessingTypes_1 = require("./SignalProcessingTypes");
-function OutputDevice(params) {
+function OutputToDevice(params) {
     return new SignalProcessingTypes_1.SignalOutputDeviceType({
         source: params.source,
         deviceNameFilter: params.deviceName,
         channelOffset: params.channelOffset ?? 0,
     });
 }
-exports.OutputDevice = OutputDevice;
+exports.OutputToDevice = OutputToDevice;
+function DoneWhen(done) {
+    (0, xrpa_orchestrator_1.SelfTerminateOn)({
+        targetNode: done.onEvent().dataflowNode,
+        targetPort: "receiveEvent",
+    });
+}
+exports.DoneWhen = DoneWhen;
 function SignalGen(params) {
     const fullParams = {
         channelCount: 1,

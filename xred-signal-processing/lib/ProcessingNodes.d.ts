@@ -17,11 +17,12 @@
 
 import { AcceptsStartEvent, FilterTypeEnum, FiresDoneEvent, FiresEvent, ISignalNodeType, NonSignalNumericValue, NumericValue, SignalCurveType, SignalFeedbackType, SignalOutputDeviceType } from "./SignalProcessingTypes";
 import { StringFilter } from "./StringFilter";
-export declare function OutputDevice(params: {
+export declare function OutputToDevice(params: {
     deviceName: StringFilter;
     source: ISignalNodeType;
     channelOffset?: number;
 }): SignalOutputDeviceType;
+export declare function DoneWhen(done: FiresEvent): void;
 export declare function SineWave(params: {
     channelCount?: number;
     frequency?: NumericValue;

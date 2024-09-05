@@ -17,9 +17,11 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CppModule = exports.StdVectorArrayType = exports.OvrCoordinateSystem = exports.withHeader = void 0;
+exports.XrpaNativeCppProgram = exports.addBuckDependency = exports.useBuck = exports.StdVectorArrayType = exports.OvrCoordinateSystem = exports.withHeader = void 0;
+const NativeProgram_1 = require("./NativeProgram");
+const RuntimeEnvironment_1 = require("./RuntimeEnvironment");
+const XrpaLanguage_1 = require("./XrpaLanguage");
 const CoordinateTransformer_1 = require("./shared/CoordinateTransformer");
-const DataMap_1 = require("./shared/DataMap");
 const CppModuleDefinition_1 = require("./targets/cpp/CppModuleDefinition");
 function withHeader(headerFile, types) {
     const ret = {};
@@ -47,12 +49,44 @@ exports.StdVectorArrayType = {
     removeAll: "clear()",
     addItem: "push()",
 };
-function CppModule(name, params) {
-    const datamap = new DataMap_1.DataMapDefinition(params.coordinateSystem, params.typeMap ?? {}, params.typeBuckDeps ?? [], params.arrayType);
-    return new CppModuleDefinition_1.CppModuleDefinition(name, datamap, params.libDir, {
-        target: params.buckTarget,
-        oncall: params.buckOnCall,
-    });
+//////////////////////////////////////////////////////////////////////////////
+const BUCK_CONFIG = "xrpa.cpp.buckConfig";
+function useBuck(config) {
+    const ctx = (0, NativeProgram_1.getNativeProgramContext)();
+    ctx.properties[BUCK_CONFIG] = config;
 }
-exports.CppModule = CppModule;
+exports.useBuck = useBuck;
+function getBuckConfig(ctx) {
+    return ctx.properties[BUCK_CONFIG];
+}
+function addBuckDependency(dep) {
+    const ctx = (0, NativeProgram_1.getNativeProgramContext)();
+    const buckConfig = getBuckConfig(ctx);
+    if (buckConfig) {
+        if (buckConfig.deps) {
+            buckConfig.deps.push(dep);
+        }
+        else {
+            buckConfig.deps = [dep];
+        }
+    }
+}
+exports.addBuckDependency = addBuckDependency;
+function XrpaNativeCppProgram(name, outputDir, callback) {
+    const ctx = {
+        __isRuntimeEnvironmentContext: true,
+        __isNativeProgramContext: true,
+        programInterface: undefined,
+        externalProgramInterfaces: {},
+        properties: {},
+    };
+    (0, XrpaLanguage_1.runInContext)(ctx, callback);
+    const buckConfig = getBuckConfig(ctx);
+    const datamap = (0, RuntimeEnvironment_1.getDataMap)(ctx);
+    datamap.typeBuckDeps = buckConfig?.deps ?? [];
+    const ret = new CppModuleDefinition_1.CppModuleDefinition(name, datamap, outputDir, buckConfig);
+    (0, NativeProgram_1.applyNativeProgramContext)(ctx, ret);
+    return ret;
+}
+exports.XrpaNativeCppProgram = XrpaNativeCppProgram;
 //# sourceMappingURL=ConvenienceWrappers.js.map

@@ -1,8 +1,0 @@
-{
-  "name": "com.meta.xrpa",
-  "version": "1.2.1",
-  "displayName": "Xrpa",
-  "description": "Xrpa Core",
-  "dependencies": {
-  }
-}

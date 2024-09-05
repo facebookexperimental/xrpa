@@ -30,7 +30,7 @@ class CppStandalone {
         (0, GenStandaloneCpp_1.genStandaloneCpp)(fileWriter, this.standaloneDir, this.moduleDef);
         if (this.moduleDef.buckDef) {
             // generate buck file
-            (0, GenStandaloneCpp_1.genStandaloneBuck)(fileWriter, this.standaloneDir, this.moduleDef.buckDef.target, this.moduleDef, this.moduleDef.buckDef.oncall);
+            (0, GenStandaloneCpp_1.genStandaloneBuck)(fileWriter, this.standaloneDir, this.moduleDef.runtimeDir, this.moduleDef.buckDef.target, this.moduleDef, this.moduleDef.buckDef.oncall);
         }
         return fileWriter;
     }

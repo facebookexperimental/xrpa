@@ -20,14 +20,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.recursiveDirScan = exports.isDirectory = exports.nsExtractWithSeparator = exports.nsJoinWithSeparator = exports.nsQualifyWithSeparator = exports.genCommentLinesWithCommentMarker = exports.removeLastTrailingComma = exports.buckBuild = exports.buckRunPackage = exports.buckRun = exports.runProcess = exports.pushUnique = exports.isExcluded = exports.filterToNumberArray = exports.filterToNumber = exports.filterToStringArray = exports.filterToString = exports.assertIsKeyOf = exports.throwBadValue = exports.absurd = exports.recordZip = exports.arrayZip = exports.objectIsEmpty = exports.hashCheck = exports.HashValue = exports.clone = exports.appendAligned = exports.lowerFirst = exports.upperFirst = exports.removeSuperfluousEmptyLines = exports.trimTrailingEmptyLines = exports.indentMatch = exports.indent = exports.mapAndCollapse = exports.collapseAndMap = exports.collapse = exports.EXCLUDE_NAMESPACE = void 0;
+exports.chainAsyncThunk = exports.resolveAsyncThunk = exports.chainThunk = exports.resolveThunk = exports.recursiveDirScan = exports.isDirectory = exports.nsExtractWithSeparator = exports.nsJoinWithSeparator = exports.nsQualifyWithSeparator = exports.genCommentLinesWithCommentMarker = exports.removeLastTrailingComma = exports.buckBuild = exports.buckRootDir = exports.buckRunPackage = exports.buckRun = exports.runProcess = exports.pushUnique = exports.isExcluded = exports.filterToNumberArray = exports.filterToNumber = exports.filterToStringPairArray = exports.filterToStringArray = exports.filterToString = exports.assertIsKeyOf = exports.throwBadValue = exports.absurd = exports.recordZip = exports.arrayZip = exports.objectIsEmpty = exports.hashCheck = exports.HashValue = exports.clone = exports.appendAligned = exports.lowerFirst = exports.upperFirst = exports.removeSuperfluousEmptyLines = exports.trimTrailingEmptyLines = exports.indentMatch = exports.indent = exports.safeDeepFreeze = exports.augmentInPlace = exports.augment = exports.mapAndCollapse = exports.collapseAndMap = exports.collapse = exports.getRuntimeSrcPath = exports.EXCLUDE_NAMESPACE = void 0;
 const assert_1 = __importDefault(require("assert"));
 const child_process_1 = __importDefault(require("child_process"));
 const crypto_1 = __importDefault(require("crypto"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
+const simply_immutable_1 = require("simply-immutable");
 exports.EXCLUDE_NAMESPACE = "EXCLUDE_NAMESPACE";
 const BUCK = "buck2";
+let runtimeSrcRootPath = path_1.default.join(__dirname, "../runtime");
+if (!fs_extra_1.default.pathExistsSync(runtimeSrcRootPath)) {
+    runtimeSrcRootPath = path_1.default.join(__dirname, "../../../runtime");
+}
+function getRuntimeSrcPath(target) {
+    return path_1.default.join(runtimeSrcRootPath, target, "xrpa-runtime");
+}
+exports.getRuntimeSrcPath = getRuntimeSrcPath;
 function collapse(values) {
     const ret = [];
     for (const value of values) {
@@ -49,15 +58,55 @@ function mapAndCollapse(values, mapFunc, ...args) {
     return collapse(values.map(v => mapFunc(v, ...args)));
 }
 exports.mapAndCollapse = mapAndCollapse;
+function augment(obj, props) {
+    const ret = (0, simply_immutable_1.shallowCloneMutable)(obj);
+    for (const key in props) {
+        ret[key] = props[key];
+    }
+    return safeDeepFreeze(ret);
+}
+exports.augment = augment;
+function augmentInPlace(obj, props) {
+    for (const key in props) {
+        obj[key] = props[key];
+    }
+    return obj;
+}
+exports.augmentInPlace = augmentInPlace;
+function safeDeepFreeze(o) {
+    if (Array.isArray(o)) {
+        if (!(0, simply_immutable_1.isFrozen)(o)) {
+            Object.freeze(o);
+            for (let i = 0; i < o.length; ++i) {
+                safeDeepFreeze(o[i]);
+            }
+        }
+    }
+    else if (typeof o === "object" && o !== null) {
+        if (!(0, simply_immutable_1.isFrozen)(o)) {
+            Object.freeze(o);
+            for (const key in o) {
+                safeDeepFreeze(o[key]);
+            }
+        }
+    }
+    return o;
+}
+exports.safeDeepFreeze = safeDeepFreeze;
 function indent(count, lines) {
     const indentStr = " ".repeat(count * 2);
     const ret = [];
-    for (const line of lines) {
-        if (Array.isArray(line)) {
-            ret.push(...line.map(str => str ? (indentStr + str) : str));
-        }
-        else {
-            ret.push(line ? (indentStr + line) : line);
+    if (typeof lines === "string") {
+        ret.push(indentStr + lines);
+    }
+    else {
+        for (const line of lines) {
+            if (Array.isArray(line)) {
+                ret.push(...line.map(str => str ? (indentStr + str) : str));
+            }
+            else {
+                ret.push(line ? (indentStr + line) : line);
+            }
         }
     }
     return ret;
@@ -219,6 +268,23 @@ function filterToStringArray(val, minLength = 0) {
     return val;
 }
 exports.filterToStringArray = filterToStringArray;
+function filterToStringPairArray(val, minLength = 0) {
+    if (!Array.isArray(val)) {
+        return undefined;
+    }
+    if (val.length < minLength) {
+        return undefined;
+    }
+    const ret = [];
+    for (const v of val) {
+        const tuple = filterToStringArray(v, 2);
+        if (tuple) {
+            ret.push(tuple);
+        }
+    }
+    return ret;
+}
+exports.filterToStringPairArray = filterToStringPairArray;
 function filterToNumber(val) {
     return typeof val === "number" ? val : undefined;
 }
@@ -334,9 +400,13 @@ async function buckRunPackage(mode, target, standaloneExeFilename) {
     }
 }
 exports.buckRunPackage = buckRunPackage;
+async function buckRootDir() {
+    return await runProcess({ filename: BUCK, args: ["root"] });
+}
+exports.buckRootDir = buckRootDir;
 async function buckBuild(params) {
     try {
-        const buckRoot = await runProcess({ filename: BUCK, args: ["root"] });
+        const buckRoot = await buckRootDir();
         const buildOutput = await runProcess({
             filename: BUCK,
             args: ["build", params.mode, params.target, "--show-json-output"],
@@ -432,4 +502,26 @@ async function recursiveDirScan(fullpath, filenames) {
     }
 }
 exports.recursiveDirScan = recursiveDirScan;
+function resolveThunk(value) {
+    if (typeof value === "function") {
+        return value();
+    }
+    return value;
+}
+exports.resolveThunk = resolveThunk;
+function chainThunk(value, next) {
+    return () => next(resolveThunk(value));
+}
+exports.chainThunk = chainThunk;
+async function resolveAsyncThunk(value) {
+    if (typeof value === "function") {
+        return value();
+    }
+    return value;
+}
+exports.resolveAsyncThunk = resolveAsyncThunk;
+function chainAsyncThunk(value, next) {
+    return () => resolveAsyncThunk(value).then(next);
+}
+exports.chainAsyncThunk = chainAsyncThunk;
 //# sourceMappingURL=Helpers.js.map

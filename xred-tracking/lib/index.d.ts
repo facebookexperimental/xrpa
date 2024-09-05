@@ -15,5 +15,5 @@
  */
 
 
-export { XredTracking } from "./TrackingDataModel";
+export { XredTrackingInterface } from "./TrackingInterface";
 

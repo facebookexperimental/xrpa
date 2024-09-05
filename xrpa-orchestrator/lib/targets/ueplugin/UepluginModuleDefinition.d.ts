@@ -21,10 +21,14 @@ import { FileWriter } from "../../shared/FileWriter";
 import { TypeSpec } from "../../shared/TargetCodeGen";
 import { CollectionTypeDefinition, StructSpec, StructTypeDefinition, TypeDefinition } from "../../shared/TypeDefinition";
 import { CppModuleDefinition } from "../cpp/CppModuleDefinition";
+export interface PluginConfig {
+    pluginName: string;
+    deps: Array<[string, string]>;
+}
 export declare class UepluginModuleDefinition extends CppModuleDefinition {
-    readonly pluginsRoot: string;
-    readonly pluginDeps: [string, string][];
-    constructor(name: string, datamap: DataMapDefinition, pluginsRoot: string, pluginDeps: [string, string][]);
+    readonly projectRoot: string;
+    readonly pluginsConfig: Record<string, PluginConfig>;
+    constructor(name: string, datamap: DataMapDefinition, projectRoot: string, pluginsConfig: Record<string, PluginConfig>);
     createEnum(name: string, apiname: string, enumValues: Record<string, number>, localTypeOverride: TypeSpec | undefined): TypeDefinition;
     createStruct(name: string, apiname: string, fields: StructSpec, localTypeOverride: TypeSpec | undefined): StructTypeDefinition;
     setCollectionAsInbound(type: CollectionTypeDefinition, reconciledTo: TypeSpec | undefined, indexes: Array<IndexConfiguration> | undefined): void;

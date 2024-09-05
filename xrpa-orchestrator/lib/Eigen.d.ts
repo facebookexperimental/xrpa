@@ -15,6 +15,5 @@
  */
 
 
-import { TypeMap } from "./shared/TypeDefinition";
-export declare const EigenTypeMap: TypeMap;
+export declare function useEigenTypes(): void;
 

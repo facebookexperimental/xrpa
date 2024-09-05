@@ -20,11 +20,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UnityProject = exports.UnityProjectContext = exports.UnityPackageModule = exports.UnityArrayType = exports.UnityTypeMap = exports.UnityCoordinateSystem = void 0;
+exports.UnityProject = exports.UnityArrayType = exports.UnityCoordinateSystem = void 0;
 const path_1 = __importDefault(require("path"));
+const Coordinates_1 = require("./Coordinates");
+const GameEngine_1 = require("./GameEngine");
+const InterfaceTypes_1 = require("./InterfaceTypes");
+const ProgramInterfaceConverter_1 = require("./ProgramInterfaceConverter");
+const RuntimeEnvironment_1 = require("./RuntimeEnvironment");
+const XrpaLanguage_1 = require("./XrpaLanguage");
 const CoordinateTransformer_1 = require("./shared/CoordinateTransformer");
-const DataMap_1 = require("./shared/DataMap");
-const FileWriter_1 = require("./shared/FileWriter");
+const MonoBehaviourShared_1 = require("./targets/unitypackage/MonoBehaviourShared");
 const UnityPackageModuleDefinition_1 = require("./targets/unitypackage/UnityPackageModuleDefinition");
 exports.UnityCoordinateSystem = {
     up: CoordinateTransformer_1.CoordAxis.posY,
@@ -33,28 +38,6 @@ exports.UnityCoordinateSystem = {
     spatialUnit: CoordinateTransformer_1.SpatialUnitType.meter,
     angularUnit: CoordinateTransformer_1.AngularUnitType.degree,
 };
-exports.UnityTypeMap = {
-    String: { typename: "string" },
-    Vector2: { typename: "UnityEngine.Vector2" },
-    UnitVector2: { typename: "UnityEngine.Vector2" },
-    Distance2: { typename: "UnityEngine.Vector2" },
-    Scale2: { typename: "UnityEngine.Vector2" },
-    Quaternion: { typename: "UnityEngine.Quaternion" },
-    Vector3: { typename: "UnityEngine.Vector3" },
-    UnitVector3: { typename: "UnityEngine.Vector3" },
-    Distance3: { typename: "UnityEngine.Vector3" },
-    Scale3: { typename: "UnityEngine.Vector3" },
-    ColorSRGBA: { typename: "UnityEngine.Color32" },
-    ColorLinear: { typename: "UnityEngine.Color" },
-    EulerAngles: {
-        typename: "UnityEngine.Vector3",
-        fieldMap: {
-            x: "pitch",
-            y: "yaw",
-            z: "roll",
-        },
-    },
-};
 exports.UnityArrayType = {
     typename: "System.Collections.Generic.List",
     getSize: "Count",
@@ -62,50 +45,65 @@ exports.UnityArrayType = {
     removeAll: "Clear()",
     addItem: "Add()",
 };
-function UnityPackageModule(name, params) {
-    const datamap = new DataMap_1.DataMapDefinition(params.coordinateSystem ?? exports.UnityCoordinateSystem, params.typeMap ?? exports.UnityTypeMap, [], params.arrayType ?? exports.UnityArrayType);
-    return new UnityPackageModuleDefinition_1.UnityPackageModuleDefinition(datamap, params.packagesRoot, {
-        packageName: name,
-        ...params.packageInfo,
+async function UnityProject(projectPath, projectName, callback) {
+    const ctx = (0, GameEngine_1.GameEngineConfig)({
+        __isRuntimeEnvironmentContext: true,
+        __UnityRuntime: true,
+        properties: {},
+        externalProgramInterfaces: {},
+    }, {
+        componentBaseClass: "MonoBehaviour",
+        intrinsicPositionProperty: MonoBehaviourShared_1.IntrinsicProperty.position,
+        intrinsicRotationProperty: MonoBehaviourShared_1.IntrinsicProperty.rotation,
+        intrinsicScaleProperty: MonoBehaviourShared_1.IntrinsicProperty.lossyScale,
+        intrinsicParentProperty: MonoBehaviourShared_1.IntrinsicProperty.Parent,
+        intrinsicGameObjectProperty: MonoBehaviourShared_1.IntrinsicProperty.gameObject,
     });
-}
-exports.UnityPackageModule = UnityPackageModule;
-const UnityBindingConfig = {
-    componentBaseClass: "MonoBehaviour",
-    intrinsicPositionProperty: "position",
-    intrinsicRotationProperty: "rotation",
-    intrinsicParentProperty: "Parent",
-    intrinsicGameObjectProperty: "gameObject",
-};
-class UnityProjectContext {
-    constructor(projectPath) {
-        this.projectPath = projectPath;
-        this.packages = [];
-    }
-    addBindings(moduleToBind, options) {
-        const companyName = (options?.upperCaseCompanyName) ? moduleToBind.companyName.toLocaleUpperCase() : moduleToBind.companyName;
-        const pkg = UnityPackageModule(companyName + moduleToBind.name, {
-            packagesRoot: path_1.default.join(this.projectPath, "Packages"),
-            packageInfo: {
-                name: `com.${companyName.toLocaleLowerCase()}.${moduleToBind.name.toLocaleLowerCase()}`,
-                version: [1, 0, 0],
-                displayName: moduleToBind.name,
-                description: `${moduleToBind.name} Bindings`,
-                companyName,
-                dependencies: [],
+    (0, XrpaLanguage_1.runInContext)(ctx, ctx => {
+        (0, Coordinates_1.useCoordinateSystem)(exports.UnityCoordinateSystem);
+        (0, RuntimeEnvironment_1.mapType)(InterfaceTypes_1.String, { typename: "string" });
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Vector2, { typename: "UnityEngine.Vector2" });
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.UnitVector2, { typename: "UnityEngine.Vector2" });
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Distance2, { typename: "UnityEngine.Vector2" });
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Scale2, { typename: "UnityEngine.Vector2" });
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Quaternion, { typename: "UnityEngine.Quaternion" });
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Vector3, { typename: "UnityEngine.Vector3" });
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.UnitVector3, { typename: "UnityEngine.Vector3" });
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Distance3, { typename: "UnityEngine.Vector3" });
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Scale3, { typename: "UnityEngine.Vector3" });
+        (0, RuntimeEnvironment_1.mapType)(InterfaceTypes_1.ColorSRGBA, { typename: "UnityEngine.Color32" });
+        (0, RuntimeEnvironment_1.mapType)(InterfaceTypes_1.ColorLinear, { typename: "UnityEngine.Color" });
+        (0, RuntimeEnvironment_1.mapType)(Coordinates_1.EulerAngles, {
+            typename: "UnityEngine.Vector3",
+            fieldMap: {
+                x: "pitch",
+                y: "yaw",
+                z: "roll",
             },
         });
-        moduleToBind.setupDataStore(pkg, UnityBindingConfig, options);
-        this.packages.push(pkg);
+        (0, RuntimeEnvironment_1.mapArrays)(exports.UnityArrayType);
+        callback(ctx);
+    });
+    const packageInfos = {};
+    for (const name in ctx.externalProgramInterfaces) {
+        const programInterfaceCtx = ctx.externalProgramInterfaces[name];
+        const programInterface = programInterfaceCtx.programInterface;
+        const companyName = (programInterfaceCtx.properties.upperCaseCompanyName) ? programInterface.companyName.toLocaleUpperCase() : programInterface.companyName;
+        packageInfos[programInterface.interfaceName] = {
+            packageName: `${companyName}${programInterface.interfaceName}`,
+            name: `com.${companyName.toLocaleLowerCase()}.${programInterface.interfaceName.toLocaleLowerCase()}`,
+            version: [1, 0, 0],
+            displayName: programInterface.interfaceName,
+            description: `${programInterface.interfaceName} Bindings`,
+            companyName,
+            dependencies: [],
+        };
     }
-}
-exports.UnityProjectContext = UnityProjectContext;
-async function UnityProject(projectPath, callback) {
-    const unity = new UnityProjectContext(projectPath);
-    callback(unity);
-    const fileWriter = new FileWriter_1.FileWriter();
-    unity.packages.forEach(pkg => fileWriter.merge(pkg.doCodeGen()));
-    await fileWriter.finalize(path_1.default.join(projectPath, "xrpa-manifest.json"));
+    const pkg = new UnityPackageModuleDefinition_1.UnityPackageModuleDefinition(projectName, (0, RuntimeEnvironment_1.getDataMap)(ctx), projectPath, packageInfos);
+    for (const name in ctx.externalProgramInterfaces) {
+        (0, ProgramInterfaceConverter_1.bindProgramInterfaceToModule)(ctx, pkg, ctx.externalProgramInterfaces[name].programInterface, true);
+    }
+    await pkg.doCodeGen().finalize(path_1.default.join(projectPath, "xrpa-manifest.json"));
 }
 exports.UnityProject = UnityProject;
 //# sourceMappingURL=Unity.js.map

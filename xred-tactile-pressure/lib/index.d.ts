@@ -15,5 +15,5 @@
  */
 
 
-export { XredTactilePressure } from "./TactilePressureDataModel";
+export { XredTactilePressureInterface } from "./TactilePressureInterface";
 

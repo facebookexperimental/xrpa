@@ -23,7 +23,7 @@ git commit -m "Setup xrpa config and install dependencies"
 ```
 
 ### Create Effects
-Create effects in typescript files within the `js/` subfolder. See TestEffect.ts for an example. Include (and name) effects in `js/index.ts` for them to be available in Unity.
+Create effects in TypeScript files within the `js/` subfolder. See TestEffect.ts for an example. Include (and name) effects in `js/index.ts` for them to be available in Unity.
 
 ### Using Effects
 Each effect creates a MonoBehaviour script component that you can place in your scenes. These components have parameters exposed that get routed to the signal processor. You can run an effect in several ways:
@@ -35,8 +35,8 @@ Each effect creates a MonoBehaviour script component that you can place in your 
 In order for effects to play, you need to have the SignalProcessing module and the SignalOutput module running. From a PowerShell prompt, simply navigate to the root directory and run `yarn SignalOutput` and `yarn SignalProcessing` (in separate PowerShell windows). To exit those modules, just press the enter key with the window in focus.
 
 ### Output Devices
-#### BuzzDuino
-Run `yarn SignalOutput` and in your effect target the device with `strContains("BuzzDuino")`. SignalOutput will print out what devices it found and what COM port they are on (or BLE address if that's how your BD is connected).
+#### HDK-1
+Run `yarn SignalOutput` and in your effect target the device with `strContains("HDK-1")`. SignalOutput will print out what devices it found and what COM port they are on (or BLE address if that's how your device is connected).
 
 #### Audio
 Target your audio device with `strContains` and the system name of your audio device. SignalOutput will print out a list of devices it finds.
@@ -93,3 +93,28 @@ THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
 OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
  ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+### simply-immutable
+This software contains the following license and notice below:
+
+MIT License
+
+Copyright (c) 2018 Conor Dickinson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

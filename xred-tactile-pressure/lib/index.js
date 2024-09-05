@@ -17,7 +17,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.XredTactilePressure = void 0;
-var TactilePressureDataModel_1 = require("./TactilePressureDataModel");
-Object.defineProperty(exports, "XredTactilePressure", { enumerable: true, get: function () { return TactilePressureDataModel_1.XredTactilePressure; } });
+exports.XredTactilePressureInterface = void 0;
+var TactilePressureInterface_1 = require("./TactilePressureInterface");
+Object.defineProperty(exports, "XredTactilePressureInterface", { enumerable: true, get: function () { return TactilePressureInterface_1.XredTactilePressureInterface; } });
 //# sourceMappingURL=index.js.map

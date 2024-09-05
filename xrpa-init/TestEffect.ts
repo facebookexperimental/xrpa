@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
+import { XrpaDataflowProgram } from "@xrpa/xrpa-orchestrator";
+
 import {
   CustomWave,
   Delay,
+  DoneWhen,
   Multiply,
-  OutputDevice,
+  OutputToDevice,
   Sequence,
-  SignalGraph,
   StackChannels,
   strContains,
   TrapezoidCurve,
 } from "@xrpa/xred-signal-processing";
 
-export function TestEffect(): SignalGraph {
+export const TestEffect = XrpaDataflowProgram("TestEffect", () => {
   // create a sawtooth wave that takes up half the period (which is 10ms)
   const buzzWaveform = CustomWave({
     channelCount: 1,
@@ -68,16 +70,10 @@ export function TestEffect(): SignalGraph {
     ],
   });
 
-  return new SignalGraph({
-    // kill the graph when the gain curve is done
-    done: gainCurve.onDone(),
+  DoneWhen(gainCurve.onDone());
 
-    // output to the BuzzDuino the buzzSignal multiplied by the gain curve
-    outputs: [
-      OutputDevice({
-        deviceName: strContains("BuzzDuino"),
-        source: Multiply(buzzSignal, gainCurve),
-      }),
-    ],
+  OutputToDevice({
+    deviceName: strContains("HDK-1"),
+    source: Multiply(buzzSignal, gainCurve),
   });
-}
+});

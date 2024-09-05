@@ -18,7 +18,9 @@
 import { FileWriter } from "../../shared/FileWriter";
 import { IncludeAggregator } from "../../shared/Helpers";
 import { ModuleDefinition } from "../../shared/ModuleDefinition";
-export declare function genDatasetInitializers(moduleDef: ModuleDefinition, namespace: string, includes: IncludeAggregator): string[];
+import { DataStoreDefinition } from "../../shared/DataStore";
+export declare function genDatasetInitializer(storeDef: DataStoreDefinition, namespace: string, includes: IncludeAggregator): string[];
+export declare function genDatasetDeinitializer(storeDef: DataStoreDefinition): string[];
 export declare function genStandaloneCpp(fileWriter: FileWriter, outdir: string, moduleDef: ModuleDefinition): void;
-export declare function genStandaloneBuck(fileWriter: FileWriter, outdir: string, buckTarget: string, moduleDef: ModuleDefinition, oncall: string): void;
+export declare function genStandaloneBuck(fileWriter: FileWriter, outdir: string, runtimeDir: string, buckTarget: string, moduleDef: ModuleDefinition, oncall: string): void;
 

@@ -15,5 +15,5 @@
  */
 
 
-export * from "./SignalOutputDataModel";
+export * from "./SignalOutputInterface";
 

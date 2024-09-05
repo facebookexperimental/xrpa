@@ -17,7 +17,6 @@
 
 import { DataModelDefinition } from "./DataModel";
 import { ModuleDefinition } from "./ModuleDefinition";
-import { XrpaSyntheticObject } from "./SyntheticObject";
 import { TypeSpec } from "./TargetCodeGen";
 import { CollectionTypeDefinition, FieldTypeSpec, TypeMap } from "./TypeDefinition";
 export type FieldAccessorNameOverride = string | [string, string];
@@ -66,8 +65,10 @@ export declare class InputReconcilerDefinition extends BaseReconcilerDefinition 
     getDataStoreAccessorName(): string;
 }
 export declare class OutputReconcilerDefinition extends BaseReconcilerDefinition {
+    private useGenericReconciledType;
     readonly outboundFields: null;
-    constructor(type: CollectionTypeDefinition, inboundFields: Array<string>, fieldAccessorNameOverrides: FieldAccessorNames, componentProps: ComponentProperties, indexConfigs: Array<IndexConfiguration>);
+    constructor(type: CollectionTypeDefinition, inboundFields: Array<string>, fieldAccessorNameOverrides: FieldAccessorNames, componentProps: ComponentProperties, useGenericReconciledType: boolean, indexConfigs: Array<IndexConfiguration>);
+    shouldGenerateConcreteReconciledType(): boolean;
     getDataStoreAccessorName(): string;
 }
 export declare class DataStoreDefinition {
@@ -76,7 +77,6 @@ export declare class DataStoreDefinition {
     readonly typeMap: TypeMap;
     private inputs;
     private outputs;
-    private syntheticObjects;
     readonly apiname: string;
     readonly datamodel: DataModelDefinition;
     constructor(moduleDef: ModuleDefinition, dataset: string, typeMap: TypeMap, apiname?: string);
@@ -96,11 +96,10 @@ export declare class DataStoreDefinition {
         indexes?: Array<IndexConfiguration>;
         fieldAccessorNameOverrides?: FieldAccessorNames;
         componentProps?: ComponentProperties;
+        useGenericReconciledType?: boolean;
     }): OutputReconcilerDefinition;
     getOutputReconcilers(): ReadonlyArray<OutputReconcilerDefinition>;
     getAllReconcilers(): ReadonlyArray<InputReconcilerDefinition | OutputReconcilerDefinition>;
-    addSyntheticObject(name: string, objectDef: XrpaSyntheticObject): void;
-    getSyntheticObjects(): Record<string, XrpaSyntheticObject>;
 }
 export {};
 

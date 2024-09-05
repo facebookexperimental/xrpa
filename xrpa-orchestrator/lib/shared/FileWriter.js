@@ -34,20 +34,23 @@ async function writeFileIfUnchanged(filename, filedata) {
 function normalizeManifestPath(filename) {
     return filename.split("\\").join("/");
 }
+function linesToBuffer(lines) {
+    const linesOut = (0, Helpers_1.removeSuperfluousEmptyLines)(lines);
+    if (linesOut[linesOut.length - 1] !== "") {
+        linesOut.push("");
+    }
+    return Buffer.from(linesOut.join("\n"));
+}
 class FileWriter {
     constructor() {
         this.manifest = {};
         this.foldersToCopy = [];
     }
-    writeFile(filename, lines) {
-        const linesOut = (0, Helpers_1.removeSuperfluousEmptyLines)(lines);
-        if (linesOut[linesOut.length - 1] !== "") {
-            linesOut.push("");
-        }
-        this.manifest[normalizeManifestPath(filename)] = Buffer.from(linesOut.join("\n"));
+    writeFile(filename, contents) {
+        this.manifest[normalizeManifestPath(filename)] = (0, Helpers_1.chainAsyncThunk)(contents, linesToBuffer);
     }
     writeFileBase64(filename, data) {
-        this.manifest[normalizeManifestPath(filename)] = Buffer.from(data, "base64");
+        this.manifest[normalizeManifestPath(filename)] = (0, Helpers_1.chainAsyncThunk)(data, res => Buffer.from(res, "base64"));
     }
     merge(fileWriter) {
         for (const filename in fileWriter.manifest) {
@@ -75,7 +78,9 @@ class FileWriter {
         const baseDir = path_1.default.dirname(manifestFilename);
         const newManifest = {};
         for (const fullPath in this.manifest) {
-            newManifest[normalizeManifestPath(path_1.default.relative(baseDir, fullPath))] = this.manifest[fullPath];
+            const newKey = normalizeManifestPath(path_1.default.relative(baseDir, fullPath));
+            const entry = this.manifest[fullPath];
+            newManifest[newKey] = await (0, Helpers_1.resolveAsyncThunk)(entry);
         }
         try {
             const oldManifest = await fs_extra_1.default.readJson(manifestFilename);

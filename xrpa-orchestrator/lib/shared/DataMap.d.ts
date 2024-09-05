@@ -17,11 +17,10 @@
 
 import { CoordinateSystemDef } from "./CoordinateTransformer";
 import { ArrayTypeSpec, TypeMap } from "./TypeDefinition";
-export declare class DataMapDefinition {
-    readonly coordinateSystem: CoordinateSystemDef;
-    readonly typeMap: TypeMap;
-    readonly typeBuckDeps: string[];
-    readonly localArrayType: ArrayTypeSpec | undefined;
-    constructor(coordinateSystem: CoordinateSystemDef, typeMap: TypeMap, typeBuckDeps: string[], localArrayType: ArrayTypeSpec | undefined);
+export interface DataMapDefinition {
+    coordinateSystem: CoordinateSystemDef;
+    typeMap: TypeMap;
+    typeBuckDeps: string[];
+    localArrayType: ArrayTypeSpec | undefined;
 }
 
