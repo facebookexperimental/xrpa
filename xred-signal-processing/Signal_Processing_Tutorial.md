@@ -27,6 +27,15 @@ git add .
 git commit -m "Setup xrpa config and install dependencies"
 ```
 
+## Signal Processing Runtime
+Effect playback depends on the xred-signal-output and xred-signal-processing modules. Currently you need to start these two modules manually and leave them running in the background. In the future these modules will be embedded as dlls into your Unity project and you won't need to do this, but for now they need to be run as standalone processes.
+
+From a PowerShell window (**not administrator mode**), simply navigate to the root directory of your project and run `yarn SignalOutput`. This window will display a message each time there is a capacitive touch event from the connected HDK-1, so this is a good place to verify that your HDK-1 is connected and working.
+
+In a separate PowerShell window, navigate to the root directory of your project and run `yarn SignalProcessing`. This window will display log messages about the running effects, so it can be helpful to check in here if an effect is not working.
+
+To exit those modules, just press the enter key with the window in focus. Rerun them at any time if you accidentally close one.
+
 ## Unity binding
 
 The files you downloaded in the previous step already tell Xrpa about your project, but let's take a look at what is going on. Open `js/index.ts` in VSCode or any other code editor.
@@ -182,9 +191,6 @@ The component class itself exposes control functions:
   * starts a new effect that is unmanaged by the component
   * if the effect is self-terminating you may call this function as a fire-and-forget, otherwise you are responsible for managing the return value and calling `Terminate()` on it when done
   * the current effect parameters set on the component are copied to the new effect, but not synced from future changes
-
-## Runtime execution
-In order for effects to play, you need to have the SignalProcessing module and the SignalOutput module running. From a PowerShell prompt, simply navigate to the root directory and run `yarn SignalOutput` and `yarn SignalProcessing` (in separate PowerShell windows). To exit those modules, just press the enter key with the window in focus. In the future these modules will be embedded as dlls within the Unity project, but for now they need to be run as standalone processes.
 
 ## Effect with parameters and multiple outputs
 
