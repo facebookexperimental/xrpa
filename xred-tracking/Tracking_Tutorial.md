@@ -1,4 +1,4 @@
-# Signal Processing Tutorial
+# Tracking Tutorial
 
 In this tutorial, we will set up a Unity project and integrate tracking for an STO tracker.
 
