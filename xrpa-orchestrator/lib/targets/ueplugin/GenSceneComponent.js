@@ -33,14 +33,13 @@ function genComponentInit(ctx, includes, reconcilerDef) {
         includes,
         idParts: (0, Helpers_1.filterToNumberArray)(reconcilerDef.componentProps.id, 2),
     });
-    const bitMask = reconcilerDef.getOutboundChangeBits();
     return [
         `if (dsIsInitialized_) {`,
         `  return;`,
         `}`,
         `dsIsInitialized_ = true;`,
         `id_ = ${id};`,
-        `changeBits_ = ${bitMask};`,
+        `createWritten_ = false;`,
         ``,
         ...(0, SceneComponentShared_1.genFieldInitializers)(ctx, includes, reconcilerDef),
         ``,
@@ -81,13 +80,6 @@ function genDataStoreObjectAccessors(ctx, classSpec) {
             }],
         body: [
             `collection_ = collection;`,
-        ],
-    });
-    classSpec.methods.push({
-        name: "getCollectionId",
-        returnType: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
-        body: [
-            `return collection_ == nullptr ? -1 : collection_->getId();`,
         ],
     });
     classSpec.members.push({
@@ -212,10 +204,21 @@ function genSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderD
         separateImplementation: true,
     });
     classSpec.methods.push({
+        name: "prepDSFullUpdate",
+        returnType: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
+        body: includes => (0, GenWriteReconcilerDataStore_1.genPrepFullUpdateFunctionBody)({
+            ctx,
+            includes,
+            reconcilerDef,
+            canCreate: true,
+        }),
+        separateImplementation: true,
+    });
+    classSpec.methods.push({
         name: "processDSUpdate",
         parameters: [{
                 name: "value",
-                type: `const ${readAccessorType}&`,
+                type: readAccessorType,
             }, {
                 name: "fieldsChanged",
                 type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
@@ -316,6 +319,18 @@ function genSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderD
         name: "changeBits",
         type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
         initialValue: "0",
+        visibility: "protected",
+    });
+    classSpec.members.push({
+        name: "changeByteCount",
+        type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
+        initialValue: "0",
+        visibility: "protected",
+    });
+    classSpec.members.push({
+        name: "createWritten",
+        type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.bool.typename,
+        initialValue: "false",
         visibility: "protected",
     });
     classSpec.members.push({

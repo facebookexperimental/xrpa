@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UnrealProject = exports.PluginDeps = exports.UnrealArrayType = exports.UnrealCoordinateSystem = void 0;
+exports.UnrealProject = exports.PluginDeps = exports.IfUnrealEngine = exports.UnrealArrayType = exports.UnrealCoordinateSystem = void 0;
 const path_1 = __importDefault(require("path"));
 const Coordinates_1 = require("./Coordinates");
 const InterfaceTypes_1 = require("./InterfaceTypes");
@@ -63,6 +63,10 @@ const FVector = {
         Y: "y",
         Z: "z",
     },
+};
+exports.IfUnrealEngine = {
+    propertyToCheck: GameEngine_1.COMPONENT_BASE_CLASS,
+    expectedValue: "SceneComponent",
 };
 function PluginDeps(ctx, pluginDeps) {
     ctx.properties.pluginDeps = pluginDeps;

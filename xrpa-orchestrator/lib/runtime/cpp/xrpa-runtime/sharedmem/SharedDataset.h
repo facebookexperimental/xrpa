@@ -39,7 +39,6 @@ class SharedDataset : public DatasetInterface {
   virtual bool checkSchemaHash(const DSHashValue& schemaHash) const override;
   virtual uint64_t getBaseTimestamp() const override;
   virtual int32_t getLastChangelogID() const override;
-  virtual int32_t getLastMessageID() const override;
 
   virtual bool acquire(
       std::chrono::milliseconds timeout,

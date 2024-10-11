@@ -33,13 +33,18 @@ function genDataStoreSubsystem(fileWriter, outSrcDir, storeDef) {
     const className = getDataStoreSubsystemName(storeDef);
     const dataStoreName = (0, CsharpCodeGenImpl_1.getDataStoreName)(storeDef.apiname);
     const lines = (0, UnityHelpers_1.genUnitySingleton)(className, [
-        `DataStore = new ${dataStoreName}.${dataStoreName}(${(0, GenTransportSubsystem_1.getTransportSubsystemName)(storeDef)}.Instance.${(0, GenTransportSubsystem_1.getDatasetVarName)(storeDef)});`,
+        `var transportSubsystem = ${(0, GenTransportSubsystem_1.getTransportSubsystemName)(storeDef)}.Instance;`,
+        `DataStore = new ${dataStoreName}.${dataStoreName}(transportSubsystem.${(0, GenTransportSubsystem_1.getInboundDatasetVarName)(storeDef)}, transportSubsystem.${(0, GenTransportSubsystem_1.getOutboundDatasetVarName)(storeDef)});`,
     ], [
         `DataStore?.Shutdown();`,
         `DataStore = null;`,
     ], [
+        `void Update() {`,
+        `  DataStore?.TickInbound();`,
+        `}`,
+        ``,
         `void LateUpdate() {`,
-        `  DataStore?.Tick();`,
+        `  DataStore?.TickOutbound();`,
         `}`,
         ``,
         `public void Shutdown() {`,

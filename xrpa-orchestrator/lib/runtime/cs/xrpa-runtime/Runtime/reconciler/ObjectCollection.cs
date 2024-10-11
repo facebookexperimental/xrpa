@@ -75,6 +75,8 @@ namespace Xrpa
             return this.GetEnumerator();
         }
 
+        public int Count => _objects.Count;
+
         // these functions are for updating indexes in derived classes
         protected virtual void IndexNotifyCreate(ReconciledType obj) { }
         protected virtual void IndexNotifyUpdate(ReconciledType obj, ulong fieldsChanged) { }
@@ -175,8 +177,23 @@ namespace Xrpa
             }
             else if (_isLocalOwned)
             {
-                accessor.DeleteObject(id);
+                var changeEvent = accessor.WriteChangeEvent<DSCollectionChangeEventAccessor>((int)DSChangeType.DeleteObject);
+                changeEvent.SetCollectionId(GetId());
+                changeEvent.SetObjectId(id);
             }
+        }
+
+        public override void PrepFullUpdate(List<FullUpdateEntry> entries)
+        {
+            foreach (var obj in _objects)
+            {
+                ulong timestamp = obj.Value.PrepDSFullUpdate();
+                if (timestamp > 0)
+                {
+                    entries.Add(new FullUpdateEntry(obj.Key, GetId(), timestamp));
+                }
+            }
+
         }
 
         public override void ProcessCreate(DSIdentifier id, MemoryAccessor memAccessor)
@@ -317,6 +334,14 @@ namespace Xrpa
             }
         }
 
+        public override void ProcessShutdown()
+        {
+            if (_isLocalOwned)
+            {
+                return;
+            }
+            (new List<DSIdentifier>(_objects.Keys)).ForEach(id => ProcessDeleteInternal(id, _objects[id]));
+        }
     }
 
 }

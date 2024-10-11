@@ -68,7 +68,8 @@ function genTransportSubsystem(fileWriter, outSrcDir, storeDef, pluginName) {
         `  virtual void Initialize(FSubsystemCollectionBase& Collection) override;`,
         `  virtual void Deinitialize() override;`,
         ``,
-        ...(0, Helpers_1.indent)(1, (0, GenModuleClass_1.genDatasetDeclaration)(storeDef, namespace, headerIncludes, true)),
+        ...(0, Helpers_1.indent)(1, (0, GenModuleClass_1.genInboundDatasetDeclaration)(storeDef, namespace, headerIncludes, true)),
+        ...(0, Helpers_1.indent)(1, (0, GenModuleClass_1.genOutboundDatasetDeclaration)(storeDef, namespace, headerIncludes, true)),
         `};`,
         ``,
     ];

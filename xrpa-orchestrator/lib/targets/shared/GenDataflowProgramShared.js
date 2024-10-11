@@ -76,6 +76,7 @@ function genParameterAccessors(ctx, codegen, classSpec, programDef) {
             convertToLocal: false,
             description: fields[paramName].description,
             visibility: "public",
+            isConst: true,
         });
         classSpec.methods.push({
             name: `set${(0, Helpers_1.upperFirst)(paramName)}`,

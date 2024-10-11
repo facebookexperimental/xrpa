@@ -87,8 +87,8 @@ function genDataStoreClass(ctx, includes) {
     const lines = [
         `class ${className} : public ${baseClassName} {`,
         ` public:`,
-        `  explicit ${className}(std::weak_ptr<${CppDatasetLibraryTypes_1.DatasetInterface.getLocalType(ctx.namespace, includes)}> dataset)`,
-        `      : ${baseClassName}(dataset, ${hashName}, ${messagePoolSize}) {`,
+        `  ${className}(std::weak_ptr<${CppDatasetLibraryTypes_1.DatasetInterface.getLocalType(ctx.namespace, includes)}> inboundDataset, std::weak_ptr<${CppDatasetLibraryTypes_1.DatasetInterface.getLocalType(ctx.namespace, includes)}> outboundDataset)`,
+        `      : ${baseClassName}(inboundDataset, outboundDataset, ${hashName}, ${messagePoolSize}) {`,
         ...(0, Helpers_1.indent)(2, genReconcilerConstructorContents(ctx)),
         `  }`,
         ``,

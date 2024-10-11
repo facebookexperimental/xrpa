@@ -46,7 +46,7 @@ namespace Xrpa
 
             if (didCreate)
             {
-                bool didLock = Acquire(5000, accessor => accessor.InitContents(_datasetConfig));
+                bool didLock = Acquire(5000, accessor => accessor.InitContents(totalBytes, _datasetConfig));
                 if (!didLock)
                 {
                     return false;
@@ -104,19 +104,6 @@ namespace Xrpa
             }
             DSHeader header = new(memAccessor);
             int ret = header.LastChangelogID;
-            _memoryBlock.ReleaseUnsafeAccess();
-            return ret;
-        }
-
-        public override int GetLastMessageID()
-        {
-            var memAccessor = _memoryBlock?.AcquireUnsafeAccess();
-            if (memAccessor == null)
-            {
-                return 0;
-            }
-            DSHeader header = new(memAccessor);
-            int ret = header.LastMessageID;
             _memoryBlock.ReleaseUnsafeAccess();
             return ret;
         }

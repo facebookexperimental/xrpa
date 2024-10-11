@@ -24,7 +24,6 @@ namespace Xrpa
         public abstract bool CheckSchemaHash(DSHashValue schemaHash);
         public abstract ulong GetBaseTimestamp();
         public abstract int GetLastChangelogID();
-        public abstract int GetLastMessageID();
         public abstract bool Acquire(int timeoutMS, System.Action<DatasetAccessor> func);
     }
 

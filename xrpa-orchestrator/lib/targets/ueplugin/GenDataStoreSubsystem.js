@@ -46,7 +46,8 @@ function genDataStoreSubsystem(fileWriter, outSrcDir, storeDef, pluginName) {
         `void U${name}::Initialize(FSubsystemCollectionBase& Collection) {`,
         `  Super::Initialize(Collection);`,
         ``,
-        `  DataStore = std::make_shared<${dataStoreName}::${dataStoreName}>(GEngine->GetEngineSubsystem<U${(0, GenTransportSubsystem_1.getTransportSubsystemName)(storeDef)}>()->${(0, GenModuleClass_1.getDatasetVarName)(storeDef)});`,
+        `  auto transportSubsystem = GEngine->GetEngineSubsystem<U${(0, GenTransportSubsystem_1.getTransportSubsystemName)(storeDef)}>();`,
+        `  DataStore = std::make_shared<${dataStoreName}::${dataStoreName}>(transportSubsystem->${(0, GenModuleClass_1.getInboundDatasetVarName)(storeDef)}, transportSubsystem->${(0, GenModuleClass_1.getOutboundDatasetVarName)(storeDef)});`,
         `}`,
         ``,
         `void U${name}::Deinitialize() {`,
@@ -58,7 +59,9 @@ function genDataStoreSubsystem(fileWriter, outSrcDir, storeDef, pluginName) {
         `}`,
         ``,
         `void U${name}::Tick(float DeltaTime) {`,
-        `  DataStore->tick();`,
+        // TODO figure out of there is a way to do early and late ticking in UE like in Unity
+        `  DataStore->tickInbound();`,
+        `  DataStore->tickOutbound();`,
         `}`,
         ``,
     ];

@@ -38,7 +38,6 @@ function getOutboundCollectionClassName(ctx, typeDef) {
 }
 exports.getOutboundCollectionClassName = getOutboundCollectionClassName;
 function genFieldProperties(classSpec, params) {
-    let bitMask = 0;
     const typeFields = params.reconcilerDef.type.getStateFields();
     for (const fieldName in typeFields) {
         if (params.directionality === "inbound" && !params.reconcilerDef.isInboundField(fieldName)) {
@@ -47,7 +46,6 @@ function genFieldProperties(classSpec, params) {
         if (params.directionality === "outbound" && !params.reconcilerDef.isOutboundField(fieldName)) {
             continue;
         }
-        bitMask |= params.reconcilerDef.type.getFieldBitMask(fieldName);
         params.reconcilerDef.type.declareLocalFieldClassMember(classSpec, fieldName, params.fieldToMemberVar(fieldName), true, [], params.visibility);
     }
     let hasChangeBits = false;
@@ -60,15 +58,33 @@ function genFieldProperties(classSpec, params) {
         classSpec.members.push({
             name: "changeBits",
             type: params.codegen.PRIMITIVE_INTRINSICS.uint64.typename,
-            initialValue: new TypeValue_1.CodeLiteralValue(params.codegen, `${bitMask}`),
+            initialValue: new TypeValue_1.CodeLiteralValue(params.codegen, "0"),
+            visibility: params.visibility,
+        });
+        classSpec.members.push({
+            name: "changeByteCount",
+            type: params.codegen.PRIMITIVE_INTRINSICS.int32.typename,
+            initialValue: new TypeValue_1.CodeLiteralValue(params.codegen, "0"),
+            visibility: params.visibility,
+        });
+        classSpec.members.push({
+            name: "createWritten",
+            type: params.codegen.PRIMITIVE_INTRINSICS.bool.typename,
+            initialValue: new TypeValue_1.CodeLiteralValue(params.codegen, "false"),
             visibility: params.visibility,
         });
         hasChangeBits = true;
     }
-    else if (params.canChange && bitMask !== 0) {
+    else if (params.canChange && params.reconcilerDef.getOutboundChangeBits() !== 0) {
         classSpec.members.push({
             name: "changeBits",
             type: params.codegen.PRIMITIVE_INTRINSICS.uint64.typename,
+            initialValue: new TypeValue_1.CodeLiteralValue(params.codegen, "0"),
+            visibility: params.visibility,
+        });
+        classSpec.members.push({
+            name: "changeByteCount",
+            type: params.codegen.PRIMITIVE_INTRINSICS.int32.typename,
             initialValue: new TypeValue_1.CodeLiteralValue(params.codegen, "0"),
             visibility: params.visibility,
         });

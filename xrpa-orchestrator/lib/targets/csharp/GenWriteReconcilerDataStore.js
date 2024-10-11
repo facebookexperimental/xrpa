@@ -43,7 +43,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genOutboundReconciledTypes = exports.defaultFieldToMemberVar = exports.genWriteFunctionBody = exports.genWriteFieldAccessors = exports.genClearSetClearFunctionBody = exports.genClearSetSetterFunctionBody = exports.genFieldSetDirty = void 0;
+exports.genOutboundReconciledTypes = exports.defaultFieldToMemberVar = exports.genPrepFullUpdateFunctionBody = exports.genWriteFunctionBody = exports.genWriteFieldAccessors = exports.genClearSetClearFunctionBody = exports.genClearSetSetterFunctionBody = exports.genFieldSetDirty = void 0;
 const assert_1 = __importDefault(require("assert"));
 const ClassSpec_1 = require("../../shared/ClassSpec");
 const Helpers_1 = require("../../shared/Helpers");
@@ -66,9 +66,11 @@ function genFieldSetDirty(params) {
         ];
     }
     else {
+        const fieldSize = params.typeDef.getFieldSize(params.ctx.namespace, params.includes, params.fieldName);
         return [
             `if (_collection != null && (_changeBits & ${changeBit}) == 0) {`,
             `  _changeBits |= ${changeBit};`,
+            `  _changeByteCount += ${fieldSize};`,
             `  _collection.SetDirty(GetXrpaId(), ${changeBit});`,
             `}`,
         ];
@@ -173,6 +175,7 @@ function genWriteFieldAccessors(classSpec, params) {
             fieldToMemberVar: params.fieldToMemberVar,
             convertToLocal: false,
             description: undefined,
+            isConst: true,
         });
         if (!params.gettersOnly) {
             genWriteFieldSetters(classSpec, {
@@ -191,18 +194,12 @@ function genWriteFunctionBody(params) {
         (0, assert_1.default)(!params.canCreate);
     }
     const fieldUpdateLines = [];
-    const initializerLines = [];
     const writeAccessor = params.reconcilerDef.type.getWriteAccessorType(params.ctx.namespace, params.includes);
     const accessor = params.proxyObj ?? "objAccessor";
     const typeFields = params.reconcilerDef.type.getStateFields();
     for (const fieldName in typeFields) {
-        const fieldSpec = typeFields[fieldName];
         const pascalFieldName = (0, Helpers_1.upperFirst)(fieldName);
-        if (params.reconcilerDef.isInboundField(fieldName)) {
-            const localDefault = fieldSpec.type.getLocalDefaultValue(params.ctx.namespace, params.includes);
-            initializerLines.push(`${accessor}.Set${pascalFieldName}(${localDefault});`);
-        }
-        else {
+        if (!params.reconcilerDef.isInboundField(fieldName)) {
             const fieldVar = params.fieldToMemberVar(fieldName);
             fieldUpdateLines.push(`if ((_changeBits & ${params.reconcilerDef.type.getChangedBit(params.ctx.namespace, params.includes, fieldName)}) != 0) {`, `  ${accessor}.Set${pascalFieldName}(${fieldVar});`, `}`);
         }
@@ -224,28 +221,49 @@ function genWriteFunctionBody(params) {
         return [
             ...(params.canCreate ? [
                 `${writeAccessor} objAccessor = new();`,
-                `if (_createTimestamp != 0) {`,
-                `  objAccessor = accessor.CreateObject<${writeAccessor}>(GetXrpaId(), _createTimestamp);`,
-                `  _createTimestamp = 0;`,
-                ...(0, Helpers_1.indent)(1, initializerLines),
+                `if (!_createWritten) {`,
+                `  _changeBits = ${params.reconcilerDef.getOutboundChangeBits()};`,
+                `  _changeByteCount = ${params.reconcilerDef.getOutboundChangeByteCount()};`,
+                `  objAccessor = ${writeAccessor}.Create(accessor, GetXrpaId(), _changeByteCount, _createTimestamp);`,
+                `  _createWritten = true;`,
                 `} else if (_changeBits != 0) {`,
-                `  objAccessor = accessor.UpdateObject<${writeAccessor}>(GetXrpaId(), _changeBits);`,
+                `  objAccessor = ${writeAccessor}.Update(accessor, GetXrpaId(), _changeBits, _changeByteCount);`,
                 `}`,
             ] : [
                 `if (_changeBits == 0) {`,
                 `  return;`,
                 `}`,
-                `var objAccessor = accessor.UpdateObject<${writeAccessor}>(GetXrpaId(), _changeBits);`,
+                `var objAccessor = ${writeAccessor}.Update(accessor, GetXrpaId(), _changeBits, _changeByteCount);`,
             ]),
             `if (objAccessor.IsNull()) {`,
             `  return;`,
             `}`,
             ...fieldUpdateLines,
             `_changeBits = 0;`,
+            `_changeByteCount = 0;`,
         ];
     }
 }
 exports.genWriteFunctionBody = genWriteFunctionBody;
+function genPrepFullUpdateFunctionBody(params) {
+    const outboundChangeBits = params.reconcilerDef.getOutboundChangeBits();
+    if (!outboundChangeBits && !params.canCreate) {
+        return ["return 0;"];
+    }
+    return [
+        ...(params.canCreate ? [
+            `_createWritten = false;`,
+        ] : []),
+        `_changeBits = ${outboundChangeBits};`,
+        `_changeByteCount = ${params.reconcilerDef.getOutboundChangeByteCount()};`,
+        ...(params.canCreate ? [
+            `return _createTimestamp;`,
+        ] : [
+            `return 1;`,
+        ]),
+    ];
+}
+exports.genPrepFullUpdateFunctionBody = genPrepFullUpdateFunctionBody;
 function defaultFieldToMemberVar(fieldName) {
     return (0, CsharpCodeGenImpl_1.privateMember)(`local${(0, Helpers_1.upperFirst)(fieldName)}`);
 }
@@ -298,6 +316,16 @@ function genOutboundReconciledTypes(ctx, includesIn) {
                 fieldToMemberVar: defaultFieldToMemberVar,
                 canCreate: true,
                 proxyObj: null,
+            }),
+        });
+        classSpec.methods.push({
+            name: "PrepDSFullUpdate",
+            returnType: CsharpCodeGenImpl.PRIMITIVE_INTRINSICS.uint64.typename,
+            body: includes => genPrepFullUpdateFunctionBody({
+                ctx,
+                includes,
+                reconcilerDef,
+                canCreate: true,
             }),
         });
         if (reconcilerDef.shouldGenerateConcreteReconciledType()) {

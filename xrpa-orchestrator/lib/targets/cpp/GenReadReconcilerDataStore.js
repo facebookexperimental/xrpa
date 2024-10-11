@@ -76,6 +76,7 @@ function genInboundReconciledTypes(ctx, includesIn) {
         if (typeDef.getLocalHeaderFile() !== headerFile) {
             continue;
         }
+        const readAccessor = typeDef.getReadAccessorType(ctx.namespace, includesIn);
         const classSpec = new ClassSpec_1.ClassSpec({
             name: typeDef.getLocalType(ctx.namespace, null),
             superClass: typeDef.interfaceType ? typeDef.interfaceType.getLocalType(ctx.namespace, includesIn) : CppDatasetLibraryTypes_1.DataStoreObject.getLocalType(ctx.namespace, includesIn),
@@ -117,7 +118,7 @@ function genInboundReconciledTypes(ctx, includesIn) {
                 name: "processDSUpdate",
                 parameters: [{
                         name: "value",
-                        type: `const ${typeDef.getReadAccessorType(ctx.namespace, classSpec.includes)}&`,
+                        type: readAccessor,
                     }, {
                         name: "fieldsChanged",
                         type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
@@ -134,7 +135,7 @@ function genInboundReconciledTypes(ctx, includesIn) {
                         type: ctx.moduleDef.DSIdentifier,
                     }, {
                         name: "obj",
-                        type: `const ${typeDef.getReadAccessorType(ctx.namespace, classSpec.includes)}&`,
+                        type: readAccessor,
                     }, {
                         name: "collection",
                         type: CppDatasetLibraryTypes_1.CollectionInterface.getLocalType(ctx.namespace, classSpec.includes) + "*",
@@ -173,7 +174,7 @@ function genInboundReconciledTypes(ctx, includesIn) {
                 name: "processDSUpdate",
                 parameters: [{
                         name: "value",
-                        type: `const ${typeDef.getReadAccessorType(ctx.namespace, classSpec.includes)}&`,
+                        type: readAccessor,
                     }, {
                         name: "fieldsChanged",
                         type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
@@ -217,6 +218,16 @@ function genInboundReconciledTypes(ctx, includesIn) {
                 fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar,
                 canCreate: false,
                 proxyObj: null,
+            }),
+        });
+        classSpec.methods.push({
+            name: "prepDSFullUpdate",
+            returnType: CppCodeGenImpl.PRIMITIVE_INTRINSICS.uint64.typename,
+            body: includes => (0, GenWriteReconcilerDataStore_1.genPrepFullUpdateFunctionBody)({
+                ctx,
+                includes,
+                reconcilerDef,
+                canCreate: false,
             }),
         });
         ret.push(classSpec);

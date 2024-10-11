@@ -57,20 +57,28 @@ function genStandaloneHeader(fileWriter, outdir) {
     fileWriter.writeFile(path_1.default.join(outdir, "Standalone.h"), lines);
 }
 function genDatasetInitializer(storeDef, namespace, includes) {
-    const datasetVar = (0, GenModuleClass_1.getDatasetVarName)(storeDef);
     includes.addFile({ filename: (0, CppCodeGenImpl_1.getTypesHeaderName)(storeDef.apiname) });
+    const inboundDatasetVar = (0, GenModuleClass_1.getInboundDatasetVarName)(storeDef);
+    const outboundDatasetVar = (0, GenModuleClass_1.getOutboundDatasetVarName)(storeDef);
+    const inboundMemMarker = storeDef.isModuleProgramInterface ? "Input" : "Output";
+    const outboundMemMarker = storeDef.isModuleProgramInterface ? "Output" : "Input";
     return [
         `{`,
-        `  auto local${datasetVar} = std::make_shared<${CppDatasetLibraryTypes_1.SharedDataset.getLocalType(namespace, includes)}>("${storeDef.dataset}", ${(0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}::GenDatasetConfig());`,
-        `  local${datasetVar}->initialize();`,
-        `  ${datasetVar} = local${datasetVar};`,
+        `  auto local${inboundDatasetVar} = std::make_shared<${CppDatasetLibraryTypes_1.SharedDataset.getLocalType(namespace, includes)}>("${storeDef.dataset}${inboundMemMarker}", ${(0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}::GenDatasetConfig());`,
+        `  local${inboundDatasetVar}->initialize();`,
+        `  ${inboundDatasetVar} = local${inboundDatasetVar};`,
+        ``,
+        `  auto local${outboundDatasetVar} = std::make_shared<${CppDatasetLibraryTypes_1.SharedDataset.getLocalType(namespace, includes)}>("${storeDef.dataset}${outboundMemMarker}", ${(0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}::GenDatasetConfig());`,
+        `  local${outboundDatasetVar}->initialize();`,
+        `  ${outboundDatasetVar} = local${outboundDatasetVar};`,
         `}`,
     ];
 }
 exports.genDatasetInitializer = genDatasetInitializer;
 function genDatasetDeinitializer(storeDef) {
     return [
-        `${(0, GenModuleClass_1.getDatasetVarName)(storeDef)}.reset();`,
+        `${(0, GenModuleClass_1.getOutboundDatasetVarName)(storeDef)}.reset();`,
+        `${(0, GenModuleClass_1.getInboundDatasetVarName)(storeDef)}.reset();`,
     ];
 }
 exports.genDatasetDeinitializer = genDatasetDeinitializer;
@@ -102,7 +110,11 @@ function genStandaloneWrapper(fileWriter, outdir, moduleDef) {
     if (!(0, Helpers_1.objectIsEmpty)(moduleDef.getSettings().getAllFields())) {
         includes.addFile({ filename: "<CLI/CLI.hpp>" });
     }
-    const datasetVars = moduleDef.getDataStores().map(storeDef => (0, GenModuleClass_1.getDatasetVarName)(storeDef));
+    const datasetVars = [];
+    for (const storeDef of moduleDef.getDataStores()) {
+        datasetVars.push((0, GenModuleClass_1.getInboundDatasetVarName)(storeDef));
+        datasetVars.push((0, GenModuleClass_1.getOutboundDatasetVarName)(storeDef));
+    }
     const lines = [
         `void EntryPoint(${moduleClassName}* moduleData);`,
         ``,

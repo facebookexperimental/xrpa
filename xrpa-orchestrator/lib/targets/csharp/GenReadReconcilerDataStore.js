@@ -215,6 +215,16 @@ function genInboundReconciledTypes(ctx, includesIn) {
             }),
             isVirtual: true,
         });
+        classSpec.methods.push({
+            name: "PrepDSFullUpdate",
+            returnType: CsharpCodeGenImpl.PRIMITIVE_INTRINSICS.uint64.typename,
+            body: includes => (0, GenWriteReconcilerDataStore_1.genPrepFullUpdateFunctionBody)({
+                ctx,
+                includes,
+                reconcilerDef,
+                canCreate: false,
+            }),
+        });
         ret.push(classSpec);
     }
     return ret;

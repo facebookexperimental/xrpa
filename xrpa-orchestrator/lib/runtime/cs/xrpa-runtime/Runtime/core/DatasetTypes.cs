@@ -34,8 +34,22 @@ namespace Xrpa
             return _memAccessor == null || _memAccessor.IsNull();
         }
 
-        public abstract int GetDSType();
-        public abstract int GetByteCount();
+        protected int _curReadPos = 0;
+        protected int _curWritePos = 0;
+
+        protected int AdvanceReadPos(int numBytes)
+        {
+            var pos = _curReadPos;
+            _curReadPos += numBytes;
+            return pos;
+        }
+
+        protected int AdvanceWritePos(int numBytes)
+        {
+            var pos = _curWritePos;
+            _curWritePos += numBytes;
+            return pos;
+        }
     }
 
     public struct DSHashValue
@@ -110,11 +124,13 @@ namespace Xrpa
 
     public class DSHeader
     {
-        public static readonly int DS_SIZE = 72;
+        public static readonly int DS_SIZE = 52;
+        private MemoryAccessor _memSource;
         private MemoryAccessor _memAccessor;
 
         public DSHeader(MemoryAccessor source)
         {
+            _memSource = source;
             _memAccessor = source.Slice(0, DS_SIZE);
         }
 
@@ -169,8 +185,9 @@ namespace Xrpa
             }
         }
 
-        // memory offsets to the various region data structures
-        public int ObjectHeadersRegion
+        // this is the monotonically increasing ID value for the last entry written to the changelog;
+        // readers can check this without locking the mutex to see if there have been changes
+        public int LastChangelogID
         {
             get
             {
@@ -182,68 +199,14 @@ namespace Xrpa
             }
         }
 
-        public int MemoryPoolRegion
+        public PlacedRingBuffer GetChangelog(int numBytes = 0)
         {
-            get
+            var changelog = new PlacedRingBuffer(_memSource, DSHeader.DS_SIZE);
+            if (numBytes > 0)
             {
-                return _memAccessor.ReadInt(52);
+                changelog.Init(numBytes);
             }
-            set
-            {
-                _memAccessor.WriteInt(value, 52);
-            }
-        }
-
-        public int ChangelogRegion
-        {
-            get
-            {
-                return _memAccessor.ReadInt(56);
-            }
-            set
-            {
-                _memAccessor.WriteInt(value, 56);
-            }
-        }
-
-        public int MessageQueueRegion
-        {
-            get
-            {
-                return _memAccessor.ReadInt(60);
-            }
-            set
-            {
-                _memAccessor.WriteInt(value, 60);
-            }
-        }
-
-        // this is the monotonically increasing ID value for the last entry written to the changelog;
-        // readers can check this without locking the mutex to see if there have been changes
-        public int LastChangelogID
-        {
-            get
-            {
-                return _memAccessor.ReadInt(64);
-            }
-            set
-            {
-                _memAccessor.WriteInt(value, 64);
-            }
-        }
-
-        // this is the monotonically increasing ID value for the last entry written to the message queue;
-        // readers can check this without locking the mutex to see if there have been changes
-        public int LastMessageID
-        {
-            get
-            {
-                return _memAccessor.ReadInt(68);
-            }
-            set
-            {
-                _memAccessor.WriteInt(value, 68);
-            }
+            return changelog;
         }
     }
 
@@ -339,55 +302,9 @@ namespace Xrpa
         }
     }
 
-    public struct DSObjectHeader
-    {
-        public static readonly int DS_SIZE = 32;
-
-        public DSIdentifier ID;
-        public int Type;
-        public int PoolOffset;
-        public int CreateTimestamp;
-
-        public static int Compare(ref DSObjectHeader a, ref DSObjectHeader b)
-        {
-            return a.ID.Compare(b.ID);
-        }
-
-        public static int Compare(ref DSObjectHeader a, ref DSIdentifier id)
-        {
-            return a.ID.Compare(id);
-        }
-
-        public static DSObjectHeader ReadValue(MemoryAccessor memAccessor, int offset)
-        {
-            return new DSObjectHeader()
-            {
-                ID = DSIdentifier.ReadValue(memAccessor, offset),
-                Type = memAccessor.ReadInt(offset + 16),
-                PoolOffset = memAccessor.ReadInt(offset + 20),
-                CreateTimestamp = memAccessor.ReadInt(offset + 24)
-            };
-        }
-
-        public static void WriteValue(DSObjectHeader value, MemoryAccessor memAccessor, int offset)
-        {
-            DSIdentifier.WriteValue(value.ID, memAccessor, offset);
-            memAccessor.WriteInt(value.Type, offset + 16);
-            memAccessor.WriteInt(value.PoolOffset, offset + 20);
-            memAccessor.WriteInt(value.CreateTimestamp, offset + 24);
-        }
-    }
-
-    public enum DSChangeType
-    {
-        CreateObject = 0,
-        DeleteObject = 1,
-        UpdateObject = 2,
-    }
-
     public class DSChangeEventAccessor : ObjectAccessorInterface
     {
-        public static readonly int DS_SIZE = 32;
+        public static readonly int DS_SIZE = 8;
 
         public DSChangeEventAccessor() { }
 
@@ -396,163 +313,29 @@ namespace Xrpa
             SetAccessor(memAccessor);
         }
 
-        public override int GetDSType()
-        {
-            return 0;
-        }
-
-        public override int GetByteCount()
+        public virtual int GetByteCount()
         {
             return DS_SIZE;
         }
 
-        public DSIdentifier GetTargetID()
+        public int GetChangeType()
         {
-            return DSIdentifier.ReadValue(_memAccessor, 0);
+            return _memAccessor.ReadInt(0);
         }
 
-        public void SetTargetID(DSIdentifier id)
+        public void SetChangeType(int type)
         {
-            DSIdentifier.WriteValue(id, _memAccessor, 0);
-        }
-
-        public int GetTargetType()
-        {
-            return _memAccessor.ReadInt(16);
-        }
-
-        public void SetTargetType(int type)
-        {
-            _memAccessor.WriteInt(type, 16);
-        }
-
-        public int GetTargetPoolOffset()
-        {
-            return _memAccessor.ReadInt(20);
-        }
-
-        public void SetTargetPoolOffset(int type)
-        {
-            _memAccessor.WriteInt(type, 20);
-        }
-
-        public void SetTarget(ref DSObjectHeader target)
-        {
-            SetTargetID(target.ID);
-            SetTargetType(target.Type);
-            SetTargetPoolOffset(target.PoolOffset);
-        }
-
-        public void ClearPoolOffsetIfMatch(int poolOffset)
-        {
-            int curPoolOffset = GetTargetPoolOffset();
-            if (curPoolOffset == poolOffset)
-            {
-                SetTargetPoolOffset(0);
-            }
-        }
-
-        public DSChangeType GetChangeType()
-        {
-            return (DSChangeType)_memAccessor.ReadInt(24);
-        }
-
-        public void SetChangeType(DSChangeType type)
-        {
-            _memAccessor.WriteInt((int)type, 24);
+            _memAccessor.WriteInt(type, 0);
         }
 
         public int GetTimestamp()
         {
-            return _memAccessor.ReadInt(28);
+            return _memAccessor.ReadInt(4);
         }
 
         public void SetTimestamp(int timestamp)
         {
-            _memAccessor.WriteInt(timestamp, 28);
-        }
-
-        public ulong GetChangedFields()
-        {
-            return _memAccessor.ReadUlong(32);
-        }
-
-        public void SetChangedFields(ulong fieldMask)
-        {
-            _memAccessor.WriteUlong(fieldMask, 32);
-        }
-    }
-
-    public class DSMessageAccessor : ObjectAccessorInterface
-    {
-        public static readonly int DS_SIZE = 28;
-
-        public DSMessageAccessor() { }
-
-        public DSMessageAccessor(MemoryAccessor memAccessor)
-        {
-            SetAccessor(memAccessor);
-        }
-
-        public override int GetDSType()
-        {
-            return 0;
-        }
-
-        public override int GetByteCount()
-        {
-            return DS_SIZE;
-        }
-
-        public DSIdentifier GetTargetID()
-        {
-            return DSIdentifier.ReadValue(_memAccessor, 0);
-        }
-
-        public void SetTargetID(DSIdentifier id)
-        {
-            DSIdentifier.WriteValue(id, _memAccessor, 0);
-        }
-
-        public int GetTargetType()
-        {
-            return _memAccessor.ReadInt(16);
-        }
-
-        public void SetTargetType(int type)
-        {
-            _memAccessor.WriteInt(type, 16);
-        }
-
-        public void SetTarget(ref DSObjectHeader target)
-        {
-            SetTargetID(target.ID);
-            SetTargetType(target.Type);
-        }
-
-        public int GetMessageType()
-        {
-            return _memAccessor.ReadInt(20);
-        }
-
-        public void SetMessageType(int type)
-        {
-            _memAccessor.WriteInt(type, 20);
-        }
-
-        public int GetTimestamp()
-        {
-            return _memAccessor.ReadInt(24);
-        }
-
-        public void SetTimestamp(int timestamp)
-        {
-            _memAccessor.WriteInt(timestamp, 24);
-        }
-
-        public MemoryAccessor AccessMessageData()
-        {
-            return _memAccessor.Slice(28);
+            _memAccessor.WriteInt(timestamp, 4);
         }
     }
 

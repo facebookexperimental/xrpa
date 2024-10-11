@@ -162,6 +162,7 @@ function bindProgramInterfaceToModule(ctx, moduleDef, programInterface, isExtern
     }
     const dataStore = moduleDef.addDataStore({
         dataset: programInterface.interfaceName,
+        isModuleProgramInterface: !isExternalInterface,
         typeMap: (0, RuntimeEnvironment_1.getInterfaceTypeMap)(ctx, programInterface),
         datamodel: datamodel => convertProgramInterfaceToDataModel(programInterface, datamodel),
     });

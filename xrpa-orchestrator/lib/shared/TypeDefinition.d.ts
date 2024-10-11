@@ -99,6 +99,7 @@ export interface InterfaceTypeDefinition extends StructWithAccessorTypeDefinitio
     setToBarePtr(localType?: TypeSpec): void;
     getPtrType(): string;
     getChangedBit(inNamespace: string, includes: IncludeAggregator | null, fieldName: string): string;
+    getFieldSize(inNamespace: string, includes: IncludeAggregator | null, fieldName: string): string;
 }
 export interface CollectionTypeDefinition extends InterfaceTypeDefinition {
     readonly maxCount: number;

@@ -155,15 +155,22 @@ class StructType extends PrimitiveType_1.PrimitiveType {
         const fields = this.getStateFields();
         let byteOffset = 0;
         for (const name in fields) {
-            const fieldOffsetName = `${(0, Helpers_1.upperFirst)(name)}FieldOffset`;
+            const byteCount = fields[name].type.getTypeSize();
             classSpec.members.push({
                 type: this.codegen.PRIMITIVE_INTRINSICS.int32.typename,
-                name: fieldOffsetName,
+                name: `${(0, Helpers_1.upperFirst)(name)}FieldOffset`,
                 initialValue: new TypeValue_1.PrimitiveValue(this.codegen, this.codegen.PRIMITIVE_INTRINSICS.int32.typename, byteOffset),
                 isStatic: true,
                 isConst: true,
             });
-            byteOffset += fields[name].type.getTypeSize();
+            classSpec.members.push({
+                type: this.codegen.PRIMITIVE_INTRINSICS.int32.typename,
+                name: `${(0, Helpers_1.upperFirst)(name)}FieldSize`,
+                initialValue: new TypeValue_1.PrimitiveValue(this.codegen, this.codegen.PRIMITIVE_INTRINSICS.int32.typename, byteCount),
+                isStatic: true,
+                isConst: true,
+            });
+            byteOffset += byteCount;
         }
     }
     getFieldTypes(inNamespace, includes) {

@@ -29,7 +29,7 @@ namespace Xrpa
             var totalBytes = DatasetAccessor.GetTotalBytes(_datasetConfig);
             _memoryBlock = new(totalBytes);
             _isInitialized = false;
-            Acquire(1000, accessor => accessor.InitContents(_datasetConfig));
+            Acquire(1000, accessor => accessor.InitContents(totalBytes, _datasetConfig));
             _isInitialized = true;
         }
 
@@ -74,17 +74,6 @@ namespace Xrpa
             }
             DSHeader header = new(memAccessor);
             return header.LastChangelogID;
-        }
-
-        public override int GetLastMessageID()
-        {
-            var memAccessor = _memoryBlock?.Accessor;
-            if (memAccessor == null)
-            {
-                return 0;
-            }
-            DSHeader header = new(memAccessor);
-            return header.LastMessageID;
         }
 
         public override bool Acquire(int timeoutMS, System.Action<DatasetAccessor> func)

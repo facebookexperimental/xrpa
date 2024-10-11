@@ -32,6 +32,7 @@ namespace Xrpa
         void ProcessDSMessage(int messageType, int timestamp, MemoryAccessor msgAccessor);
         void ProcessDSUpdate(ObjectAccessorType remoteValue, ulong fieldsChanged);
         void ProcessDSDelete() { }
+        ulong PrepDSFullUpdate() { return 0; }
         void TickXrpa() { }
     }
 
@@ -79,7 +80,7 @@ namespace Xrpa
 
         public MemoryAccessor SendMessage(DSIdentifier id, int messageType, int numBytes)
         {
-            return _reconciler.SendMessage(id, messageType, numBytes);
+            return _reconciler.SendMessage(id, _collectionId, messageType, numBytes);
         }
 
         public virtual void SetDirty(DSIdentifier id, ulong fieldsChanged)
@@ -97,6 +98,8 @@ namespace Xrpa
         public abstract void Tick();
 
         public abstract void WriteChanges(DatasetAccessor accessor, DSIdentifier id);
+
+        public abstract void PrepFullUpdate(List<FullUpdateEntry> entries);
 
         public abstract void ProcessCreate(DSIdentifier id, MemoryAccessor memAccessor);
 
@@ -116,6 +119,8 @@ namespace Xrpa
         public abstract void ProcessUpsert(DSIdentifier id, MemoryAccessor memAccessor);
 
         public abstract void ProcessFullReconcile(HashSet<DSIdentifier> reconciledIds);
+
+        public abstract void ProcessShutdown();
     }
 
 }

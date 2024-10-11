@@ -17,7 +17,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateComponentProperties = exports.GameComponentBinding = exports.GameComponentBindingsDisabled = exports.Ephemeral = exports.HiddenGameComponent = exports.GameComponentOwner = exports.GameComponentParent = exports.getGameEngineConfig = exports.GameEngineConfig = exports.IfNotGameEngine = exports.IfGameEngine = void 0;
+exports.generateComponentProperties = exports.GameComponentBaseClassOverride = exports.GameComponentBinding = exports.GameComponentBindingsDisabled = exports.Ephemeral = exports.HiddenGameComponent = exports.GameComponentOwner = exports.GameComponentParent = exports.getGameEngineConfig = exports.GameEngineConfig = exports.IfNotGameEngine = exports.IfGameEngine = exports.COMPONENT_BASE_CLASS = void 0;
 const simply_immutable_1 = require("simply-immutable");
 const Coordinates_1 = require("./Coordinates");
 const InterfaceTypes_1 = require("./InterfaceTypes");
@@ -30,6 +30,8 @@ const HIDE_COMPONENT = "xrpa.gamecomponent.hideComponent";
 const EPHEMERAL_PROPERTY = "xrpa.gamecomponent.ephemeral";
 const GAME_COMPONENT_BINDING_ENABLED = (0, XrpaLanguage_1.InheritedProperty)("xrpa.gamecomponent.bindingEnabled");
 const BINDING_CONFIG = (0, XrpaLanguage_1.InheritedProperty)("xrpa.gamecomponent.bindingConfig");
+exports.COMPONENT_BASE_CLASS = (0, XrpaLanguage_1.InheritedProperty)("xrpa.gamecomponent.componentBaseClass");
+const COMPONENT_BASE_CLASS_OVERRIDE = "xrpa.gamecomponent.componentBaseClassOverride";
 exports.IfGameEngine = {
     propertyToCheck: BINDING_CONFIG,
     expectedValue: XrpaLanguage_1.TRUTHY,
@@ -40,6 +42,7 @@ exports.IfNotGameEngine = {
 };
 function GameEngineConfig(ctx, config) {
     ctx.properties[BINDING_CONFIG] = config;
+    ctx.properties[exports.COMPONENT_BASE_CLASS] = config.componentBaseClass;
     return ctx;
 }
 exports.GameEngineConfig = GameEngineConfig;
@@ -77,6 +80,10 @@ function GameComponentBinding(arg0, arg1) {
     return (0, XrpaLanguage_1.setPropertiesOrCurry)({ [GAME_COMPONENT_BINDING_ENABLED]: true }, arg0, arg1);
 }
 exports.GameComponentBinding = GameComponentBinding;
+function GameComponentBaseClassOverride(newBaseClass, arg0, arg1) {
+    return (0, XrpaLanguage_1.setPropertiesOrCurry)({ [COMPONENT_BASE_CLASS_OVERRIDE]: newBaseClass }, arg0, arg1);
+}
+exports.GameComponentBaseClassOverride = GameComponentBaseClassOverride;
 function getFieldBindings(config, fieldToPropertyBindings, fieldPath, dataType) {
     if ((0, InterfaceTypes_1.isStructDataType)(dataType)) {
         for (const [fieldName, fieldDataType] of Object.entries(dataType.fields)) {
@@ -121,7 +128,7 @@ function generateComponentProperties(ctx, collection) {
     }
     fieldToPropertyBindings = getFieldBindings(config, fieldToPropertyBindings, [], collection.fieldsStruct);
     return {
-        basetype: config.componentBaseClass,
+        basetype: (0, XrpaLanguage_1.evalProperty)(collection.properties, COMPONENT_BASE_CLASS_OVERRIDE) ?? config.componentBaseClass,
         fieldToPropertyBindings,
         internalOnly: collection.properties[HIDE_COMPONENT] === true,
         ephemeralProperties: Object.keys(collection.fieldsStruct.fields).filter(k => (0, XrpaLanguage_1.evalProperty)(collection.fieldsStruct.fields[k].properties, EPHEMERAL_PROPERTY) === true),

@@ -34,20 +34,15 @@ function getDataStoreSchemaHashName(apiname, fullyQualified) {
 }
 exports.getDataStoreSchemaHashName = getDataStoreSchemaHashName;
 function genDatasetConfig(apiname, datamodel, namespace, includes) {
-    let maxObjectCount = 0;
-    let maxObjectSize = 0;
+    let changelogByteCount = datamodel.calcMessagePoolSize();
     for (const typeDef of datamodel.getCollections()) {
-        maxObjectCount += typeDef.maxCount;
-        maxObjectSize += typeDef.maxCount * typeDef.getTypeSize();
+        changelogByteCount += typeDef.maxCount * typeDef.getTypeSize();
     }
     return [
         `public static ${CsharpDatasetLibraryTypes_1.DatasetConfig.getLocalType(namespace, includes)} GenDatasetConfig() {`,
         `  ${CsharpDatasetLibraryTypes_1.DatasetConfig.getLocalType(namespace, includes)} config = new();`,
         `  config.SchemaHash = ${getDataStoreSchemaHashName(apiname, false)};`,
-        `  config.MaxObjectCount = ${maxObjectCount};`,
-        `  config.MemPoolSize = ${maxObjectSize};`,
-        `  config.ChangelogPoolSize = ${maxObjectCount * 8 * 32};`,
-        `  config.MessagePoolSize = ${datamodel.calcMessagePoolSize()};`,
+        `  config.ChangelogByteCount = ${changelogByteCount};`,
         `  return config;`,
         `}`,
     ];

@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UnityProject = exports.UnityArrayType = exports.UnityCoordinateSystem = void 0;
+exports.UnityProject = exports.IfUnity = exports.UnityArrayType = exports.UnityCoordinateSystem = void 0;
 const path_1 = __importDefault(require("path"));
 const Coordinates_1 = require("./Coordinates");
 const GameEngine_1 = require("./GameEngine");
@@ -44,6 +44,10 @@ exports.UnityArrayType = {
     setSize: null,
     removeAll: "Clear()",
     addItem: "Add()",
+};
+exports.IfUnity = {
+    propertyToCheck: GameEngine_1.COMPONENT_BASE_CLASS,
+    expectedValue: "MonoBehaviour",
 };
 async function UnityProject(projectPath, projectName, callback) {
     const ctx = (0, GameEngine_1.GameEngineConfig)({

@@ -9,7 +9,8 @@
     "update": "ts-node ./js/index.ts",
     "SignalProcessing": "node_modules/@xrpa/xred-signal-processing/bin/FbaProcessing.exe",
     "SignalOutput": "node_modules/@xrpa/xred-signal-output/bin/XredOutput.exe",
-    "STO": "node_modules/@xrpa/xred-tracking/bin/PulsarSTO.exe"
+    "STO": "node_modules/@xrpa/xred-tracking/bin/PulsarSTO.exe",
+    "Fiducials": "node_modules/@xrpa/xred-tracking/bin/Fiducials.exe"
   },
   "devDependencies": {
     "@types/node": "18.11.18",
@@ -21,10 +22,10 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "@xrpa/xred-signal-output": "^1.4.0",
-    "@xrpa/xred-signal-processing": "^1.4.0",
-    "@xrpa/xred-tactile-pressure": "^1.4.0",
-    "@xrpa/xred-tracking": "^1.4.0",
-    "@xrpa/xrpa-orchestrator": "^1.4.0"
+    "@xrpa/xred-signal-output": "^1.5.0",
+    "@xrpa/xred-signal-processing": "^1.5.0",
+    "@xrpa/xred-tactile-pressure": "^1.5.0",
+    "@xrpa/xred-tracking": "^1.5.0",
+    "@xrpa/xrpa-orchestrator": "^1.5.0"
   }
 }

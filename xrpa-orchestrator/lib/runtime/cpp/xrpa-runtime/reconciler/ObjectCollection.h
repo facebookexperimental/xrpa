@@ -52,7 +52,7 @@ class ObjectCollection : public CollectionInterface {
 
  public:
   using CreateDelegateFunction = std::function<
-      ReconciledTypePtr(const DSIdentifier&, const ObjectAccessorType&, CollectionInterface*)>;
+      ReconciledTypePtr(const DSIdentifier&, ObjectAccessorType&, CollectionInterface*)>;
 
   ObjectCollection(
       DatasetReconciler* reconciler,
@@ -79,6 +79,10 @@ class ObjectCollection : public CollectionInterface {
 
   Iterator end() {
     return Iterator(objects_.end());
+  }
+
+  [[nodiscard]] size_t size() const {
+    return objects_.size();
   }
 
  protected:
@@ -179,9 +183,10 @@ class ObjectCollection : public CollectionInterface {
     }
 
     // create a new object using the delegate function
-    ReconciledTypePtr objectPtr;
+    ReconciledTypePtr objectPtr{nullptr};
     try {
-      objectPtr = createDelegate_(id, ObjectAccessorType(memAccessor), this);
+      auto accessor = ObjectAccessorType(memAccessor);
+      objectPtr = createDelegate_(id, accessor, this);
     } catch (std::exception& e) {
       // log the exception e.what()
       std::cout << "Caught exception in createDelegate: " << e.what() << std::endl;
@@ -189,7 +194,7 @@ class ObjectCollection : public CollectionInterface {
       // log an error
       std::cout << "Caught unknown error in createDelegate" << std::endl;
     }
-    if (objectPtr.get() == nullptr) {
+    if (!objectPtr) {
       return;
     }
 
@@ -250,6 +255,15 @@ class ObjectCollection : public CollectionInterface {
     }
   }
 
+  void processShutdown() final {
+    if (isLocalOwned_) {
+      return;
+    }
+    for (auto iter = objects_.begin(), last = objects_.end(); iter != last;) {
+      iter = processDeleteInternal(iter);
+    }
+  }
+
   void writeChanges(DatasetAccessor* accessor, const DSIdentifier& id) final {
     auto iter = objects_.find(id);
     if (iter != objects_.end()) {
@@ -258,7 +272,19 @@ class ObjectCollection : public CollectionInterface {
       }
       iter->second->writeDSChanges(accessor);
     } else if (isLocalOwned_) {
-      accessor->deleteObject(id);
+      auto changeEvent =
+          accessor->writeChangeEvent<DSCollectionChangeEventAccessor>(DSChangeType::DeleteObject);
+      changeEvent.setCollectionId(collectionId_);
+      changeEvent.setObjectId(id);
+    }
+  }
+
+  void prepFullUpdate(std::vector<FullUpdateEntry>& entries) final {
+    for (auto iter = objects_.begin(), last = objects_.end(); iter != last; ++iter) {
+      uint64_t timestamp = iter->second->prepDSFullUpdate();
+      if (timestamp > 0) {
+        entries.emplace_back(iter->first, collectionId_, timestamp);
+      }
     }
   }
 
@@ -284,7 +310,8 @@ class ObjectCollection : public CollectionInterface {
     }
 
     try {
-      iter->second->processDSUpdate(ObjectAccessorType(memAccessor), fieldsChanged);
+      auto accessor = ObjectAccessorType(memAccessor);
+      iter->second->processDSUpdate(accessor, fieldsChanged);
     } catch (std::exception& e) {
       // log the exception e.what()
       std::cout << "Caught exception in processDSUpdate: " << e.what() << std::endl;

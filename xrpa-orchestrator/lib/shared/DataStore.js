@@ -108,6 +108,16 @@ class BaseReconcilerDefinition {
         }
         return bitMask;
     }
+    getOutboundChangeByteCount() {
+        let byteCount = 0;
+        const fields = this.type.getStateFields();
+        for (const fieldName in fields) {
+            if (this.isOutboundField(fieldName)) {
+                byteCount += fields[fieldName].type.getTypeSize();
+            }
+        }
+        return byteCount;
+    }
     getIndexedBitMask() {
         const hasIndexedBinding = this.hasIndexedBinding();
         const indexedFields = new Set(this.indexConfigs.map(config => config.indexFieldName));
@@ -153,9 +163,10 @@ class OutputReconcilerDefinition extends BaseReconcilerDefinition {
 }
 exports.OutputReconcilerDefinition = OutputReconcilerDefinition;
 class DataStoreDefinition {
-    constructor(moduleDef, dataset, typeMap, apiname) {
+    constructor(moduleDef, dataset, isModuleProgramInterface, typeMap, apiname) {
         this.moduleDef = moduleDef;
         this.dataset = dataset;
+        this.isModuleProgramInterface = isModuleProgramInterface;
         this.typeMap = typeMap;
         this.inputs = [];
         this.outputs = [];

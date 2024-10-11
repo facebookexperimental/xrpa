@@ -29,7 +29,7 @@ export interface PropertyCondition {
 }
 export declare const TRUTHY = "xrpa.propertySymbol.truthy";
 export declare const FALSEY = "xrpa.propertySymbol.falsey";
-export declare function evalProperty(properties: BindingProperties, propertyName: string): unknown;
+export declare function evalProperty<T>(properties: BindingProperties, propertyName: string): T | undefined;
 export declare function setProperty<T extends WithBindingProperties>(obj: T, propertyName: string, value: unknown, condition?: PropertyCondition): T;
 export declare function setProperties<T extends WithBindingProperties>(obj: T, propertiesToSet: BindingProperties, condition?: PropertyCondition): T;
 export declare function setPropertiesOrCurry<T extends XrpaDataType>(propertiesToSet: BindingProperties, arg0: Thunk<T> | PropertyCondition, arg1?: Thunk<T>): T | XrpaTypeAugmenter<T>;

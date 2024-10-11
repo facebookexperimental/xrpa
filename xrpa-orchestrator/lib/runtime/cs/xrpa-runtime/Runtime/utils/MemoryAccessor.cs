@@ -169,11 +169,12 @@ namespace Xrpa
 
         public string ReadString(int offset, int maxBytes)
         {
+            int strMaxBytes = maxBytes - 4;
             int byteCount = ReadInt(offset);
-            XrpaUtils.DebugAssert(byteCount <= maxBytes);
+            XrpaUtils.DebugAssert(byteCount <= strMaxBytes);
             offset += 4;
 
-            XrpaUtils.BoundsAssert(offset, byteCount, 0, _size);
+            XrpaUtils.BoundsAssert(offset, strMaxBytes, 0, _size);
             byte[] byteArray = new byte[byteCount];
             for (int i = 0; i < byteCount; i++)
             {
@@ -186,12 +187,13 @@ namespace Xrpa
         {
             byte[] byteArray = Encoding.UTF8.GetBytes(val);
             int byteCount = byteArray.Length;
+            int strMaxBytes = maxBytes - 4;
             // truncate the string to fit in the buffer
-            byteCount = Math.Min(maxBytes, byteCount);
+            byteCount = Math.Min(strMaxBytes, byteCount);
             WriteInt(byteCount, offset);
             offset += 4;
 
-            XrpaUtils.BoundsAssert(offset, maxBytes, 0, _size);
+            XrpaUtils.BoundsAssert(offset, strMaxBytes, 0, _size);
             for (int i = 0; i < byteCount; i++)
             {
                 *(_dataSource + _memOffset + offset + i) = byteArray[i];

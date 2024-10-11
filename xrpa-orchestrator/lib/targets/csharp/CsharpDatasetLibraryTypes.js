@@ -51,10 +51,8 @@ function CsPrimitiveType(name, size = 0) {
 ///////////////////////////////////////////////////////////////////////////////
 // Core:
 exports.MemoryAccessor = CsPrimitiveType("MemoryAccessor", 16);
-CodeGen.registerMemoryAccessor(exports.MemoryAccessor);
 exports.DSHashValue = CsPrimitiveType("DSHashValue", 32);
 exports.ObjectAccessorInterface = CsPrimitiveType("ObjectAccessorInterface", 8);
-CodeGen.registerObjectAccessorInterface(exports.ObjectAccessorInterface);
 exports.DatasetAccessor = CsPrimitiveType("DatasetAccessor");
 exports.DatasetConfig = CsPrimitiveType("DatasetConfig");
 exports.DatasetInterface = CsPrimitiveType("DatasetInterface");
@@ -74,4 +72,9 @@ exports.ObjectCollectionIndexedBinding = CsPrimitiveType("ObjectCollectionIndexe
 ///////////////////////////////////////////////////////////////////////////////
 // Transport:
 exports.SharedDataset = CsPrimitiveType("SharedDataset");
+CodeGen.registerXrpaTypes({
+    DatasetAccessor: exports.DatasetAccessor,
+    MemoryAccessor: exports.MemoryAccessor,
+    ObjectAccessorInterface: exports.ObjectAccessorInterface,
+});
 //# sourceMappingURL=CsharpDatasetLibraryTypes.js.map

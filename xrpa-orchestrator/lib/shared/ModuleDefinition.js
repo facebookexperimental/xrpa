@@ -60,7 +60,7 @@ class ModuleDefinition {
         return this.datamap.coordinateSystem;
     }
     addDataStore(params) {
-        const datastore = new DataStore_1.DataStoreDefinition(this, params.dataset, params.typeMap ?? {}, params.apiname);
+        const datastore = new DataStore_1.DataStoreDefinition(this, params.dataset, params.isModuleProgramInterface, params.typeMap ?? {}, params.apiname);
         this.datastores.push(datastore);
         if (params.datamodel) {
             params.datamodel(datastore.datamodel);
@@ -166,13 +166,13 @@ class ModuleDefinition {
         return new StructType_1.StructType(this.codegen, name, apiname, undefined, fields, localTypeOverride);
     }
     createMessageStruct(name, apiname, fields) {
-        return new MessageDataType_1.MessageDataType(this.codegen, name, apiname, fields);
+        return new MessageDataType_1.MessageDataType(this.codegen, name, apiname, this.DSIdentifier, fields);
     }
     createInterface(name, apiname, fields) {
-        return new InterfaceType_1.InterfaceType(this.codegen, name, apiname, fields);
+        return new InterfaceType_1.InterfaceType(this.codegen, name, apiname, this.DSIdentifier, fields);
     }
     createCollection(name, apiname, fields, interfaceType, maxCount, dsType) {
-        return new CollectionType_1.CollectionType(this.codegen, name, apiname, fields, dsType, maxCount, interfaceType);
+        return new CollectionType_1.CollectionType(this.codegen, name, apiname, this.DSIdentifier, fields, dsType, maxCount, interfaceType);
     }
     createFixedArray(name, apiname, innerType, arraySize) {
         return new FixedArrayType_1.FixedArrayType(this.codegen, name, apiname, innerType, arraySize, this.datamap.localArrayType);

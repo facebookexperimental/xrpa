@@ -92,7 +92,7 @@ export interface TargetCodeGenImpl {
         memAccessorVar: string;
         value: string | TypeValue;
     }): string;
-    makeObjectAccessor(classSpec: ClassSpec): void;
+    makeObjectAccessor(classSpec: ClassSpec, isWriteAccessor: boolean, dsIdentifierType: string): void;
     genClassDefinition(classSpec: ClassSpec): string[];
     genReadWriteValueFunctions(classSpec: ClassSpec, params: {
         localType: TypeDefinition | string;
@@ -110,6 +110,7 @@ export interface TargetCodeGenImpl {
         convertToLocal: boolean;
         description: string | undefined;
         visibility?: ClassVisibility;
+        isConst: boolean;
     }): void;
     genFieldSetter(classSpec: ClassSpec, params: {
         fieldName: string;

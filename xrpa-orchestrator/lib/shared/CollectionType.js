@@ -21,8 +21,8 @@ exports.CollectionType = void 0;
 const InterfaceType_1 = require("./InterfaceType");
 const TypeDefinition_1 = require("./TypeDefinition");
 class CollectionType extends InterfaceType_1.InterfaceType {
-    constructor(codegen, collectionName, apiname, fields, dsType, maxCount, interfaceType) {
-        super(codegen, collectionName, apiname, fields, interfaceType);
+    constructor(codegen, collectionName, apiname, dsIdentifierType, fields, dsType, maxCount, interfaceType) {
+        super(codegen, collectionName, apiname, dsIdentifierType, fields, interfaceType);
         this.dsType = dsType;
         this.maxCount = maxCount;
         this.interfaceType = interfaceType;

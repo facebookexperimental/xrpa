@@ -51,6 +51,7 @@ export declare abstract class ModuleDefinition implements CodeGen {
     getLocalCoordinateSystem(): CoordinateSystemDef;
     addDataStore(params: {
         dataset: string;
+        isModuleProgramInterface: boolean;
         typeMap?: TypeMap;
         apiname?: string;
         datamodel?: (datamodel: DataModelDefinition) => void;

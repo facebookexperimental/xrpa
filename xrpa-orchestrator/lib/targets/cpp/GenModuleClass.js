@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genModuleClass = exports.genDatasetDeclarations = exports.genDatasetDeclaration = exports.getDatasetVarName = exports.getModuleHeaderName = void 0;
+exports.genModuleClass = exports.genDatasetDeclarations = exports.genOutboundDatasetDeclaration = exports.genInboundDatasetDeclaration = exports.getOutboundDatasetVarName = exports.getInboundDatasetVarName = exports.getModuleHeaderName = void 0;
 const path_1 = __importDefault(require("path"));
 const Helpers_1 = require("../../shared/Helpers");
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
@@ -29,18 +29,30 @@ function getModuleHeaderName(moduleDef) {
     return `${moduleDef.name}Module.h`;
 }
 exports.getModuleHeaderName = getModuleHeaderName;
-function getDatasetVarName(storeDef) {
-    return `${storeDef.dataset}Dataset`;
+function getInboundDatasetVarName(storeDef) {
+    return `${storeDef.dataset}InboundDataset`;
 }
-exports.getDatasetVarName = getDatasetVarName;
-function genDatasetDeclaration(storeDef, namespace, includes, semicolonTerminate) {
+exports.getInboundDatasetVarName = getInboundDatasetVarName;
+function getOutboundDatasetVarName(storeDef) {
+    return `${storeDef.dataset}OutboundDataset`;
+}
+exports.getOutboundDatasetVarName = getOutboundDatasetVarName;
+function genInboundDatasetDeclaration(storeDef, namespace, includes, semicolonTerminate) {
     includes.addFile({
         filename: "<memory>",
         typename: "std::shared_ptr",
     });
-    return `std::shared_ptr<${CppDatasetLibraryTypes_1.DatasetInterface.getLocalType(namespace, includes)}> ${getDatasetVarName(storeDef)}` + (semicolonTerminate ? ";" : "");
+    return `std::shared_ptr<${CppDatasetLibraryTypes_1.DatasetInterface.getLocalType(namespace, includes)}> ${getInboundDatasetVarName(storeDef)}` + (semicolonTerminate ? ";" : "");
 }
-exports.genDatasetDeclaration = genDatasetDeclaration;
+exports.genInboundDatasetDeclaration = genInboundDatasetDeclaration;
+function genOutboundDatasetDeclaration(storeDef, namespace, includes, semicolonTerminate) {
+    includes.addFile({
+        filename: "<memory>",
+        typename: "std::shared_ptr",
+    });
+    return `std::shared_ptr<${CppDatasetLibraryTypes_1.DatasetInterface.getLocalType(namespace, includes)}> ${getOutboundDatasetVarName(storeDef)}` + (semicolonTerminate ? ";" : "");
+}
+exports.genOutboundDatasetDeclaration = genOutboundDatasetDeclaration;
 function genDatasetDeclarations(moduleDef, namespace, includes, semicolonTerminate) {
     const lines = [];
     includes.addFile({
@@ -48,7 +60,8 @@ function genDatasetDeclarations(moduleDef, namespace, includes, semicolonTermina
         typename: "std::shared_ptr",
     });
     for (const storeDef of moduleDef.getDataStores()) {
-        lines.push(genDatasetDeclaration(storeDef, namespace, includes, semicolonTerminate));
+        lines.push(genInboundDatasetDeclaration(storeDef, namespace, includes, semicolonTerminate));
+        lines.push(genOutboundDatasetDeclaration(storeDef, namespace, includes, semicolonTerminate));
     }
     return lines;
 }
@@ -60,7 +73,7 @@ function genDataStoreInits(moduleDef, includes) {
             filename: (0, CppCodeGenImpl_1.getDataStoreHeaderName)(storeDef.apiname),
             namespace: dataStoreName,
         });
-        return `${(0, Helpers_1.lowerFirst)(dataStoreName)} = std::make_shared<${dataStoreName}::${dataStoreName}>(${getDatasetVarName(storeDef)});`;
+        return `${(0, Helpers_1.lowerFirst)(dataStoreName)} = std::make_shared<${dataStoreName}::${dataStoreName}>(${getInboundDatasetVarName(storeDef)}, ${getOutboundDatasetVarName(storeDef)});`;
     });
 }
 function genDataStoreDecls(moduleDef) {
@@ -68,15 +81,6 @@ function genDataStoreDecls(moduleDef) {
         const dataStoreName = (0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname);
         return `std::shared_ptr<${dataStoreName}::${dataStoreName}> ${(0, Helpers_1.lowerFirst)(dataStoreName)};`;
     });
-}
-function genDataStoreTicks(moduleDef, outputsOnly) {
-    return moduleDef.getDataStores().filter(storeDef => {
-        const hasOnlyOutputs = storeDef.getInputReconcilers().length === 0;
-        return outputsOnly === hasOnlyOutputs;
-    }).map(storeDef => `${(0, Helpers_1.lowerFirst)((0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname))}->tick();`);
-}
-function genDataStoreShutdowns(moduleDef) {
-    return moduleDef.getDataStores().map(storeDef => `${(0, Helpers_1.lowerFirst)((0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname))}->shutdown();`);
 }
 function genModuleSettings(namespace, includes, moduleDef) {
     const settings = moduleDef.getSettings();
@@ -100,7 +104,7 @@ function genModuleClass(fileWriter, libDir, moduleDef) {
     const lines = [
         `class ${className} : public ${CppDatasetLibraryTypes_1.DatasetModule.getLocalType(namespace, includes)} {`,
         ` public:`,
-        `  explicit ${className}(${genDatasetDeclarations(moduleDef, namespace, includes, false).join(", ")}) {`,
+        `  ${className}(${genDatasetDeclarations(moduleDef, namespace, includes, false).join(", ")}) {`,
         ...(0, Helpers_1.indent)(2, genDataStoreInits(moduleDef, includes)),
         `  }`,
         ``,
@@ -109,15 +113,15 @@ function genModuleClass(fileWriter, libDir, moduleDef) {
         ...(0, Helpers_1.indent)(1, moduleSettings),
         ``,
         `  virtual void tickInputs() override {`,
-        ...(0, Helpers_1.indent)(2, genDataStoreTicks(moduleDef, false)),
+        ...(0, Helpers_1.indent)(2, moduleDef.getDataStores().map(storeDef => `${(0, Helpers_1.lowerFirst)((0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname))}->tickInbound();`)),
         `  }`,
         ``,
         `  virtual void tickOutputs() override {`,
-        ...(0, Helpers_1.indent)(2, genDataStoreTicks(moduleDef, true)),
+        ...(0, Helpers_1.indent)(2, moduleDef.getDataStores().map(storeDef => `${(0, Helpers_1.lowerFirst)((0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname))}->tickOutbound();`)),
         `  }`,
         ``,
         `  virtual void shutdown() override {`,
-        ...(0, Helpers_1.indent)(2, genDataStoreShutdowns(moduleDef)),
+        ...(0, Helpers_1.indent)(2, moduleDef.getDataStores().map(storeDef => `${(0, Helpers_1.lowerFirst)((0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname))}->shutdown();`)),
         `  }`,
         `};`,
         ``,

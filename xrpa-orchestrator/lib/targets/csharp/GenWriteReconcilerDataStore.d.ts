@@ -71,6 +71,12 @@ export declare function genWriteFunctionBody(params: {
     canCreate?: boolean;
     proxyObj: string | null;
 }): string[];
+export declare function genPrepFullUpdateFunctionBody(params: {
+    ctx: GenDataStoreContext;
+    includes: IncludeAggregator | null;
+    reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
+    canCreate?: boolean;
+}): string[];
 export declare function defaultFieldToMemberVar(fieldName: string): string;
 export declare function genOutboundReconciledTypes(ctx: GenDataStoreContext, includesIn: IncludeAggregator | null): ClassSpec[];
 

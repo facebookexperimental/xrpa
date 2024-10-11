@@ -22,8 +22,8 @@ const Helpers_1 = require("./Helpers");
 const StructWithAccessorType_1 = require("./StructWithAccessorType");
 const TypeDefinition_1 = require("./TypeDefinition");
 class MessageDataType extends StructWithAccessorType_1.StructWithAccessorType {
-    constructor(codegen, name, apiname, fields) {
-        super(codegen, name, apiname, undefined, fields);
+    constructor(codegen, name, apiname, dsIdentifierType, fields) {
+        super(codegen, name, apiname, dsIdentifierType, undefined, fields);
     }
     getMetaType() {
         return TypeDefinition_1.TypeMetaType.MESSAGE_DATA;

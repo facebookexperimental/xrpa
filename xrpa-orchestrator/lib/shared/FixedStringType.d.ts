@@ -19,7 +19,6 @@ import { PrimitiveType } from "./PrimitiveType";
 import { TargetCodeGenImpl } from "./TargetCodeGen";
 import { TypeMap } from "./TypeDefinition";
 export declare class FixedStringType extends PrimitiveType {
-    readonly maxBytes: number;
     constructor(codegen: TargetCodeGenImpl, name: string, _apiname: string, maxBytes: number, typeMap: TypeMap);
     getInternalMaxBytes(): number | null;
 }

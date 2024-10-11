@@ -16,6 +16,7 @@
 
 
 import { RuntimeEnvironmentContext } from "./RuntimeEnvironment";
+import { PropertyCondition } from "./XrpaLanguage";
 import { CoordinateSystemDef } from "./shared/CoordinateTransformer";
 import { ArrayTypeSpec } from "./shared/TypeDefinition";
 export declare const UnityCoordinateSystem: CoordinateSystemDef;
@@ -23,5 +24,6 @@ export declare const UnityArrayType: ArrayTypeSpec;
 export interface UnityRuntimeContext extends RuntimeEnvironmentContext {
     __UnityRuntime: true;
 }
+export declare const IfUnity: PropertyCondition;
 export declare function UnityProject(projectPath: string, projectName: string, callback: (ctx: UnityRuntimeContext) => void): Promise<void>;
 

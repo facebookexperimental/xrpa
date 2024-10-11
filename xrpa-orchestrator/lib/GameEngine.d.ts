@@ -20,6 +20,7 @@ import { RuntimeEnvironmentContext } from "./RuntimeEnvironment";
 import { PropertyCondition, XrpaDataType, XrpaTypeAugmenter } from "./XrpaLanguage";
 import { ComponentProperties } from "./shared/DataStore";
 import { Thunk } from "./shared/Helpers";
+export declare const COMPONENT_BASE_CLASS: string;
 export declare const IfGameEngine: PropertyCondition;
 export declare const IfNotGameEngine: PropertyCondition;
 export interface GameEngineBindingConfig {
@@ -49,5 +50,8 @@ export declare function GameComponentBindingsDisabled(): undefined;
 export declare function GameComponentBinding(dataType: Thunk<XrpaCollectionType>): XrpaCollectionType;
 export declare function GameComponentBinding(condition: PropertyCondition): XrpaTypeAugmenter<XrpaCollectionType>;
 export declare function GameComponentBinding(condition: PropertyCondition, dataType: Thunk<XrpaCollectionType>): XrpaCollectionType;
+export declare function GameComponentBaseClassOverride(newBaseClass: string, dataType: Thunk<XrpaCollectionType>): XrpaCollectionType;
+export declare function GameComponentBaseClassOverride(newBaseClass: string, condition: PropertyCondition): XrpaTypeAugmenter<XrpaCollectionType>;
+export declare function GameComponentBaseClassOverride(newBaseClass: string, condition: PropertyCondition, dataType: Thunk<XrpaCollectionType>): XrpaCollectionType;
 export declare function generateComponentProperties(ctx: RuntimeEnvironmentContext, collection: XrpaCollectionType): ComponentProperties | undefined;
 

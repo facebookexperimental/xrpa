@@ -20,22 +20,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genMethodBind = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genWriteValue = exports.genReadValue = exports.genClassDefinition = exports.makeObjectAccessor = exports.getTypesHeaderName = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.constRef = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.CsIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.GET_CURRENT_CLOCK_TIME = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.HEADER = exports.XRPA_NAMESPACE = exports.registerObjectAccessorInterface = exports.registerMemoryAccessor = void 0;
+exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genMethodBind = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genWriteValue = exports.genReadValue = exports.genClassDefinition = exports.makeObjectAccessor = exports.getTypesHeaderName = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.constRef = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.CsIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.GET_CURRENT_CLOCK_TIME = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.HEADER = exports.XRPA_NAMESPACE = exports.registerXrpaTypes = void 0;
 const assert_1 = __importDefault(require("assert"));
 const Helpers_1 = require("../../shared/Helpers");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const TypeValue_1 = require("../../shared/TypeValue");
-// NOTE: do not import anything from ./
-let gMemoryAccessor = null;
-function registerMemoryAccessor(memoryAccessorType) {
-    gMemoryAccessor = memoryAccessorType;
+let gXrpaTypes = null;
+function registerXrpaTypes(types) {
+    gXrpaTypes = types;
 }
-exports.registerMemoryAccessor = registerMemoryAccessor;
-let gObjectAccessorInterface = null;
-function registerObjectAccessorInterface(objectAccessorInterfaceType) {
-    gObjectAccessorInterface = objectAccessorInterfaceType;
-}
-exports.registerObjectAccessorInterface = registerObjectAccessorInterface;
+exports.registerXrpaTypes = registerXrpaTypes;
 exports.XRPA_NAMESPACE = "Xrpa";
 const COPYRIGHT_STRING = `/*
  * Copyright (c) Meta Platforms, Inc. and affiliates.
@@ -246,29 +240,69 @@ function getTypesHeaderName(apiname) {
     return apiname ? `${apiname}Types.cs` : "";
 }
 exports.getTypesHeaderName = getTypesHeaderName;
-function makeObjectAccessor(classSpec) {
+function makeObjectAccessor(classSpec, isWriteAccessor, dsIdentifierType) {
+    (0, assert_1.default)(gXrpaTypes, "Expected Xrpa types to be registered");
     if (!classSpec.superClass) {
-        (0, assert_1.default)(gObjectAccessorInterface, "Expected a registered ObjectAccessorInterface type");
-        classSpec.superClass = gObjectAccessorInterface.getLocalType(classSpec.namespace, classSpec.includes);
-        classSpec.methods.push({
-            name: "GetDSType",
-            returnType: "int",
-            body: ["return DS_TYPE;"],
-            isOverride: true,
-        });
-        classSpec.methods.push({
-            name: "GetByteCount",
-            returnType: "int",
-            body: ["return DS_SIZE;"],
-            isOverride: true,
-        });
+        classSpec.superClass = gXrpaTypes.ObjectAccessorInterface.getLocalType(classSpec.namespace, classSpec.includes);
     }
-    (0, assert_1.default)(gMemoryAccessor, "Expected a registered MemoryAccessor type");
     classSpec.constructors.push({});
     classSpec.constructors.push({
-        parameters: [{ name: "memAccessor", type: gMemoryAccessor.getLocalType(classSpec.namespace, classSpec.includes) }],
+        parameters: [{ name: "memAccessor", type: gXrpaTypes.MemoryAccessor.getLocalType(classSpec.namespace, classSpec.includes) }],
         body: ["SetAccessor(memAccessor);"],
     });
+    if (isWriteAccessor) {
+        classSpec.methods.push({
+            name: "Create",
+            parameters: [{
+                    name: "accessor",
+                    type: gXrpaTypes.DatasetAccessor,
+                }, {
+                    name: "id",
+                    type: dsIdentifierType,
+                }, {
+                    name: "changeByteCount",
+                    type: exports.PRIMITIVE_INTRINSICS.int32.typename,
+                }, {
+                    name: "timestamp",
+                    type: exports.PRIMITIVE_INTRINSICS.uint64.typename,
+                }],
+            returnType: classSpec.name,
+            body: [
+                `var changeEvent = accessor.WriteChangeEvent<Xrpa.DSCollectionChangeEventAccessor>((int)Xrpa.DSChangeType.CreateObject, changeByteCount, timestamp);`,
+                `changeEvent.SetCollectionId(DS_TYPE);`,
+                `changeEvent.SetObjectId(id);`,
+                `return new ${classSpec.name}(changeEvent.AccessChangeData());`,
+            ],
+            isStatic: true,
+            visibility: "public",
+        });
+        classSpec.methods.push({
+            name: "Update",
+            parameters: [{
+                    name: "accessor",
+                    type: gXrpaTypes.DatasetAccessor,
+                }, {
+                    name: "id",
+                    type: dsIdentifierType,
+                }, {
+                    name: "fieldsChanged",
+                    type: exports.PRIMITIVE_INTRINSICS.uint64.typename,
+                }, {
+                    name: "changeByteCount",
+                    type: exports.PRIMITIVE_INTRINSICS.int32.typename,
+                }],
+            returnType: classSpec.name,
+            body: [
+                `var changeEvent = accessor.WriteChangeEvent<Xrpa.DSCollectionUpdateChangeEventAccessor>((int)Xrpa.DSChangeType.UpdateObject, changeByteCount);`,
+                `changeEvent.SetCollectionId(DS_TYPE);`,
+                `changeEvent.SetObjectId(id);`,
+                `changeEvent.SetFieldsChanged(fieldsChanged);`,
+                `return new ${classSpec.name}(changeEvent.AccessChangeData());`,
+            ],
+            isStatic: true,
+            visibility: "public",
+        });
+    }
 }
 exports.makeObjectAccessor = makeObjectAccessor;
 function paramsToString(classSpec, parameters) {
@@ -468,13 +502,13 @@ function genReadWriteValueFunctions(classSpec, params) {
     if (Object.keys(params.fieldsToLocal).length === 1 && localTypeStr === "float") {
         localReturn = `${params.fieldsToLocal[Object.keys(params.fieldsToLocal)[0]]}`;
     }
-    (0, assert_1.default)(gMemoryAccessor, "Expected a registered MemoryAccessor type");
+    (0, assert_1.default)(gXrpaTypes, "Expected Xrpa types to be registered");
     classSpec.methods.push({
         name: "ReadValue",
         returnType: localTypeStr,
         parameters: [{
                 name: "memAccessor",
-                type: gMemoryAccessor,
+                type: gXrpaTypes.MemoryAccessor,
             }, {
                 name: "offset",
                 type: "int",
@@ -492,7 +526,7 @@ function genReadWriteValueFunctions(classSpec, params) {
                 type: params.localType,
             }, {
                 name: "memAccessor",
-                type: gMemoryAccessor,
+                type: gXrpaTypes.MemoryAccessor,
             }, {
                 name: "offset",
                 type: "int",
@@ -543,7 +577,7 @@ function genFieldGetter(classSpec, params) {
                     name: "datastore",
                     type: getDataStoreName(params.apiname),
                 }],
-            isConst: true,
+            isConst: params.isConst,
             noDiscard: true,
             visibility: params.visibility,
             body: includes => {
@@ -560,7 +594,7 @@ function genFieldGetter(classSpec, params) {
             decorations,
             name: `${funcName}Id`,
             returnType: fieldType.declareLocalReturnType(classSpec.namespace, classSpec.includes, !params.convertToLocal),
-            isConst: true,
+            isConst: params.isConst,
             visibility: params.visibility,
             body: [
                 `return ${fieldVar};`,
@@ -572,7 +606,7 @@ function genFieldGetter(classSpec, params) {
             decorations,
             name: funcName,
             returnType: fieldType.declareLocalReturnType(classSpec.namespace, classSpec.includes, false),
-            isConst: true,
+            isConst: params.isConst,
             visibility: params.visibility,
             body: includes => [
                 `return ${fieldType.convertValueToLocal(classSpec.namespace, includes, fieldVar)};`,
@@ -584,7 +618,7 @@ function genFieldGetter(classSpec, params) {
             decorations,
             name: funcName,
             returnType: fieldType.declareLocalReturnType(classSpec.namespace, classSpec.includes, true),
-            isConst: true,
+            isConst: params.isConst,
             visibility: params.visibility,
             body: [
                 `return ${fieldVar};`,

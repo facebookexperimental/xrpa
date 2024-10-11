@@ -30,7 +30,6 @@ class DatasetInterface {
   [[nodiscard]] virtual bool checkSchemaHash(const DSHashValue& schemaHash) const = 0;
   [[nodiscard]] virtual uint64_t getBaseTimestamp() const = 0;
   [[nodiscard]] virtual int32_t getLastChangelogID() const = 0;
-  [[nodiscard]] virtual int32_t getLastMessageID() const = 0;
 
   virtual bool acquire(
       std::chrono::milliseconds timeout,

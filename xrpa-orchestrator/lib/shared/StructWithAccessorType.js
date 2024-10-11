@@ -24,6 +24,10 @@ const StructType_1 = require("./StructType");
 const TypeDefinition_1 = require("./TypeDefinition");
 const TypeValue_1 = require("./TypeValue");
 class StructWithAccessorType extends StructType_1.StructType {
+    constructor(codegen, name, apiname, dsIdentifierType, parentType, fields, localTypeOverride) {
+        super(codegen, name, apiname, parentType, fields, localTypeOverride);
+        this.dsIdentifierType = dsIdentifierType;
+    }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     genLocalTypeDefinition(_inNamespace, _includes) {
         return null;
@@ -48,12 +52,13 @@ class StructWithAccessorType extends StructType_1.StructType {
         if (this.getMetaType() === TypeDefinition_1.TypeMetaType.INTERFACE) {
             return null;
         }
+        const isMessageStruct = (0, TypeDefinition_1.typeIsMessageData)(this);
         const classSpec = new ClassSpec_1.ClassSpec({
             name: this.getReadAccessorType(inNamespace, null),
             namespace: inNamespace,
             includes,
         });
-        this.codegen.makeObjectAccessor(classSpec);
+        this.codegen.makeObjectAccessor(classSpec, false, this.dsIdentifierType.getLocalType(inNamespace, includes));
         const fields = this.getStateFields();
         for (const fieldName in fields) {
             const fieldSpec = fields[fieldName];
@@ -62,8 +67,8 @@ class StructWithAccessorType extends StructType_1.StructType {
                 fieldName,
                 fieldType: fieldSpec.type,
                 fieldToMemberVar: fieldName => {
-                    const fieldOffsetName = `${(0, Helpers_1.upperFirst)(fieldName)}FieldOffset`;
-                    const fieldOffset = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), fieldOffsetName);
+                    const fieldOffset = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, Helpers_1.upperFirst)(fieldName)}FieldOffset`);
+                    const fieldSize = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, Helpers_1.upperFirst)(fieldName)}FieldSize`);
                     const accessor = fieldSpec.type.getInternalType(inNamespace, includes);
                     const accessorIsStruct = (0, TypeDefinition_1.typeIsStruct)(fieldSpec.type) || (0, TypeDefinition_1.typeIsReference)(fieldSpec.type);
                     const accessorMaxBytes = fieldSpec.type.getInternalMaxBytes();
@@ -71,12 +76,13 @@ class StructWithAccessorType extends StructType_1.StructType {
                         accessor,
                         accessorIsStruct,
                         accessorMaxBytes,
-                        fieldOffset,
+                        fieldOffset: isMessageStruct ? fieldOffset : this.codegen.genDerefMethodCall("", "advanceReadPos", [fieldSize]),
                         memAccessorVar: this.codegen.privateMember("memAccessor"),
                     });
                 },
                 convertToLocal: true,
                 description: fieldSpec.description,
+                isConst: isMessageStruct,
             });
         }
         this.genStaticAccessorFields(classSpec);
@@ -86,13 +92,14 @@ class StructWithAccessorType extends StructType_1.StructType {
         if (this.getMetaType() === TypeDefinition_1.TypeMetaType.INTERFACE) {
             return null;
         }
+        const isMessageStruct = (0, TypeDefinition_1.typeIsMessageData)(this);
         const classSpec = new ClassSpec_1.ClassSpec({
             name: this.getWriteAccessorType(inNamespace, null),
             namespace: inNamespace,
             includes,
             superClass: this.getReadAccessorType(inNamespace, null),
         });
-        this.codegen.makeObjectAccessor(classSpec);
+        this.codegen.makeObjectAccessor(classSpec, !isMessageStruct, this.dsIdentifierType.getLocalType(inNamespace, includes));
         const fields = this.getStateFields();
         for (const fieldName in fields) {
             const fieldSpec = fields[fieldName];
@@ -100,8 +107,8 @@ class StructWithAccessorType extends StructType_1.StructType {
                 fieldName,
                 fieldType: fieldSpec.type,
                 valueToMemberWrite: value => {
-                    const fieldOffsetName = `${(0, Helpers_1.upperFirst)(fieldName)}FieldOffset`;
-                    const fieldOffset = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), fieldOffsetName);
+                    const fieldOffset = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, Helpers_1.upperFirst)(fieldName)}FieldOffset`);
+                    const fieldSize = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, Helpers_1.upperFirst)(fieldName)}FieldSize`);
                     const accessor = fieldSpec.type.getInternalType(inNamespace, includes);
                     const accessorIsStruct = (0, TypeDefinition_1.typeIsStruct)(fieldSpec.type) || (0, TypeDefinition_1.typeIsReference)(fieldSpec.type);
                     const accessorMaxBytes = fieldSpec.type.getInternalMaxBytes();
@@ -109,7 +116,7 @@ class StructWithAccessorType extends StructType_1.StructType {
                         accessor,
                         accessorIsStruct,
                         accessorMaxBytes,
-                        fieldOffset,
+                        fieldOffset: isMessageStruct ? fieldOffset : this.codegen.genDerefMethodCall("", "advanceWritePos", [fieldSize]),
                         memAccessorVar: this.codegen.privateMember("memAccessor"),
                         value,
                     });

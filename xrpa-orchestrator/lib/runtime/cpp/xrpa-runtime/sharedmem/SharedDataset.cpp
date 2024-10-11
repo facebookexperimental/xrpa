@@ -35,14 +35,15 @@ SharedDataset::SharedDataset(const std::string& name, const DatasetConfig& confi
     : datasetName_(name), config_(config) {}
 
 bool SharedDataset::initialize() {
-  DSHeader header = DatasetAccessor::genHeader(config_);
+  int32_t totalBytes = DatasetAccessor::getMemSize(config_);
 
   isInitialized_ = false;
-  auto didCreate = memoryBlock_.openMemory(datasetName_, header.totalBytes);
+  auto didCreate = memoryBlock_.openMemory(datasetName_, totalBytes);
 
   if (didCreate) {
-    auto didLock = acquire(
-        SM_TIMEOUT, [&](DatasetAccessor* accessor) { accessor->initContents(header, config_); });
+    auto didLock = acquire(SM_TIMEOUT, [&](DatasetAccessor* accessor) {
+      accessor->initContents(totalBytes, config_);
+    });
     if (!didLock) {
       return false;
     }
@@ -92,23 +93,18 @@ bool SharedDataset::acquire(
 }
 
 bool SharedDataset::checkSchemaHash(const DSHashValue& schemaHash) const {
-  const auto* header = reinterpret_cast<const DSHeader*>(memoryBlock_.memBuffer);
-  return header != nullptr ? header->schemaHash == schemaHash : false;
+  auto header = DSHeaderAccessor(memoryBlock_.memBuffer);
+  return header.isNull() ? false : header.getSchemaHash() == schemaHash;
 }
 
 uint64_t SharedDataset::getBaseTimestamp() const {
-  const auto* header = reinterpret_cast<const DSHeader*>(memoryBlock_.memBuffer);
-  return header != nullptr ? header->baseTimestamp : 0;
+  auto header = DSHeaderAccessor(memoryBlock_.memBuffer);
+  return header.isNull() ? 0 : header.getBaseTimestamp();
 }
 
 int32_t SharedDataset::getLastChangelogID() const {
-  const auto* header = reinterpret_cast<const DSHeader*>(memoryBlock_.memBuffer);
-  return header != nullptr ? header->lastChangelogID : 0;
-}
-
-int32_t SharedDataset::getLastMessageID() const {
-  const auto* header = reinterpret_cast<const DSHeader*>(memoryBlock_.memBuffer);
-  return header != nullptr ? header->lastMessageID : 0;
+  auto header = DSHeaderAccessor(memoryBlock_.memBuffer);
+  return header.isNull() ? 0 : header.getLastChangelogID();
 }
 
 } // namespace Xrpa

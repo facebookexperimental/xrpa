@@ -43,7 +43,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genOutboundReconciledTypes = exports.defaultFieldToMemberVar = exports.genWriteFunctionBody = exports.genWriteFieldAccessors = exports.genClearSetClearFunctionBody = exports.genClearSetSetterFunctionBody = exports.genFieldSetDirty = void 0;
+exports.genOutboundReconciledTypes = exports.defaultFieldToMemberVar = exports.genPrepFullUpdateFunctionBody = exports.genWriteFunctionBody = exports.genWriteFieldAccessors = exports.genClearSetClearFunctionBody = exports.genClearSetSetterFunctionBody = exports.genFieldSetDirty = void 0;
 const assert_1 = __importDefault(require("assert"));
 const ClassSpec_1 = require("../../shared/ClassSpec");
 const Helpers_1 = require("../../shared/Helpers");
@@ -67,9 +67,11 @@ function genFieldSetDirty(params) {
         ];
     }
     else {
+        const fieldSize = params.typeDef.getFieldSize(params.ctx.namespace, params.includes, params.fieldName);
         return [
             `if (collection_ && (changeBits_ & ${changeBit}) == 0) {`,
             `  changeBits_ |= ${changeBit};`,
+            `  changeByteCount_ += ${fieldSize};`,
             `  collection_->setDirty(getXrpaId(), ${changeBit});`,
             `}`,
         ];
@@ -175,6 +177,7 @@ function genWriteFieldAccessors(classSpec, params) {
             fieldToMemberVar: params.fieldToMemberVar,
             convertToLocal: false,
             description: undefined,
+            isConst: true,
         });
         if (!params.gettersOnly) {
             genWriteFieldSetters(classSpec, {
@@ -193,18 +196,12 @@ function genWriteFunctionBody(params) {
         (0, assert_1.default)(!params.canCreate);
     }
     const fieldUpdateLines = [];
-    const initializerLines = [];
     const writeAccessor = params.reconcilerDef.type.getWriteAccessorType(params.ctx.namespace, params.includes);
     const accessor = params.proxyObj ? `${params.proxyObj}->` : "objAccessor.";
     const typeFields = params.reconcilerDef.type.getStateFields();
     for (const fieldName in typeFields) {
-        const fieldSpec = typeFields[fieldName];
         const pascalFieldName = (0, Helpers_1.upperFirst)(fieldName);
-        if (params.reconcilerDef.isInboundField(fieldName)) {
-            const localDefault = fieldSpec.type.getLocalDefaultValue(params.ctx.namespace, params.includes);
-            initializerLines.push(`${accessor}set${pascalFieldName}(${localDefault});`);
-        }
-        else {
+        if (!params.reconcilerDef.isInboundField(fieldName)) {
             const fieldVar = params.fieldToMemberVar(fieldName);
             fieldUpdateLines.push(`if (changeBits_ & ${params.reconcilerDef.type.getChangedBit(params.ctx.namespace, params.includes, fieldName)}) {`, `  ${accessor}set${pascalFieldName}(${fieldVar});`, `}`);
         }
@@ -226,28 +223,49 @@ function genWriteFunctionBody(params) {
         return [
             ...(params.canCreate ? [
                 `${writeAccessor} objAccessor;`,
-                `if (createTimestamp_) {`,
-                `  objAccessor = accessor->createObject<${writeAccessor}>(getXrpaId(), createTimestamp_);`,
-                `  createTimestamp_ = 0;`,
-                ...(0, Helpers_1.indent)(1, initializerLines),
+                `if (!createWritten_) {`,
+                `  changeBits_ = ${params.reconcilerDef.getOutboundChangeBits()};`,
+                `  changeByteCount_ = ${params.reconcilerDef.getOutboundChangeByteCount()};`,
+                `  objAccessor = ${writeAccessor}::create(accessor, getXrpaId(), changeByteCount_, createTimestamp_);`,
+                `  createWritten_ = true;`,
                 `} else if (changeBits_ != 0) {`,
-                `  objAccessor = accessor->updateObject<${writeAccessor}>(getXrpaId(), changeBits_);`,
+                `  objAccessor = ${writeAccessor}::update(accessor, getXrpaId(), changeBits_, changeByteCount_);`,
                 `}`,
             ] : [
                 `if (changeBits_ == 0) {`,
                 `  return;`,
                 `}`,
-                `auto objAccessor = accessor->updateObject<${writeAccessor}>(getXrpaId(), changeBits_);`,
+                `auto objAccessor = ${writeAccessor}::update(accessor, getXrpaId(), changeBits_, changeByteCount_);`,
             ]),
             `if (objAccessor.isNull()) {`,
             `  return;`,
             `}`,
             ...fieldUpdateLines,
             `changeBits_ = 0;`,
+            `changeByteCount_ = 0;`,
         ];
     }
 }
 exports.genWriteFunctionBody = genWriteFunctionBody;
+function genPrepFullUpdateFunctionBody(params) {
+    const outboundChangeBits = params.reconcilerDef.getOutboundChangeBits();
+    if (!outboundChangeBits && !params.canCreate) {
+        return ["return 0;"];
+    }
+    return [
+        ...(params.canCreate ? [
+            `createWritten_ = false;`,
+        ] : []),
+        `changeBits_ = ${outboundChangeBits};`,
+        `changeByteCount_ = ${params.reconcilerDef.getOutboundChangeByteCount()};`,
+        ...(params.canCreate ? [
+            `return createTimestamp_;`,
+        ] : [
+            `return 1;`,
+        ]),
+    ];
+}
+exports.genPrepFullUpdateFunctionBody = genPrepFullUpdateFunctionBody;
 function defaultFieldToMemberVar(fieldName) {
     return (0, CppCodeGenImpl_1.privateMember)(`local${(0, Helpers_1.upperFirst)(fieldName)}`);
 }
@@ -260,6 +278,7 @@ function genOutboundReconciledTypes(ctx, includesIn) {
         if (typeDef.getLocalHeaderFile() !== headerFile) {
             continue;
         }
+        const readAccessor = typeDef.getReadAccessorType(ctx.namespace, includesIn);
         const classSpec = new ClassSpec_1.ClassSpec({
             name: typeDef.getLocalType(ctx.namespace, null),
             superClass: typeDef.interfaceType ? typeDef.interfaceType.getLocalType(ctx.namespace, includesIn) : CppDatasetLibraryTypes_1.DataStoreObject.getLocalType(ctx.namespace, includesIn),
@@ -300,12 +319,22 @@ function genOutboundReconciledTypes(ctx, includesIn) {
                 proxyObj: null,
             }),
         });
+        classSpec.methods.push({
+            name: "prepDSFullUpdate",
+            returnType: CppCodeGenImpl.PRIMITIVE_INTRINSICS.uint64.typename,
+            body: includes => genPrepFullUpdateFunctionBody({
+                ctx,
+                includes,
+                reconcilerDef,
+                canCreate: true,
+            }),
+        });
         if (reconcilerDef.shouldGenerateConcreteReconciledType()) {
             classSpec.methods.push({
                 name: "processDSUpdate",
                 parameters: [{
                         name: "value",
-                        type: `const ${typeDef.getReadAccessorType(ctx.namespace, classSpec.includes)}&`,
+                        type: readAccessor,
                     }, {
                         name: "fieldsChanged",
                         type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
@@ -336,7 +365,7 @@ function genOutboundReconciledTypes(ctx, includesIn) {
                 name: "processDSUpdate",
                 parameters: [{
                         name: "value",
-                        type: `const ${typeDef.getReadAccessorType(ctx.namespace, classSpec.includes)}&`,
+                        type: readAccessor,
                     }, {
                         name: "fieldsChanged",
                         type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,

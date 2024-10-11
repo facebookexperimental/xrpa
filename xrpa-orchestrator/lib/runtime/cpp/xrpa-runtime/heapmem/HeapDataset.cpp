@@ -23,11 +23,12 @@ namespace Xrpa {
 static constexpr auto HM_TIMEOUT = 1s;
 
 HeapDataset::HeapDataset(const DatasetConfig& config) {
-  DSHeader header = DatasetAccessor::genHeader(config);
+  int32_t totalBytes = DatasetAccessor::getMemSize(config);
 
-  memoryBlock = malloc(header.totalBytes);
+  memoryBlock = malloc(totalBytes);
 
-  acquire(HM_TIMEOUT, [&](DatasetAccessor* accessor) { accessor->initContents(header, config); });
+  acquire(
+      HM_TIMEOUT, [&](DatasetAccessor* accessor) { accessor->initContents(totalBytes, config); });
   isInitialized_ = true;
 }
 
@@ -49,23 +50,18 @@ bool HeapDataset::acquire(
 }
 
 bool HeapDataset::checkSchemaHash(const DSHashValue& schemaHash) const {
-  const auto* header = reinterpret_cast<const DSHeader*>(memoryBlock);
-  return header != nullptr ? header->schemaHash == schemaHash : false;
+  auto header = DSHeaderAccessor(memoryBlock);
+  return header.isNull() ? false : header.getSchemaHash() == schemaHash;
 }
 
 uint64_t HeapDataset::getBaseTimestamp() const {
-  const auto* header = reinterpret_cast<const DSHeader*>(memoryBlock);
-  return header != nullptr ? header->baseTimestamp : 0;
+  auto header = DSHeaderAccessor(memoryBlock);
+  return header.isNull() ? 0 : header.getBaseTimestamp();
 }
 
 int32_t HeapDataset::getLastChangelogID() const {
-  const auto* header = reinterpret_cast<const DSHeader*>(memoryBlock);
-  return header != nullptr ? header->lastChangelogID : 0;
-}
-
-int32_t HeapDataset::getLastMessageID() const {
-  const auto* header = reinterpret_cast<const DSHeader*>(memoryBlock);
-  return header != nullptr ? header->lastMessageID : 0;
+  auto header = DSHeaderAccessor(memoryBlock);
+  return header.isNull() ? 0 : header.getLastChangelogID();
 }
 
 } // namespace Xrpa

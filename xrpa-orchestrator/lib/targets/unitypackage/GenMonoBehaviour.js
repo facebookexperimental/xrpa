@@ -33,14 +33,13 @@ function genComponentInit(ctx, includes, reconcilerDef) {
         includes,
         idParts: (0, Helpers_1.filterToNumberArray)(reconcilerDef.componentProps.id, 2),
     });
-    const bitMask = reconcilerDef.getOutboundChangeBits();
     return [
         `if (_dsIsInitialized) {`,
         `  return;`,
         `}`,
         `_dsIsInitialized = true;`,
         `_id = ${id};`,
-        `_changeBits = ${bitMask};`,
+        `_createWritten = false;`,
         ``,
         ...(0, MonoBehaviourShared_1.genFieldInitializers)(ctx, includes, reconcilerDef),
         ``,
@@ -207,6 +206,16 @@ function genMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
         isOverride: Boolean(reconcilerDef.type.interfaceType),
     });
     classSpec.methods.push({
+        name: "PrepDSFullUpdate",
+        returnType: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
+        body: includes => (0, GenWriteReconcilerDataStore_1.genPrepFullUpdateFunctionBody)({
+            ctx,
+            includes,
+            reconcilerDef,
+            canCreate: true,
+        }),
+    });
+    classSpec.methods.push({
         name: "ProcessDSUpdate",
         parameters: [{
                 name: "value",
@@ -247,6 +256,18 @@ function genMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
         name: "changeBits",
         type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
         initialValue: "0",
+        visibility: "private",
+    });
+    classSpec.members.push({
+        name: "changeByteCount",
+        type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
+        initialValue: "0",
+        visibility: "private",
+    });
+    classSpec.members.push({
+        name: "createWritten",
+        type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.bool.typename,
+        initialValue: "false",
         visibility: "private",
     });
     classSpec.members.push({

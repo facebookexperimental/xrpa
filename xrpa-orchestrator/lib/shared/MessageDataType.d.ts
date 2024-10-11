@@ -17,11 +17,12 @@
 
 import { ClassSpec } from "./ClassSpec";
 import { IncludeAggregator } from "./Helpers";
+import { StructType } from "./StructType";
 import { StructWithAccessorType } from "./StructWithAccessorType";
 import { TargetCodeGenImpl } from "./TargetCodeGen";
 import { MessageDataTypeDefinition, StructSpec, TypeMetaType } from "./TypeDefinition";
 export declare class MessageDataType extends StructWithAccessorType implements MessageDataTypeDefinition {
-    constructor(codegen: TargetCodeGenImpl, name: string, apiname: string, fields: StructSpec);
+    constructor(codegen: TargetCodeGenImpl, name: string, apiname: string, dsIdentifierType: StructType, fields: StructSpec);
     getMetaType(): TypeMetaType.MESSAGE_DATA;
     hasFields(): boolean;
     genReadAccessorDefinition(inNamespace: string, includes: IncludeAggregator | null): ClassSpec | null;

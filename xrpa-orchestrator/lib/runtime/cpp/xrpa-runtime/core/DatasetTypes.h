@@ -61,6 +61,20 @@ class ObjectAccessorInterface {
 
  protected:
   MemoryAccessor memAccessor_;
+  int32_t curReadPos_ = 0;
+  int32_t curWritePos_ = 0;
+
+  int32_t advanceReadPos(int32_t numBytes) {
+    auto pos = curReadPos_;
+    curReadPos_ += numBytes;
+    return pos;
+  }
+
+  int32_t advanceWritePos(int32_t numBytes) {
+    auto pos = curWritePos_;
+    curWritePos_ += numBytes;
+    return pos;
+  }
 };
 
 struct DSHashValue {
@@ -100,31 +114,65 @@ struct DSHashValue {
   }
 };
 
-struct DSHeader {
-  int32_t datasetVersion{};
-  int32_t totalBytes{};
-  DSHashValue schemaHash;
+class DSHeaderAccessor : public ObjectAccessorInterface {
+ public:
+  static constexpr int32_t DS_SIZE = 52;
 
-  // System clock time in microseconds when the Dataset was initialized; all other timestamps are
-  // relative to this value.
-  // Also indicates that the dataset memory is initialized, as it is set last.
-  uint64_t baseTimestamp{};
+  explicit DSHeaderAccessor(void* memPtr)
+      : ObjectAccessorInterface(MemoryAccessor(memPtr, 0, DS_SIZE)) {}
 
-  // memory offsets to the various region data structures
-  int32_t objectHeadersRegion{};
-  int32_t memoryPoolRegion{};
-  int32_t changelogRegion{};
-  int32_t messageQueueRegion{};
+  int32_t getDatasetVersion() {
+    return memAccessor_.readValue<int32_t>(0);
+  }
 
-  // this is the monotonically increasing ID value for the last entry written to the changelog;
-  // readers can check this without locking the mutex to see if there have been changes
-  int32_t lastChangelogID{};
+  void setDatasetVersion(int32_t type) {
+    memAccessor_.writeValue<int32_t>(type, 0);
+  }
 
-  // this is the monotonically increasing ID value for the last entry written to the message queue;
-  // readers can check this without locking the mutex to see if there have been changes
-  int32_t lastMessageID{};
+  int32_t getTotalBytes() {
+    return memAccessor_.readValue<int32_t>(4);
+  }
+
+  void setTotalBytes(int32_t type) {
+    memAccessor_.writeValue<int32_t>(type, 4);
+  }
+
+  DSHashValue getSchemaHash() {
+    return DSHashValue::readValue(memAccessor_, 8);
+  }
+
+  void setSchemaHash(const DSHashValue& hash) {
+    DSHashValue::writeValue(hash, memAccessor_, 8);
+  }
+
+  uint64_t getBaseTimestamp() {
+    return memAccessor_.readValue<uint64_t>(40);
+  }
+
+  void setBaseTimestamp(uint64_t timestamp) {
+    memAccessor_.writeValue<uint64_t>(timestamp, 40);
+  }
+
+  int32_t getLastChangelogID() {
+    return memAccessor_.readValue<int32_t>(48);
+  }
+
+  void setLastChangelogID(int32_t id) {
+    memAccessor_.writeValue<int32_t>(id, 48);
+  }
+
+  PlacedRingBuffer* getChangelog(int32_t numBytes = 0) {
+    auto* changelog = static_cast<PlacedRingBuffer*>(memAccessor_.getRawPointer(DS_SIZE, 0));
+    if (numBytes > 0) {
+      changelog->init(numBytes);
+    }
+    return changelog;
+  }
+
+  void setNull() {
+    memAccessor_ = MemoryAccessor();
+  }
 };
-static_assert(sizeof(DSHeader) == 72);
 
 struct DSIdentifier {
   uint64_t id0;
@@ -187,148 +235,29 @@ struct DSIdentifier {
   }
 };
 
-struct DSObjectHeader {
-  DSIdentifier id;
-  int32_t type{};
-  int32_t poolOffset{};
-  int32_t createTimestamp{};
-
-  static int compare(const DSObjectHeader& a, const DSObjectHeader& b) {
-    return a.id.compare(b.id);
-  }
-
-  static int compare(const DSObjectHeader& a, const DSIdentifier& id) {
-    return a.id.compare(id);
-  }
-};
-static_assert(sizeof(DSObjectHeader) == 32);
-static_assert(offsetof(DSObjectHeader, type) == 16);
-
-enum class DSChangeType : int32_t {
-  CreateObject = 0,
-  DeleteObject = 1,
-  UpdateObject = 2,
-};
-
 class DSChangeEventAccessor : public ObjectAccessorInterface {
  public:
-  static constexpr int32_t DS_SIZE = 32;
+  static constexpr int32_t DS_SIZE = 8;
 
   explicit DSChangeEventAccessor(MemoryAccessor memAccessor)
       : ObjectAccessorInterface(std::move(memAccessor)) {}
 
-  DSIdentifier getTargetID() {
-    return DSIdentifier::readValue(memAccessor_, 0);
+  int32_t getChangeType() {
+    return memAccessor_.readValue<int32_t>(0);
   }
 
-  void setTargetID(const DSIdentifier& id) {
-    DSIdentifier::writeValue(id, memAccessor_, 0);
-  }
-
-  int32_t getTargetType() {
-    return memAccessor_.readValue<int32_t>(16);
-  }
-
-  void setTargetType(int32_t type) {
-    memAccessor_.writeValue<int32_t>(type, 16);
-  }
-
-  int32_t getTargetPoolOffset() {
-    return memAccessor_.readValue<int32_t>(20);
-  }
-
-  void setTargetPoolOffset(int32_t poolOffset) {
-    memAccessor_.writeValue<int32_t>(poolOffset, 20);
-  }
-
-  void setTarget(const DSObjectHeader& target) {
-    setTargetID(target.id);
-    setTargetType(target.type);
-    setTargetPoolOffset(target.poolOffset);
-  }
-
-  void clearPoolOffsetIfMatch(int32_t poolOffset) {
-    int32_t curPoolOffset = getTargetPoolOffset();
-    if (curPoolOffset == poolOffset) {
-      setTargetPoolOffset(0);
-    }
-  }
-
-  DSChangeType getChangeType() {
-    return memAccessor_.readValue<DSChangeType>(24);
-  }
-
-  void setChangeType(DSChangeType type) {
-    memAccessor_.writeValue<DSChangeType>(type, 24);
+  void setChangeType(int32_t type) {
+    memAccessor_.writeValue<int32_t>(type, 0);
   }
 
   int32_t getTimestamp() {
-    return memAccessor_.readValue<int32_t>(28);
+    return memAccessor_.readValue<int32_t>(4);
   }
 
   void setTimestamp(int32_t timestamp) {
-    memAccessor_.writeValue<int32_t>(timestamp, 28);
-  }
-
-  uint64_t getChangedFields() {
-    return memAccessor_.readValue<uint64_t>(32);
-  }
-
-  void setChangedFields(uint64_t fieldMask) {
-    memAccessor_.writeValue<uint64_t>(fieldMask, 32);
+    memAccessor_.writeValue<int32_t>(timestamp, 4);
   }
 };
-
-class DSMessageAccessor : public ObjectAccessorInterface {
- public:
-  static constexpr int32_t DS_SIZE = 28;
-
-  explicit DSMessageAccessor(MemoryAccessor memAccessor)
-      : ObjectAccessorInterface(std::move(memAccessor)) {}
-
-  DSIdentifier getTargetID() {
-    return DSIdentifier::readValue(memAccessor_, 0);
-  }
-
-  void setTargetID(const DSIdentifier& id) {
-    DSIdentifier::writeValue(id, memAccessor_, 0);
-  }
-
-  int32_t getTargetType() {
-    return memAccessor_.readValue<int32_t>(16);
-  }
-
-  void setTargetType(int32_t type) {
-    memAccessor_.writeValue<int32_t>(type, 16);
-  }
-
-  void setTarget(const DSObjectHeader& target) {
-    setTargetID(target.id);
-    setTargetType(target.type);
-  }
-
-  int32_t getMessageType() {
-    return memAccessor_.readValue<int32_t>(20);
-  }
-
-  void setMessageType(int32_t type) {
-    memAccessor_.writeValue<int32_t>(type, 20);
-  }
-
-  int32_t getTimestamp() {
-    return memAccessor_.readValue<int32_t>(24);
-  }
-
-  void setTimestamp(int32_t timestamp) {
-    memAccessor_.writeValue<int32_t>(timestamp, 24);
-  }
-
-  MemoryAccessor accessMessageData() {
-    return memAccessor_.slice(28);
-  }
-};
-
-using DSObjectHeaderArray = PlacedSortedArray<DSObjectHeader>;
 
 } // namespace Xrpa
 

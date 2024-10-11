@@ -54,6 +54,7 @@ declare class BaseReconcilerDefinition {
     isSerializedField(fieldName: string): boolean;
     getInboundChangeBits(): number;
     getOutboundChangeBits(): number;
+    getOutboundChangeByteCount(): number;
     getIndexedBitMask(): number;
     hasIndexedBinding(): boolean;
 }
@@ -74,12 +75,13 @@ export declare class OutputReconcilerDefinition extends BaseReconcilerDefinition
 export declare class DataStoreDefinition {
     readonly moduleDef: ModuleDefinition;
     readonly dataset: string;
+    readonly isModuleProgramInterface: boolean;
     readonly typeMap: TypeMap;
     private inputs;
     private outputs;
     readonly apiname: string;
     readonly datamodel: DataModelDefinition;
-    constructor(moduleDef: ModuleDefinition, dataset: string, typeMap: TypeMap, apiname?: string);
+    constructor(moduleDef: ModuleDefinition, dataset: string, isModuleProgramInterface: boolean, typeMap: TypeMap, apiname?: string);
     addInputReconciler(params: {
         type: CollectionTypeDefinition | string;
         outboundFields?: Array<string>;

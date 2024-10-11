@@ -144,11 +144,12 @@ class MemoryAccessor {
 
   template <>
   [[nodiscard]] std::string readValue<std::string>(int32_t pos, int32_t maxBytes) const {
+    int32_t strMaxBytes = maxBytes - 4;
     auto byteCount = readValue<int32_t>(pos);
-    xrpaDebugAssert(byteCount <= maxBytes);
+    xrpaDebugAssert(byteCount <= strMaxBytes);
     pos += 4;
 
-    xrpaDebugBoundsAssert(pos, maxBytes, 0, size_);
+    xrpaDebugBoundsAssert(pos, strMaxBytes, 0, size_);
     return std::string(reinterpret_cast<char*>(memPtr_ + offset_ + pos), byteCount);
   }
 
@@ -169,12 +170,14 @@ class MemoryAccessor {
   template <>
   void writeValue<std::string>(const std::string& val, int32_t pos, int32_t maxBytes) {
     int32_t byteCount = val.size();
+    int32_t strMaxBytes = maxBytes - 4;
+
     // truncate string to fit in the buffer
-    byteCount = std::min(maxBytes, byteCount);
+    byteCount = std::min(strMaxBytes, byteCount);
     writeValue<int32_t>(byteCount, pos);
     pos += 4;
 
-    xrpaDebugBoundsAssert(pos, maxBytes, 0, size_);
+    xrpaDebugBoundsAssert(pos, strMaxBytes, 0, size_);
     std::memcpy(memPtr_ + offset_ + pos, val.data(), byteCount);
   }
 

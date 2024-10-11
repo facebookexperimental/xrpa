@@ -27,12 +27,18 @@ using namespace std::chrono_literals;
 namespace Xrpa {
 
 DatasetReconciler::DatasetReconciler(
-    std::weak_ptr<DatasetInterface> dataset,
+    std::weak_ptr<DatasetInterface> inboundDataset,
+    std::weak_ptr<DatasetInterface> outboundDataset,
     const DSHashValue& schemaHash,
     int messageDataPoolSize)
-    : dataset_(dataset) {
-  auto datasetPtr = dataset_.lock();
-  if (datasetPtr && !datasetPtr->checkSchemaHash(schemaHash)) {
+    : inboundDataset_(inboundDataset), outboundDataset_(outboundDataset) {
+  auto inboundDatasetPtr = inboundDataset_.lock();
+  if (inboundDatasetPtr && !inboundDatasetPtr->checkSchemaHash(schemaHash)) {
+    throw std::runtime_error("Schema hash mismatch");
+  }
+
+  auto outboundDatasetPtr = outboundDataset_.lock();
+  if (outboundDatasetPtr && !outboundDatasetPtr->checkSchemaHash(schemaHash)) {
     throw std::runtime_error("Schema hash mismatch");
   }
 
@@ -46,57 +52,34 @@ DatasetReconciler::DatasetReconciler(
 
 void DatasetReconciler::registerCollection(std::shared_ptr<CollectionInterface> collection) {
   auto collectionId = collection->getId();
-  if (collection->isLocalOwned()) {
-    pendingCollectionClears_.emplace_back(collectionId);
-  }
   collections_.try_emplace(collectionId, std::move(collection));
 }
 
-void DatasetReconciler::sendOutboundMessages(DatasetAccessor* accessor) {
-  if (outboundMessages_.empty()) {
-    return;
-  }
-  if (!accessor->isValid()) {
-    return;
-  }
-
-  for (auto& message : outboundMessages_) {
-    accessor->sendMessage(message.id_, message.messageType_, message.messageData_.getSize())
-        .copyFrom(message.messageData_);
-  }
-  outboundMessages_.clear();
-  messageDataPoolPos_ = 0;
-}
-
-void DatasetReconciler::dispatchInboundMessages(DatasetAccessor* accessor) {
-  if (!accessor->isValid()) {
+void DatasetReconciler::tickInbound() {
+  auto inboundDataset = inboundDataset_.lock();
+  if (!inboundDataset) {
     return;
   }
 
-  int32_t oldestTimestamp = accessor->getCurrentTimestamp() - messageLifetime_;
+  // non-blocking check for inbound changes
+  bool bHasInboundChanges = changelogIter_.hasNext(inboundDataset->getLastChangelogID());
+  if (!bHasInboundChanges) {
+    return;
+  }
 
-  auto* messageQueue = accessor->getMessageQueue();
-  while (messageIter_.hasNext(messageQueue)) {
-    auto message = DSMessageAccessor(messageIter_.next(messageQueue));
-    auto timestamp = message.getTimestamp();
-    if (timestamp < oldestTimestamp) {
-      continue;
-    }
+  // acquire lock
+  auto didLock = inboundDataset->acquire(
+      1ms, [&](DatasetAccessor* accessor) { reconcileInboundChanges(accessor); });
 
-    auto id = message.getTargetID();
-    auto collectionId = message.getTargetType();
-    auto messageType = message.getMessageType();
-    auto messageData = message.accessMessageData();
-
-    if (auto iter = collections_.find(collectionId); iter != collections_.end()) {
-      iter->second->processMessage(id, messageType, timestamp, messageData);
-    }
+  if (!didLock) {
+    // TODO raise a warning about this, the expiry time for the acquire call may need adjusting
+    return;
   }
 }
 
-void DatasetReconciler::tick() {
-  auto dataset = dataset_.lock();
-  if (!dataset) {
+void DatasetReconciler::tickOutbound() {
+  auto outboundDataset = outboundDataset_.lock();
+  if (!outboundDataset) {
     return;
   }
 
@@ -105,40 +88,16 @@ void DatasetReconciler::tick() {
   }
 
   bool bHasOutboundMessages = !outboundMessages_.empty();
-  bool bHasOutboundChanges = !pendingCollectionClears_.empty() || !pendingWrites_.empty();
+  bool bHasOutboundChanges =
+      requestInboundFullUpdate_ || pendingOutboundFullUpdate_ || !pendingWrites_.empty();
 
-  // non-blocking check for inbound changes
-  bool bHasInboundChanges = changelogIter_.hasNext(dataset->getLastChangelogID());
-  bool bHasInboundMessages = messageIter_.hasNext(dataset->getLastMessageID());
-
-  if (!bHasInboundChanges && !bHasInboundMessages && !bHasOutboundChanges &&
-      !bHasOutboundMessages) {
+  if (!bHasOutboundChanges && !bHasOutboundMessages) {
     return;
   }
 
   // acquire lock
-  auto didLock = dataset->acquire(1ms, [&](DatasetAccessor* accessor) {
-    // process inbound changes
-    auto* changelog = accessor->getChangeLog();
-    if (changelogIter_.hasMissedEntries(changelog)) {
-      // more changes came in between tick() calls than the changelog can hold, so reconcile the
-      // entire dataset
-      reconcileInboundFromIndex(accessor);
-      changelogIter_.setToEnd(changelog);
-    } else {
-      reconcileInboundFromChangelog(accessor, changelog);
-    }
-
-    // dispatch inbound messages
-    dispatchInboundMessages(accessor);
-
-    // write outbound changes
-    reconcileOutboundChanges(accessor);
-
-    // send outbound messages last, so that any messages that may have been sent as a result of
-    // reconciling don't have to wait for a full tick cycle to be written into the dataset
-    sendOutboundMessages(accessor);
-  });
+  auto didLock = outboundDataset->acquire(
+      1ms, [&](DatasetAccessor* accessor) { reconcileOutboundChanges(accessor); });
 
   if (!didLock) {
     // TODO raise a warning about this, the expiry time for the acquire call may need adjusting
@@ -147,109 +106,169 @@ void DatasetReconciler::tick() {
 }
 
 void DatasetReconciler::shutdown() {
-  auto dataset = dataset_.lock();
-  if (!dataset) {
+  auto outboundDataset = outboundDataset_.lock();
+  if (!outboundDataset) {
     return;
   }
 
   // acquire lock
-  dataset->acquire(1ms, [&](DatasetAccessor* accessor) {
-    // delete all outbound objects from the dataset
-    for (auto& iter : collections_) {
-      if (iter.second->isLocalOwned()) {
-        auto collectionId = iter.second->getId();
-        accessor->deleteAllByType(collectionId);
-      }
-    }
-  });
+  outboundDataset->acquire(
+      1ms, [&](DatasetAccessor* accessor) { accessor->writeChangeEvent(DSChangeType::Shutdown); });
 }
 
 void DatasetReconciler::reconcileOutboundChanges(DatasetAccessor* accessor) {
-  for (auto collectionId : pendingCollectionClears_) {
-    accessor->deleteAllByType(collectionId);
+  if (!accessor->isValid()) {
+    return;
   }
-  pendingCollectionClears_.clear();
 
+  if (requestInboundFullUpdate_) {
+    accessor->writeChangeEvent(DSChangeType::RequestFullUpdate);
+    requestInboundFullUpdate_ = false;
+  }
+
+  if (pendingOutboundFullUpdate_) {
+    accessor->writeChangeEvent(DSChangeType::FullUpdate);
+    pendingOutboundFullUpdate_ = false;
+  }
+
+  // write changes
   for (auto& pendingWrite : pendingWrites_) {
     if (auto iter = collections_.find(pendingWrite.collectionId_); iter != collections_.end()) {
-      iter->second->writeChanges(accessor, pendingWrite.id_);
+      iter->second->writeChanges(accessor, pendingWrite.objectId_);
     }
   }
   pendingWrites_.clear();
+
+  // write messages
+  for (auto& message : outboundMessages_) {
+    auto data = accessor->writeChangeEvent<DSCollectionMessageChangeEventAccessor>(
+        DSChangeType::Message, message.messageData_.getSize());
+    data.setCollectionId(message.collectionId_);
+    data.setObjectId(message.objectId_);
+    data.setFieldId(message.fieldId_);
+    data.accessChangeData().copyFrom(message.messageData_);
+  }
+  outboundMessages_.clear();
+  messageDataPoolPos_ = 0;
 }
 
-void DatasetReconciler::reconcileInboundFromIndex(DatasetAccessor* accessor) {
-  // sort the index by timestamp so that we can iterate over it in creation order
-  const auto* objectIndex = accessor->getObjectIndex();
-  std::vector<const DSObjectHeader*> sortedHeaderPtrs;
-  sortedHeaderPtrs.reserve(objectIndex->count);
-  for (int32_t i = 0; i < objectIndex->count; ++i) {
-    sortedHeaderPtrs.push_back(&objectIndex->getAt(i));
-  }
+void DatasetReconciler::sendFullUpdate() {
+  pendingOutboundFullUpdate_ = true;
 
-  std::sort(sortedHeaderPtrs.begin(), sortedHeaderPtrs.end(), [](auto a, auto b) {
-    return a->createTimestamp < b->createTimestamp;
-  });
-
-  // sweep through the sorted index, reconciling each object and keeping track of the IDs
-  std::unordered_set<DSIdentifier> reconciledIds;
-  for (const auto* objHeader : sortedHeaderPtrs) {
-    const auto& id = objHeader->id;
-    auto collectionId = objHeader->type;
-    auto objAccessor = accessor->getObjectFromHeader(objHeader);
-    if (auto iter = collections_.find(collectionId); iter != collections_.end()) {
-      iter->second->processUpsert(id, objAccessor);
-      reconciledIds.emplace(id);
-    }
-  }
-
-  // delete all unreconciled objects
+  // sort by timestamp so that we can send the full update in creation order
+  std::vector<FullUpdateEntry> entries;
   for (auto& iter : collections_) {
-    iter.second->processFullReconcile(reconciledIds);
+    iter.second->prepFullUpdate(entries);
+  }
+  std::sort(
+      entries.begin(), entries.end(), [](auto& a, auto& b) { return a.timestamp_ < b.timestamp_; });
+
+  pendingWrites_.clear();
+  for (auto& entry : entries) {
+    pendingWrites_.emplace_back(entry.objectId_, entry.collectionId_);
   }
 }
 
-void DatasetReconciler::reconcileInboundFromChangelog(
-    DatasetAccessor* accessor,
-    PlacedRingBuffer* changelog) {
+void DatasetReconciler::reconcileInboundChanges(DatasetAccessor* accessor) {
+  auto* changelog = accessor->getChangeLog();
+
+  if (changelogIter_.hasMissedEntries(changelog)) {
+    // More changes came in between tick() calls than the changelog can hold.
+    // Send message to outbound dataset to reconcile the entire dataset, then make sure to
+    // wait for the FullUpdate message.
+    requestInboundFullUpdate_ = true;
+    waitingForInboundFullUpdate_ = true;
+    changelogIter_.setToEnd(changelog);
+    return;
+  }
+
+  int32_t oldestMessageTimestamp = accessor->getCurrentTimestamp() - messageLifetime_;
+  bool inFullUpdate = false;
+  std::unordered_set<DSIdentifier> reconciledIds;
+
   while (changelogIter_.hasNext(changelog)) {
-    auto entry = DSChangeEventAccessor(changelogIter_.next(changelog));
-    auto id = entry.getTargetID();
-    auto collectionId = entry.getTargetType();
-    auto poolOffset = entry.getTargetPoolOffset();
-    auto changeType = entry.getChangeType();
+    auto entryMem = changelogIter_.next(changelog);
+    auto changeType = DSChangeEventAccessor(entryMem).getChangeType();
+
+    // handle RequestFullUpdate by queueing up a full update for the next outbound tick
+    if (changeType == DSChangeType::RequestFullUpdate) {
+      sendFullUpdate();
+      continue;
+    }
+
+    if (waitingForInboundFullUpdate_ && changeType != DSChangeType::FullUpdate) {
+      // skip all changes until we see the FullUpdate marker
+      continue;
+    }
 
     switch (changeType) {
+      case DSChangeType::FullUpdate: {
+        requestInboundFullUpdate_ = false;
+        waitingForInboundFullUpdate_ = false;
+        inFullUpdate = true;
+        break;
+      }
+
+      case DSChangeType::Shutdown: {
+        for (auto& iter : collections_) {
+          iter.second->processShutdown();
+        }
+        break;
+      }
+
       case DSChangeType::CreateObject: {
-        auto objAccessor = accessor->getObjectFromOffset(poolOffset);
-        if (!objAccessor.isNull()) {
-          if (auto iter = collections_.find(collectionId); iter != collections_.end()) {
-            iter->second->processCreate(id, objAccessor);
+        auto entry = DSCollectionChangeEventAccessor(entryMem);
+        auto id = entry.getObjectId();
+        auto collectionId = entry.getCollectionId();
+        if (auto iter = collections_.find(collectionId); iter != collections_.end()) {
+          if (inFullUpdate) {
+            iter->second->processUpsert(id, entry.accessChangeData());
+            reconciledIds.emplace(id);
+          } else {
+            iter->second->processCreate(id, entry.accessChangeData());
           }
         }
         break;
       }
 
       case DSChangeType::UpdateObject: {
-        // TODO collapse multiple updates to same object? they can be squashed by combining field
-        // flags, but intervening deletes/creates need to be taken into account as well
-
-        auto changedFields = entry.getChangedFields();
-        auto objAccessor = accessor->getObjectFromOffset(poolOffset);
-        if (!objAccessor.isNull()) {
-          if (auto iter = collections_.find(collectionId); iter != collections_.end()) {
-            iter->second->processUpdate(id, objAccessor, changedFields);
-          }
+        auto entry = DSCollectionUpdateChangeEventAccessor(entryMem);
+        auto id = entry.getObjectId();
+        auto collectionId = entry.getCollectionId();
+        if (auto iter = collections_.find(collectionId); iter != collections_.end()) {
+          iter->second->processUpdate(id, entry.accessChangeData(), entry.getFieldsChanged());
         }
         break;
       }
 
       case DSChangeType::DeleteObject: {
+        auto entry = DSCollectionChangeEventAccessor(entryMem);
+        auto id = entry.getObjectId();
+        auto collectionId = entry.getCollectionId();
         if (auto iter = collections_.find(collectionId); iter != collections_.end()) {
           iter->second->processDelete(id);
         }
         break;
       }
+
+      case DSChangeType::Message: {
+        auto entry = DSCollectionMessageChangeEventAccessor(entryMem);
+        auto timestamp = entry.getTimestamp();
+        if (timestamp >= oldestMessageTimestamp) {
+          auto collectionId = entry.getCollectionId();
+          if (auto iter = collections_.find(collectionId); iter != collections_.end()) {
+            iter->second->processMessage(
+                entry.getObjectId(), entry.getFieldId(), timestamp, entry.accessChangeData());
+          }
+        }
+      }
+    }
+  }
+
+  if (inFullUpdate) {
+    // delete all unreconciled objects
+    for (auto& iter : collections_) {
+      iter.second->processFullReconcile(reconciledIds);
     }
   }
 }

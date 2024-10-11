@@ -18,8 +18,11 @@
 import { ClassSpec } from "./ClassSpec";
 import { IncludeAggregator } from "./Helpers";
 import { StructType } from "./StructType";
-import { StructWithAccessorTypeDefinition } from "./TypeDefinition";
+import { TargetCodeGenImpl, TypeSpec } from "./TargetCodeGen";
+import { StructSpec, StructTypeDefinition, StructWithAccessorTypeDefinition } from "./TypeDefinition";
 export declare class StructWithAccessorType extends StructType implements StructWithAccessorTypeDefinition {
+    readonly dsIdentifierType: StructType;
+    constructor(codegen: TargetCodeGenImpl, name: string, apiname: string, dsIdentifierType: StructType, parentType: StructTypeDefinition | undefined, fields: StructSpec, localTypeOverride?: TypeSpec);
     genLocalTypeDefinition(_inNamespace: string, _includes: IncludeAggregator | null): string[] | null;
     protected genReadWriteValueFunctions(_classSpec: ClassSpec): void;
     getReadAccessorType(inNamespace: string, includes: IncludeAggregator | null): string;

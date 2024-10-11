@@ -23,8 +23,8 @@ const StructWithAccessorType_1 = require("./StructWithAccessorType");
 const TypeDefinition_1 = require("./TypeDefinition");
 const TypeValue_1 = require("./TypeValue");
 class InterfaceType extends StructWithAccessorType_1.StructWithAccessorType {
-    constructor(codegen, interfaceName, apiname, fields, parentType = undefined) {
-        super(codegen, interfaceName, apiname, parentType, fields);
+    constructor(codegen, interfaceName, apiname, dsIdentifierType, fields, parentType = undefined) {
+        super(codegen, interfaceName, apiname, dsIdentifierType, parentType, fields);
         this.collections = [];
         this.ptrType = codegen.DEFAULT_INTERFACE_PTR_TYPE;
         if (this.getMetaType() === TypeDefinition_1.TypeMetaType.INTERFACE) {
@@ -59,6 +59,9 @@ class InterfaceType extends StructWithAccessorType_1.StructWithAccessorType {
     }
     getChangedBit(inNamespace, includes, fieldName) {
         return this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, Helpers_1.upperFirst)(fieldName)}ChangedBit`);
+    }
+    getFieldSize(inNamespace, includes, fieldName) {
+        return this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, Helpers_1.upperFirst)(fieldName)}FieldSize`);
     }
     genReadWriteValueFunctions(classSpec) {
         let fieldCount = 0;

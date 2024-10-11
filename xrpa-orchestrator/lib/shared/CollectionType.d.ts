@@ -17,13 +17,14 @@
 
 import { IncludeAggregator } from "./Helpers";
 import { InterfaceType } from "./InterfaceType";
+import { StructType } from "./StructType";
 import { TargetCodeGenImpl } from "./TargetCodeGen";
 import { CollectionTypeDefinition, InterfaceTypeDefinition, StructSpec, TypeMetaType } from "./TypeDefinition";
 export declare class CollectionType extends InterfaceType implements CollectionTypeDefinition {
     readonly dsType: number;
     readonly maxCount: number;
     readonly interfaceType: InterfaceTypeDefinition | undefined;
-    constructor(codegen: TargetCodeGenImpl, collectionName: string, apiname: string, fields: StructSpec, dsType: number, maxCount: number, interfaceType: InterfaceTypeDefinition | undefined);
+    constructor(codegen: TargetCodeGenImpl, collectionName: string, apiname: string, dsIdentifierType: StructType, fields: StructSpec, dsType: number, maxCount: number, interfaceType: InterfaceTypeDefinition | undefined);
     getMetaType(): TypeMetaType;
     getHashData(): Record<string, unknown>;
     getAllFields(): StructSpec;

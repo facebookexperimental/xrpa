@@ -17,6 +17,7 @@
 #pragma once
 
 #include <xrpa-runtime/core/DatasetTypes.h>
+#include <xrpa-runtime/reconciler/DatasetChangeTypes.h>
 #include <xrpa-runtime/reconciler/DatasetReconciler.h>
 #include <memory>
 #include <type_traits>
@@ -55,7 +56,7 @@ class CollectionInterface {
   virtual ~CollectionInterface() = default;
 
   MemoryAccessor sendMessage(const DSIdentifier& id, int32_t messageType, int32_t numBytes) {
-    return reconciler_->sendMessage(id, messageType, numBytes);
+    return reconciler_->sendMessage(id, collectionId_, messageType, numBytes);
   }
 
   virtual void setDirty(const DSIdentifier& objId, uint64_t /*fieldsChanged*/) {
@@ -77,6 +78,8 @@ class CollectionInterface {
 
   virtual void writeChanges(DatasetAccessor* accessor, const DSIdentifier& id) = 0;
 
+  virtual void prepFullUpdate(std::vector<FullUpdateEntry>& entries) = 0;
+
   virtual void processCreate(const DSIdentifier& id, MemoryAccessor objAccessor) = 0;
 
   virtual bool
@@ -93,6 +96,8 @@ class CollectionInterface {
   virtual void processUpsert(const DSIdentifier& id, MemoryAccessor objAccessor) = 0;
 
   virtual void processFullReconcile(const std::unordered_set<DSIdentifier>& reconciledIds) = 0;
+
+  virtual void processShutdown() = 0;
 };
 
 // tickXrpa traits

@@ -30,7 +30,7 @@ function genUnitySingleton(className, initializers, deinitializers, members) {
         `  public static ${className} Instance {`,
         `    get {`,
         `      if (_Instance == null) {`,
-        `        _Instance = FindObjectOfType<${className}>();`,
+        `        _Instance = FindAnyObjectByType<${className}>();`,
         `      }`,
         `      if (_Instance == null) {`,
         `        GameObject obj = new() { name = typeof(${className}).Name };`,

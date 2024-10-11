@@ -39,7 +39,6 @@ class HeapDataset : public DatasetInterface {
   [[nodiscard]] bool checkSchemaHash(const DSHashValue& schemaHash) const override;
   [[nodiscard]] uint64_t getBaseTimestamp() const override;
   [[nodiscard]] int32_t getLastChangelogID() const override;
-  [[nodiscard]] int32_t getLastMessageID() const override;
 
   bool acquire(std::chrono::milliseconds timeout, std::function<void(DatasetAccessor*)> func)
       override;

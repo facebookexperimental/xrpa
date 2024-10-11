@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genTransportSubsystem = exports.getDatasetVarName = exports.getTransportSubsystemName = void 0;
+exports.genTransportSubsystem = exports.getOutboundDatasetVarName = exports.getInboundDatasetVarName = exports.getTransportSubsystemName = void 0;
 const path_1 = __importDefault(require("path"));
 const CsharpCodeGenImpl_1 = require("../csharp/CsharpCodeGenImpl");
 const CsharpDatasetLibraryTypes_1 = require("../csharp/CsharpDatasetLibraryTypes");
@@ -30,31 +30,45 @@ function getTransportSubsystemName(storeDef) {
     return `${storeDef.apiname}TransportSubsystem`;
 }
 exports.getTransportSubsystemName = getTransportSubsystemName;
-function getDatasetVarName(storeDef) {
-    return `${storeDef.dataset}Dataset`;
+function getInboundDatasetVarName(storeDef) {
+    return `${storeDef.dataset}InboundDataset`;
 }
-exports.getDatasetVarName = getDatasetVarName;
+exports.getInboundDatasetVarName = getInboundDatasetVarName;
+function getOutboundDatasetVarName(storeDef) {
+    return `${storeDef.dataset}OutboundDataset`;
+}
+exports.getOutboundDatasetVarName = getOutboundDatasetVarName;
 function genDatasetDeclaration(storeDef, namespace, includes) {
     return [
-        `public ${CsharpDatasetLibraryTypes_1.DatasetInterface.declareLocalVar(namespace, includes, getDatasetVarName(storeDef))};`,
+        `public ${CsharpDatasetLibraryTypes_1.DatasetInterface.declareLocalVar(namespace, includes, getInboundDatasetVarName(storeDef))};`,
+        `public ${CsharpDatasetLibraryTypes_1.DatasetInterface.declareLocalVar(namespace, includes, getOutboundDatasetVarName(storeDef))};`,
     ];
 }
 function genDatasetInitializer(storeDef, namespace, includes) {
-    const datasetVar = getDatasetVarName(storeDef);
     includes.addFile({ filename: (0, CsharpCodeGenImpl_1.getTypesHeaderName)(storeDef.apiname) });
+    const inboundDatasetVar = getInboundDatasetVarName(storeDef);
+    const outboundDatasetVar = getOutboundDatasetVarName(storeDef);
+    const inboundMemMarker = storeDef.isModuleProgramInterface ? "Input" : "Output";
+    const outboundMemMarker = storeDef.isModuleProgramInterface ? "Output" : "Input";
     return [
         `{`,
-        `  var local${datasetVar} = new ${CsharpDatasetLibraryTypes_1.SharedDataset.getLocalType(namespace, includes)}("${storeDef.dataset}", ${(0, CsharpCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}.${(0, CsharpCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}Config.GenDatasetConfig());`,
-        `  local${datasetVar}.Initialize();`,
-        `  ${datasetVar} = local${datasetVar};`,
+        `  var local${inboundDatasetVar} = new ${CsharpDatasetLibraryTypes_1.SharedDataset.getLocalType(namespace, includes)}("${storeDef.dataset}${inboundMemMarker}", ${(0, CsharpCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}.${(0, CsharpCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}Config.GenDatasetConfig());`,
+        `  local${inboundDatasetVar}.Initialize();`,
+        `  ${inboundDatasetVar} = local${inboundDatasetVar};`,
+        ``,
+        `  var local${outboundDatasetVar} = new ${CsharpDatasetLibraryTypes_1.SharedDataset.getLocalType(namespace, includes)}("${storeDef.dataset}${outboundMemMarker}", ${(0, CsharpCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}.${(0, CsharpCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}Config.GenDatasetConfig());`,
+        `  local${outboundDatasetVar}.Initialize();`,
+        `  ${outboundDatasetVar} = local${outboundDatasetVar};`,
         `}`,
     ];
 }
 function genDatasetDeinitializer(storeDef) {
     return [
         `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(storeDef)}.MaybeInstance?.Shutdown();`,
-        `${getDatasetVarName(storeDef)}?.Dispose();`,
-        `${getDatasetVarName(storeDef)} = null;`,
+        `${getOutboundDatasetVarName(storeDef)}?.Dispose();`,
+        `${getOutboundDatasetVarName(storeDef)} = null;`,
+        `${getInboundDatasetVarName(storeDef)}?.Dispose();`,
+        `${getInboundDatasetVarName(storeDef)} = null;`,
     ];
 }
 function genTransportSubsystem(fileWriter, outDir, storeDef) {

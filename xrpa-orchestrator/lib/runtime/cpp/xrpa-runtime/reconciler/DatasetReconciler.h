@@ -31,7 +31,8 @@ class CollectionInterface;
 class DatasetReconciler {
  public:
   DatasetReconciler(
-      std::weak_ptr<DatasetInterface> dataset,
+      std::weak_ptr<DatasetInterface> inboundDataset,
+      std::weak_ptr<DatasetInterface> outboundDataset,
       const DSHashValue& schemaHash,
       int messageDataPoolSize);
 
@@ -39,7 +40,8 @@ class DatasetReconciler {
     free(messageDataPool_);
   }
 
-  void tick();
+  void tickInbound();
+  void tickOutbound();
   void shutdown();
 
   template <typename R>
@@ -48,30 +50,34 @@ class DatasetReconciler {
         std::chrono::duration_cast<std::chrono::microseconds>(messageLifetime).count();
   }
 
-  MemoryAccessor sendMessage(const DSIdentifier& id, int32_t messageType, int32_t numBytes) {
+  MemoryAccessor sendMessage(
+      const DSIdentifier& objectId,
+      int32_t collectionId,
+      int32_t fieldId,
+      int32_t numBytes) {
     assert(messageDataPoolPos_ + numBytes < messageDataPoolSize_);
     uint8_t* rawMessageData = numBytes > 0 ? messageDataPool_ + messageDataPoolPos_ : nullptr;
     messageDataPoolPos_ += numBytes;
 
     auto messageData = MemoryAccessor(rawMessageData, 0, numBytes);
-    outboundMessages_.emplace_back(id, messageType, messageData);
+    outboundMessages_.emplace_back(objectId, collectionId, fieldId, messageData);
     return messageData;
   }
 
   template <typename MessageAccessorType>
-  MessageAccessorType sendMessage(const DSIdentifier& id, int32_t messageType) {
-    return MessageAccessorType(sendMessage(id, messageType, MessageAccessorType::DS_SIZE));
+  MessageAccessorType sendMessage(const DSIdentifier& objectId, int32_t fieldId) {
+    return MessageAccessorType(sendMessage(objectId, fieldId, MessageAccessorType::DS_SIZE));
   }
 
-  void setDirty(const DSIdentifier& id, int32_t collectionId) {
+  void setDirty(const DSIdentifier& objectId, int32_t collectionId) {
     auto curSize = pendingWrites_.size();
     if (curSize > 0) {
       auto& lastWrite = pendingWrites_[curSize - 1];
-      if (lastWrite.collectionId_ == collectionId && lastWrite.id_ == id) {
+      if (lastWrite.collectionId_ == collectionId && lastWrite.objectId_ == objectId) {
         return;
       }
     }
-    pendingWrites_.emplace_back(id, collectionId);
+    pendingWrites_.emplace_back(objectId, collectionId);
   }
 
  protected:
@@ -79,23 +85,32 @@ class DatasetReconciler {
 
  private:
   struct OutboundMessage {
-    OutboundMessage(const DSIdentifier& id, int32_t messageType, MemoryAccessor messageData)
-        : id_(id), messageType_(messageType), messageData_(std::move(messageData)) {}
+    OutboundMessage(
+        const DSIdentifier& objectId,
+        int32_t collectionId,
+        int32_t fieldId,
+        MemoryAccessor messageData)
+        : objectId_(objectId),
+          collectionId_(collectionId),
+          fieldId_(fieldId),
+          messageData_(std::move(messageData)) {}
 
-    DSIdentifier id_;
-    int32_t messageType_;
+    DSIdentifier objectId_;
+    int32_t collectionId_;
+    int32_t fieldId_;
     MemoryAccessor messageData_;
   };
 
   struct PendingWrite {
-    PendingWrite(const DSIdentifier& id, int32_t collectionId)
-        : id_(id), collectionId_(collectionId) {}
+    PendingWrite(const DSIdentifier& objectId, int32_t collectionId)
+        : objectId_(objectId), collectionId_(collectionId) {}
 
-    DSIdentifier id_;
+    DSIdentifier objectId_;
     int32_t collectionId_;
   };
 
-  std::weak_ptr<DatasetInterface> dataset_;
+  std::weak_ptr<DatasetInterface> inboundDataset_;
+  std::weak_ptr<DatasetInterface> outboundDataset_;
 
   // message stuff
   std::vector<OutboundMessage> outboundMessages_;
@@ -103,21 +118,18 @@ class DatasetReconciler {
   int32_t messageDataPoolSize_ = 0;
   int32_t messageDataPoolPos_ = 0;
   int32_t messageLifetime_{};
-  PlacedRingBufferIterator messageIter_;
 
   // collections
   std::unordered_map<int32_t, std::shared_ptr<CollectionInterface>> collections_;
-  std::vector<int32_t> pendingCollectionClears_;
   std::vector<PendingWrite> pendingWrites_;
+  bool pendingOutboundFullUpdate_ = true;
+  bool requestInboundFullUpdate_ = false;
+  bool waitingForInboundFullUpdate_ = false;
   PlacedRingBufferIterator changelogIter_;
 
-  void sendOutboundMessages(DatasetAccessor* accessor);
-  void dispatchInboundMessages(DatasetAccessor* accessor);
-
-  void reconcileInboundFromIndex(DatasetAccessor* accessor);
-  void reconcileInboundFromChangelog(DatasetAccessor* accessor, PlacedRingBuffer* changelog);
-
+  void reconcileInboundChanges(DatasetAccessor* accessor);
   void reconcileOutboundChanges(DatasetAccessor* accessor);
+  void sendFullUpdate();
 };
 
 } // namespace Xrpa

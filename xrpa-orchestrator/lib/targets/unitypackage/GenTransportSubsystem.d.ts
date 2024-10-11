@@ -18,6 +18,7 @@
 import { DataStoreDefinition } from "../../shared/DataStore";
 import { FileWriter } from "../../shared/FileWriter";
 export declare function getTransportSubsystemName(storeDef: DataStoreDefinition): string;
-export declare function getDatasetVarName(storeDef: DataStoreDefinition): string;
+export declare function getInboundDatasetVarName(storeDef: DataStoreDefinition): string;
+export declare function getOutboundDatasetVarName(storeDef: DataStoreDefinition): string;
 export declare function genTransportSubsystem(fileWriter: FileWriter, outDir: string, storeDef: DataStoreDefinition): void;
 

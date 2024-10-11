@@ -29,20 +29,15 @@ function getDataStoreSchemaHashName(apiname) {
 }
 exports.getDataStoreSchemaHashName = getDataStoreSchemaHashName;
 function genDatasetConfig(apiname, datamodel, namespace, includes) {
-    let maxObjectCount = 0;
-    let maxObjectSize = 0;
+    let changelogByteCount = datamodel.calcMessagePoolSize();
     for (const typeDef of datamodel.getCollections()) {
-        maxObjectCount += typeDef.maxCount;
-        maxObjectSize += typeDef.maxCount * typeDef.getTypeSize();
+        changelogByteCount += typeDef.maxCount * typeDef.getTypeSize();
     }
     return [
         `static inline ${CppDatasetLibraryTypes_1.DatasetConfig.getLocalType(namespace, includes)} GenDatasetConfig() {`,
         `  ${CppDatasetLibraryTypes_1.DatasetConfig.getLocalType(namespace, includes)} config;`,
         `  config.schemaHash = ${getDataStoreSchemaHashName(apiname)};`,
-        `  config.maxObjectCount = ${maxObjectCount};`,
-        `  config.memPoolSize = ${maxObjectSize};`,
-        `  config.changelogPoolSize = ${maxObjectCount * 8 * 32};`,
-        `  config.messagePoolSize = ${datamodel.calcMessagePoolSize()};`,
+        `  config.changelogByteCount = ${changelogByteCount};`,
         `  return config;`,
         `}`,
     ];

@@ -16,6 +16,7 @@
 
 
 import { ExternalProgramInterfaceContext, RuntimeEnvironmentContext } from "./RuntimeEnvironment";
+import { PropertyCondition } from "./XrpaLanguage";
 import { CoordinateSystemDef } from "./shared/CoordinateTransformer";
 import { ArrayTypeSpec } from "./shared/TypeDefinition";
 export declare const UnrealCoordinateSystem: CoordinateSystemDef;
@@ -23,6 +24,7 @@ export declare const UnrealArrayType: ArrayTypeSpec;
 export interface UnrealEngineRuntimeContext extends RuntimeEnvironmentContext {
     __UnrealEngineRuntime: true;
 }
+export declare const IfUnrealEngine: PropertyCondition;
 export declare function PluginDeps(ctx: ExternalProgramInterfaceContext, pluginDeps: [string, string][]): void;
 export declare function UnrealProject(projectPath: string, projectName: string, callback: (ctx: UnrealEngineRuntimeContext) => void): Promise<void>;
 

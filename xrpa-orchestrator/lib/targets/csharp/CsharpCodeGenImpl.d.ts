@@ -22,8 +22,12 @@ import { IncludeAggregator } from "../../shared/Helpers";
 import { FieldTypeAndAccessor, GuidGenSpec, PrimitiveIntrinsics } from "../../shared/TargetCodeGen";
 import { InterfaceTypeDefinition, TypeDefinition } from "../../shared/TypeDefinition";
 import { TypeValue } from "../../shared/TypeValue";
-export declare function registerMemoryAccessor(memoryAccessorType: TypeDefinition): void;
-export declare function registerObjectAccessorInterface(objectAccessorInterfaceType: TypeDefinition): void;
+interface DependentXrpaTypes {
+    DatasetAccessor: TypeDefinition;
+    MemoryAccessor: TypeDefinition;
+    ObjectAccessorInterface: TypeDefinition;
+}
+export declare function registerXrpaTypes(types: DependentXrpaTypes): void;
 export declare const XRPA_NAMESPACE = "Xrpa";
 export declare const HEADER: string[];
 export declare const UNIT_TRANSFORMER: UnitTransformer;
@@ -64,7 +68,7 @@ export declare function reinterpretValue(_fromType: string, _toType: string, val
 export declare function getDataStoreName(apiname: string): string;
 export declare function getDataStoreHeaderName(apiname: string): string;
 export declare function getTypesHeaderName(apiname: string): string;
-export declare function makeObjectAccessor(classSpec: ClassSpec): void;
+export declare function makeObjectAccessor(classSpec: ClassSpec, isWriteAccessor: boolean, dsIdentifierType: string): void;
 export declare function genClassDefinition(classSpec: ClassSpec): string[];
 export declare function genReadValue(params: {
     accessor: string;
@@ -101,6 +105,7 @@ export declare function genFieldGetter(classSpec: ClassSpec, params: {
     convertToLocal: boolean;
     description: string | undefined;
     visibility?: "public" | "private";
+    isConst: boolean;
 }): void;
 export declare function genFieldSetter(classSpec: ClassSpec, params: {
     fieldName: string;
@@ -126,4 +131,5 @@ export declare function genMethodBind(ptrName: string, methodName: string, param
 export declare function genNonNullCheck(ptrName: string): string;
 export declare function genCreateObject(type: string, params: string[]): string;
 export declare function genObjectPtrType(type: string): string;
+export {};
 

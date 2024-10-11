@@ -96,8 +96,8 @@ function genDataStoreClass(ctx, includes) {
     const messagePoolSize = ctx.storeDef.datamodel.calcMessagePoolSize();
     const lines = [
         `public class ${className} : ${baseClassName} {`,
-        `  public ${className}(${CsharpDatasetLibraryTypes_1.DatasetInterface.declareLocalParam(ctx.namespace, includes, "dataset")})`,
-        `      : base(dataset, ${hashName}, ${messagePoolSize}) {`,
+        `  public ${className}(${CsharpDatasetLibraryTypes_1.DatasetInterface.declareLocalParam(ctx.namespace, includes, "inboundDataset")}, ${CsharpDatasetLibraryTypes_1.DatasetInterface.declareLocalParam(ctx.namespace, includes, "outboundDataset")})`,
+        `      : base(inboundDataset, outboundDataset, ${hashName}, ${messagePoolSize}) {`,
         ...(0, Helpers_1.indent)(2, genReconcilerConstructorContents(ctx)),
         `  }`,
         ``,

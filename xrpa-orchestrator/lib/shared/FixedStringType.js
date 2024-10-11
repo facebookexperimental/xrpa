@@ -25,10 +25,9 @@ class FixedStringType extends PrimitiveType_1.PrimitiveType {
     constructor(codegen, name, _apiname, maxBytes, typeMap) {
         super(codegen, name, codegen.PRIMITIVE_INTRINSICS.string, typeMap[BuiltinTypes_1.BuiltinType.String] ?? codegen.PRIMITIVE_INTRINSICS.string, maxBytes + 4, // uint byte count + UTF8 byte buffer
         false, new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.string.typename, ""));
-        this.maxBytes = maxBytes;
     }
     getInternalMaxBytes() {
-        return this.maxBytes;
+        return this.getTypeSize();
     }
 }
 exports.FixedStringType = FixedStringType;
