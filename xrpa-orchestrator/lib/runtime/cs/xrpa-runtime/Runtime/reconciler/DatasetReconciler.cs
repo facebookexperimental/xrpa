@@ -167,7 +167,7 @@ namespace Xrpa
             return messageData;
         }
 
-        public void SetDirty(DSIdentifier objectId, int collectionId)
+        public void NotifyObjectNeedsWrite(DSIdentifier objectId, int collectionId)
         {
             var curSize = _pendingWrites.Count;
             if (curSize > 0)

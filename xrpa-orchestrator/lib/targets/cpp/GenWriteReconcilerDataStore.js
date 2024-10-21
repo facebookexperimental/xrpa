@@ -60,19 +60,23 @@ function genFieldSetDirty(params) {
     const changeBit = params.typeDef.getChangedBit(params.ctx.namespace, params.includes, params.fieldName);
     if (params.proxyObj) {
         return [
-            `if (${params.proxyObj} && (changeBits_ & ${changeBit}) == 0) {`,
+            `if ((changeBits_ & ${changeBit}) == 0) {`,
             `  changeBits_ |= ${changeBit};`,
-            `  ${params.proxyObj}->setDirty(${changeBit});`,
+            `}`,
+            `if (${params.proxyObj}) {`,
+            `  ${params.proxyObj}->notifyNeedsWrite();`,
             `}`,
         ];
     }
     else {
         const fieldSize = params.typeDef.getFieldSize(params.ctx.namespace, params.includes, params.fieldName);
         return [
-            `if (collection_ && (changeBits_ & ${changeBit}) == 0) {`,
+            `if ((changeBits_ & ${changeBit}) == 0) {`,
             `  changeBits_ |= ${changeBit};`,
             `  changeByteCount_ += ${fieldSize};`,
-            `  collection_->setDirty(getXrpaId(), ${changeBit});`,
+            `}`,
+            `if (collection_) {`,
+            `  collection_->setDirty(getXrpaId(), hasNotifiedNeedsWrite_, ${changeBit});`,
             `}`,
         ];
     }
@@ -243,6 +247,7 @@ function genWriteFunctionBody(params) {
             ...fieldUpdateLines,
             `changeBits_ = 0;`,
             `changeByteCount_ = 0;`,
+            `hasNotifiedNeedsWrite_ = false;`,
         ];
     }
 }

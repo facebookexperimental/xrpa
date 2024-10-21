@@ -103,7 +103,6 @@ namespace Xrpa
             DSIdentifier id = obj.GetXrpaId();
             _objects.Add(id, obj);
             obj.SetXrpaCollection(this);
-            SetDirty(id, 0);
 
             if (_indexedFieldMask != 0)
             {
@@ -123,13 +122,14 @@ namespace Xrpa
                 return;
             }
 
+            ReconciledType obj = _objects[id];
             if (_indexedFieldMask != 0)
             {
-                IndexNotifyDelete(_objects[id]);
+                IndexNotifyDelete(obj);
             }
 
+            obj.SetXrpaCollection(null);
             _objects.Remove(id);
-            SetDirty(id, 0);
         }
 
         // this function is for isLocalOwned=false derived classes; it will either be called in the
@@ -139,9 +139,9 @@ namespace Xrpa
             _createDelegate = createDelegate;
         }
 
-        public override void SetDirty(DSIdentifier id, ulong fieldsChanged)
+        public override void SetDirty(DSIdentifier id, ref bool hasNotifiedNeedsWrite, ulong fieldsChanged)
         {
-            base.SetDirty(id, fieldsChanged);
+            base.SetDirty(id, ref hasNotifiedNeedsWrite, fieldsChanged);
 
             if ((_indexedFieldMask & fieldsChanged) != 0)
             {

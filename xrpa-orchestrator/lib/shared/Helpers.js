@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.chainAsyncThunk = exports.resolveAsyncThunk = exports.chainThunk = exports.resolveThunk = exports.recursiveDirScan = exports.isDirectory = exports.nsExtractWithSeparator = exports.nsJoinWithSeparator = exports.nsQualifyWithSeparator = exports.genCommentLinesWithCommentMarker = exports.removeLastTrailingComma = exports.buckBuild = exports.buckRootDir = exports.buckRunPackage = exports.buckRun = exports.runProcess = exports.pushUnique = exports.isExcluded = exports.filterToNumberArray = exports.filterToNumber = exports.filterToStringPairArray = exports.filterToStringArray = exports.filterToString = exports.assertIsKeyOf = exports.throwBadValue = exports.absurd = exports.recordZip = exports.arrayZip = exports.objectIsEmpty = exports.hashCheck = exports.HashValue = exports.clone = exports.appendAligned = exports.lowerFirst = exports.upperFirst = exports.removeSuperfluousEmptyLines = exports.trimTrailingEmptyLines = exports.indentMatch = exports.indent = exports.safeDeepFreeze = exports.augmentInPlace = exports.augment = exports.mapAndCollapse = exports.collapseAndMap = exports.collapse = exports.getRuntimeSrcPath = exports.EXCLUDE_NAMESPACE = void 0;
+exports.chainAsyncThunk = exports.resolveAsyncThunk = exports.chainThunk = exports.resolveThunk = exports.recursiveDirScan = exports.isDirectory = exports.nsExtractWithSeparator = exports.nsJoinWithSeparator = exports.nsQualifyWithSeparator = exports.genCommentLinesWithCommentMarker = exports.removeLastTrailingComma = exports.runProcess = exports.pushUnique = exports.isExcluded = exports.filterToNumberArray = exports.filterToNumber = exports.filterToStringPairArray = exports.filterToStringArray = exports.filterToString = exports.assertIsKeyOf = exports.throwBadValue = exports.absurd = exports.recordZip = exports.arrayZip = exports.objectIsEmpty = exports.hashCheck = exports.HashValue = exports.clone = exports.appendAligned = exports.lowerFirst = exports.upperFirst = exports.removeSuperfluousEmptyLines = exports.trimTrailingEmptyLines = exports.indentMatch = exports.indent = exports.safeDeepFreeze = exports.augmentInPlace = exports.augment = exports.mapAndCollapse = exports.collapseAndMap = exports.collapse = exports.getRuntimeSrcPath = exports.EXCLUDE_NAMESPACE = void 0;
 const assert_1 = __importDefault(require("assert"));
 const child_process_1 = __importDefault(require("child_process"));
 const crypto_1 = __importDefault(require("crypto"));
@@ -28,7 +28,6 @@ const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
 const simply_immutable_1 = require("simply-immutable");
 exports.EXCLUDE_NAMESPACE = "EXCLUDE_NAMESPACE";
-const BUCK = "buck2";
 let runtimeSrcRootPath = path_1.default.join(__dirname, "../runtime");
 if (!fs_extra_1.default.pathExistsSync(runtimeSrcRootPath)) {
     runtimeSrcRootPath = path_1.default.join(__dirname, "../../../runtime");
@@ -365,72 +364,6 @@ async function runProcess(params) {
     return p;
 }
 exports.runProcess = runProcess;
-async function buckRun(mode, target) {
-    try {
-        await runProcess({
-            filename: BUCK,
-            args: ["run", mode, target],
-            onLineReceived: line => console.log(line),
-        });
-    }
-    catch (err) {
-        console.error(err);
-        throw err;
-    }
-}
-exports.buckRun = buckRun;
-async function buckRunPackage(mode, target, standaloneExeFilename) {
-    try {
-        const buckRoot = await runProcess({ filename: BUCK, args: ["root"] });
-        const buildOutput = await runProcess({
-            filename: BUCK,
-            args: ["build", mode, target, "--show-json-output"],
-            onLineReceived: line => console.log(line),
-        });
-        const buildOutputJson = JSON.parse(buildOutput);
-        const packagePath = path_1.default.join(buckRoot, buildOutputJson[Object.keys(buildOutputJson)[0]], standaloneExeFilename);
-        return await runProcess({
-            filename: packagePath,
-            onLineReceived: line => console.log(line),
-        });
-    }
-    catch (err) {
-        console.error(err);
-        throw err;
-    }
-}
-exports.buckRunPackage = buckRunPackage;
-async function buckRootDir() {
-    return await runProcess({ filename: BUCK, args: ["root"] });
-}
-exports.buckRootDir = buckRootDir;
-async function buckBuild(params) {
-    try {
-        const buckRoot = await buckRootDir();
-        const buildOutput = await runProcess({
-            filename: BUCK,
-            args: ["build", params.mode, params.target, "--show-json-output"],
-            onLineReceived: line => console.log(line),
-        });
-        const buildOutputJson = JSON.parse(buildOutput);
-        const outputPath = path_1.default.join(buckRoot, path_1.default.dirname(buildOutputJson[Object.keys(buildOutputJson)[0]]));
-        // copy executables and dlls to the dstPath
-        const filenames = [];
-        await recursiveDirScan(outputPath, filenames);
-        for (const filename of filenames) {
-            if (filename.endsWith(".exe") || filename.endsWith(".dll")) {
-                const dstFilename = path_1.default.join(params.dstPath, filename.slice(outputPath.length + 1));
-                await fs_extra_1.default.ensureDir(path_1.default.dirname(dstFilename));
-                await fs_extra_1.default.copyFile(filename, dstFilename);
-            }
-        }
-    }
-    catch (err) {
-        console.error(err);
-        throw err;
-    }
-}
-exports.buckBuild = buckBuild;
 function removeLastTrailingComma(strs) {
     if (!strs.length) {
         return [];

@@ -109,6 +109,14 @@ function genIndexedMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
         ],
         visibility: "private",
     });
+    classSpec.members.push({
+        name: `OnXrpaBindingGained`,
+        type: `event System.Action<int>`,
+    });
+    classSpec.members.push({
+        name: `OnXrpaBindingLost`,
+        type: `event System.Action<int>`,
+    });
     const outboundChangeBits = reconcilerDef.getOutboundChangeBits();
     classSpec.methods.push({
         name: "AddXrpaBinding",
@@ -124,8 +132,9 @@ function genIndexedMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
             `${PROXY_OBJ} = reconciledObj;`,
             ...(outboundChangeBits !== 0 ? [
                 `_changeBits = ${outboundChangeBits};`,
-                `${PROXY_OBJ}.SetDirty(_changeBits);`,
+                `${PROXY_OBJ}.NotifyNeedsWrite();`,
             ] : []),
+            `OnXrpaBindingGained?.Invoke(0);`,
             `return true;`,
         ],
     });
@@ -138,6 +147,7 @@ function genIndexedMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
         body: [
             `if (${PROXY_OBJ} == reconciledObj) {`,
             `  ${PROXY_OBJ} = null;`,
+            `  OnXrpaBindingLost?.Invoke(0);`,
             `}`,
         ],
     });

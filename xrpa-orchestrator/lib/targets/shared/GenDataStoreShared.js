@@ -91,17 +91,17 @@ function genFieldProperties(classSpec, params) {
         hasChangeBits = true;
     }
     if (params.canSetDirty && hasChangeBits) {
-        const changeBits = params.codegen.privateMember("changeBits");
+        const setDirtyParams = [
+            params.codegen.genDerefMethodCall("", "getXrpaId", []),
+            params.codegen.refParam(params.codegen.privateMember("hasNotifiedNeedsWrite")),
+            "0",
+        ];
+        const collectionVar = params.codegen.privateMember("collection");
         classSpec.methods.push({
-            name: "setDirty",
-            parameters: [{
-                    name: "fieldsChanged",
-                    type: params.codegen.PRIMITIVE_INTRINSICS.uint64.typename,
-                }],
+            name: "notifyNeedsWrite",
             body: [
-                `if ((${changeBits} & fieldsChanged) != fieldsChanged) {`,
-                `  ${changeBits} |= fieldsChanged;`,
-                `  ${params.codegen.genDerefMethodCall(params.codegen.privateMember("collection"), "setDirty", [params.codegen.genDerefMethodCall("", "getXrpaId", []), "0"])};`,
+                `if (${params.codegen.genNonNullCheck(collectionVar)}) {`,
+                `  ${params.codegen.genDerefMethodCall(collectionVar, "setDirty", setDirtyParams)};`,
                 `}`,
             ],
         });

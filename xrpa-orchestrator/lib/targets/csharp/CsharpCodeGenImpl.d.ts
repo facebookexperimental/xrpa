@@ -131,5 +131,6 @@ export declare function genMethodBind(ptrName: string, methodName: string, param
 export declare function genNonNullCheck(ptrName: string): string;
 export declare function genCreateObject(type: string, params: string[]): string;
 export declare function genObjectPtrType(type: string): string;
+export declare function refParam(varName: string): string;
 export {};
 

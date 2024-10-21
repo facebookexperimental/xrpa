@@ -117,7 +117,6 @@ class ObjectCollection : public CollectionInterface {
 
     objects_.emplace(obj->getXrpaId(), obj);
     obj->setXrpaCollection(this);
-    setDirty(obj->getXrpaId(), 0);
 
     if (indexedFieldMask_ != 0) {
       indexNotifyCreate(obj);
@@ -134,12 +133,13 @@ class ObjectCollection : public CollectionInterface {
       return;
     }
 
+    auto obj = iter->second;
     if (indexedFieldMask_ != 0) {
-      indexNotifyDelete(iter->second);
+      indexNotifyDelete(obj);
     }
 
+    obj->setXrpaCollection(nullptr);
     objects_.erase(iter);
-    setDirty(id, 0);
   }
 
   // this function is for isLocalOwned=false derived classes; it will either be called in the
@@ -166,8 +166,9 @@ class ObjectCollection : public CollectionInterface {
     }
   }
 
-  void setDirty(const DSIdentifier& objId, uint64_t fieldsChanged) final {
-    CollectionInterface::setDirty(objId, fieldsChanged);
+  void setDirty(const DSIdentifier& objId, bool& hasNotifiedNeedsWrite, uint64_t fieldsChanged)
+      final {
+    CollectionInterface::setDirty(objId, hasNotifiedNeedsWrite, fieldsChanged);
 
     if ((indexedFieldMask_ & fieldsChanged) != 0) {
       auto iter = objects_.find(objId);

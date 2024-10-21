@@ -39,6 +39,7 @@ function genComponentInit(ctx, includes, reconcilerDef) {
         `}`,
         `dsIsInitialized_ = true;`,
         `id_ = ${id};`,
+        `hasNotifiedNeedsWrite_ = false;`,
         `createWritten_ = false;`,
         ``,
         ...(0, SceneComponentShared_1.genFieldInitializers)(ctx, includes, reconcilerDef),
@@ -72,6 +73,12 @@ function genDataStoreObjectAccessors(ctx, classSpec) {
         type: ctx.moduleDef.DSIdentifier,
         visibility: "protected",
     });
+    classSpec.members.push({
+        name: "hasNotifiedNeedsWrite",
+        type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.bool.typename,
+        initialValue: "false",
+        visibility: "protected",
+    });
     classSpec.methods.push({
         name: "setXrpaCollection",
         parameters: [{
@@ -79,7 +86,17 @@ function genDataStoreObjectAccessors(ctx, classSpec) {
                 type: CppDatasetLibraryTypes_1.CollectionInterface.getLocalType(ctx.namespace, classSpec.includes) + "*",
             }],
         body: [
+            `if (collection == nullptr && collection_ != nullptr) {`,
+            `  // object removed from collection`,
+            `  collection_->setDirty(id_, hasNotifiedNeedsWrite_, 0);`,
+            `}`,
+            ``,
             `collection_ = collection;`,
+            ``,
+            `if (collection_ != nullptr) {`,
+            `  // object added to collection`,
+            `  collection_->setDirty(id_, hasNotifiedNeedsWrite_, 0);`,
+            `}`,
         ],
     });
     classSpec.members.push({

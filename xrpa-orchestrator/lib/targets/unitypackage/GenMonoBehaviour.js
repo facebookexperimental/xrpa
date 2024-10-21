@@ -39,6 +39,7 @@ function genComponentInit(ctx, includes, reconcilerDef) {
         `}`,
         `_dsIsInitialized = true;`,
         `_id = ${id};`,
+        `_hasNotifiedNeedsWrite = false;`,
         `_createWritten = false;`,
         ``,
         ...(0, MonoBehaviourShared_1.genFieldInitializers)(ctx, includes, reconcilerDef),
@@ -71,6 +72,12 @@ function genDataStoreObjectAccessors(ctx, classSpec) {
         type: ctx.moduleDef.DSIdentifier,
         visibility: "protected",
     });
+    classSpec.members.push({
+        name: "hasNotifiedNeedsWrite",
+        type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.bool.typename,
+        initialValue: "false",
+        visibility: "protected",
+    });
     classSpec.methods.push({
         name: "SetXrpaCollection",
         parameters: [{
@@ -78,7 +85,19 @@ function genDataStoreObjectAccessors(ctx, classSpec) {
                 type: CsharpDatasetLibraryTypes_1.CollectionInterface,
             }],
         body: [
+            `if (collection == null && _collection != null)`,
+            `{`,
+            `    // object removed from collection`,
+            `    _collection.SetDirty(_id, ref _hasNotifiedNeedsWrite, 0);`,
+            `}`,
+            ``,
             `_collection = collection;`,
+            ``,
+            `if (_collection != null)`,
+            `{`,
+            `    // object added to collection`,
+            `    _collection.SetDirty(_id, ref _hasNotifiedNeedsWrite, 0);`,
+            `}`,
         ],
     });
     classSpec.methods.push({

@@ -22,6 +22,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genStandaloneBuck = exports.genStandaloneCpp = exports.genDatasetDeinitializer = exports.genDatasetInitializer = void 0;
 const path_1 = __importDefault(require("path"));
+const BuckHelpers_1 = require("../../shared/BuckHelpers");
 const Helpers_1 = require("../../shared/Helpers");
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
 const CppDatasetLibraryTypes_1 = require("./CppDatasetLibraryTypes");
@@ -143,7 +144,7 @@ function genStandaloneCpp(fileWriter, outdir, moduleDef) {
 exports.genStandaloneCpp = genStandaloneCpp;
 function genStandaloneBuck(fileWriter, outdir, runtimeDir, buckTarget, moduleDef, oncall) {
     fileWriter.writeFile(path_1.default.join(outdir, "BUCK"), async () => {
-        const buckRoot = await (0, Helpers_1.buckRootDir)();
+        const buckRoot = await (0, BuckHelpers_1.buckRootDir)();
         const runtimeRelPath = path_1.default.relative(buckRoot, runtimeDir);
         const runtimeDepPath = `//${runtimeRelPath.replace(/\\/g, "/")}`;
         const deps = [

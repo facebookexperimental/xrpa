@@ -144,5 +144,6 @@ export interface TargetCodeGenImpl {
     genNonNullCheck(ptrName: string): string;
     genCreateObject(type: string, params: string[]): string;
     genObjectPtrType(type: string): string;
+    refParam(varName: string): string;
 }
 

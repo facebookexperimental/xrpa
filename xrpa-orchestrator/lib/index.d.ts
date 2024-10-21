@@ -15,14 +15,15 @@
  */
 
 
+export { buckBuild, buckRun } from "./shared/BuckHelpers";
+export { FileWriter } from "./shared/FileWriter";
+export { runProcess } from "./shared/Helpers";
 export { BuiltinType, isBuiltinType } from "./shared/BuiltinTypes";
 export { CodeGen } from "./shared/CodeGen";
 export { AngularUnitType, CoordAxis, CoordinateSystemDef, SpatialUnitType } from "./shared/CoordinateTransformer";
 export { DataMapDefinition } from "./shared/DataMap";
 export { DataModelDefinition, UserStructSpec } from "./shared/DataModel";
 export { DataStoreDefinition } from "./shared/DataStore";
-export { FileWriter } from "./shared/FileWriter";
-export { buckBuild, buckRun, buckRunPackage, runProcess } from "./shared/Helpers";
 export { ModuleDefinition } from "./shared/ModuleDefinition";
 export * from "./shared/TypeDefinition";
 export { CppModuleDefinition } from "./targets/cpp/CppModuleDefinition";

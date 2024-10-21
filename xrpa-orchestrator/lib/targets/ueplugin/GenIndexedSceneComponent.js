@@ -30,6 +30,7 @@ const GenWriteReconcilerDataStore_1 = require("../cpp/GenWriteReconcilerDataStor
 const GenDataStoreSubsystem_1 = require("./GenDataStoreSubsystem");
 const SceneComponentShared_1 = require("./SceneComponentShared");
 const GenReadReconcilerDataStore_1 = require("../cpp/GenReadReconcilerDataStore");
+const GenBlueprintTypes_1 = require("./GenBlueprintTypes");
 const PROXY_OBJ = "reconciledObj_";
 function genComponentInit(ctx, includes, reconcilerDef) {
     const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `GetDataStoreSubsystem()->DataStore->${reconcilerDef.getDataStoreAccessorName()}`, "this", SceneComponentShared_1.getFieldMemberName);
@@ -126,6 +127,16 @@ function genIndexedSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, out
         separateImplementation: true,
     });
     (0, SceneComponentShared_1.genFieldProperties)(classSpec, { ctx, reconcilerDef, setterHooks, proxyObj: PROXY_OBJ, separateImplementation: true });
+    classSpec.members.push({
+        name: `OnXrpaBindingGained`,
+        type: (0, GenBlueprintTypes_1.getMessageDelegateName)(null, reconcilerDef.type.getApiName()),
+        decorations: [`UPROPERTY(BlueprintAssignable, Category = "${reconcilerDef.type.getName()}")`],
+    });
+    classSpec.members.push({
+        name: `OnXrpaBindingLost`,
+        type: (0, GenBlueprintTypes_1.getMessageDelegateName)(null, reconcilerDef.type.getApiName()),
+        decorations: [`UPROPERTY(BlueprintAssignable, Category = "${reconcilerDef.type.getName()}")`],
+    });
     classSpec.methods.push({
         name: "addXrpaBinding",
         parameters: [{
@@ -140,8 +151,9 @@ function genIndexedSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, out
             `${PROXY_OBJ} = reconciledObj;`,
             ...((outboundChangeBits !== 0 ? [
                 `changeBits_ = ${outboundChangeBits};`,
-                `${PROXY_OBJ}->setDirty(changeBits_);`,
+                `${PROXY_OBJ}->notifyNeedsWrite();`,
             ] : [])),
+            `OnXrpaBindingGained.Broadcast(0);`,
             `return true;`,
         ],
         separateImplementation: true,
@@ -155,6 +167,7 @@ function genIndexedSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, out
         body: [
             `if (${PROXY_OBJ} == reconciledObj) {`,
             `  ${PROXY_OBJ} = nullptr;`,
+            `  OnXrpaBindingLost.Broadcast(0);`,
             `}`,
         ],
         separateImplementation: true,

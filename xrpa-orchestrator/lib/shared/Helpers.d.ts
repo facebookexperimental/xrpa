@@ -68,14 +68,6 @@ export declare function runProcess(params: {
     cwd?: string;
     onLineReceived?: (line: string) => void;
 }): Promise<string>;
-export declare function buckRun(mode: string, target: string): Promise<void>;
-export declare function buckRunPackage(mode: string, target: string, standaloneExeFilename: string): Promise<string>;
-export declare function buckRootDir(): Promise<string>;
-export declare function buckBuild(params: {
-    mode: string;
-    target: string;
-    dstPath: string;
-}): Promise<void>;
 export declare function removeLastTrailingComma(strs: string[]): string[];
 export declare function genCommentLinesWithCommentMarker(commentMarker: string, str?: string): string[];
 export declare function nsQualifyWithSeparator(nsSep: string, qualifiedName: string, inNamespace: string): string;

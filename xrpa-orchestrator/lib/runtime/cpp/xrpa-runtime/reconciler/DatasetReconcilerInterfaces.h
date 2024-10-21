@@ -25,30 +25,6 @@
 
 namespace Xrpa {
 
-class DataStoreObject : public std::enable_shared_from_this<DataStoreObject> {
- public:
-  explicit DataStoreObject(const DSIdentifier& id) : id_(id) {}
-
-  DataStoreObject(const DSIdentifier& id, Xrpa::CollectionInterface* collection)
-      : collection_(collection), id_(id) {}
-
-  virtual ~DataStoreObject() = default;
-
-  void setXrpaCollection(Xrpa::CollectionInterface* collection) {
-    collection_ = collection;
-  }
-
-  const DSIdentifier& getXrpaId() const {
-    return id_;
-  }
-
- protected:
-  Xrpa::CollectionInterface* collection_ = nullptr;
-
- private:
-  DSIdentifier id_;
-};
-
 class CollectionInterface {
  public:
   explicit CollectionInterface(DatasetReconciler* reconciler, int32_t collectionId)
@@ -59,8 +35,12 @@ class CollectionInterface {
     return reconciler_->sendMessage(id, collectionId_, messageType, numBytes);
   }
 
-  virtual void setDirty(const DSIdentifier& objId, uint64_t /*fieldsChanged*/) {
-    reconciler_->setDirty(objId, getId());
+  virtual void
+  setDirty(const DSIdentifier& objId, bool& hasNotifiedNeedsWrite, uint64_t /*fieldsChanged*/) {
+    if (!hasNotifiedNeedsWrite) {
+      hasNotifiedNeedsWrite = true;
+      reconciler_->notifyObjectNeedsWrite(objId, collectionId_);
+    }
   }
 
  protected:
@@ -98,6 +78,41 @@ class CollectionInterface {
   virtual void processFullReconcile(const std::unordered_set<DSIdentifier>& reconciledIds) = 0;
 
   virtual void processShutdown() = 0;
+};
+
+class DataStoreObject : public std::enable_shared_from_this<DataStoreObject> {
+ public:
+  explicit DataStoreObject(const DSIdentifier& id) : id_(id) {}
+
+  DataStoreObject(const DSIdentifier& id, Xrpa::CollectionInterface* collection)
+      : collection_(collection), id_(id) {}
+
+  virtual ~DataStoreObject() = default;
+
+  void setXrpaCollection(Xrpa::CollectionInterface* collection) {
+    if (collection == nullptr && collection_ != nullptr) {
+      // object removed from collection
+      collection_->setDirty(id_, hasNotifiedNeedsWrite_, 0);
+    }
+
+    collection_ = collection;
+
+    if (collection_ != nullptr) {
+      // object added to collection
+      collection_->setDirty(id_, hasNotifiedNeedsWrite_, 0);
+    }
+  }
+
+  const DSIdentifier& getXrpaId() const {
+    return id_;
+  }
+
+ protected:
+  Xrpa::CollectionInterface* collection_ = nullptr;
+  bool hasNotifiedNeedsWrite_ = false;
+
+ private:
+  DSIdentifier id_;
 };
 
 // tickXrpa traits

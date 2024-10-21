@@ -69,7 +69,7 @@ class DatasetReconciler {
     return MessageAccessorType(sendMessage(objectId, fieldId, MessageAccessorType::DS_SIZE));
   }
 
-  void setDirty(const DSIdentifier& objectId, int32_t collectionId) {
+  void notifyObjectNeedsWrite(const DSIdentifier& objectId, int32_t collectionId) {
     auto curSize = pendingWrites_.size();
     if (curSize > 0) {
       auto& lastWrite = pendingWrites_[curSize - 1];

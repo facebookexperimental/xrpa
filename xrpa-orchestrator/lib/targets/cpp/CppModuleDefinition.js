@@ -45,6 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CppModuleDefinition = void 0;
 const path_1 = __importDefault(require("path"));
+const BuckHelpers_1 = require("../../shared/BuckHelpers");
 const BuiltinTypes_1 = require("../../shared/BuiltinTypes");
 const FileWriter_1 = require("../../shared/FileWriter");
 const Helpers_1 = require("../../shared/Helpers");
@@ -112,7 +113,7 @@ class CppModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
     }
     genBuckFile(fileWriter, moduleDef, oncall) {
         fileWriter.writeFile(path_1.default.join(this.libDir, "BUCK"), async () => {
-            const buckRoot = await (0, Helpers_1.buckRootDir)();
+            const buckRoot = await (0, BuckHelpers_1.buckRootDir)();
             const runtimeRelPath = path_1.default.relative(buckRoot, this.runtimeDir);
             const runtimeDepPath = `//${runtimeRelPath.replace(/\\/g, "/")}`;
             const deps = (moduleDef.datamap.typeBuckDeps).map(s => `"${s}",`).concat([

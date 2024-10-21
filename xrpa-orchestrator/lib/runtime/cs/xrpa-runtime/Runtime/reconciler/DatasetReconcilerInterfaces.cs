@@ -39,6 +39,7 @@ namespace Xrpa
     public abstract class DataStoreObject : IDataStoreObject
     {
         protected CollectionInterface _collection;
+        protected bool _hasNotifiedNeedsWrite = false;
         private DSIdentifier _id;
 
         public DataStoreObject(DSIdentifier id, CollectionInterface collection)
@@ -63,7 +64,19 @@ namespace Xrpa
 
         public void SetXrpaCollection(CollectionInterface collection)
         {
+            if (collection == null && _collection != null)
+            {
+                // object removed from collection
+                _collection.SetDirty(_id, ref _hasNotifiedNeedsWrite, 0);
+            }
+
             _collection = collection;
+
+            if (_collection != null)
+            {
+                // object added to collection
+                _collection.SetDirty(_id, ref _hasNotifiedNeedsWrite, 0);
+            }
         }
     }
 
@@ -83,9 +96,13 @@ namespace Xrpa
             return _reconciler.SendMessage(id, _collectionId, messageType, numBytes);
         }
 
-        public virtual void SetDirty(DSIdentifier id, ulong fieldsChanged)
+        public virtual void SetDirty(DSIdentifier id, ref bool hasNotifiedNeedsWrite, ulong fieldsChanged)
         {
-            _reconciler.SetDirty(id, GetId());
+            if (!hasNotifiedNeedsWrite)
+            {
+                hasNotifiedNeedsWrite = true;
+                _reconciler.NotifyObjectNeedsWrite(id, _collectionId);
+            }
         }
 
         public int GetId()
