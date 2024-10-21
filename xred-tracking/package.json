@@ -1,6 +1,6 @@
 {
   "name": "@xrpa/xred-tracking",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Tracking interface",
   "main": "lib/index.js",
   "files": [
