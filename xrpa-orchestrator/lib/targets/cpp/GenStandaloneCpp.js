@@ -93,7 +93,11 @@ function genSettingsParsing(moduleDef) {
         const desc = (fields[key].description ?? key).replace(/\n/g, "  ").replace(/"/g, "\\\"");
         lines.push(`app.add_option("--${key}", moduleData->settings.${key}, "${desc}");`);
     }
-    lines.push(`CLI11_PARSE(app, argc, argv);`);
+    lines.push(`try {`);
+    lines.push(`  app.parse(Xrpa::processCommandLine(argc, argv));`);
+    lines.push(`} catch(const CLI::ParseError &e) {`);
+    lines.push(`  app.exit(e);`);
+    lines.push(`}`);
     return lines;
 }
 function genStandaloneWrapper(fileWriter, outdir, moduleDef) {
@@ -109,6 +113,7 @@ function genStandaloneWrapper(fileWriter, outdir, moduleDef) {
         return headerFile;
     });
     if (!(0, Helpers_1.objectIsEmpty)(moduleDef.getSettings().getAllFields())) {
+        includes.addFile({ filename: "<xrpa-runtime/external_utils/CommandLineUtils.h>" });
         includes.addFile({ filename: "<CLI/CLI.hpp>" });
     }
     const datasetVars = [];
@@ -153,6 +158,7 @@ function genStandaloneBuck(fileWriter, outdir, runtimeDir, buckTarget, moduleDef
             `"${buckTarget}",`,
         ];
         if (!(0, Helpers_1.objectIsEmpty)(moduleDef.getSettings().getAllFields())) {
+            deps.push(`"${runtimeDepPath}:external_utils",`);
             deps.push(`"//third-party/cli11:cli11",`);
         }
         return [

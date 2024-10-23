@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.propagateInheritableProperties = exports.walkTypeTree = exports.ReferenceTo = exports.isReferenceDataType = exports.hasFieldsStruct = exports.Collection = exports.isCollectionDataType = exports.Interface = exports.isInterfaceDataType = exports.Message = exports.isMessageDataType = exports.Struct = exports.isStructDataType = exports.FixedArray = exports.isFixedArrayDataType = exports.FixedString = exports.isFixedStringDataType = exports.Enum = exports.isEnumDataType = exports.isBuiltinDataType = exports.Signal = exports.ColorLinear = exports.ColorSRGBA = exports.String = exports.Timestamp = exports.Scalar = exports.BitField = exports.Count = exports.Boolean = exports.getUseGenericImplementation = exports.GenericImpl = exports.isFieldIndexKey = exports.IndexKey = exports.isFieldPrimaryKey = exports.PrimaryKey = exports.getFieldDefaultValue = exports.getFieldDescription = exports.Description = exports.FIELD_DEFAULT = exports.FIELD_DESCRIPTION = void 0;
+exports.propagateInheritableProperties = exports.walkTypeTree = exports.ReferenceTo = exports.isReferenceDataType = exports.hasFieldsStruct = exports.Collection = exports.isCollectionDataType = exports.Interface = exports.isInterfaceDataType = exports.Message = exports.isMessageDataType = exports.Struct = exports.isStructDataType = exports.FixedArray = exports.isFixedArrayDataType = exports.FixedString = exports.isFixedStringDataType = exports.Enum = exports.isEnumDataType = exports.isBuiltinDataType = exports.Signal = exports.ColorLinear = exports.ColorSRGBA = exports.Float3 = exports.String = exports.Timestamp = exports.Scalar = exports.BitField = exports.Count = exports.Boolean = exports.getUseGenericImplementation = exports.GenericImpl = exports.isFieldIndexKey = exports.IndexKey = exports.isFieldPrimaryKey = exports.PrimaryKey = exports.getFieldDefaultValue = exports.getFieldDescription = exports.Description = exports.FIELD_DEFAULT = exports.FIELD_DESCRIPTION = void 0;
 const assert_1 = __importDefault(require("assert"));
 const simply_immutable_1 = require("simply-immutable");
 const ProgramInterface_1 = require("./ProgramInterface");
@@ -141,6 +141,17 @@ function String(defaultValue, description) {
     });
 }
 exports.String = String;
+function Float3(defaultValue, description) {
+    return (0, Helpers_1.safeDeepFreeze)({
+        __XrpaDataType: true,
+        typename: BuiltinTypes_1.BuiltinType.Float3,
+        properties: {
+            [exports.FIELD_DEFAULT]: defaultValue,
+            [exports.FIELD_DESCRIPTION]: description,
+        },
+    });
+}
+exports.Float3 = Float3;
 function ColorSRGBA(description) {
     return (0, Helpers_1.safeDeepFreeze)({
         __XrpaDataType: true,

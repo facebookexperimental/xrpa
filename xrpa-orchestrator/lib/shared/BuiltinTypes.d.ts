@@ -25,6 +25,7 @@ export declare enum BuiltinType {
     Scalar = "Scalar",
     Timestamp = "Timestamp",
     String = "String",
+    Float3 = "Float3",
     Angle = "Angle",
     Distance = "Distance",
     Matrix3x2 = "Matrix3x2",

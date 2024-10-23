@@ -14,21 +14,13 @@
  * limitations under the License.
  */
 
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
+#pragma once
 
-#include <xrpa-runtime/external_utils/UuidGen.h>
+#include <string>
+#include <vector>
 
 namespace Xrpa {
 
-DSIdentifier generateDSID() {
-  boost::uuids::random_generator generator;
-  boost::uuids::uuid uuid1 = generator();
-  uint64_t high = 0, low = 0;
-  std::copy(uuid1.begin(), uuid1.begin() + 8, reinterpret_cast<char*>(&high));
-  std::copy(uuid1.begin() + 8, uuid1.end(), reinterpret_cast<char*>(&low));
-  return {high, low};
-}
+std::vector<std::string> processCommandLine(int argc, char** argv);
 
 } // namespace Xrpa

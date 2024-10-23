@@ -43,6 +43,7 @@ export declare function BitField(description?: string): XrpaDataType<BuiltinType
 export declare function Scalar(defaultValue?: number, description?: string): XrpaDataType<BuiltinType.Scalar>;
 export declare function Timestamp(description?: string): XrpaDataType<BuiltinType.Timestamp>;
 export declare function String(defaultValue?: string, description?: string): XrpaDataType<BuiltinType.String>;
+export declare function Float3(defaultValue?: [number, number, number], description?: string): XrpaDataType<BuiltinType.Float3>;
 export declare function ColorSRGBA(description?: string): XrpaDataType<BuiltinType.ColorSRGBA>;
 export declare function ColorLinear(description?: string): XrpaDataType<BuiltinType.ColorLinear>;
 export declare function Signal(description?: string): XrpaDataType<BuiltinType.Signal>;

@@ -44,6 +44,7 @@ export interface PrimitiveIntrinsics {
     uint32: TypeSpec;
     float32: TypeSpec;
     bool: TypeSpec;
+    arrayFloat3: TypeSpec;
 }
 export interface GuidGenSpec {
     includes: Array<{

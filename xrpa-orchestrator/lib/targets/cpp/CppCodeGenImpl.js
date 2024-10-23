@@ -85,6 +85,7 @@ exports.PRIMITIVE_INTRINSICS = {
     uint32: { typename: "uint32_t" },
     float32: { typename: "float" },
     bool: { typename: "bool" },
+    arrayFloat3: { typename: "std::array<float, 3>", headerFile: "<array>" },
 };
 exports.GET_CURRENT_CLOCK_TIME = `${exports.XRPA_NAMESPACE}::getCurrentClockTimeMicroseconds()`;
 exports.DEFAULT_INTERFACE_PTR_TYPE = "shared_ptr";

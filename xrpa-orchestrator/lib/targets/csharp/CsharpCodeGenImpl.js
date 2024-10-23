@@ -81,6 +81,7 @@ exports.PRIMITIVE_INTRINSICS = {
     uint32: { typename: "uint" },
     float32: { typename: "float" },
     bool: { typename: "bool" },
+    arrayFloat3: { typename: "float3[]" },
 };
 exports.GET_CURRENT_CLOCK_TIME = `${exports.XRPA_NAMESPACE}.DatasetAccessor.GetCurrentClockTimeMicroseconds()`;
 exports.DEFAULT_INTERFACE_PTR_TYPE = "bare";

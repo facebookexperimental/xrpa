@@ -21,6 +21,7 @@ exports.getSemanticType = exports.genPrimitiveTypes = exports.isBuiltinType = ex
 const CoordinateTransformer_1 = require("./CoordinateTransformer");
 const NumericSemanticType_1 = require("./NumericSemanticType");
 const PrimitiveType_1 = require("./PrimitiveType");
+const StructType_1 = require("./StructType");
 const TypeDefinition_1 = require("./TypeDefinition");
 const TypeValue_1 = require("./TypeValue");
 var BuiltinType;
@@ -31,6 +32,7 @@ var BuiltinType;
     BuiltinType["Scalar"] = "Scalar";
     BuiltinType["Timestamp"] = "Timestamp";
     BuiltinType["String"] = "String";
+    BuiltinType["Float3"] = "Float3";
     BuiltinType["Angle"] = "Angle";
     BuiltinType["Distance"] = "Distance";
     BuiltinType["Matrix3x2"] = "Matrix3x2";
@@ -140,6 +142,7 @@ class SignalDataType extends PrimitiveType_1.PrimitiveType {
 }
 /*****************************************************/
 function genPrimitiveTypes(codegen, typeMap) {
+    const FloatType = new PrimitiveType_1.PrimitiveType(codegen, "float", codegen.PRIMITIVE_INTRINSICS.float32, codegen.PRIMITIVE_INTRINSICS.float32, 4, true, new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.float32.typename, 0));
     return {
         [BuiltinType.Boolean]: new BooleanType(codegen),
         // TODO maybe rename Count -> WholeNumber, and then add Count back as a semantic type instead? (constrained to >= 0)
@@ -148,6 +151,18 @@ function genPrimitiveTypes(codegen, typeMap) {
         [BuiltinType.Timestamp]: new TimestampType(codegen, typeMap[BuiltinType.Timestamp] ?? codegen.PRIMITIVE_INTRINSICS.microseconds),
         // TODO this is only to support string settings; actual string support in the dataset will need additional work
         [BuiltinType.String]: new PrimitiveType_1.PrimitiveType(codegen, BuiltinType.String, codegen.PRIMITIVE_INTRINSICS.string, typeMap[BuiltinType.String] ?? codegen.PRIMITIVE_INTRINSICS.string, 0, true, new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.string.typename, "")),
+        [BuiltinType.Float3]: new StructType_1.StructType(codegen, BuiltinType.Float3, "", undefined, {
+            x: { type: FloatType, defaultValue: 0 },
+            y: { type: FloatType, defaultValue: 0 },
+            z: { type: FloatType, defaultValue: 0 },
+        }, {
+            ...codegen.PRIMITIVE_INTRINSICS.arrayFloat3,
+            fieldMap: {
+                "[0]": "x",
+                "[1]": "y",
+                "[2]": "z",
+            },
+        }),
         [BuiltinType.Signal]: new SignalDataType(codegen),
     };
 }
