@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "../../shared/FileWriter";
+import { FileWriter } from "@xrpa/xrpa-utils";
 import { MessageDataTypeDefinition } from "../../shared/TypeDefinition";
 import { GenDataStoreContext } from "../shared/GenDataStoreShared";
 export declare function getBlueprintTypesHeaderName(apiname: string): string;

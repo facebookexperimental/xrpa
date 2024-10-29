@@ -18,8 +18,8 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genMonoBehaviour = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const ClassSpec_1 = require("../../shared/ClassSpec");
-const Helpers_1 = require("../../shared/Helpers");
 const CsharpCodeGenImpl_1 = require("../csharp/CsharpCodeGenImpl");
 const CsharpDatasetLibraryTypes_1 = require("../csharp/CsharpDatasetLibraryTypes");
 const GenDataStore_1 = require("../csharp/GenDataStore");
@@ -31,7 +31,7 @@ function genComponentInit(ctx, includes, reconcilerDef) {
         dsIdentifierType: ctx.moduleDef.DSIdentifier.getLocalType(ctx.namespace, includes),
         guidGen: ctx.moduleDef.guidGen,
         includes,
-        idParts: (0, Helpers_1.filterToNumberArray)(reconcilerDef.componentProps.id, 2),
+        idParts: (0, xrpa_utils_1.filterToNumberArray)(reconcilerDef.componentProps.id, 2),
     });
     return [
         `if (_dsIsInitialized) {`,
@@ -159,7 +159,7 @@ function genInterfaceComponentClass(ctx, fileWriter, type, outDir, baseComponent
     return classSpec.name;
 }
 function genMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
-    const baseComponentType = (0, Helpers_1.filterToString)(reconcilerDef.componentProps.basetype) ?? "MonoBehaviour";
+    const baseComponentType = (0, xrpa_utils_1.filterToString)(reconcilerDef.componentProps.basetype) ?? "MonoBehaviour";
     let parentClass = `${baseComponentType}`;
     if (reconcilerDef.type.interfaceType) {
         parentClass = genInterfaceComponentClass(ctx, fileWriter, reconcilerDef.type.interfaceType, outDir, baseComponentType);

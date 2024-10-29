@@ -18,7 +18,7 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StructType = void 0;
-const Helpers_1 = require("./Helpers");
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const CoordinateTransformer_1 = require("./CoordinateTransformer");
 const PrimitiveType_1 = require("./PrimitiveType");
 const TypeDefinition_1 = require("./TypeDefinition");
@@ -158,14 +158,14 @@ class StructType extends PrimitiveType_1.PrimitiveType {
             const byteCount = fields[name].type.getTypeSize();
             classSpec.members.push({
                 type: this.codegen.PRIMITIVE_INTRINSICS.int32.typename,
-                name: `${(0, Helpers_1.upperFirst)(name)}FieldOffset`,
+                name: `${(0, xrpa_utils_1.upperFirst)(name)}FieldOffset`,
                 initialValue: new TypeValue_1.PrimitiveValue(this.codegen, this.codegen.PRIMITIVE_INTRINSICS.int32.typename, byteOffset),
                 isStatic: true,
                 isConst: true,
             });
             classSpec.members.push({
                 type: this.codegen.PRIMITIVE_INTRINSICS.int32.typename,
-                name: `${(0, Helpers_1.upperFirst)(name)}FieldSize`,
+                name: `${(0, xrpa_utils_1.upperFirst)(name)}FieldSize`,
                 initialValue: new TypeValue_1.PrimitiveValue(this.codegen, this.codegen.PRIMITIVE_INTRINSICS.int32.typename, byteCount),
                 isStatic: true,
                 isConst: true,
@@ -186,7 +186,7 @@ class StructType extends PrimitiveType_1.PrimitiveType {
                 accessor,
                 accessorIsStruct,
                 accessorMaxBytes,
-                fieldOffsetName: `${(0, Helpers_1.upperFirst)(name)}FieldOffset`,
+                fieldOffsetName: `${(0, xrpa_utils_1.upperFirst)(name)}FieldOffset`,
             };
         }
         return ret;
@@ -227,7 +227,7 @@ class StructType extends PrimitiveType_1.PrimitiveType {
         });
         this.getFieldOffsetDeclarations(classSpec);
         this.genReadWriteValueFunctions(classSpec);
-        return (0, Helpers_1.trimTrailingEmptyLines)(this.codegen.genClassDefinition(classSpec));
+        return (0, xrpa_utils_1.trimTrailingEmptyLines)(this.codegen.genClassDefinition(classSpec));
     }
     genLocalTypeDefinition(inNamespace, includes) {
         if (this.localTypeOverride) {
@@ -247,7 +247,7 @@ class StructType extends PrimitiveType_1.PrimitiveType {
                 decorations: this.codegen.genCommentLines(fieldSpec.description),
             });
         }
-        return (0, Helpers_1.trimTrailingEmptyLines)(this.codegen.genClassDefinition(classSpec));
+        return (0, xrpa_utils_1.trimTrailingEmptyLines)(this.codegen.genClassDefinition(classSpec));
     }
     convertValueFromLocal(inNamespace, includes, value) {
         if (typeof value === "string") {

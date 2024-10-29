@@ -23,16 +23,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.buckBuild = exports.buckRun = exports.buckRootDir = void 0;
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
-const Helpers_1 = require("./Helpers");
+const FileUtils_1 = require("./FileUtils");
 const BUCK = "buck2";
 async function buckRootDir() {
-    return await (0, Helpers_1.runProcess)({ filename: BUCK, args: ["root"] });
+    return await (0, FileUtils_1.runProcess)({ filename: BUCK, args: ["root"] });
 }
 exports.buckRootDir = buckRootDir;
 async function buckBuildAndPrep(params) {
     try {
-        const buckRoot = await (0, Helpers_1.runProcess)({ filename: BUCK, args: ["root"] });
-        const buildOutput = await (0, Helpers_1.runProcess)({
+        const buckRoot = await (0, FileUtils_1.runProcess)({ filename: BUCK, args: ["root"] });
+        console.log(`${BUCK} build ${params.mode} ${params.target}`);
+        const buildOutput = await (0, FileUtils_1.runProcess)({
             filename: BUCK,
             args: ["build", params.mode, params.target, "--show-json-output"],
             onLineReceived: line => console.log(line),
@@ -58,11 +59,12 @@ async function buckBuildAndPrep(params) {
 }
 async function buckRun(params) {
     try {
-        const exeFilename = params.exeFilename ?? (params.target.split(":").pop() + ".exe");
+        const targetName = params.target.split(":").pop() ?? "";
+        const exeFilename = params.exeFilename ?? (targetName + ".exe");
         const outputPath = await buckBuildAndPrep(params);
         const exePath = path_1.default.join(outputPath, exeFilename);
         console.log(exePath);
-        return await (0, Helpers_1.runProcess)({
+        return await (0, FileUtils_1.runProcess)({
             filename: exePath,
             onLineReceived: line => console.log(line),
         });
@@ -78,7 +80,7 @@ async function buckBuild(params) {
         const outputPath = await buckBuildAndPrep(params);
         // copy executables and dlls to dstPath
         const filenames = [];
-        await (0, Helpers_1.recursiveDirScan)(outputPath, filenames);
+        await (0, FileUtils_1.recursiveDirScan)(outputPath, filenames);
         for (const filename of filenames) {
             if (filename.endsWith(".exe") || filename.endsWith(".dll")) {
                 const dstFilename = path_1.default.join(params.dstPath, filename.slice(outputPath.length + 1));
@@ -99,4 +101,4 @@ async function buckBuild(params) {
     }
 }
 exports.buckBuild = buckBuild;
-//# sourceMappingURL=BuckHelpers.js.map
+//# sourceMappingURL=BuckUtils.js.map

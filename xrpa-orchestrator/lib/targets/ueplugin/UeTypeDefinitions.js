@@ -18,8 +18,8 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StructTypeUe = exports.EnumTypeUe = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const EnumType_1 = require("../../shared/EnumType");
-const Helpers_1 = require("../../shared/Helpers");
 const StructType_1 = require("../../shared/StructType");
 const GenBlueprintTypes_1 = require("./GenBlueprintTypes");
 const UMETA_ALIGNMENT = 20;
@@ -36,7 +36,7 @@ class EnumTypeUe extends EnumType_1.EnumType {
         return [
             `UENUM(BlueprintType)`,
             `enum class ${this.getLocalType(inNamespace, null)}: uint8 {`,
-            ...(0, Helpers_1.indent)(1, Object.keys(this.enumValues).map(v => (0, Helpers_1.appendAligned)(`${v} = ${this.enumValues[v]}`, `UMETA(DisplayName="${v}"),`, UMETA_ALIGNMENT))),
+            ...(0, xrpa_utils_1.indent)(1, Object.keys(this.enumValues).map(v => (0, xrpa_utils_1.appendAligned)(`${v} = ${this.enumValues[v]}`, `UMETA(DisplayName="${v}"),`, UMETA_ALIGNMENT))),
             `};`,
         ];
     }
@@ -64,7 +64,7 @@ class StructTypeUe extends StructType_1.StructType {
             `struct ${this.getLocalType(inNamespace, null)} {`,
             `  GENERATED_BODY()`,
             ``,
-            ...(0, Helpers_1.indent)(1, fieldDefs),
+            ...(0, xrpa_utils_1.indent)(1, fieldDefs),
             `};`,
         ];
     }

@@ -21,8 +21,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genPackage = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
-const Helpers_1 = require("../../shared/Helpers");
 function writePackageJson(fileWriter, packageRoot, packageInfo) {
     const lines = [
         `{`,
@@ -31,7 +31,7 @@ function writePackageJson(fileWriter, packageRoot, packageInfo) {
         `  "displayName": "${packageInfo.displayName}",`,
         `  "description": "${packageInfo.description}",`,
         `  "dependencies": {`,
-        ...(0, Helpers_1.indent)(2, (0, Helpers_1.removeLastTrailingComma)([`"com.meta.xrpa": "1.0.0",`].concat(packageInfo.dependencies.map(entry => `"${entry[0]}": "${entry[1]}",`)))),
+        ...(0, xrpa_utils_1.indent)(2, (0, xrpa_utils_1.removeLastTrailingComma)([`"com.meta.xrpa": "1.0.0",`].concat(packageInfo.dependencies.map(entry => `"${entry[0]}": "${entry[1]}",`)))),
         `  }`,
         `}`,
     ];

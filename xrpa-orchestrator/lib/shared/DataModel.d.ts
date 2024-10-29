@@ -15,9 +15,9 @@
  */
 
 
+import { HashValue } from "@xrpa/xrpa-utils";
 import { CoordinateSystemDef } from "./CoordinateTransformer";
 import { DataStoreDefinition } from "./DataStore";
-import { HashValue } from "./Helpers";
 import { ModuleDefinition, UserTypeSpec } from "./ModuleDefinition";
 import { CollectionTypeDefinition, FieldTypeSpec, InterfaceTypeDefinition, MessageDataTypeDefinition, StructTypeDefinition, TypeDefinition, TypeMap } from "./TypeDefinition";
 export type UserStructSpec = Record<string, UserTypeSpec>;

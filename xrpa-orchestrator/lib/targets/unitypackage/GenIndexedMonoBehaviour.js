@@ -21,9 +21,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genIndexedMonoBehaviour = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const ClassSpec_1 = require("../../shared/ClassSpec");
-const Helpers_1 = require("../../shared/Helpers");
 const CsharpCodeGenImpl_1 = require("../csharp/CsharpCodeGenImpl");
 const CsharpDatasetLibraryTypes_1 = require("../csharp/CsharpDatasetLibraryTypes");
 const GenDataStore_1 = require("../csharp/GenDataStore");
@@ -72,7 +72,7 @@ function getFieldSetterHooks(ctx, reconcilerDef) {
     return ret;
 }
 function genIndexedMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
-    const baseComponentType = (0, Helpers_1.filterToString)(reconcilerDef.componentProps.basetype) ?? "MonoBehaviour";
+    const baseComponentType = (0, xrpa_utils_1.filterToString)(reconcilerDef.componentProps.basetype) ?? "MonoBehaviour";
     (0, assert_1.default)(!reconcilerDef.type.interfaceType); // not yet supported
     let hasTransformMapping = false;
     const fields = reconcilerDef.type.getStateFields();

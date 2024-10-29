@@ -21,8 +21,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genTypesDefinitions = exports.getDataStoreSchemaHashName = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
-const Helpers_1 = require("../../shared/Helpers");
 const CsharpCodeGenImpl_1 = require("./CsharpCodeGenImpl");
 const CsharpDatasetLibraryTypes_1 = require("./CsharpDatasetLibraryTypes");
 function getDataStoreSchemaHashName(apiname, fullyQualified) {
@@ -79,7 +79,7 @@ function genTypesDefinitions(fileWriter, outdir, def) {
         `public class ${namespace}Config {`,
         `  public static readonly ${CsharpDatasetLibraryTypes_1.DSHashValue.getLocalType(namespace, includes)} ${getDataStoreSchemaHashName(def.apiname, false)} = new(${hashInit});`,
         ``,
-        ...(0, Helpers_1.indent)(1, genDatasetConfig(def.apiname, def.datamodel, namespace, includes)),
+        ...(0, xrpa_utils_1.indent)(1, genDatasetConfig(def.apiname, def.datamodel, namespace, includes)),
         `}`,
         ``,
         ...genTypeDefinitions(namespace, def.datamodel, includes),

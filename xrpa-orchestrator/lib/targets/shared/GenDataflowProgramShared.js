@@ -21,22 +21,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genDataflowProgramClassSpec = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const ClassSpec_1 = require("../../shared/ClassSpec");
-const Helpers_1 = require("../../shared/Helpers");
 const StructType_1 = require("../../shared/StructType");
 const DataflowProgramDefinition_1 = require("../../shared/DataflowProgramDefinition");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const TypeValue_1 = require("../../shared/TypeValue");
 const ProgramInterface_1 = require("../../ProgramInterface");
 function paramToMemberName(codegen, paramName) {
-    return codegen.privateMember(`param${(0, Helpers_1.upperFirst)(paramName)}`);
+    return codegen.privateMember(`param${(0, xrpa_utils_1.upperFirst)(paramName)}`);
 }
 function objToMemberName(codegen, objName) {
-    return codegen.privateMember(`obj${(0, Helpers_1.upperFirst)(objName)}`);
+    return codegen.privateMember(`obj${(0, xrpa_utils_1.upperFirst)(objName)}`);
 }
 function storeToVarName(storeName) {
-    return `datastore${(0, Helpers_1.upperFirst)(storeName)}`;
+    return `datastore${(0, xrpa_utils_1.upperFirst)(storeName)}`;
 }
 function getDataStoreForObj(ctx, graphNode) {
     (0, assert_1.default)((0, DataflowProgramDefinition_1.isDataflowForeignObjectInstantiation)(graphNode));
@@ -79,7 +79,7 @@ function genParameterAccessors(ctx, codegen, classSpec, programDef) {
             isConst: true,
         });
         classSpec.methods.push({
-            name: `set${(0, Helpers_1.upperFirst)(paramName)}`,
+            name: `set${(0, xrpa_utils_1.upperFirst)(paramName)}`,
             parameters: [{
                     name: paramName,
                     type: fieldType,
@@ -88,12 +88,12 @@ function genParameterAccessors(ctx, codegen, classSpec, programDef) {
                 // set the local member value
                 `${memberName} = ${paramName};`,
                 // set the field value on connected datastore objects
-                ...(0, Helpers_1.mapAndCollapse)(inputDef.connections, connection => {
+                ...(0, xrpa_utils_1.mapAndCollapse)(inputDef.connections, connection => {
                     (0, assert_1.default)((0, DataflowProgramDefinition_1.isDataflowForeignObjectInstantiation)(connection.targetNode));
                     const objMemberName = objToMemberName(codegen, connection.targetNode.name);
                     return [
                         `if (${codegen.genNonNullCheck(objMemberName)}) {`,
-                        `  ${codegen.genDerefMethodCall(objMemberName, `set${(0, Helpers_1.upperFirst)(connection.targetPort)}`, [paramName])};`,
+                        `  ${codegen.genDerefMethodCall(objMemberName, `set${(0, xrpa_utils_1.upperFirst)(connection.targetPort)}`, [paramName])};`,
                         `}`,
                     ];
                 }),
@@ -142,12 +142,12 @@ function genCreateObjectsBody(ctx, codegen, programDef, includes) {
             else {
                 continue;
             }
-            updateLines.push(`${codegen.genDerefMethodCall(objVarName, `set${(0, Helpers_1.upperFirst)(fieldName)}`, [value.toString()])};`);
+            updateLines.push(`${codegen.genDerefMethodCall(objVarName, `set${(0, xrpa_utils_1.upperFirst)(fieldName)}`, [value.toString()])};`);
         }
     }
     for (const connection of programDef.selfTerminateEvents) {
         const { objVarName } = getInfoForObj(ctx, codegen, connection.targetNode, includes);
-        updateLines.push(`if (${codegen.genNonNullCheck(objVarName)}) {`, `  ${codegen.genDerefMethodCall(objVarName, `on${(0, Helpers_1.upperFirst)(connection.targetPort)}`, [codegen.genMethodBind("", "terminate", [], 2)])};`, `}`);
+        updateLines.push(`if (${codegen.genNonNullCheck(objVarName)}) {`, `  ${codegen.genDerefMethodCall(objVarName, `on${(0, xrpa_utils_1.upperFirst)(connection.targetPort)}`, [codegen.genMethodBind("", "terminate", [], 2)])};`, `}`);
     }
     return createLines.concat(updateLines);
 }

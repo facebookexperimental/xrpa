@@ -21,10 +21,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DataModelDefinition = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const BuiltinTypes_1 = require("./BuiltinTypes");
 const CoordinateTransformer_1 = require("./CoordinateTransformer");
-const Helpers_1 = require("./Helpers");
 const ModuleDefinition_1 = require("./ModuleDefinition");
 const TypeDefinition_1 = require("./TypeDefinition");
 function verify(val) {
@@ -234,7 +234,7 @@ class DataModelDefinition {
         for (const typeName of typeNames) {
             lines.push(JSON.stringify(this.typeDefinitions[typeName].getHashData()));
         }
-        return new Helpers_1.HashValue(lines.join("\n"));
+        return new xrpa_utils_1.HashValue(lines.join("\n"));
     }
     getAllTypeDefinitions() {
         return Object.values(this.typeDefinitions);

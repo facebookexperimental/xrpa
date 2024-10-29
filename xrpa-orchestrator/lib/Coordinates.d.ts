@@ -15,13 +15,13 @@
  */
 
 
+import { Thunk } from "@xrpa/xrpa-utils";
 import { XrpaStructFields, XrpaStructType } from "./InterfaceTypes";
 import { ProgramInterface, ProgramInterfaceContext } from "./ProgramInterface";
 import { RuntimeEnvironmentContext } from "./RuntimeEnvironment";
 import { XrpaDataType } from "./XrpaLanguage";
 import { BuiltinType } from "./shared/BuiltinTypes";
 import { CoordinateSystemDef } from "./shared/CoordinateTransformer";
-import { Thunk } from "./shared/Helpers";
 export declare function Angle(defaultValue?: number, description?: string): XrpaDataType<BuiltinType.Angle>;
 export declare function Distance(defaultValue?: number, description?: string): XrpaDataType<BuiltinType.Distance>;
 export declare function Matrix3x2(description?: string): XrpaDataType<BuiltinType.Matrix3x2>;

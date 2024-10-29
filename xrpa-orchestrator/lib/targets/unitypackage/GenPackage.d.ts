@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "../../shared/FileWriter";
+import { FileWriter } from "@xrpa/xrpa-utils";
 export interface PackageInfo {
     name: string;
     version: [number, number, number];

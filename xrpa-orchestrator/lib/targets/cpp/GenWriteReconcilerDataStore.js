@@ -44,9 +44,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genOutboundReconciledTypes = exports.defaultFieldToMemberVar = exports.genPrepFullUpdateFunctionBody = exports.genWriteFunctionBody = exports.genWriteFieldAccessors = exports.genClearSetClearFunctionBody = exports.genClearSetSetterFunctionBody = exports.genFieldSetDirty = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const ClassSpec_1 = require("../../shared/ClassSpec");
-const Helpers_1 = require("../../shared/Helpers");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
 const CppCodeGenImpl = __importStar(require("./CppCodeGenImpl"));
@@ -95,21 +95,21 @@ function genClearSetClearFunctionBody(params) {
     return [
         `${params.fieldType.declareLocalVar(params.ctx.namespace, params.includes, "clearValue")};`,
         `if (${params.fieldVar} != clearValue) {`,
-        ...(0, Helpers_1.indent)(1, params.setterHooks?.[params.fieldName]?.preSet ?? []),
+        ...(0, xrpa_utils_1.indent)(1, params.setterHooks?.[params.fieldName]?.preSet ?? []),
         `  ${params.fieldVar} = clearValue;`,
-        ...(0, Helpers_1.indent)(1, params.setterHooks?.[params.fieldName]?.postSet ?? []),
-        ...(0, Helpers_1.indent)(1, params.needsSetDirty ? genFieldSetDirty(params) : []),
+        ...(0, xrpa_utils_1.indent)(1, params.setterHooks?.[params.fieldName]?.postSet ?? []),
+        ...(0, xrpa_utils_1.indent)(1, params.needsSetDirty ? genFieldSetDirty(params) : []),
         `}`,
     ];
 }
 exports.genClearSetClearFunctionBody = genClearSetClearFunctionBody;
 function genWriteFieldSetters(classSpec, params) {
     const fieldType = params.fieldType;
-    const pascalFieldName = (0, Helpers_1.upperFirst)(params.fieldName);
+    const pascalFieldName = (0, xrpa_utils_1.upperFirst)(params.fieldName);
     const rawOverrideParams = params.fieldAccessorNameOverrides[params.fieldName];
     const fieldVar = params.fieldToMemberVar(params.fieldName);
     if ((0, TypeDefinition_1.typeIsClearSet)(fieldType)) {
-        const overrideParams = (0, Helpers_1.filterToStringArray)(rawOverrideParams, 2);
+        const overrideParams = (0, xrpa_utils_1.filterToStringArray)(rawOverrideParams, 2);
         const setterName = overrideParams?.[0] ?? `set${pascalFieldName}`;
         const clearName = overrideParams?.[1] ?? `clear${pascalFieldName}`;
         classSpec.methods.push({
@@ -122,7 +122,7 @@ function genWriteFieldSetters(classSpec, params) {
         });
     }
     else if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-        const setterName = (0, Helpers_1.filterToString)(rawOverrideParams) ?? `set${pascalFieldName}`;
+        const setterName = (0, xrpa_utils_1.filterToString)(rawOverrideParams) ?? `set${pascalFieldName}`;
         classSpec.methods.push({
             name: setterName,
             parameters: [{
@@ -148,7 +148,7 @@ function genWriteFieldSetters(classSpec, params) {
         });
     }
     else {
-        const setterName = (0, Helpers_1.filterToString)(rawOverrideParams) ?? `set${pascalFieldName}`;
+        const setterName = (0, xrpa_utils_1.filterToString)(rawOverrideParams) ?? `set${pascalFieldName}`;
         classSpec.methods.push({
             name: setterName,
             parameters: [{
@@ -204,7 +204,7 @@ function genWriteFunctionBody(params) {
     const accessor = params.proxyObj ? `${params.proxyObj}->` : "objAccessor.";
     const typeFields = params.reconcilerDef.type.getStateFields();
     for (const fieldName in typeFields) {
-        const pascalFieldName = (0, Helpers_1.upperFirst)(fieldName);
+        const pascalFieldName = (0, xrpa_utils_1.upperFirst)(fieldName);
         if (!params.reconcilerDef.isInboundField(fieldName)) {
             const fieldVar = params.fieldToMemberVar(fieldName);
             fieldUpdateLines.push(`if (changeBits_ & ${params.reconcilerDef.type.getChangedBit(params.ctx.namespace, params.includes, fieldName)}) {`, `  ${accessor}set${pascalFieldName}(${fieldVar});`, `}`);
@@ -272,7 +272,7 @@ function genPrepFullUpdateFunctionBody(params) {
 }
 exports.genPrepFullUpdateFunctionBody = genPrepFullUpdateFunctionBody;
 function defaultFieldToMemberVar(fieldName) {
-    return (0, CppCodeGenImpl_1.privateMember)(`local${(0, Helpers_1.upperFirst)(fieldName)}`);
+    return (0, CppCodeGenImpl_1.privateMember)(`local${(0, xrpa_utils_1.upperFirst)(fieldName)}`);
 }
 exports.defaultFieldToMemberVar = defaultFieldToMemberVar;
 function genOutboundReconciledTypes(ctx, includesIn) {

@@ -15,11 +15,11 @@
  */
 
 
+import { Thunk } from "@xrpa/xrpa-utils";
 import { XrpaCollectionType, XrpaReferenceType } from "./InterfaceTypes";
 import { RuntimeEnvironmentContext } from "./RuntimeEnvironment";
 import { PropertyCondition, XrpaDataType, XrpaTypeAugmenter } from "./XrpaLanguage";
 import { ComponentProperties } from "./shared/DataStore";
-import { Thunk } from "./shared/Helpers";
 export declare const COMPONENT_BASE_CLASS: string;
 export declare const IfGameEngine: PropertyCondition;
 export declare const IfNotGameEngine: PropertyCondition;

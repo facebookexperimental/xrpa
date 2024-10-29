@@ -45,9 +45,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CppModuleDefinition = void 0;
 const path_1 = __importDefault(require("path"));
-const BuckHelpers_1 = require("../../shared/BuckHelpers");
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const BuiltinTypes_1 = require("../../shared/BuiltinTypes");
-const FileWriter_1 = require("../../shared/FileWriter");
 const Helpers_1 = require("../../shared/Helpers");
 const ModuleDefinition_1 = require("../../shared/ModuleDefinition");
 const CppCodeGenImpl = __importStar(require("./CppCodeGenImpl"));
@@ -78,7 +77,7 @@ class CppModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
         return DSIdentifier;
     }
     doCodeGen() {
-        const fileWriter = new FileWriter_1.FileWriter();
+        const fileWriter = new xrpa_utils_1.FileWriter();
         fileWriter.copyFolderContents((0, Helpers_1.getRuntimeSrcPath)("cpp"), this.runtimeDir, (_srcRelPath, fileExt, fileData) => {
             if (fileExt === ".cpp" || fileExt === ".h") {
                 return (0, CppCodeGenImpl_1.injectGeneratedTag)(fileData);
@@ -113,7 +112,7 @@ class CppModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
     }
     genBuckFile(fileWriter, moduleDef, oncall) {
         fileWriter.writeFile(path_1.default.join(this.libDir, "BUCK"), async () => {
-            const buckRoot = await (0, BuckHelpers_1.buckRootDir)();
+            const buckRoot = await (0, xrpa_utils_1.buckRootDir)();
             const runtimeRelPath = path_1.default.relative(buckRoot, this.runtimeDir);
             const runtimeDepPath = `//${runtimeRelPath.replace(/\\/g, "/")}`;
             const deps = (moduleDef.datamap.typeBuckDeps).map(s => `"${s}",`).concat([
@@ -133,7 +132,7 @@ class CppModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
                 `    public_raw_headers = glob(["*.h"]),`,
                 `    visibility = ["PUBLIC"],`,
                 `    deps = [`,
-                ...(0, Helpers_1.indent)(4, deps),
+                ...(0, xrpa_utils_1.indent)(4, deps),
                 `    ],`,
                 `)`,
                 ``,

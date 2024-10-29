@@ -18,8 +18,8 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genSceneComponent = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const ClassSpec_1 = require("../../shared/ClassSpec");
-const Helpers_1 = require("../../shared/Helpers");
 const CppCodeGenImpl_1 = require("../cpp/CppCodeGenImpl");
 const CppDatasetLibraryTypes_1 = require("../cpp/CppDatasetLibraryTypes");
 const GenDataStore_1 = require("../cpp/GenDataStore");
@@ -31,7 +31,7 @@ function genComponentInit(ctx, includes, reconcilerDef) {
         dsIdentifierType: ctx.moduleDef.DSIdentifier.getLocalType(ctx.namespace, includes),
         guidGen: ctx.moduleDef.guidGen,
         includes,
-        idParts: (0, Helpers_1.filterToNumberArray)(reconcilerDef.componentProps.id, 2),
+        idParts: (0, xrpa_utils_1.filterToNumberArray)(reconcilerDef.componentProps.id, 2),
     });
     return [
         `if (dsIsInitialized_) {`,
@@ -146,7 +146,7 @@ function genInterfaceComponentClass(ctx, fileWriter, type, outSrcDir, outHeaderD
     return `${componentClassName}`;
 }
 function genSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderDir, pluginName) {
-    const baseComponentType = (0, Helpers_1.filterToString)(reconcilerDef.componentProps.basetype) ?? "SceneComponent";
+    const baseComponentType = (0, xrpa_utils_1.filterToString)(reconcilerDef.componentProps.basetype) ?? "SceneComponent";
     const headerIncludes = new CppCodeGenImpl_1.CppIncludeAggregator([
         `Components/${baseComponentType}.h`,
         `CoreMinimal.h`,

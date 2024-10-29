@@ -41,7 +41,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genMessageFieldAccessors = exports.genOnMessageAccessor = exports.genMessageChannelDispatch = exports.genSendMessageAccessor = void 0;
-const Helpers_1 = require("../../shared/Helpers");
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const TypeValue_1 = require("../../shared/TypeValue");
 const GenMessageAccessorsShared_1 = require("../shared/GenMessageAccessorsShared");
@@ -54,10 +54,10 @@ function genMessageParamInitializer(ctx, includes, msgType) {
     for (const key in msgFields) {
         const fieldType = msgFields[key].type;
         if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-            lines.push(`message.Set${(0, Helpers_1.upperFirst)(key)}(${fieldType.convertValueFromLocal(ctx.namespace, includes, key)});`);
+            lines.push(`message.Set${(0, xrpa_utils_1.upperFirst)(key)}(${fieldType.convertValueFromLocal(ctx.namespace, includes, key)});`);
         }
         else {
-            lines.push(`message.Set${(0, Helpers_1.upperFirst)(key)}(${key});`);
+            lines.push(`message.Set${(0, xrpa_utils_1.upperFirst)(key)}(${key});`);
         }
     }
     return lines;
@@ -107,7 +107,7 @@ function genMessageDispatchBody(params) {
         else {
             const prelude = [];
             const msgParams = ["timestamp"].concat(params.msgDataToParams(params.ctx, fieldType, prelude, params.includes));
-            lines.push(`if (messageType == ${msgType}${validateMsgHandler}) {`, `  ${fieldType.getReadAccessorType(params.ctx.namespace, params.includes)} message = new(messageData);`, ...(0, Helpers_1.indent)(1, prelude), `  ${msgHandler}(${msgParams.join(", ")});`, `}`);
+            lines.push(`if (messageType == ${msgType}${validateMsgHandler}) {`, `  ${fieldType.getReadAccessorType(params.ctx.namespace, params.includes)} message = new(messageData);`, ...(0, xrpa_utils_1.indent)(1, prelude), `  ${msgHandler}(${msgParams.join(", ")});`, `}`);
         }
     }
     return lines;
@@ -137,7 +137,7 @@ function genOnMessageAccessor(classSpec, params) {
     }
     const msgHandler = params.genMsgHandler(params.fieldName);
     classSpec.methods.push({
-        name: `On${(0, Helpers_1.upperFirst)(params.fieldName)}`,
+        name: `On${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
         parameters: [{
                 name: "handler",
                 type: `System.Action<${paramTypes.join(", ")}>`,

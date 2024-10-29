@@ -15,10 +15,10 @@
  */
 
 
+import { Thunk } from "@xrpa/xrpa-utils";
 import { ProgramInterface } from "./ProgramInterface";
 import { RuntimeEnvironmentContext } from "./RuntimeEnvironment";
 import { XrpaDataType } from "./XrpaLanguage";
-import { Thunk } from "./shared/Helpers";
 import { ModuleDefinition } from "./shared/ModuleDefinition";
 export interface NativeProgramContext extends RuntimeEnvironmentContext {
     __isNativeProgramContext: true;

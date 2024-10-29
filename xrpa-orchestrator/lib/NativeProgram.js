@@ -18,9 +18,9 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.applyNativeProgramContext = exports.setProgramInterface = exports.addSetting = exports.getNativeProgramContext = exports.isNativeProgramContext = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const ProgramInterfaceConverter_1 = require("./ProgramInterfaceConverter");
 const XrpaLanguage_1 = require("./XrpaLanguage");
-const Helpers_1 = require("./shared/Helpers");
 const MODULE_SETTINGS = "xrpa.nativeProgram.settings";
 function isNativeProgramContext(ctx) {
     return typeof ctx === "object" && ctx !== null && "__isNativeProgramContext" in ctx;
@@ -39,7 +39,7 @@ function addSetting(name, dataType) {
     if (name in settings) {
         throw new Error(`Setting ${name} already exists`);
     }
-    settings[name] = (0, Helpers_1.resolveThunk)(dataType);
+    settings[name] = (0, xrpa_utils_1.resolveThunk)(dataType);
 }
 exports.addSetting = addSetting;
 function setProgramInterface(programInterface) {

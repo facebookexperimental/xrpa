@@ -15,8 +15,8 @@
  */
 
 
+import { FileWriter } from "@xrpa/xrpa-utils";
 import { DataflowProgramDefinition } from "../../shared/DataflowProgramDefinition";
-import { FileWriter } from "../../shared/FileWriter";
 import { GenDataflowProgramContext } from "../shared/GenDataflowProgramShared";
 export declare function genDataflowProgramSpawner(ctx: GenDataflowProgramContext, fileWriter: FileWriter, outSrcDir: string, outHeaderDir: string, programDef: DataflowProgramDefinition, pluginName: string): void;
 

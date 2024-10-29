@@ -41,8 +41,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CsharpModuleDefinition = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const BuiltinTypes_1 = require("../../shared/BuiltinTypes");
-const FileWriter_1 = require("../../shared/FileWriter");
 const ModuleDefinition_1 = require("../../shared/ModuleDefinition");
 const CsharpCodeGenImpl = __importStar(require("./CsharpCodeGenImpl"));
 const CsharpCodeGenImpl_1 = require("./CsharpCodeGenImpl");
@@ -68,7 +68,7 @@ class CsharpModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
         return DSIdentifier;
     }
     doCodeGen() {
-        const fileWriter = new FileWriter_1.FileWriter();
+        const fileWriter = new xrpa_utils_1.FileWriter();
         for (const storeDef of this.getDataStores()) {
             // generate DS types
             (0, GenTypesDefinitions_1.genTypesDefinitions)(fileWriter, this.outputDir, storeDef);

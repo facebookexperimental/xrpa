@@ -21,19 +21,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.propagateInheritableProperties = exports.walkTypeTree = exports.ReferenceTo = exports.isReferenceDataType = exports.hasFieldsStruct = exports.Collection = exports.isCollectionDataType = exports.Interface = exports.isInterfaceDataType = exports.Message = exports.isMessageDataType = exports.Struct = exports.isStructDataType = exports.FixedArray = exports.isFixedArrayDataType = exports.FixedString = exports.isFixedStringDataType = exports.Enum = exports.isEnumDataType = exports.isBuiltinDataType = exports.Signal = exports.ColorLinear = exports.ColorSRGBA = exports.Float3 = exports.String = exports.Timestamp = exports.Scalar = exports.BitField = exports.Count = exports.Boolean = exports.getUseGenericImplementation = exports.GenericImpl = exports.isFieldIndexKey = exports.IndexKey = exports.isFieldPrimaryKey = exports.PrimaryKey = exports.getFieldDefaultValue = exports.getFieldDescription = exports.Description = exports.FIELD_DEFAULT = exports.FIELD_DESCRIPTION = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const simply_immutable_1 = require("simply-immutable");
 const ProgramInterface_1 = require("./ProgramInterface");
 const XrpaLanguage_1 = require("./XrpaLanguage");
 const BuiltinTypes_1 = require("./shared/BuiltinTypes");
-const Helpers_1 = require("./shared/Helpers");
 exports.FIELD_DESCRIPTION = "xrpa.description";
 exports.FIELD_DEFAULT = "xrpa.defaultValue";
 const PRIMARY_KEY = "xrpa.primaryKey";
 const INDEX_KEY = "xrpa.indexKey";
 const USE_GENERIC_IMPL = "xrpa.useGenericImpl";
 function Description(description, dataType) {
-    dataType = (0, Helpers_1.resolveThunk)(dataType);
+    dataType = (0, xrpa_utils_1.resolveThunk)(dataType);
     if (description === undefined) {
         return dataType;
     }
@@ -78,7 +78,7 @@ exports.getUseGenericImplementation = getUseGenericImplementation;
 ////////////////////////////////////////////////////////////////////////////////
 // Primitive data types
 function Boolean(defaultValue, description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Boolean,
         properties: {
@@ -89,7 +89,7 @@ function Boolean(defaultValue, description) {
 }
 exports.Boolean = Boolean;
 function Count(defaultValue, description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Count,
         properties: {
@@ -100,7 +100,7 @@ function Count(defaultValue, description) {
 }
 exports.Count = Count;
 function BitField(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.BitField,
         properties: {
@@ -110,7 +110,7 @@ function BitField(description) {
 }
 exports.BitField = BitField;
 function Scalar(defaultValue, description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Scalar,
         properties: {
@@ -121,7 +121,7 @@ function Scalar(defaultValue, description) {
 }
 exports.Scalar = Scalar;
 function Timestamp(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Timestamp,
         properties: {
@@ -131,7 +131,7 @@ function Timestamp(description) {
 }
 exports.Timestamp = Timestamp;
 function String(defaultValue, description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.String,
         properties: {
@@ -142,7 +142,7 @@ function String(defaultValue, description) {
 }
 exports.String = String;
 function Float3(defaultValue, description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Float3,
         properties: {
@@ -153,7 +153,7 @@ function Float3(defaultValue, description) {
 }
 exports.Float3 = Float3;
 function ColorSRGBA(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.ColorSRGBA,
         properties: {
@@ -163,7 +163,7 @@ function ColorSRGBA(description) {
 }
 exports.ColorSRGBA = ColorSRGBA;
 function ColorLinear(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.ColorLinear,
         properties: {
@@ -173,7 +173,7 @@ function ColorLinear(description) {
 }
 exports.ColorLinear = ColorLinear;
 function Signal(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Signal,
         properties: {
@@ -192,7 +192,7 @@ function isEnumDataType(thing) {
 exports.isEnumDataType = isEnumDataType;
 function Enum(name, enumValues, description) {
     (0, assert_1.default)(enumValues.length > 0, "Enum must have at least one value");
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: "Enum",
         properties: {
@@ -209,7 +209,7 @@ function isFixedStringDataType(thing) {
 exports.isFixedStringDataType = isFixedStringDataType;
 function FixedString(maxBytes, description) {
     (0, assert_1.default)(maxBytes > 0, "FixedString maxBytes must be greater than 0");
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: "FixedString",
         properties: {
@@ -225,13 +225,13 @@ function isFixedArrayDataType(thing) {
 exports.isFixedArrayDataType = isFixedArrayDataType;
 function FixedArray(innerType, arraySize, description) {
     (0, assert_1.default)(arraySize > 0, "FixedArray count must be greater than 0");
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: "FixedArray",
         properties: {
             [exports.FIELD_DESCRIPTION]: description,
         },
-        innerType: (0, Helpers_1.resolveThunk)(innerType),
+        innerType: (0, xrpa_utils_1.resolveThunk)(innerType),
         arraySize,
     });
 }
@@ -249,7 +249,7 @@ function Struct(arg0, arg1) {
     const [name, fieldDefs] = extractNameAndValue(arg0, arg1);
     const fields = {};
     for (const key in fieldDefs) {
-        fields[key] = (0, Helpers_1.resolveThunk)(fieldDefs[key]);
+        fields[key] = (0, xrpa_utils_1.resolveThunk)(fieldDefs[key]);
         const typename = fields[key].typename;
         if (typename === "Collection" || typename === "Interface") {
             // TODO this might be better checked when fully realizing the types, as then we would have a full name-path to the field.
@@ -257,7 +257,7 @@ function Struct(arg0, arg1) {
             throw new Error(`Struct field "${key}" cannot be a Collection or Interface, use a Reference instead`);
         }
     }
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: "Struct",
         properties: {},
@@ -278,7 +278,7 @@ function isMessageDataType(thing) {
 exports.isMessageDataType = isMessageDataType;
 function Message(arg0, arg1) {
     const [name, fields] = extractNameAndValue(arg0, arg1);
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: "Message",
         properties: {},
@@ -292,7 +292,7 @@ function isInterfaceDataType(thing) {
 }
 exports.isInterfaceDataType = isInterfaceDataType;
 function Interface(name, fields) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: "Interface",
         properties: {},
@@ -307,7 +307,7 @@ function isCollectionDataType(thing) {
 exports.isCollectionDataType = isCollectionDataType;
 function Collection(arg0, arg1) {
     const [name, config] = extractNameAndValue(arg0, arg1);
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: "Collection",
         properties: {},
@@ -330,7 +330,7 @@ function ReferenceTo(targetType, description) {
     if ((0, ProgramInterface_1.isXrpaProgramParam)(targetType)) {
         targetType = targetType.dataType;
     }
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: "Reference",
         properties: {

@@ -21,11 +21,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.reverseProgramDirectionality = exports.reverseDirectionality = exports.propagatePropertiesToInterface = exports.XrpaProgramInterface = exports.UppercaseCompanyName = exports.ProgramOutput = exports.ProgramInput = exports.getDirectionality = exports.IfOutput = exports.IfInput = exports.Output = exports.Input = exports.getProgramInterfaceContext = exports.isProgramInterfaceContext = exports.isXrpaProgramParam = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const simply_immutable_1 = require("simply-immutable");
 const InterfaceTypes_1 = require("./InterfaceTypes");
 const XrpaLanguage_1 = require("./XrpaLanguage");
-const Helpers_1 = require("./shared/Helpers");
 const DIRECTIONALITY = (0, XrpaLanguage_1.InheritedProperty)("xrpa.directionality");
 function isXrpaProgramParam(param) {
     return typeof param === "object" && param !== null && param.__isXrpaProgramParam === true;
@@ -40,11 +40,11 @@ function getProgramInterfaceContext() {
 }
 exports.getProgramInterfaceContext = getProgramInterfaceContext;
 function Input(dataType) {
-    return (0, XrpaLanguage_1.setProperty)((0, Helpers_1.resolveThunk)(dataType), DIRECTIONALITY, "inbound");
+    return (0, XrpaLanguage_1.setProperty)((0, xrpa_utils_1.resolveThunk)(dataType), DIRECTIONALITY, "inbound");
 }
 exports.Input = Input;
 function Output(dataType) {
-    return (0, XrpaLanguage_1.setProperty)((0, Helpers_1.resolveThunk)(dataType), DIRECTIONALITY, "outbound");
+    return (0, XrpaLanguage_1.setProperty)((0, xrpa_utils_1.resolveThunk)(dataType), DIRECTIONALITY, "outbound");
 }
 exports.Output = Output;
 exports.IfInput = {
@@ -147,7 +147,7 @@ class NamedTypeAggregator {
     preRecursion(dataType, fieldPath) {
         // make sure it has a name
         if (!dataType.name) {
-            dataType = (0, simply_immutable_1.replaceImmutable)(dataType, ["name"], (0, Helpers_1.upperFirst)(fieldPath[fieldPath.length - 1]));
+            dataType = (0, simply_immutable_1.replaceImmutable)(dataType, ["name"], (0, xrpa_utils_1.upperFirst)(fieldPath[fieldPath.length - 1]));
         }
         return dataType;
     }
@@ -247,7 +247,7 @@ function XrpaProgramInterface(name, callback) {
             ++prefixLength;
             namesValid = true;
             for (const resolved of resolvedTypes) {
-                const prefix = resolved[0].fieldPath.slice(-prefixLength).map(Helpers_1.upperFirst).join("");
+                const prefix = resolved[0].fieldPath.slice(-prefixLength).map(xrpa_utils_1.upperFirst).join("");
                 const disambiguatedName = `${prefix}${name}`;
                 if (disambiguatedName in newNames || disambiguatedName in namesUsed) {
                     namesValid = false;
@@ -275,7 +275,7 @@ function XrpaProgramInterface(name, callback) {
         param.dataType = (0, InterfaceTypes_1.walkTypeTree)(replacer, [], param.dataType, programInterface.properties);
         param.dataType = (0, InterfaceTypes_1.propagateInheritableProperties)(param.dataType, programInterface.properties);
     }
-    return (0, Helpers_1.safeDeepFreeze)(programInterface);
+    return (0, xrpa_utils_1.safeDeepFreeze)(programInterface);
 }
 exports.XrpaProgramInterface = XrpaProgramInterface;
 function propagatePropertiesToInterface(programInterface, properties) {

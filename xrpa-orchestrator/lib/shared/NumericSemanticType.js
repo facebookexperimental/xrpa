@@ -21,8 +21,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NumericSemanticType = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
-const Helpers_1 = require("./Helpers");
 const CoordinateTransformer_1 = require("./CoordinateTransformer");
 const StructType_1 = require("./StructType");
 const TypeValue_1 = require("./TypeValue");
@@ -59,7 +59,7 @@ class NumericSemanticType extends StructType_1.StructType {
         const dsType = this.getInternalType(inNamespace, includes);
         const dsFieldOrder = Object.values(fieldMappings.fromLocal);
         return {
-            fieldsToLocal: (0, Helpers_1.recordZip)(Object.values(fieldMappings.toLocal), (0, CoordinateTransformer_1.genSemanticConversion)({
+            fieldsToLocal: (0, xrpa_utils_1.recordZip)(Object.values(fieldMappings.toLocal), (0, CoordinateTransformer_1.genSemanticConversion)({
                 codegen: this.codegen,
                 returnType: localType,
                 returnFieldOrder: localFieldOrder,
@@ -69,7 +69,7 @@ class NumericSemanticType extends StructType_1.StructType {
                 coordTypeConfig: this.coordTypeConfig,
                 transform: this.conversionData.toLocalTransform,
             })),
-            fieldsFromLocal: (0, Helpers_1.recordZip)(Object.values(fieldMappings.fromLocal), (0, CoordinateTransformer_1.genSemanticConversion)({
+            fieldsFromLocal: (0, xrpa_utils_1.recordZip)(Object.values(fieldMappings.fromLocal), (0, CoordinateTransformer_1.genSemanticConversion)({
                 codegen: this.codegen,
                 returnType: dsType,
                 returnFieldOrder: dsFieldOrder,
@@ -107,7 +107,7 @@ class NumericSemanticType extends StructType_1.StructType {
                 transform: this.conversionData.toLocalTransform,
                 inNamespace,
             });
-            value = new TypeValue_1.StructValue(this.codegen, localType, this.localType.hasInitializerConstructor ?? false, (0, Helpers_1.arrayZip)(Object.values(fieldMappings.toLocal), localFieldValues), inNamespace);
+            value = new TypeValue_1.StructValue(this.codegen, localType, this.localType.hasInitializerConstructor ?? false, (0, xrpa_utils_1.arrayZip)(Object.values(fieldMappings.toLocal), localFieldValues), inNamespace);
             if (value instanceof TypeValue_1.StructValue && value.fieldValues.length === 1 && value.fieldValues[0][1] instanceof TypeValue_1.PrimitiveValue && value.fieldValues[0][1].typename === this.localType.typename) {
                 return value.fieldValues[0][1];
             }

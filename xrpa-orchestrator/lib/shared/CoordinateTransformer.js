@@ -22,8 +22,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getFieldMappings = exports.genSemanticConversion = exports.performSemanticConversion = exports.buildCoordTransformer = exports.DEFAULT_COORDINATE_SYSTEM = exports.AngularUnitType = exports.SpatialUnitType = exports.UnitType = exports.CoordAxis = void 0;
 // NOTE: this file is agnostic to output language and can be reused for C#, Python, etc.
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
-const Helpers_1 = require("./Helpers");
 const TypeValue_1 = require("./TypeValue");
 var CoordAxis;
 (function (CoordAxis) {
@@ -116,7 +116,7 @@ function remapCoordinates(typeConfig, elemCount, fromFieldOrder, toFieldOrder, t
         dstElems.push({ idx: i, neg: false, multiplier });
     }
     if (typeConfig.isCoords) {
-        const srcElems = (0, Helpers_1.clone)(dstElems);
+        const srcElems = (0, xrpa_utils_1.clone)(dstElems);
         for (let i = 0; i < 3; ++i) {
             dstElems[i] = srcElems[transformer.axisMap[i].idx];
             if (transformer.axisMap[i].sign < 0 && !typeConfig.isScalar) {
@@ -133,7 +133,7 @@ function remapCoordinates(typeConfig, elemCount, fromFieldOrder, toFieldOrder, t
         const cols = typeConfig.coordMatrixDims[0];
         const rows = typeConfig.coordMatrixDims[1];
         // swizzle columns
-        let srcElems = (0, Helpers_1.clone)(dstElems);
+        let srcElems = (0, xrpa_utils_1.clone)(dstElems);
         for (let i = 0; i < 3; ++i) {
             const { idx, sign } = transformer.axisMap[i];
             for (let j = 0; j < rows; ++j) {
@@ -144,7 +144,7 @@ function remapCoordinates(typeConfig, elemCount, fromFieldOrder, toFieldOrder, t
             }
         }
         // swizzle elements within columns
-        srcElems = (0, Helpers_1.clone)(dstElems);
+        srcElems = (0, xrpa_utils_1.clone)(dstElems);
         for (let i = 0; i < cols; ++i) {
             for (let j = 0; j < 3; ++j) {
                 const { idx, sign } = transformer.axisMap[j];
@@ -163,7 +163,7 @@ function remapCoordinates(typeConfig, elemCount, fromFieldOrder, toFieldOrder, t
     }
     (0, assert_1.default)(fromFieldOrder.length === toFieldOrder.length);
     (0, assert_1.default)(fromFieldOrder.length === elemCount);
-    const srcElems = (0, Helpers_1.clone)(dstElems);
+    const srcElems = (0, xrpa_utils_1.clone)(dstElems);
     for (let i = 0; i < toFieldOrder.length; ++i) {
         const srcIdx = fromFieldOrder.indexOf(toFieldOrder[i]);
         if (srcIdx < 0) {

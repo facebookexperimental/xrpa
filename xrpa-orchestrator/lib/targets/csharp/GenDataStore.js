@@ -44,9 +44,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genDataStore = exports.genMsgHandler = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
 const ClassSpec_1 = require("../../shared/ClassSpec");
-const Helpers_1 = require("../../shared/Helpers");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
 const CsharpCodeGenImpl_1 = require("./CsharpCodeGenImpl");
@@ -98,7 +98,7 @@ function genDataStoreClass(ctx, includes) {
         `public class ${className} : ${baseClassName} {`,
         `  public ${className}(${CsharpDatasetLibraryTypes_1.DatasetInterface.declareLocalParam(ctx.namespace, includes, "inboundDataset")}, ${CsharpDatasetLibraryTypes_1.DatasetInterface.declareLocalParam(ctx.namespace, includes, "outboundDataset")})`,
         `      : base(inboundDataset, outboundDataset, ${hashName}, ${messagePoolSize}) {`,
-        ...(0, Helpers_1.indent)(2, genReconcilerConstructorContents(ctx)),
+        ...(0, xrpa_utils_1.indent)(2, genReconcilerConstructorContents(ctx)),
         `  }`,
         ``,
     ];
@@ -106,7 +106,7 @@ function genDataStoreClass(ctx, includes) {
         const typeDef = reconcilerDef.type;
         const className = (0, GenDataStoreShared_1.getInboundCollectionClassName)(ctx, typeDef);
         const varName = reconcilerDef.getDataStoreAccessorName();
-        lines.push(...(0, Helpers_1.indent)(1, [
+        lines.push(...(0, xrpa_utils_1.indent)(1, [
             `public ${className} ${varName};`,
         ]));
     }
@@ -114,11 +114,11 @@ function genDataStoreClass(ctx, includes) {
         const typeDef = reconcilerDef.type;
         const className = (0, GenDataStoreShared_1.getOutboundCollectionClassName)(ctx, typeDef);
         const varName = reconcilerDef.getDataStoreAccessorName();
-        lines.push(...(0, Helpers_1.indent)(1, [
+        lines.push(...(0, xrpa_utils_1.indent)(1, [
             `public ${className} ${varName};`,
         ]));
     }
-    lines.push("", ...(0, Helpers_1.indent)(1, genGetObjectByIDFunctions(ctx, includes)));
+    lines.push("", ...(0, xrpa_utils_1.indent)(1, genGetObjectByIDFunctions(ctx, includes)));
     lines.push(`}`);
     return lines;
 }
@@ -180,13 +180,13 @@ function genDataStore(fileWriter, outdir, ctx) {
     const lines = [
         `namespace ${ctx.namespace} {`,
         ``,
-        ...(0, Helpers_1.mapAndCollapse)(accessors, CsharpCodeGenImpl_1.genClassDefinition),
+        ...(0, xrpa_utils_1.mapAndCollapse)(accessors, CsharpCodeGenImpl_1.genClassDefinition),
         ``,
         `// Reconciled Types`,
-        ...(0, Helpers_1.mapAndCollapse)(reconciledTypes, CsharpCodeGenImpl_1.genClassDefinition),
+        ...(0, xrpa_utils_1.mapAndCollapse)(reconciledTypes, CsharpCodeGenImpl_1.genClassDefinition),
         ``,
         `// Object Collections`,
-        ...(0, Helpers_1.mapAndCollapse)(collections, CsharpCodeGenImpl_1.genClassDefinition),
+        ...(0, xrpa_utils_1.mapAndCollapse)(collections, CsharpCodeGenImpl_1.genClassDefinition),
         ``,
         `// Data Store Implementation`,
         ...genDataStoreClass(ctx, includes),

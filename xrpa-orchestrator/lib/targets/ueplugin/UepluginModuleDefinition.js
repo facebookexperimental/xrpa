@@ -21,9 +21,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UepluginModuleDefinition = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const path_1 = __importDefault(require("path"));
-const FileWriter_1 = require("../../shared/FileWriter");
 const Helpers_1 = require("../../shared/Helpers");
 const CppCodeGenImpl_1 = require("../cpp/CppCodeGenImpl");
 const CppModuleDefinition_1 = require("../cpp/CppModuleDefinition");
@@ -66,7 +66,7 @@ class UepluginModuleDefinition extends CppModuleDefinition_1.CppModuleDefinition
         super.setCollectionAsInbound(type, reconciledTo, indexes);
     }
     setCollectionAsOutbound(type, componentProps) {
-        if ((0, Helpers_1.filterToString)(componentProps.basetype)?.endsWith("Component")) {
+        if ((0, xrpa_utils_1.filterToString)(componentProps.basetype)?.endsWith("Component")) {
             type.setToBarePtr({
                 typename: (0, SceneComponentShared_1.getComponentClassName)(null, type, componentProps.idName),
                 headerFile: (0, SceneComponentShared_1.getComponentHeader)(type, componentProps.idName),
@@ -83,7 +83,7 @@ class UepluginModuleDefinition extends CppModuleDefinition_1.CppModuleDefinition
         }
     }
     doCodeGen() {
-        const fileWriter = new FileWriter_1.FileWriter();
+        const fileWriter = new xrpa_utils_1.FileWriter();
         const pluginsDir = path_1.default.join(this.projectRoot, "Plugins");
         for (const storeDef of this.getDataStores()) {
             const pluginConfig = this.pluginsConfig[storeDef.apiname];
@@ -108,7 +108,7 @@ class UepluginModuleDefinition extends CppModuleDefinition_1.CppModuleDefinition
             (0, GenBlueprintTypes_1.genBlueprintTypes)(fileWriter, data.privateSrcDir, data.publicSrcDir, ctx);
             // generate UE reconciler classes
             for (const accessor of storeDef.getOutputReconcilers()) {
-                if ((0, Helpers_1.filterToString)(accessor.componentProps.basetype)?.endsWith("Component")) {
+                if ((0, xrpa_utils_1.filterToString)(accessor.componentProps.basetype)?.endsWith("Component")) {
                     (0, GenSceneComponent_1.genSceneComponent)(ctx, fileWriter, accessor, data.privateSrcDir, data.publicSrcDir, pluginConfig.pluginName);
                 }
             }

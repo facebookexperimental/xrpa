@@ -41,8 +41,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genDataflowProgramSpawner = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const ClassSpec_1 = require("../../shared/ClassSpec");
-const Helpers_1 = require("../../shared/Helpers");
 const StructType_1 = require("../../shared/StructType");
 const DataflowProgramDefinition_1 = require("../../shared/DataflowProgramDefinition");
 const CsharpCodeGenImpl_1 = require("../csharp/CsharpCodeGenImpl");
@@ -57,11 +57,11 @@ function genParameterAccessors(ctx, classSpec, programDef) {
     const paramsStruct = new StructType_1.StructType(CsharpCodeGenImpl, "DataflowProgramParams", CsharpCodeGenImpl_1.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowInputStructSpec)((0, DataflowProgramDefinition_1.getDataflowInputs)(programDef), ctx.moduleDef));
     const fields = paramsStruct.getAllFields();
     for (const paramName in fields) {
-        const memberName = (0, Helpers_1.upperFirst)(paramName);
+        const memberName = (0, xrpa_utils_1.upperFirst)(paramName);
         const memberFieldName = (0, CsharpCodeGenImpl_1.privateMember)(memberName);
         const fieldType = fields[paramName].type;
-        const objGetterName = `Get${(0, Helpers_1.upperFirst)(paramName)}`;
-        const objSetterName = `Set${(0, Helpers_1.upperFirst)(paramName)}`;
+        const objGetterName = `Get${(0, xrpa_utils_1.upperFirst)(paramName)}`;
+        const objSetterName = `Set${(0, xrpa_utils_1.upperFirst)(paramName)}`;
         const decorations = [
             "[SerializeField]"
         ];
@@ -86,7 +86,7 @@ function genParameterAccessors(ctx, classSpec, programDef) {
         name: "OnValidate",
         body: [
             `if (${(0, CsharpCodeGenImpl_1.genNonNullCheck)(currentObj)}) {`,
-            ...(0, Helpers_1.indent)(1, validateLines),
+            ...(0, xrpa_utils_1.indent)(1, validateLines),
             `}`,
         ],
         visibility: "private",

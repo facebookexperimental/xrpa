@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "./FileWriter";
+import { FileWriter } from "@xrpa/xrpa-utils";
 export interface CodeGen {
     doCodeGen(): FileWriter;
 }

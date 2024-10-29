@@ -41,7 +41,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genSignalFieldAccessors = exports.genSendSignalAccessor = exports.genOnSignalAccessor = exports.genSignalDispatchBody = void 0;
-const Helpers_1 = require("../../shared/Helpers");
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const TypeValue_1 = require("../../shared/TypeValue");
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
@@ -67,7 +67,7 @@ exports.genSignalDispatchBody = genSignalDispatchBody;
 function genOnSignalAccessor(classSpec, params) {
     const signalHandler = `${params.fieldName}SignalHandler_`;
     classSpec.methods.push({
-        name: `on${(0, Helpers_1.upperFirst)(params.fieldName)}`,
+        name: `on${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
         parameters: [{
                 name: "handler",
                 type: `std::shared_ptr<${CppDatasetLibraryTypes_1.InboundSignalDataInterface.getLocalType(params.ctx.namespace, classSpec.includes)}>`,
@@ -86,7 +86,7 @@ function genOnSignalAccessor(classSpec, params) {
 exports.genOnSignalAccessor = genOnSignalAccessor;
 function genSendSignalAccessor(classSpec, params) {
     classSpec.methods.push({
-        name: params.name ?? `set${(0, Helpers_1.upperFirst)(params.fieldName)}`,
+        name: params.name ?? `set${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
         decorations: params.decorations,
         templateParams: ["SampleType"],
         parameters: [{
@@ -104,18 +104,18 @@ function genSendSignalAccessor(classSpec, params) {
             }],
         body: () => {
             return [
-                `local${(0, Helpers_1.upperFirst)(params.fieldName)}_.setSignalSource(signal, numChannels, framesPerSecond, framesPerCallback);`,
+                `local${(0, xrpa_utils_1.upperFirst)(params.fieldName)}_.setSignalSource(signal, numChannels, framesPerSecond, framesPerCallback);`,
             ];
         },
         separateImplementation: params.separateImplementation,
     });
     classSpec.members.push({
-        name: `local${(0, Helpers_1.upperFirst)(params.fieldName)}`,
+        name: `local${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
         type: CppDatasetLibraryTypes_1.OutboundSignalData.getLocalType(params.ctx.namespace, classSpec.includes),
         visibility: "private",
     });
     const messageType = params.typeDef.getFieldIndex(params.fieldName);
-    params.tickLines.push(`local${(0, Helpers_1.upperFirst)(params.fieldName)}_.tick(id, ${messageType}, collection_);`);
+    params.tickLines.push(`local${(0, xrpa_utils_1.upperFirst)(params.fieldName)}_.tick(id, ${messageType}, collection_);`);
 }
 exports.genSendSignalAccessor = genSendSignalAccessor;
 function genSignalFieldAccessors(classSpec, params) {

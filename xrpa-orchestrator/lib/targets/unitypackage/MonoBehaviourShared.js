@@ -44,8 +44,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.writeMonoBehaviour = exports.genProcessUpdateBody = exports.genTransformUpdates = exports.genTransformInitializers = exports.genFieldInitializers = exports.genFieldDefaultInitializers = exports.genUnityMessageFieldAccessors = exports.genUnityMessageChannelDispatch = exports.genFieldProperties = exports.getFieldMemberName = exports.getMessageDelegateName = exports.getComponentClassName = exports.checkForTransformMapping = exports.IntrinsicProperty = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
-const Helpers_1 = require("../../shared/Helpers");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const CsharpCodeGenImpl_1 = require("../csharp/CsharpCodeGenImpl");
 const CsharpCodeGenImpl = __importStar(require("../csharp/CsharpCodeGenImpl"));
@@ -83,7 +83,7 @@ function checkForTransformMapping(fieldName, reconcilerDef) {
 exports.checkForTransformMapping = checkForTransformMapping;
 function getComponentClassName(type, id) {
     const typeName = typeof type === "string" ? type : type.getName();
-    return `${(0, Helpers_1.filterToString)(id) ?? ""}${typeName}Component`;
+    return `${(0, xrpa_utils_1.filterToString)(id) ?? ""}${typeName}Component`;
 }
 exports.getComponentClassName = getComponentClassName;
 function getMessageDelegateName(ctx, includes, msgType) {
@@ -104,7 +104,7 @@ function getMessageDelegateName(ctx, includes, msgType) {
 }
 exports.getMessageDelegateName = getMessageDelegateName;
 function getFieldMemberName(reconcilerDef, fieldName) {
-    return (0, Helpers_1.filterToString)(reconcilerDef.fieldAccessorNameOverrides[fieldName]) ?? (0, Helpers_1.upperFirst)(fieldName);
+    return (0, xrpa_utils_1.filterToString)(reconcilerDef.fieldAccessorNameOverrides[fieldName]) ?? (0, xrpa_utils_1.upperFirst)(fieldName);
 }
 exports.getFieldMemberName = getFieldMemberName;
 function genWriteFieldProperty(classSpec, params) {
@@ -121,8 +121,8 @@ function genWriteFieldProperty(classSpec, params) {
     }
     typeDef.declareLocalFieldClassMember(classSpec, params.fieldName, (0, CsharpCodeGenImpl_1.privateMember)(params.memberName), true, decorations, "private");
     if (isClearSet) {
-        const overrideParams = (0, Helpers_1.filterToStringArray)(params.reconcilerDef.fieldAccessorNameOverrides[params.fieldName], 2);
-        const pascalFieldName = (0, Helpers_1.upperFirst)(params.fieldName);
+        const overrideParams = (0, xrpa_utils_1.filterToStringArray)(params.reconcilerDef.fieldAccessorNameOverrides[params.fieldName], 2);
+        const pascalFieldName = (0, xrpa_utils_1.upperFirst)(params.fieldName);
         const setterName = overrideParams?.[0] ?? `Set${pascalFieldName}`;
         const clearName = overrideParams?.[1] ?? `Clear${pascalFieldName}`;
         classSpec.methods.push({
@@ -196,14 +196,14 @@ exports.genFieldProperties = genFieldProperties;
 function genUnitySendMessageAccessor(classSpec, params) {
     (0, GenMessageAccessors_1.genSendMessageAccessor)(classSpec, {
         ...params,
-        name: `Send${(0, Helpers_1.upperFirst)(params.fieldName)}`,
+        name: `Send${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
         referencesNeedConversion: false,
     });
 }
 function genUnityOnMessageAccessor(classSpec, params) {
     const msgEventType = getMessageDelegateName(params.ctx, classSpec.includes, params.fieldType);
     classSpec.members.push({
-        name: `On${(0, Helpers_1.upperFirst)(params.fieldName)}`,
+        name: `On${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
         type: `event ${msgEventType}`,
     });
 }
@@ -213,11 +213,11 @@ function convertMessageTypeToParams(ctx, msgType, prelude) {
     for (const key in fields) {
         const fieldType = fields[key].type;
         if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-            (0, Helpers_1.pushUnique)(prelude, `var datastore = ${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.Instance.DataStore;`);
-            params.push(`message.Get${(0, Helpers_1.upperFirst)(key)}(datastore)`);
+            (0, xrpa_utils_1.pushUnique)(prelude, `var datastore = ${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.Instance.DataStore;`);
+            params.push(`message.Get${(0, xrpa_utils_1.upperFirst)(key)}(datastore)`);
         }
         else {
-            params.push(`message.Get${(0, Helpers_1.upperFirst)(key)}()`);
+            params.push(`message.Get${(0, xrpa_utils_1.upperFirst)(key)}()`);
         }
     }
     return params;
@@ -225,7 +225,7 @@ function convertMessageTypeToParams(ctx, msgType, prelude) {
 function genUnityMessageChannelDispatch(classSpec, params) {
     (0, GenMessageAccessors_1.genMessageChannelDispatch)(classSpec, {
         ...params,
-        genMsgHandler: msg => `On${(0, Helpers_1.upperFirst)(msg)}?.Invoke`,
+        genMsgHandler: msg => `On${(0, xrpa_utils_1.upperFirst)(msg)}?.Invoke`,
         msgDataToParams: convertMessageTypeToParams,
         isOverride: Boolean(params.reconcilerDef.type.interfaceType),
     });
@@ -362,7 +362,7 @@ function genPropertyOutboundUpdate(params) {
             return [
                 `if (${params.targetVar} != transform.${params.fieldBinding}) {`,
                 `  ${params.targetVar} = transform.${params.fieldBinding};`,
-                ...(0, Helpers_1.indent)(1, (0, GenWriteReconcilerDataStore_1.genFieldSetDirty)({ ...params, typeDef: params.reconcilerDef.type })),
+                ...(0, xrpa_utils_1.indent)(1, (0, GenWriteReconcilerDataStore_1.genFieldSetDirty)({ ...params, typeDef: params.reconcilerDef.type })),
                 `}`,
             ];
         case IntrinsicProperty.Parent: {
@@ -380,7 +380,7 @@ function genPropertyInboundUpdate(params) {
         case IntrinsicProperty.rotation:
         case IntrinsicProperty.lossyScale:
             return [
-                `transform.local${(0, Helpers_1.upperFirst)(params.fieldBinding)} = ${params.sourceVar};`,
+                `transform.local${(0, xrpa_utils_1.upperFirst)(params.fieldBinding)} = ${params.sourceVar};`,
             ];
         case IntrinsicProperty.Parent: {
             return [];
@@ -432,8 +432,8 @@ function genProcessUpdateBody(params) {
             continue;
         }
         const memberName = getFieldMemberName(params.reconcilerDef, fieldName);
-        const checkName = `Check${(0, Helpers_1.upperFirst)(fieldName)}Changed`;
-        let funcName = `Get${(0, Helpers_1.upperFirst)(fieldName)}`;
+        const checkName = `Check${(0, xrpa_utils_1.upperFirst)(fieldName)}Changed`;
+        let funcName = `Get${(0, xrpa_utils_1.upperFirst)(fieldName)}`;
         if ((0, TypeDefinition_1.typeIsReference)(fields[fieldName].type)) {
             funcName += "Id";
         }
@@ -441,7 +441,7 @@ function genProcessUpdateBody(params) {
         // handle property binding
         const fieldBinding = params.reconcilerDef.getFieldPropertyBinding(fieldName);
         if (typeof fieldBinding === "string") {
-            lines.push(...(0, Helpers_1.indent)(1, genPropertyInboundUpdate({
+            lines.push(...(0, xrpa_utils_1.indent)(1, genPropertyInboundUpdate({
                 ...params,
                 sourceVar: memberName,
                 fieldBinding,
@@ -449,7 +449,7 @@ function genProcessUpdateBody(params) {
         }
         else if (fieldBinding) {
             for (const subfieldName in fieldBinding) {
-                lines.push(...(0, Helpers_1.indent)(1, genPropertyInboundUpdate({
+                lines.push(...(0, xrpa_utils_1.indent)(1, genPropertyInboundUpdate({
                     ...params,
                     sourceVar: `${memberName}.${subfieldName}`,
                     fieldBinding: fieldBinding[subfieldName],

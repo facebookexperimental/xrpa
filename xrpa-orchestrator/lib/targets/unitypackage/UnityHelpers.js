@@ -18,7 +18,7 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genUnitySingleton = void 0;
-const Helpers_1 = require("../../shared/Helpers");
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 function genUnitySingleton(className, initializers, deinitializers, members) {
     return [
         `[AddComponentMenu("")]`,
@@ -44,20 +44,20 @@ function genUnitySingleton(className, initializers, deinitializers, members) {
         `    if (_Instance == null) {`,
         `      _Instance = this;`,
         `      DontDestroyOnLoad(gameObject);`,
-        ...(0, Helpers_1.indent)(3, initializers),
+        ...(0, xrpa_utils_1.indent)(3, initializers),
         `    } else if (_Instance != this) {`,
         `      Destroy(gameObject);`,
         `    }`,
         `  }`,
         ``,
         `  void OnDestroy() {`,
-        ...(0, Helpers_1.indent)(2, deinitializers),
+        ...(0, xrpa_utils_1.indent)(2, deinitializers),
         `    if (_Instance == this) {`,
         `      _Instance = null;`,
         `    }`,
         `  }`,
         ``,
-        ...(0, Helpers_1.indent)(1, members),
+        ...(0, xrpa_utils_1.indent)(1, members),
         `}`,
         ``,
     ];

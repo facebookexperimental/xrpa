@@ -23,11 +23,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FileWriter = void 0;
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
-const Helpers_1 = require("./Helpers");
+const FileUtils_1 = require("./FileUtils");
+const MiscUtils_1 = require("./MiscUtils");
+const StringUtils_1 = require("./StringUtils");
 async function writeFileIfUnchanged(filename, filedata) {
     await fs_extra_1.default.ensureFile(filename);
     const oldfiledata = await fs_extra_1.default.readFile(filename);
-    if (!(0, Helpers_1.hashCheck)(filedata, oldfiledata)) {
+    if (!(0, FileUtils_1.hashCheck)(filedata, oldfiledata)) {
         await fs_extra_1.default.writeFile(filename, filedata, "utf-8");
     }
 }
@@ -35,7 +37,7 @@ function normalizeManifestPath(filename) {
     return filename.split("\\").join("/");
 }
 function linesToBuffer(lines) {
-    const linesOut = (0, Helpers_1.removeSuperfluousEmptyLines)(lines);
+    const linesOut = (0, StringUtils_1.removeSuperfluousEmptyLines)(lines);
     if (linesOut[linesOut.length - 1] !== "") {
         linesOut.push("");
     }
@@ -47,10 +49,10 @@ class FileWriter {
         this.foldersToCopy = [];
     }
     writeFile(filename, contents) {
-        this.manifest[normalizeManifestPath(filename)] = (0, Helpers_1.chainAsyncThunk)(contents, linesToBuffer);
+        this.manifest[normalizeManifestPath(filename)] = (0, MiscUtils_1.chainAsyncThunk)(contents, linesToBuffer);
     }
     writeFileBase64(filename, data) {
-        this.manifest[normalizeManifestPath(filename)] = (0, Helpers_1.chainAsyncThunk)(data, res => Buffer.from(res, "base64"));
+        this.manifest[normalizeManifestPath(filename)] = (0, MiscUtils_1.chainAsyncThunk)(data, res => Buffer.from(res, "base64"));
     }
     merge(fileWriter) {
         for (const filename in fileWriter.manifest) {
@@ -64,7 +66,7 @@ class FileWriter {
     async finalize(manifestFilename) {
         for (const { srcFolder, dstFolder, preprocessor } of this.foldersToCopy) {
             const filenames = [];
-            await (0, Helpers_1.recursiveDirScan)(srcFolder, filenames);
+            await (0, FileUtils_1.recursiveDirScan)(srcFolder, filenames);
             for (const srcFilename of filenames) {
                 const srcRelPath = path_1.default.relative(srcFolder, srcFilename);
                 const dstFilename = path_1.default.join(dstFolder, srcRelPath);
@@ -80,7 +82,7 @@ class FileWriter {
         for (const fullPath in this.manifest) {
             const newKey = normalizeManifestPath(path_1.default.relative(baseDir, fullPath));
             const entry = this.manifest[fullPath];
-            newManifest[newKey] = await (0, Helpers_1.resolveAsyncThunk)(entry);
+            newManifest[newKey] = await (0, MiscUtils_1.resolveAsyncThunk)(entry);
         }
         try {
             const oldManifest = await fs_extra_1.default.readJson(manifestFilename);

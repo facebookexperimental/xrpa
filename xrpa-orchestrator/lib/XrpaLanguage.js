@@ -21,9 +21,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.runInContext = exports.popContext = exports.getContext = exports.getCurrentContext = exports.pushContext = exports.NameType = exports.isNamedDataType = exports.Augment = exports.ChainAugments = exports.isXrpaDataType = exports.setPropertiesOrCurry = exports.setProperties = exports.setProperty = exports.evalProperty = exports.FALSEY = exports.TRUTHY = exports.getInheritableProperties = exports.isInheritedProperty = exports.InheritedProperty = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const simply_immutable_1 = require("simply-immutable");
-const Helpers_1 = require("./shared/Helpers");
 const INHERIT_TAG = "<inherit>";
 function InheritedProperty(property) {
     return `${property}${INHERIT_TAG}`;
@@ -93,15 +93,15 @@ function setProperties(obj, propertiesToSet, condition) {
 }
 exports.setProperties = setProperties;
 function setPropertiesOrCurry(propertiesToSet, arg0, arg1) {
-    arg0 = (0, Helpers_1.resolveThunk)(arg0);
+    arg0 = (0, xrpa_utils_1.resolveThunk)(arg0);
     if (isXrpaDataType(arg0)) {
         return setProperties(arg0, propertiesToSet);
     }
     if (!arg1) {
         const condition = arg0;
-        return (dataType) => setProperties((0, Helpers_1.resolveThunk)(dataType), propertiesToSet, condition);
+        return (dataType) => setProperties((0, xrpa_utils_1.resolveThunk)(dataType), propertiesToSet, condition);
     }
-    return setProperties((0, Helpers_1.resolveThunk)(arg1), propertiesToSet, arg0);
+    return setProperties((0, xrpa_utils_1.resolveThunk)(arg1), propertiesToSet, arg0);
 }
 exports.setPropertiesOrCurry = setPropertiesOrCurry;
 function isXrpaDataType(thing) {
@@ -113,7 +113,7 @@ function ChainAugments(...augmenters) {
         for (const augmenter of augmenters) {
             data = augmenter(data);
         }
-        return (0, Helpers_1.resolveThunk)(data);
+        return (0, xrpa_utils_1.resolveThunk)(data);
     };
 }
 exports.ChainAugments = ChainAugments;
@@ -126,7 +126,7 @@ function isNamedDataType(thing) {
 }
 exports.isNamedDataType = isNamedDataType;
 function NameType(name, dataType) {
-    dataType = (0, Helpers_1.resolveThunk)(dataType);
+    dataType = (0, xrpa_utils_1.resolveThunk)(dataType);
     if (name === undefined) {
         return dataType;
     }

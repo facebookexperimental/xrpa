@@ -18,7 +18,7 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MessageDataType = void 0;
-const Helpers_1 = require("./Helpers");
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const StructWithAccessorType_1 = require("./StructWithAccessorType");
 const TypeDefinition_1 = require("./TypeDefinition");
 class MessageDataType extends StructWithAccessorType_1.StructWithAccessorType {
@@ -29,7 +29,7 @@ class MessageDataType extends StructWithAccessorType_1.StructWithAccessorType {
         return TypeDefinition_1.TypeMetaType.MESSAGE_DATA;
     }
     hasFields() {
-        return !(0, Helpers_1.objectIsEmpty)(this.fields);
+        return !(0, xrpa_utils_1.objectIsEmpty)(this.fields);
     }
     genReadAccessorDefinition(inNamespace, includes) {
         return this.hasFields() ? super.genReadAccessorDefinition(inNamespace, includes) : null;

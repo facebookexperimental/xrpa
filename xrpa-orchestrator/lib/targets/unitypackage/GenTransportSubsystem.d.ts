@@ -15,8 +15,8 @@
  */
 
 
+import { FileWriter } from "@xrpa/xrpa-utils";
 import { DataStoreDefinition } from "../../shared/DataStore";
-import { FileWriter } from "../../shared/FileWriter";
 export declare function getTransportSubsystemName(storeDef: DataStoreDefinition): string;
 export declare function getInboundDatasetVarName(storeDef: DataStoreDefinition): string;
 export declare function getOutboundDatasetVarName(storeDef: DataStoreDefinition): string;

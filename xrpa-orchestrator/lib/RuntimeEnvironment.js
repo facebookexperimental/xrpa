@@ -18,10 +18,10 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.bindExternalProgram = exports.getDataMap = exports.mapArrays = exports.getInterfaceTypeMap = exports.mapInterfaceType = exports.mapType = exports.getRuntimeEnvironmentContext = exports.isRuntimeEnvironmentContext = exports.getExternalProgramCallerContext = exports.isExternalProgramCallerContext = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const Coordinates_1 = require("./Coordinates");
 const XrpaLanguage_1 = require("./XrpaLanguage");
 const BuiltinTypes_1 = require("./shared/BuiltinTypes");
-const Helpers_1 = require("./shared/Helpers");
 const TYPE_MAP = "xrpa.nativeProgram.typeMap";
 const INTERFACE_TYPE_MAPS = "xrpa.nativeProgram.interfaceTypeMaps";
 const LOCAL_ARRAY_TYPE = "xrpa.nativeProgram.localArrayType";
@@ -46,7 +46,7 @@ function mapTypeInternal(typeMap, dataType, mapped) {
         typeMap[dataType] = mapped;
         return;
     }
-    dataType = (0, Helpers_1.resolveThunk)(dataType);
+    dataType = (0, xrpa_utils_1.resolveThunk)(dataType);
     if (dataType.typename in BuiltinTypes_1.BuiltinType) {
         typeMap[dataType.typename] = mapped;
         return;

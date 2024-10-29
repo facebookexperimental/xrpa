@@ -15,8 +15,8 @@
  */
 
 
+import { FileWriter } from "@xrpa/xrpa-utils";
 import { InputReconcilerDefinition } from "../../shared/DataStore";
-import { FileWriter } from "../../shared/FileWriter";
 import { GenDataStoreContext } from "../shared/GenDataStoreShared";
 export declare function genIndexedMonoBehaviour(ctx: GenDataStoreContext, fileWriter: FileWriter, reconcilerDef: InputReconcilerDefinition, outDir: string): void;
 

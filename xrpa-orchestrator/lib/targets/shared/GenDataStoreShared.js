@@ -18,11 +18,11 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genFieldProperties = exports.getOutboundCollectionClassName = exports.getInboundCollectionClassName = exports.fieldGetterFuncName = void 0;
-const Helpers_1 = require("../../shared/Helpers");
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const TypeValue_1 = require("../../shared/TypeValue");
 function fieldGetterFuncName(codegen, typeFields, fieldName) {
-    let funcName = `get${(0, Helpers_1.upperFirst)(fieldName)}`;
+    let funcName = `get${(0, xrpa_utils_1.upperFirst)(fieldName)}`;
     if ((0, TypeDefinition_1.typeIsReference)(typeFields[fieldName].type)) {
         funcName += "Id";
     }

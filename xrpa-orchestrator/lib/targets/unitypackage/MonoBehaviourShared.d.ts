@@ -15,9 +15,9 @@
  */
 
 
+import { FileWriter } from "@xrpa/xrpa-utils";
 import { ClassSpec } from "../../shared/ClassSpec";
 import { InputReconcilerDefinition, OutputReconcilerDefinition } from "../../shared/DataStore";
-import { FileWriter } from "../../shared/FileWriter";
 import { IncludeAggregator } from "../../shared/Helpers";
 import { InterfaceTypeDefinition, MessageDataTypeDefinition } from "../../shared/TypeDefinition";
 import { FieldSetterHooks } from "../csharp/GenWriteReconcilerDataStore";

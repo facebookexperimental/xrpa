@@ -32,14 +32,11 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UnityPackageModuleDefinition = exports.UepluginModuleDefinition = exports.CppStandalone = exports.CppModuleDefinition = exports.ModuleDefinition = exports.DataStoreDefinition = exports.DataModelDefinition = exports.SpatialUnitType = exports.CoordAxis = exports.AngularUnitType = exports.isBuiltinType = exports.BuiltinType = exports.runProcess = exports.FileWriter = exports.buckRun = exports.buckBuild = void 0;
-// TODO these three files should be moved into a new xrpa-utils package
-var BuckHelpers_1 = require("./shared/BuckHelpers");
-Object.defineProperty(exports, "buckBuild", { enumerable: true, get: function () { return BuckHelpers_1.buckBuild; } });
-Object.defineProperty(exports, "buckRun", { enumerable: true, get: function () { return BuckHelpers_1.buckRun; } });
-var FileWriter_1 = require("./shared/FileWriter");
-Object.defineProperty(exports, "FileWriter", { enumerable: true, get: function () { return FileWriter_1.FileWriter; } });
-var Helpers_1 = require("./shared/Helpers");
-Object.defineProperty(exports, "runProcess", { enumerable: true, get: function () { return Helpers_1.runProcess; } });
+var xrpa_utils_1 = require("@xrpa/xrpa-utils");
+Object.defineProperty(exports, "buckBuild", { enumerable: true, get: function () { return xrpa_utils_1.buckBuild; } });
+Object.defineProperty(exports, "buckRun", { enumerable: true, get: function () { return xrpa_utils_1.buckRun; } });
+Object.defineProperty(exports, "FileWriter", { enumerable: true, get: function () { return xrpa_utils_1.FileWriter; } });
+Object.defineProperty(exports, "runProcess", { enumerable: true, get: function () { return xrpa_utils_1.runProcess; } });
 var BuiltinTypes_1 = require("./shared/BuiltinTypes");
 Object.defineProperty(exports, "BuiltinType", { enumerable: true, get: function () { return BuiltinTypes_1.BuiltinType; } });
 Object.defineProperty(exports, "isBuiltinType", { enumerable: true, get: function () { return BuiltinTypes_1.isBuiltinType; } });

@@ -21,8 +21,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genTransportSubsystem = exports.getTransportSubsystemName = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
-const Helpers_1 = require("../../shared/Helpers");
 const CppCodeGenImpl_1 = require("../cpp/CppCodeGenImpl");
 const GenModuleClass_1 = require("../cpp/GenModuleClass");
 const GenStandaloneCpp_1 = require("../cpp/GenStandaloneCpp");
@@ -39,11 +39,11 @@ function genTransportSubsystem(fileWriter, outSrcDir, storeDef, pluginName) {
         ``,
         `void U${name}::Initialize(FSubsystemCollectionBase& Collection) {`,
         `  Super::Initialize(Collection);`,
-        ...(0, Helpers_1.indent)(1, (0, GenStandaloneCpp_1.genDatasetInitializer)(storeDef, namespace, cppIncludes)),
+        ...(0, xrpa_utils_1.indent)(1, (0, GenStandaloneCpp_1.genDatasetInitializer)(storeDef, namespace, cppIncludes)),
         `}`,
         ``,
         `void U${name}::Deinitialize() {`,
-        ...(0, Helpers_1.indent)(1, (0, GenStandaloneCpp_1.genDatasetDeinitializer)(storeDef)),
+        ...(0, xrpa_utils_1.indent)(1, (0, GenStandaloneCpp_1.genDatasetDeinitializer)(storeDef)),
         `  Super::Deinitialize();`,
         `}`,
         ``,
@@ -68,8 +68,8 @@ function genTransportSubsystem(fileWriter, outSrcDir, storeDef, pluginName) {
         `  virtual void Initialize(FSubsystemCollectionBase& Collection) override;`,
         `  virtual void Deinitialize() override;`,
         ``,
-        ...(0, Helpers_1.indent)(1, (0, GenModuleClass_1.genInboundDatasetDeclaration)(storeDef, namespace, headerIncludes, true)),
-        ...(0, Helpers_1.indent)(1, (0, GenModuleClass_1.genOutboundDatasetDeclaration)(storeDef, namespace, headerIncludes, true)),
+        ...(0, xrpa_utils_1.indent)(1, (0, GenModuleClass_1.genInboundDatasetDeclaration)(storeDef, namespace, headerIncludes, true)),
+        ...(0, xrpa_utils_1.indent)(1, (0, GenModuleClass_1.genOutboundDatasetDeclaration)(storeDef, namespace, headerIncludes, true)),
         `};`,
         ``,
     ];

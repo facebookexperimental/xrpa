@@ -15,8 +15,8 @@
  */
 
 
+import { FileWriter } from "@xrpa/xrpa-utils";
 import { CodeGen } from "../../shared/CodeGen";
-import { FileWriter } from "../../shared/FileWriter";
 import { CppModuleDefinition } from "./CppModuleDefinition";
 export declare class CppStandalone implements CodeGen {
     readonly moduleDef: CppModuleDefinition;

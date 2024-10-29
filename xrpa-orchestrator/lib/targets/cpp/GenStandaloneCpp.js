@@ -21,9 +21,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genStandaloneBuck = exports.genStandaloneCpp = exports.genDatasetDeinitializer = exports.genDatasetInitializer = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
-const BuckHelpers_1 = require("../../shared/BuckHelpers");
-const Helpers_1 = require("../../shared/Helpers");
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
 const CppDatasetLibraryTypes_1 = require("./CppDatasetLibraryTypes");
 const GenModuleClass_1 = require("./GenModuleClass");
@@ -85,7 +84,7 @@ function genDatasetDeinitializer(storeDef) {
 exports.genDatasetDeinitializer = genDatasetDeinitializer;
 function genSettingsParsing(moduleDef) {
     const fields = moduleDef.getSettings().getAllFields();
-    if ((0, Helpers_1.objectIsEmpty)(fields)) {
+    if ((0, xrpa_utils_1.objectIsEmpty)(fields)) {
         return [];
     }
     const lines = [`CLI::App app{"${moduleDef.name}"};`];
@@ -112,7 +111,7 @@ function genStandaloneWrapper(fileWriter, outdir, moduleDef) {
         }
         return headerFile;
     });
-    if (!(0, Helpers_1.objectIsEmpty)(moduleDef.getSettings().getAllFields())) {
+    if (!(0, xrpa_utils_1.objectIsEmpty)(moduleDef.getSettings().getAllFields())) {
         includes.addFile({ filename: "<xrpa-runtime/external_utils/CommandLineUtils.h>" });
         includes.addFile({ filename: "<CLI/CLI.hpp>" });
     }
@@ -125,10 +124,10 @@ function genStandaloneWrapper(fileWriter, outdir, moduleDef) {
         `void EntryPoint(${moduleClassName}* moduleData);`,
         ``,
         `int RunStandalone(int argc, char** argv) {`,
-        ...(0, Helpers_1.indent)(1, (0, GenModuleClass_1.genDatasetDeclarations)(moduleDef, namespace, includes, true)),
-        ...(0, Helpers_1.indent)(1, moduleDef.getDataStores().map(storeDef => genDatasetInitializer(storeDef, namespace, includes))),
+        ...(0, xrpa_utils_1.indent)(1, (0, GenModuleClass_1.genDatasetDeclarations)(moduleDef, namespace, includes, true)),
+        ...(0, xrpa_utils_1.indent)(1, moduleDef.getDataStores().map(storeDef => genDatasetInitializer(storeDef, namespace, includes))),
         `  auto moduleData = std::make_unique<${moduleClassName}>(${datasetVars.join(", ")});`,
-        ...(0, Helpers_1.indent)(1, genSettingsParsing(moduleDef)),
+        ...(0, xrpa_utils_1.indent)(1, genSettingsParsing(moduleDef)),
         ``,
         `  std::thread dataThread(EntryPoint, moduleData.get());`,
         `  std::getchar();`,
@@ -149,7 +148,7 @@ function genStandaloneCpp(fileWriter, outdir, moduleDef) {
 exports.genStandaloneCpp = genStandaloneCpp;
 function genStandaloneBuck(fileWriter, outdir, runtimeDir, buckTarget, moduleDef, oncall) {
     fileWriter.writeFile(path_1.default.join(outdir, "BUCK"), async () => {
-        const buckRoot = await (0, BuckHelpers_1.buckRootDir)();
+        const buckRoot = await (0, xrpa_utils_1.buckRootDir)();
         const runtimeRelPath = path_1.default.relative(buckRoot, runtimeDir);
         const runtimeDepPath = `//${runtimeRelPath.replace(/\\/g, "/")}`;
         const deps = [
@@ -157,7 +156,7 @@ function genStandaloneBuck(fileWriter, outdir, runtimeDir, buckTarget, moduleDef
             `"${runtimeDepPath}:sharedmem",`,
             `"${buckTarget}",`,
         ];
-        if (!(0, Helpers_1.objectIsEmpty)(moduleDef.getSettings().getAllFields())) {
+        if (!(0, xrpa_utils_1.objectIsEmpty)(moduleDef.getSettings().getAllFields())) {
             deps.push(`"${runtimeDepPath}:external_utils",`);
             deps.push(`"//third-party/cli11:cli11",`);
         }
@@ -179,7 +178,7 @@ function genStandaloneBuck(fileWriter, outdir, runtimeDir, buckTarget, moduleDef
             `    public_raw_headers = ["Standalone.h"],`,
             `    visibility = ["PUBLIC"],`,
             `    deps = [`,
-            ...(0, Helpers_1.indent)(4, deps.sort()),
+            ...(0, xrpa_utils_1.indent)(4, deps.sort()),
             `    ],`,
             `)`,
             ``,

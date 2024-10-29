@@ -15,8 +15,8 @@
  */
 
 
+import { Thunk } from "@xrpa/xrpa-utils";
 import { BindingProperties, PropertyCondition, WithBindingProperties, XrpaDataType, XrpaNamedDataType } from "./XrpaLanguage";
-import { Thunk } from "./shared/Helpers";
 export interface XrpaProgramParam<T extends XrpaDataType = XrpaDataType> {
     __isXrpaProgramParam: true;
     name: string;

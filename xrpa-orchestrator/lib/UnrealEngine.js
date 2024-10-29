@@ -21,6 +21,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UnrealProject = exports.PluginDeps = exports.IfUnrealEngine = exports.UnrealArrayType = exports.UnrealCoordinateSystem = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
 const Coordinates_1 = require("./Coordinates");
 const InterfaceTypes_1 = require("./InterfaceTypes");
@@ -29,7 +30,6 @@ const ProgramInterfaceConverter_1 = require("./ProgramInterfaceConverter");
 const RuntimeEnvironment_1 = require("./RuntimeEnvironment");
 const XrpaLanguage_1 = require("./XrpaLanguage");
 const CoordinateTransformer_1 = require("./shared/CoordinateTransformer");
-const Helpers_1 = require("./shared/Helpers");
 const SceneComponentShared_1 = require("./targets/ueplugin/SceneComponentShared");
 const UepluginModuleDefinition_1 = require("./targets/ueplugin/UepluginModuleDefinition");
 exports.UnrealCoordinateSystem = {
@@ -138,7 +138,7 @@ async function UnrealProject(projectPath, projectName, callback) {
         const companyName = programInterfaceCtx.properties.upperCaseCompanyName ? programInterface.companyName.toLocaleUpperCase() : programInterface.companyName;
         pluginConfigs[programInterface.interfaceName] = {
             pluginName: `${companyName}${programInterface.interfaceName}`,
-            deps: (0, Helpers_1.filterToStringPairArray)(programInterfaceCtx.properties.pluginDeps) ?? [],
+            deps: (0, xrpa_utils_1.filterToStringPairArray)(programInterfaceCtx.properties.pluginDeps) ?? [],
         };
     }
     const pkg = new UepluginModuleDefinition_1.UepluginModuleDefinition(projectName, (0, RuntimeEnvironment_1.getDataMap)(ctx), projectPath, pluginConfigs);

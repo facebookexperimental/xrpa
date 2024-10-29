@@ -41,9 +41,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genDataflowProgramSpawner = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const ClassSpec_1 = require("../../shared/ClassSpec");
 const DataflowProgramDefinition_1 = require("../../shared/DataflowProgramDefinition");
-const Helpers_1 = require("../../shared/Helpers");
 const StructType_1 = require("../../shared/StructType");
 const CppCodeGenImpl_1 = require("../cpp/CppCodeGenImpl");
 const CppCodeGenImpl = __importStar(require("../cpp/CppCodeGenImpl"));
@@ -57,10 +57,10 @@ function genParameterAccessors(ctx, classSpec, programDef, cppIncludes) {
     const paramsStruct = new StructType_1.StructType(CppCodeGenImpl, "DataflowProgramParams", CppCodeGenImpl_1.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowInputStructSpec)((0, DataflowProgramDefinition_1.getDataflowInputs)(programDef), ctx.moduleDef));
     const fields = paramsStruct.getAllFields();
     for (const paramName in fields) {
-        const memberName = (0, Helpers_1.upperFirst)(paramName);
+        const memberName = (0, xrpa_utils_1.upperFirst)(paramName);
         const fieldType = fields[paramName].type;
         const setterName = `Set${memberName}`;
-        const objSetterName = `set${(0, Helpers_1.upperFirst)(paramName)}`;
+        const objSetterName = `set${(0, xrpa_utils_1.upperFirst)(paramName)}`;
         const decorations = [
             `UPROPERTY(EditAnywhere, BlueprintReadWrite, BlueprintSetter = ${setterName})`
         ];

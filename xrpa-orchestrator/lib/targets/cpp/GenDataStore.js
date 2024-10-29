@@ -21,9 +21,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genDataStore = exports.genMsgHandler = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
 const ClassSpec_1 = require("../../shared/ClassSpec");
-const Helpers_1 = require("../../shared/Helpers");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
 const CppDatasetLibraryTypes_1 = require("./CppDatasetLibraryTypes");
@@ -89,7 +89,7 @@ function genDataStoreClass(ctx, includes) {
         ` public:`,
         `  ${className}(std::weak_ptr<${CppDatasetLibraryTypes_1.DatasetInterface.getLocalType(ctx.namespace, includes)}> inboundDataset, std::weak_ptr<${CppDatasetLibraryTypes_1.DatasetInterface.getLocalType(ctx.namespace, includes)}> outboundDataset)`,
         `      : ${baseClassName}(inboundDataset, outboundDataset, ${hashName}, ${messagePoolSize}) {`,
-        ...(0, Helpers_1.indent)(2, genReconcilerConstructorContents(ctx)),
+        ...(0, xrpa_utils_1.indent)(2, genReconcilerConstructorContents(ctx)),
         `  }`,
         ``,
     ];
@@ -97,7 +97,7 @@ function genDataStoreClass(ctx, includes) {
         const typeDef = reconcilerDef.type;
         const className = (0, GenDataStoreShared_1.getInboundCollectionClassName)(ctx, typeDef);
         const varName = reconcilerDef.getDataStoreAccessorName();
-        lines.push(...(0, Helpers_1.indent)(1, [
+        lines.push(...(0, xrpa_utils_1.indent)(1, [
             `std::shared_ptr<${className}> ${varName};`,
         ]));
     }
@@ -105,11 +105,11 @@ function genDataStoreClass(ctx, includes) {
         const typeDef = reconcilerDef.type;
         const className = (0, GenDataStoreShared_1.getOutboundCollectionClassName)(ctx, typeDef);
         const varName = reconcilerDef.getDataStoreAccessorName();
-        lines.push(...(0, Helpers_1.indent)(1, [
+        lines.push(...(0, xrpa_utils_1.indent)(1, [
             `std::shared_ptr<${className}> ${varName};`,
         ]));
     }
-    lines.push(...(0, Helpers_1.indent)(1, [
+    lines.push(...(0, xrpa_utils_1.indent)(1, [
         ``,
         `template <typename R, typename... Ts>`,
         `[[nodiscard]] R getObjectByID(${ctx.moduleDef.DSIdentifier.declareLocalParam(ctx.namespace, includes, "id")}) const {`,
@@ -119,7 +119,7 @@ function genDataStoreClass(ctx, includes) {
         `        if (ret != nullptr) {`,
         `          return;`,
         `        }`,
-        ...(0, Helpers_1.indent)(4, genGetObjectConditional(ctx, includes)),
+        ...(0, xrpa_utils_1.indent)(4, genGetObjectConditional(ctx, includes)),
         `      }(),`,
         `      ...);`,
         `  return ret;`,
@@ -214,20 +214,20 @@ function genDataStore(fileWriter, outdir, ctx) {
         (0, CppCodeGenImpl_1.forwardDeclareClass)((0, CppCodeGenImpl_1.getDataStoreName)(ctx.storeDef.apiname)),
         ...genForwardDeclarations(ctx),
         ``,
-        ...(0, Helpers_1.mapAndCollapse)(accessors, CppCodeGenImpl_1.genClassHeaderDefinition),
+        ...(0, xrpa_utils_1.mapAndCollapse)(accessors, CppCodeGenImpl_1.genClassHeaderDefinition),
         ``,
         `// Reconciled Types`,
-        ...(0, Helpers_1.mapAndCollapse)(reconciledTypes, CppCodeGenImpl_1.genClassHeaderDefinition),
+        ...(0, xrpa_utils_1.mapAndCollapse)(reconciledTypes, CppCodeGenImpl_1.genClassHeaderDefinition),
         ``,
         `// Object Collections`,
-        ...(0, Helpers_1.mapAndCollapse)(collections, CppCodeGenImpl_1.genClassHeaderDefinition),
+        ...(0, xrpa_utils_1.mapAndCollapse)(collections, CppCodeGenImpl_1.genClassHeaderDefinition),
         ``,
         `// Data Store Implementation`,
         ...genDataStoreClass(ctx, includes),
         ``,
-        ...(0, Helpers_1.mapAndCollapse)(accessors, CppCodeGenImpl_1.genClassSourceDefinition, includes, true),
-        ...(0, Helpers_1.mapAndCollapse)(reconciledTypes, CppCodeGenImpl_1.genClassSourceDefinition, includes, true),
-        ...(0, Helpers_1.mapAndCollapse)(collections, CppCodeGenImpl_1.genClassSourceDefinition, includes, true),
+        ...(0, xrpa_utils_1.mapAndCollapse)(accessors, CppCodeGenImpl_1.genClassSourceDefinition, includes, true),
+        ...(0, xrpa_utils_1.mapAndCollapse)(reconciledTypes, CppCodeGenImpl_1.genClassSourceDefinition, includes, true),
+        ...(0, xrpa_utils_1.mapAndCollapse)(collections, CppCodeGenImpl_1.genClassSourceDefinition, includes, true),
         `} // namespace ${ctx.namespace}`,
         ``,
     ];

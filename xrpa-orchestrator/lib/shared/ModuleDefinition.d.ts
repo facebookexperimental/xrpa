@@ -15,6 +15,7 @@
  */
 
 
+import { FileWriter } from "@xrpa/xrpa-utils";
 import { BuiltinType } from "./BuiltinTypes";
 import { CodeGen } from "./CodeGen";
 import { CoordinateSystemDef } from "./CoordinateTransformer";
@@ -22,7 +23,6 @@ import { DataflowProgramDefinition } from "./DataflowProgramDefinition";
 import { DataMapDefinition } from "./DataMap";
 import { DataModelDefinition } from "./DataModel";
 import { ComponentProperties, DataStoreDefinition, IndexConfiguration } from "./DataStore";
-import { FileWriter } from "./FileWriter";
 import { StructType } from "./StructType";
 import { GuidGenSpec, TargetCodeGenImpl, TypeSpec } from "./TargetCodeGen";
 import { CollectionTypeDefinition, FieldTypeSpec, InterfaceTypeDefinition, MessageDataTypeDefinition, StructSpec, StructTypeDefinition, TypeDefinition, TypeMap, UserDefaultValue } from "./TypeDefinition";

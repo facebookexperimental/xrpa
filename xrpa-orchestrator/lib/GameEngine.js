@@ -18,12 +18,12 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateComponentProperties = exports.GameComponentBaseClassOverride = exports.GameComponentBinding = exports.GameComponentBindingsDisabled = exports.Ephemeral = exports.HiddenGameComponent = exports.GameComponentOwner = exports.GameComponentParent = exports.getGameEngineConfig = exports.GameEngineConfig = exports.IfNotGameEngine = exports.IfGameEngine = exports.COMPONENT_BASE_CLASS = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const simply_immutable_1 = require("simply-immutable");
 const Coordinates_1 = require("./Coordinates");
 const InterfaceTypes_1 = require("./InterfaceTypes");
 const ProgramInterface_1 = require("./ProgramInterface");
 const XrpaLanguage_1 = require("./XrpaLanguage");
-const Helpers_1 = require("./shared/Helpers");
 const PARENT_BINDING = "xrpa.gamecomponent.parentBinding";
 const GAME_OBJECT_BINDING = "xrpa.gamecomponent.gameObjectBinding";
 const HIDE_COMPONENT = "xrpa.gamecomponent.hideComponent";
@@ -68,7 +68,7 @@ function Ephemeral(arg0, arg1) {
 exports.Ephemeral = Ephemeral;
 function GameComponentBindingsDisabled(collection) {
     if (collection) {
-        return (0, XrpaLanguage_1.setProperty)((0, Helpers_1.resolveThunk)(collection), GAME_COMPONENT_BINDING_ENABLED, false);
+        return (0, XrpaLanguage_1.setProperty)((0, xrpa_utils_1.resolveThunk)(collection), GAME_COMPONENT_BINDING_ENABLED, false);
     }
     else {
         const ctx = (0, ProgramInterface_1.getProgramInterfaceContext)();

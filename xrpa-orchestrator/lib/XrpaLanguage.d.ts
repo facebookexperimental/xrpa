@@ -15,7 +15,7 @@
  */
 
 
-import { Thunk } from "./shared/Helpers";
+import { Thunk } from "@xrpa/xrpa-utils";
 export type BindingProperties = Record<string, unknown>;
 export interface WithBindingProperties {
     properties: BindingProperties;

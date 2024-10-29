@@ -18,8 +18,8 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StructWithAccessorType = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const ClassSpec_1 = require("./ClassSpec");
-const Helpers_1 = require("./Helpers");
 const StructType_1 = require("./StructType");
 const TypeDefinition_1 = require("./TypeDefinition");
 const TypeValue_1 = require("./TypeValue");
@@ -42,7 +42,7 @@ class StructWithAccessorType extends StructType_1.StructType {
             typename: this.getInternalType("", null),
         });
         const dsType = this.getInternalType(inNamespace, null);
-        const rawType = this.codegen.nsQualify(dsType, Helpers_1.EXCLUDE_NAMESPACE).slice(2);
+        const rawType = this.codegen.nsQualify(dsType, xrpa_utils_1.EXCLUDE_NAMESPACE).slice(2);
         return this.codegen.nsJoin(this.codegen.nsExtract(dsType), rawType);
     }
     getWriteAccessorType(inNamespace, includes) {
@@ -67,8 +67,8 @@ class StructWithAccessorType extends StructType_1.StructType {
                 fieldName,
                 fieldType: fieldSpec.type,
                 fieldToMemberVar: fieldName => {
-                    const fieldOffset = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, Helpers_1.upperFirst)(fieldName)}FieldOffset`);
-                    const fieldSize = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, Helpers_1.upperFirst)(fieldName)}FieldSize`);
+                    const fieldOffset = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, xrpa_utils_1.upperFirst)(fieldName)}FieldOffset`);
+                    const fieldSize = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, xrpa_utils_1.upperFirst)(fieldName)}FieldSize`);
                     const accessor = fieldSpec.type.getInternalType(inNamespace, includes);
                     const accessorIsStruct = (0, TypeDefinition_1.typeIsStruct)(fieldSpec.type) || (0, TypeDefinition_1.typeIsReference)(fieldSpec.type);
                     const accessorMaxBytes = fieldSpec.type.getInternalMaxBytes();
@@ -107,8 +107,8 @@ class StructWithAccessorType extends StructType_1.StructType {
                 fieldName,
                 fieldType: fieldSpec.type,
                 valueToMemberWrite: value => {
-                    const fieldOffset = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, Helpers_1.upperFirst)(fieldName)}FieldOffset`);
-                    const fieldSize = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, Helpers_1.upperFirst)(fieldName)}FieldSize`);
+                    const fieldOffset = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, xrpa_utils_1.upperFirst)(fieldName)}FieldOffset`);
+                    const fieldSize = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, xrpa_utils_1.upperFirst)(fieldName)}FieldSize`);
                     const accessor = fieldSpec.type.getInternalType(inNamespace, includes);
                     const accessorIsStruct = (0, TypeDefinition_1.typeIsStruct)(fieldSpec.type) || (0, TypeDefinition_1.typeIsReference)(fieldSpec.type);
                     const accessorMaxBytes = fieldSpec.type.getInternalMaxBytes();

@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "../../shared/FileWriter";
+import { FileWriter } from "@xrpa/xrpa-utils";
 import { IncludeAggregator } from "../../shared/Helpers";
 import { ModuleDefinition } from "../../shared/ModuleDefinition";
 import { DataStoreDefinition } from "../../shared/DataStore";

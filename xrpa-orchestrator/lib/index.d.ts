@@ -15,9 +15,7 @@
  */
 
 
-export { buckBuild, buckRun } from "./shared/BuckHelpers";
-export { FileWriter } from "./shared/FileWriter";
-export { runProcess } from "./shared/Helpers";
+export { buckBuild, buckRun, FileWriter, runProcess } from "@xrpa/xrpa-utils";
 export { BuiltinType, isBuiltinType } from "./shared/BuiltinTypes";
 export { CodeGen } from "./shared/CodeGen";
 export { AngularUnitType, CoordAxis, CoordinateSystemDef, SpatialUnitType } from "./shared/CoordinateTransformer";

@@ -15,10 +15,10 @@
  */
 
 
+import { Thunk } from "@xrpa/xrpa-utils";
 import { ProgramInterface } from "./ProgramInterface";
 import { WithBindingProperties, XrpaDataType } from "./XrpaLanguage";
 import { DataMapDefinition } from "./shared/DataMap";
-import { Thunk } from "./shared/Helpers";
 import { TypeSpec } from "./shared/TargetCodeGen";
 import { ArrayTypeSpec } from "./shared/TypeDefinition";
 export interface ExternalProgramInterfaceContext extends WithBindingProperties {

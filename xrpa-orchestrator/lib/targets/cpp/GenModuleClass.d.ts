@@ -15,8 +15,8 @@
  */
 
 
+import { FileWriter } from "@xrpa/xrpa-utils";
 import { DataStoreDefinition } from "../../shared/DataStore";
-import { FileWriter } from "../../shared/FileWriter";
 import { IncludeAggregator } from "../../shared/Helpers";
 import { ModuleDefinition } from "../../shared/ModuleDefinition";
 export declare function getModuleHeaderName(moduleDef: ModuleDefinition): string;

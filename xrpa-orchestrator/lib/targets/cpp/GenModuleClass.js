@@ -21,8 +21,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genModuleClass = exports.genDatasetDeclarations = exports.genOutboundDatasetDeclaration = exports.genInboundDatasetDeclaration = exports.getOutboundDatasetVarName = exports.getInboundDatasetVarName = exports.getModuleHeaderName = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
-const Helpers_1 = require("../../shared/Helpers");
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
 const CppDatasetLibraryTypes_1 = require("./CppDatasetLibraryTypes");
 function getModuleHeaderName(moduleDef) {
@@ -73,18 +73,18 @@ function genDataStoreInits(moduleDef, includes) {
             filename: (0, CppCodeGenImpl_1.getDataStoreHeaderName)(storeDef.apiname),
             namespace: dataStoreName,
         });
-        return `${(0, Helpers_1.lowerFirst)(dataStoreName)} = std::make_shared<${dataStoreName}::${dataStoreName}>(${getInboundDatasetVarName(storeDef)}, ${getOutboundDatasetVarName(storeDef)});`;
+        return `${(0, xrpa_utils_1.lowerFirst)(dataStoreName)} = std::make_shared<${dataStoreName}::${dataStoreName}>(${getInboundDatasetVarName(storeDef)}, ${getOutboundDatasetVarName(storeDef)});`;
     });
 }
 function genDataStoreDecls(moduleDef) {
     return moduleDef.getDataStores().map(storeDef => {
         const dataStoreName = (0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname);
-        return `std::shared_ptr<${dataStoreName}::${dataStoreName}> ${(0, Helpers_1.lowerFirst)(dataStoreName)};`;
+        return `std::shared_ptr<${dataStoreName}::${dataStoreName}> ${(0, xrpa_utils_1.lowerFirst)(dataStoreName)};`;
     });
 }
 function genModuleSettings(namespace, includes, moduleDef) {
     const settings = moduleDef.getSettings();
-    if ((0, Helpers_1.objectIsEmpty)(settings.getAllFields())) {
+    if ((0, xrpa_utils_1.objectIsEmpty)(settings.getAllFields())) {
         return [];
     }
     const defLines = settings.genLocalTypeDefinition(namespace, includes);
@@ -105,23 +105,23 @@ function genModuleClass(fileWriter, libDir, moduleDef) {
         `class ${className} : public ${CppDatasetLibraryTypes_1.DatasetModule.getLocalType(namespace, includes)} {`,
         ` public:`,
         `  ${className}(${genDatasetDeclarations(moduleDef, namespace, includes, false).join(", ")}) {`,
-        ...(0, Helpers_1.indent)(2, genDataStoreInits(moduleDef, includes)),
+        ...(0, xrpa_utils_1.indent)(2, genDataStoreInits(moduleDef, includes)),
         `  }`,
         ``,
-        ...(0, Helpers_1.indent)(1, genDataStoreDecls(moduleDef)),
+        ...(0, xrpa_utils_1.indent)(1, genDataStoreDecls(moduleDef)),
         ``,
-        ...(0, Helpers_1.indent)(1, moduleSettings),
+        ...(0, xrpa_utils_1.indent)(1, moduleSettings),
         ``,
         `  virtual void tickInputs() override {`,
-        ...(0, Helpers_1.indent)(2, moduleDef.getDataStores().map(storeDef => `${(0, Helpers_1.lowerFirst)((0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname))}->tickInbound();`)),
+        ...(0, xrpa_utils_1.indent)(2, moduleDef.getDataStores().map(storeDef => `${(0, xrpa_utils_1.lowerFirst)((0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname))}->tickInbound();`)),
         `  }`,
         ``,
         `  virtual void tickOutputs() override {`,
-        ...(0, Helpers_1.indent)(2, moduleDef.getDataStores().map(storeDef => `${(0, Helpers_1.lowerFirst)((0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname))}->tickOutbound();`)),
+        ...(0, xrpa_utils_1.indent)(2, moduleDef.getDataStores().map(storeDef => `${(0, xrpa_utils_1.lowerFirst)((0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname))}->tickOutbound();`)),
         `  }`,
         ``,
         `  virtual void shutdown() override {`,
-        ...(0, Helpers_1.indent)(2, moduleDef.getDataStores().map(storeDef => `${(0, Helpers_1.lowerFirst)((0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname))}->shutdown();`)),
+        ...(0, xrpa_utils_1.indent)(2, moduleDef.getDataStores().map(storeDef => `${(0, xrpa_utils_1.lowerFirst)((0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname))}->shutdown();`)),
         `  }`,
         `};`,
         ``,

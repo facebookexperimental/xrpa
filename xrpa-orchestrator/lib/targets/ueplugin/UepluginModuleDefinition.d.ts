@@ -15,9 +15,9 @@
  */
 
 
+import { FileWriter } from "@xrpa/xrpa-utils";
 import { DataMapDefinition } from "../../shared/DataMap";
 import { ComponentProperties, IndexConfiguration } from "../../shared/DataStore";
-import { FileWriter } from "../../shared/FileWriter";
 import { TypeSpec } from "../../shared/TargetCodeGen";
 import { CollectionTypeDefinition, StructSpec, StructTypeDefinition, TypeDefinition } from "../../shared/TypeDefinition";
 import { CppModuleDefinition } from "../cpp/CppModuleDefinition";

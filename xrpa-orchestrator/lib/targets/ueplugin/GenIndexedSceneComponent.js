@@ -21,9 +21,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genIndexedSceneComponent = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const ClassSpec_1 = require("../../shared/ClassSpec");
-const Helpers_1 = require("../../shared/Helpers");
 const CppCodeGenImpl_1 = require("../cpp/CppCodeGenImpl");
 const GenDataStore_1 = require("../cpp/GenDataStore");
 const GenWriteReconcilerDataStore_1 = require("../cpp/GenWriteReconcilerDataStore");
@@ -70,7 +70,7 @@ function getFieldSetterHooks(ctx, reconcilerDef) {
     return ret;
 }
 function genIndexedSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderDir, pluginName) {
-    const baseComponentType = (0, Helpers_1.filterToString)(reconcilerDef.componentProps.basetype) ?? "SceneComponent";
+    const baseComponentType = (0, xrpa_utils_1.filterToString)(reconcilerDef.componentProps.basetype) ?? "SceneComponent";
     const headerIncludes = new CppCodeGenImpl_1.CppIncludeAggregator([
         `Components/${baseComponentType}.h`,
         `CoreMinimal.h`,

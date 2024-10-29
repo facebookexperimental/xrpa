@@ -15,8 +15,8 @@
  */
 
 
+import { FileWriter } from "@xrpa/xrpa-utils";
 import { DataflowProgramDefinition } from "../../shared/DataflowProgramDefinition";
-import { FileWriter } from "../../shared/FileWriter";
 import { GenDataflowProgramContext } from "../shared/GenDataflowProgramShared";
 export declare function genDataflowProgram(ctx: GenDataflowProgramContext, fileWriter: FileWriter, outdir: string, programDef: DataflowProgramDefinition): void;
 

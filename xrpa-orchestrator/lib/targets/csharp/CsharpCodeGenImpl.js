@@ -21,8 +21,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.refParam = exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genMethodBind = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genWriteValue = exports.genReadValue = exports.genClassDefinition = exports.makeObjectAccessor = exports.getTypesHeaderName = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.constRef = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.CsIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.GET_CURRENT_CLOCK_TIME = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.HEADER = exports.XRPA_NAMESPACE = exports.registerXrpaTypes = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
-const Helpers_1 = require("../../shared/Helpers");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const TypeValue_1 = require("../../shared/TypeValue");
 let gXrpaTypes = null;
@@ -115,19 +115,19 @@ class CsIncludeAggregator {
 }
 exports.CsIncludeAggregator = CsIncludeAggregator;
 function genCommentLines(str) {
-    return (0, Helpers_1.genCommentLinesWithCommentMarker)("//", str);
+    return (0, xrpa_utils_1.genCommentLinesWithCommentMarker)("//", str);
 }
 exports.genCommentLines = genCommentLines;
 function nsQualify(qualifiedName, inNamespace) {
-    return (0, Helpers_1.nsQualifyWithSeparator)(nsSep, qualifiedName, inNamespace);
+    return (0, xrpa_utils_1.nsQualifyWithSeparator)(nsSep, qualifiedName, inNamespace);
 }
 exports.nsQualify = nsQualify;
 function nsJoin(...names) {
-    return (0, Helpers_1.nsJoinWithSeparator)(nsSep, names);
+    return (0, xrpa_utils_1.nsJoinWithSeparator)(nsSep, names);
 }
 exports.nsJoin = nsJoin;
 function nsExtract(qualifiedName, nonNamespacePartCount = 0) {
-    return (0, Helpers_1.nsExtractWithSeparator)(nsSep, qualifiedName, nonNamespacePartCount);
+    return (0, xrpa_utils_1.nsExtractWithSeparator)(nsSep, qualifiedName, nonNamespacePartCount);
 }
 exports.nsExtract = nsExtract;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -144,7 +144,7 @@ function privateMember(memberVarName) {
 }
 exports.privateMember = privateMember;
 function methodMember(methodName) {
-    return (0, Helpers_1.upperFirst)(methodName);
+    return (0, xrpa_utils_1.upperFirst)(methodName);
 }
 exports.methodMember = methodMember;
 function genInitializer(values) {
@@ -345,7 +345,7 @@ function genClassDefinitionMembers(classSpec, includes) {
         if (def.getter) {
             lines.push(`${decl} {`, `  get => ${def.getter};`, ...((def.setter && def.setter.length) ? [
                 `  set {`,
-                ...(0, Helpers_1.indent)(2, def.setter),
+                ...(0, xrpa_utils_1.indent)(2, def.setter),
                 `  }`,
             ] : []), `}`, ``);
         }
@@ -379,13 +379,13 @@ function genClassDefinitionConstructors(classSpec, includes) {
             lines.push(`${decl} {}`);
         }
         else {
-            lines.push(...(def.decorations ?? []), `${decl} {`, ...(0, Helpers_1.indent)(1, allBodyLines), `}`);
+            lines.push(...(def.decorations ?? []), `${decl} {`, ...(0, xrpa_utils_1.indent)(1, allBodyLines), `}`);
         }
         lines.push(``);
     }
     if (classSpec.destructorBody) {
         const destructorBody = typeof classSpec.destructorBody === "function" ? classSpec.destructorBody(includes) : (classSpec.destructorBody ?? []);
-        lines.push(`public void Dispose() {`, `  Dispose(true);`, `  GC.SuppressFinalize(this);`, `}`, ``, `protected virtual void Dispose(bool disposing) {`, ...(0, Helpers_1.indent)(1, destructorBody), `}`, ``, `~${classSpec.name}() {`, `  Dispose(false);`, `}`, ``);
+        lines.push(`public void Dispose() {`, `  Dispose(true);`, `  GC.SuppressFinalize(this);`, `}`, ``, `protected virtual void Dispose(bool disposing) {`, ...(0, xrpa_utils_1.indent)(1, destructorBody), `}`, ``, `~${classSpec.name}() {`, `  Dispose(false);`, `}`, ``);
     }
     return lines;
 }
@@ -419,7 +419,7 @@ function genClassDefinitionMethods(classSpec, includes) {
         }
         else {
             const body = typeof def.body === "function" ? def.body(includes) : def.body;
-            lines.push(`${decl} {`, ...(0, Helpers_1.indent)(1, body), `}`, ``);
+            lines.push(`${decl} {`, ...(0, xrpa_utils_1.indent)(1, body), `}`, ``);
         }
     }
     return lines;
@@ -439,10 +439,10 @@ function genClassDefinition(classSpec) {
     const classNameDecorationStr = classSpec.classNameDecoration ? `${classSpec.classNameDecoration} ` : "";
     const classIsAbstract = classSpec.forceAbstract || classSpec.methods.filter(m => m.isAbstract).length > 0;
     const classTemplateParams = classSpec.templateParams ? `<${classSpec.templateParams.join(", ")}>` : "";
-    return (0, Helpers_1.removeSuperfluousEmptyLines)([
+    return (0, xrpa_utils_1.removeSuperfluousEmptyLines)([
         ...classSpec.decorations,
         `public ${classIsAbstract ? "abstract " : ""}class ${classNameDecorationStr}${classSpec.name}${classTemplateParams} ${extStr}{`,
-        ...(0, Helpers_1.indent)(1, (0, Helpers_1.trimTrailingEmptyLines)([
+        ...(0, xrpa_utils_1.indent)(1, (0, xrpa_utils_1.trimTrailingEmptyLines)([
             ...classSpec.classEarlyInject,
             ...genClassDefinitionMembers(classSpec, classSpec.includes),
             ...genClassDefinitionConstructors(classSpec, classSpec.includes),
@@ -459,7 +459,7 @@ function genReadValue(params) {
     }
     else {
         const maxBytes = params.accessorMaxBytes !== null ? `, ${params.accessorMaxBytes}` : "";
-        return `${params.memAccessorVar}.Read${(0, Helpers_1.upperFirst)(params.accessor)}(${params.fieldOffset}${maxBytes})`;
+        return `${params.memAccessorVar}.Read${(0, xrpa_utils_1.upperFirst)(params.accessor)}(${params.fieldOffset}${maxBytes})`;
     }
 }
 exports.genReadValue = genReadValue;
@@ -469,7 +469,7 @@ function genWriteValue(params) {
     }
     else {
         const maxBytes = params.accessorMaxBytes !== null ? `, ${params.accessorMaxBytes}` : "";
-        return `${params.memAccessorVar}.Write${(0, Helpers_1.upperFirst)(params.accessor)}(${params.value}, ${params.fieldOffset}${maxBytes})`;
+        return `${params.memAccessorVar}.Write${(0, xrpa_utils_1.upperFirst)(params.accessor)}(${params.value}, ${params.fieldOffset}${maxBytes})`;
     }
 }
 exports.genWriteValue = genWriteValue;
@@ -496,7 +496,7 @@ function genReadWriteValueFunctions(classSpec, params) {
         fieldReads.push(`${field.typename} ${name} = ${readValue};`);
         fieldWrites.push(`${writeValue};`);
     }
-    const fieldsToLocal = (0, Helpers_1.arrayZip)(Object.keys(params.fieldsToLocal), Object.values(params.fieldsToLocal));
+    const fieldsToLocal = (0, xrpa_utils_1.arrayZip)(Object.keys(params.fieldsToLocal), Object.values(params.fieldsToLocal));
     const localInitializer = genInitializer(fieldsToLocal.map(params.localTypeHasInitializerConstructor ? convertFieldValueInitializer : convertFieldValue));
     const localTypeStr = params.localType.getLocalType(classSpec.namespace, classSpec.includes);
     let localReturn = `new ${localTypeStr}${localInitializer}`;
@@ -540,7 +540,7 @@ exports.genReadWriteValueFunctions = genReadWriteValueFunctions;
 function genEnumDefinition(enumName, enumValues) {
     return [
         `public enum ${enumName} : uint {`,
-        ...(0, Helpers_1.indent)(1, Object.keys(enumValues).map(v => `${v} = ${enumValues[v]},`)),
+        ...(0, xrpa_utils_1.indent)(1, Object.keys(enumValues).map(v => `${v} = ${enumValues[v]},`)),
         `}`,
     ];
 }
@@ -566,7 +566,7 @@ function genFieldGetter(classSpec, params) {
     }
     const decorations = genCommentLines(params.description);
     const fieldVar = params.fieldToMemberVar(params.fieldName);
-    const funcName = `Get${(0, Helpers_1.upperFirst)(params.fieldName)}`;
+    const funcName = `Get${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`;
     const fieldType = params.fieldType;
     if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
         const returnType = fieldType.getReferencedSuperType(classSpec.namespace, classSpec.includes);
@@ -631,7 +631,7 @@ exports.genFieldGetter = genFieldGetter;
 function genFieldSetter(classSpec, params) {
     const isRef = (0, TypeDefinition_1.typeIsReference)(params.fieldType);
     classSpec.methods.push({
-        name: `Set${(0, Helpers_1.upperFirst)(params.fieldName)}`,
+        name: `Set${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
         parameters: [{
                 name: "value",
                 type: isRef ? params.fieldType.dsIdentifierType : params.fieldType,
@@ -647,7 +647,7 @@ function genFieldSetter(classSpec, params) {
 exports.genFieldSetter = genFieldSetter;
 function genFieldChangedCheck(classSpec, params) {
     classSpec.methods.push({
-        name: `Check${(0, Helpers_1.upperFirst)(params.fieldName)}Changed`,
+        name: `Check${(0, xrpa_utils_1.upperFirst)(params.fieldName)}Changed`,
         returnType: "bool",
         parameters: [{
                 name: "fieldsChanged",

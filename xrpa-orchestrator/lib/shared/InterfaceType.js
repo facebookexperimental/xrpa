@@ -18,7 +18,7 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InterfaceType = void 0;
-const Helpers_1 = require("./Helpers");
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const StructWithAccessorType_1 = require("./StructWithAccessorType");
 const TypeDefinition_1 = require("./TypeDefinition");
 const TypeValue_1 = require("./TypeValue");
@@ -58,17 +58,17 @@ class InterfaceType extends StructWithAccessorType_1.StructWithAccessorType {
         return this.ptrType;
     }
     getChangedBit(inNamespace, includes, fieldName) {
-        return this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, Helpers_1.upperFirst)(fieldName)}ChangedBit`);
+        return this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, xrpa_utils_1.upperFirst)(fieldName)}ChangedBit`);
     }
     getFieldSize(inNamespace, includes, fieldName) {
-        return this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, Helpers_1.upperFirst)(fieldName)}FieldSize`);
+        return this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, xrpa_utils_1.upperFirst)(fieldName)}FieldSize`);
     }
     genReadWriteValueFunctions(classSpec) {
         let fieldCount = 0;
         const fields = this.getStateFields();
         for (const name in fields) {
             classSpec.members.push({
-                name: `${(0, Helpers_1.upperFirst)(name)}ChangedBit`,
+                name: `${(0, xrpa_utils_1.upperFirst)(name)}ChangedBit`,
                 type: this.codegen.PRIMITIVE_INTRINSICS.uint64.typename,
                 initialValue: new TypeValue_1.PrimitiveValue(this.codegen, this.codegen.PRIMITIVE_INTRINSICS.uint64.typename, 1 << fieldCount),
                 isStatic: true,

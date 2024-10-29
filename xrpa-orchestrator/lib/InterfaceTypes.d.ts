@@ -15,10 +15,10 @@
  */
 
 
+import { Thunk } from "@xrpa/xrpa-utils";
 import { XrpaProgramParam } from "./ProgramInterface";
 import { BindingProperties, PropertyCondition, XrpaDataType, XrpaNamedDataType, XrpaTypeAugmenter } from "./XrpaLanguage";
 import { BuiltinType } from "./shared/BuiltinTypes";
-import { Thunk } from "./shared/Helpers";
 import { UserDefaultValue } from "./shared/TypeDefinition";
 export declare const FIELD_DESCRIPTION = "xrpa.description";
 export declare const FIELD_DEFAULT = "xrpa.defaultValue";

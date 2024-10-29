@@ -18,7 +18,7 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FixedArrayType = void 0;
-const Helpers_1 = require("./Helpers");
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const StructType_1 = require("./StructType");
 class FixedArrayType extends StructType_1.StructType {
     constructor(codegen, name, apiname, innerType, arraySize, localArrayType) {
@@ -57,7 +57,7 @@ class FixedArrayType extends StructType_1.StructType {
         }
         const lines = [];
         if (this.localArrayType.setSize) {
-            lines.push(`${varName}.${this.localArrayType.setSize.slice(0, -1)}${this.arraySize});`, `for (int i = 0; i < ${this.arraySize}; ++i) {`, ...(0, Helpers_1.indent)(1, this.innerType.resetLocalVarToDefault(inNamespace, includes, `${varName}[i]`, isSetter, defaultOverride)), `}`);
+            lines.push(`${varName}.${this.localArrayType.setSize.slice(0, -1)}${this.arraySize});`, `for (int i = 0; i < ${this.arraySize}; ++i) {`, ...(0, xrpa_utils_1.indent)(1, this.innerType.resetLocalVarToDefault(inNamespace, includes, `${varName}[i]`, isSetter, defaultOverride)), `}`);
         }
         else {
             const defaultValue = this.innerType.getLocalDefaultValue(inNamespace, includes, isSetter, defaultOverride);

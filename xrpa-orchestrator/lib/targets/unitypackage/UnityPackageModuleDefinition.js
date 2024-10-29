@@ -21,8 +21,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UnityPackageModuleDefinition = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
-const FileWriter_1 = require("../../shared/FileWriter");
 const Helpers_1 = require("../../shared/Helpers");
 const CsharpCodeGenImpl_1 = require("../csharp/CsharpCodeGenImpl");
 const CsharpModuleDefinition_1 = require("../csharp/CsharpModuleDefinition");
@@ -51,7 +51,7 @@ class UnityPackageModuleDefinition extends CsharpModuleDefinition_1.CsharpModule
         super.setCollectionAsInbound(type, reconciledTo, indexes);
     }
     setCollectionAsOutbound(type, componentProps) {
-        if ((0, Helpers_1.filterToString)(componentProps.basetype)) {
+        if ((0, xrpa_utils_1.filterToString)(componentProps.basetype)) {
             type.setToBarePtr({
                 typename: (0, MonoBehaviourShared_1.getComponentClassName)(type, componentProps.idName),
             });
@@ -66,7 +66,7 @@ class UnityPackageModuleDefinition extends CsharpModuleDefinition_1.CsharpModule
         }
     }
     doCodeGen() {
-        const fileWriter = new FileWriter_1.FileWriter();
+        const fileWriter = new xrpa_utils_1.FileWriter();
         const packagesDir = path_1.default.join(this.projectRoot, "Packages");
         for (const storeDef of this.getDataStores()) {
             const packageInfo = this.packageInfos[storeDef.apiname];
@@ -89,7 +89,7 @@ class UnityPackageModuleDefinition extends CsharpModuleDefinition_1.CsharpModule
             ctx.namespace = "";
             // generate Unity component classes
             for (const accessor of storeDef.getOutputReconcilers()) {
-                if ((0, Helpers_1.filterToString)(accessor.componentProps.basetype)) {
+                if ((0, xrpa_utils_1.filterToString)(accessor.componentProps.basetype)) {
                     (0, GenMonoBehaviour_1.genMonoBehaviour)(ctx, fileWriter, accessor, runtimeDir);
                 }
             }

@@ -18,8 +18,8 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DataStoreDefinition = exports.OutputReconcilerDefinition = exports.InputReconcilerDefinition = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const DataModel_1 = require("./DataModel");
-const Helpers_1 = require("./Helpers");
 const TypeDefinition_1 = require("./TypeDefinition");
 class BaseReconcilerDefinition {
     constructor(type, inboundFields, outboundFields, fieldAccessorNameOverrides, componentProps, indexConfigs) {
@@ -31,33 +31,33 @@ class BaseReconcilerDefinition {
         this.indexConfigs = indexConfigs;
         const fields = this.type.getAllFields();
         for (const fieldName of (inboundFields ?? [])) {
-            (0, Helpers_1.assertIsKeyOf)(fieldName, fields);
+            (0, xrpa_utils_1.assertIsKeyOf)(fieldName, fields);
         }
         for (const fieldName of (outboundFields ?? [])) {
-            (0, Helpers_1.assertIsKeyOf)(fieldName, fields);
+            (0, xrpa_utils_1.assertIsKeyOf)(fieldName, fields);
         }
         for (const fieldName in fieldAccessorNameOverrides) {
-            (0, Helpers_1.assertIsKeyOf)(fieldName, fields);
+            (0, xrpa_utils_1.assertIsKeyOf)(fieldName, fields);
         }
         if (componentProps.ephemeralProperties) {
             for (const fieldName of componentProps.ephemeralProperties) {
-                (0, Helpers_1.assertIsKeyOf)(fieldName, fields);
+                (0, xrpa_utils_1.assertIsKeyOf)(fieldName, fields);
             }
         }
         if (componentProps.fieldToPropertyBindings) {
             for (const fieldName in componentProps.fieldToPropertyBindings) {
-                (0, Helpers_1.assertIsKeyOf)(fieldName, fields);
+                (0, xrpa_utils_1.assertIsKeyOf)(fieldName, fields);
             }
         }
         for (const config of indexConfigs) {
-            (0, Helpers_1.assertIsKeyOf)(config.indexFieldName, fields);
+            (0, xrpa_utils_1.assertIsKeyOf)(config.indexFieldName, fields);
         }
     }
     isInboundField(fieldName) {
-        return (0, Helpers_1.isExcluded)(fieldName, this.outboundFields, this.inboundFields);
+        return (0, xrpa_utils_1.isExcluded)(fieldName, this.outboundFields, this.inboundFields);
     }
     isOutboundField(fieldName) {
-        return (0, Helpers_1.isExcluded)(fieldName, this.inboundFields, this.outboundFields);
+        return (0, xrpa_utils_1.isExcluded)(fieldName, this.inboundFields, this.outboundFields);
     }
     getFieldSpec(fieldName) {
         return this.type.getAllFields()[fieldName];
@@ -70,7 +70,7 @@ class BaseReconcilerDefinition {
     }
     isEphemeralField(fieldName) {
         const isBoundToIntrinsic = this.isFieldBoundToIntrinsic(fieldName);
-        return isBoundToIntrinsic || ((0, Helpers_1.filterToStringArray)(this.componentProps.ephemeralProperties) ?? []).includes(fieldName);
+        return isBoundToIntrinsic || ((0, xrpa_utils_1.filterToStringArray)(this.componentProps.ephemeralProperties) ?? []).includes(fieldName);
     }
     isClearSetField(fieldName) {
         const isBoundToIntrinsic = this.isFieldBoundToIntrinsic(fieldName);

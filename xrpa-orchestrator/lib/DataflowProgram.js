@@ -21,11 +21,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.XrpaDataflowProgram = exports.SelfTerminateOn = exports.Instantiate = exports.getDataflowProgramContext = exports.isDataflowProgramContext = exports.isDataflowGraphNode = exports.isDataflowForeignObjectInstantiation = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const ProgramInterface_1 = require("./ProgramInterface");
 const XrpaLanguage_1 = require("./XrpaLanguage");
 const DataflowProgramDefinition_1 = require("./shared/DataflowProgramDefinition");
-const Helpers_1 = require("./shared/Helpers");
 var DataflowProgramDefinition_2 = require("./shared/DataflowProgramDefinition");
 Object.defineProperty(exports, "isDataflowForeignObjectInstantiation", { enumerable: true, get: function () { return DataflowProgramDefinition_2.isDataflowForeignObjectInstantiation; } });
 Object.defineProperty(exports, "isDataflowGraphNode", { enumerable: true, get: function () { return DataflowProgramDefinition_2.isDataflowGraphNode; } });
@@ -44,7 +44,7 @@ function Instantiate(collection, fieldValues, isBuffered = false) {
     const ret = {
         __isDataflowGraphNode: true,
         __isDataflowObjectInstantiation: true,
-        name: `${(0, Helpers_1.lowerFirst)(programInterfaceName)}${(0, Helpers_1.upperFirst)(collectionType)}${ctx.idCount++}`,
+        name: `${(0, xrpa_utils_1.lowerFirst)(programInterfaceName)}${(0, xrpa_utils_1.upperFirst)(collectionType)}${ctx.idCount++}`,
         programInterfaceName,
         collectionType,
         fieldValues,
@@ -63,7 +63,7 @@ exports.SelfTerminateOn = SelfTerminateOn;
 function XrpaDataflowProgram(name, callback) {
     let ctx;
     const programInterface = (0, ProgramInterface_1.XrpaProgramInterface)(`XrpaDataflow.${name}`, piCtx => {
-        const dfCtx = (0, Helpers_1.augmentInPlace)(piCtx, {
+        const dfCtx = (0, xrpa_utils_1.augmentInPlace)(piCtx, {
             __isDataflowProgramContext: true,
             externalProgramInterfaces: {},
             idCount: 0,
@@ -115,7 +115,7 @@ function XrpaDataflowProgram(name, callback) {
     for (const connection of ctx.selfTerminateEvents) {
         walkConnections(connection.targetNode, ["selfTerminateEvent"], false);
     }
-    const dataflow = (0, Helpers_1.augment)(programInterface, {
+    const dataflow = (0, xrpa_utils_1.augment)(programInterface, {
         __isDataflowProgramDefinition: true,
         // sort nodes by max depth in descending order, so they get created in the right order
         graphNodes: [...nodeMaxDepths.keys()].sort((a, b) => {

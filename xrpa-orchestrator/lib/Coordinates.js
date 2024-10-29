@@ -21,6 +21,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getObjectTransformBinding = exports.ObjectTransform = exports.getCoordinateSystem = exports.useCoordinateSystem = exports.Scale3 = exports.Distance3 = exports.UnitVector3 = exports.Vector3 = exports.EulerAngles = exports.Quaternion = exports.Matrix4x4 = exports.Matrix4x3 = exports.Scale2 = exports.Distance2 = exports.UnitVector2 = exports.Vector2 = exports.Matrix3x2 = exports.Distance = exports.Angle = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const simply_immutable_1 = require("simply-immutable");
 const InterfaceTypes_1 = require("./InterfaceTypes");
@@ -29,11 +30,10 @@ const RuntimeEnvironment_1 = require("./RuntimeEnvironment");
 const XrpaLanguage_1 = require("./XrpaLanguage");
 const BuiltinTypes_1 = require("./shared/BuiltinTypes");
 const CoordinateTransformer_1 = require("./shared/CoordinateTransformer");
-const Helpers_1 = require("./shared/Helpers");
 const COORDINATE_SYSTEM = "xrpa.coordinates.system";
 const TRANSFORM_BINDING = "xrpa.coordinates.transformBinding";
 function Angle(defaultValue, description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Angle,
         properties: {
@@ -44,7 +44,7 @@ function Angle(defaultValue, description) {
 }
 exports.Angle = Angle;
 function Distance(defaultValue, description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Distance,
         properties: {
@@ -55,7 +55,7 @@ function Distance(defaultValue, description) {
 }
 exports.Distance = Distance;
 function Matrix3x2(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Matrix3x2,
         properties: {
@@ -65,7 +65,7 @@ function Matrix3x2(description) {
 }
 exports.Matrix3x2 = Matrix3x2;
 function Vector2(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Vector2,
         properties: {
@@ -75,7 +75,7 @@ function Vector2(description) {
 }
 exports.Vector2 = Vector2;
 function UnitVector2(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.UnitVector2,
         properties: {
@@ -85,7 +85,7 @@ function UnitVector2(description) {
 }
 exports.UnitVector2 = UnitVector2;
 function Distance2(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Distance2,
         properties: {
@@ -95,7 +95,7 @@ function Distance2(description) {
 }
 exports.Distance2 = Distance2;
 function Scale2(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Scale2,
         properties: {
@@ -105,7 +105,7 @@ function Scale2(description) {
 }
 exports.Scale2 = Scale2;
 function Matrix4x3(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Matrix4x3,
         properties: {
@@ -115,7 +115,7 @@ function Matrix4x3(description) {
 }
 exports.Matrix4x3 = Matrix4x3;
 function Matrix4x4(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Matrix4x4,
         properties: {
@@ -125,7 +125,7 @@ function Matrix4x4(description) {
 }
 exports.Matrix4x4 = Matrix4x4;
 function Quaternion(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Quaternion,
         properties: {
@@ -135,7 +135,7 @@ function Quaternion(description) {
 }
 exports.Quaternion = Quaternion;
 function EulerAngles(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.EulerAngles,
         properties: {
@@ -145,7 +145,7 @@ function EulerAngles(description) {
 }
 exports.EulerAngles = EulerAngles;
 function Vector3(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Vector3,
         properties: {
@@ -155,7 +155,7 @@ function Vector3(description) {
 }
 exports.Vector3 = Vector3;
 function UnitVector3(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.UnitVector3,
         properties: {
@@ -165,7 +165,7 @@ function UnitVector3(description) {
 }
 exports.UnitVector3 = UnitVector3;
 function Distance3(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Distance3,
         properties: {
@@ -175,7 +175,7 @@ function Distance3(description) {
 }
 exports.Distance3 = Distance3;
 function Scale3(description) {
-    return (0, Helpers_1.safeDeepFreeze)({
+    return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
         typename: BuiltinTypes_1.BuiltinType.Scale3,
         properties: {
@@ -199,7 +199,7 @@ function getCoordinateSystem(ctx) {
 }
 exports.getCoordinateSystem = getCoordinateSystem;
 function ObjectTransform(bindings, dataType) {
-    dataType = (0, Helpers_1.resolveThunk)(dataType);
+    dataType = (0, xrpa_utils_1.resolveThunk)(dataType);
     if ((0, InterfaceTypes_1.isStructDataType)(dataType)) {
         const fieldBindings = bindings;
         (0, assert_1.default)(typeof fieldBindings === "object" && fieldBindings !== null, "ObjectTransform: expected object binding");

@@ -41,9 +41,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genIndexedBindingCalls = exports.genObjectCollectionClasses = exports.genInboundReconciledTypes = exports.genProcessUpdateFunctionBodyForConcreteReconciledType = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const ClassSpec_1 = require("../../shared/ClassSpec");
 const DataStore_1 = require("../../shared/DataStore");
-const Helpers_1 = require("../../shared/Helpers");
 const TypeValue_1 = require("../../shared/TypeValue");
 const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
@@ -61,7 +61,7 @@ function genProcessUpdateFunctionBodyForConcreteReconciledType(ctx, includes, ty
         if (!reconcilerDef.isInboundField(fieldName)) {
             continue;
         }
-        const checkName = `check${(0, Helpers_1.upperFirst)(fieldName)}Changed`;
+        const checkName = `check${(0, xrpa_utils_1.upperFirst)(fieldName)}Changed`;
         const funcName = (0, GenDataStoreShared_1.fieldGetterFuncName)(CppCodeGenImpl, typeFields, fieldName);
         lines.push(`if (value.${checkName}(fieldsChanged)) {`, `  ${(0, GenWriteReconcilerDataStore_1.defaultFieldToMemberVar)(fieldName)} = value.${funcName}();`, `}`);
     }
@@ -314,8 +314,8 @@ function genIndexedBindingCalls(ctx, reconcilerDef, dataStorePtr, boundObjPtr, g
     for (const indexConfig of reconcilerDef.indexConfigs) {
         const indexMemberName = getFieldMemberName(reconcilerDef, indexConfig.indexFieldName);
         ret[indexConfig.indexFieldName] = {
-            addBinding: `${dataStorePtr}->add${(0, Helpers_1.upperFirst)(indexConfig.indexFieldName)}Binding(${indexMemberName}, ${boundObjPtr});`,
-            removeBinding: `${dataStorePtr}->remove${(0, Helpers_1.upperFirst)(indexConfig.indexFieldName)}Binding(${indexMemberName}, ${boundObjPtr});`,
+            addBinding: `${dataStorePtr}->add${(0, xrpa_utils_1.upperFirst)(indexConfig.indexFieldName)}Binding(${indexMemberName}, ${boundObjPtr});`,
+            removeBinding: `${dataStorePtr}->remove${(0, xrpa_utils_1.upperFirst)(indexConfig.indexFieldName)}Binding(${indexMemberName}, ${boundObjPtr});`,
         };
     }
     return ret;
@@ -335,7 +335,7 @@ function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
         const indexFieldType = fields[indexConfig.indexFieldName].type;
         const indexFieldTypeName = indexFieldType.getLocalType(ctx.namespace, classSpec.includes);
         const indexFieldGet = (0, GenDataStoreShared_1.fieldGetterFuncName)(CppCodeGenImpl, fields, indexConfig.indexFieldName);
-        const memberName = indexConfig.boundClassName ? CppCodeGenImpl.privateMember(`binding${indexConfig.boundClassName}To${(0, Helpers_1.upperFirst)(indexConfig.indexFieldName)}`) : `${(0, Helpers_1.upperFirst)(indexConfig.indexFieldName)}Index`;
+        const memberName = indexConfig.boundClassName ? CppCodeGenImpl.privateMember(`binding${indexConfig.boundClassName}To${(0, xrpa_utils_1.upperFirst)(indexConfig.indexFieldName)}`) : `${(0, xrpa_utils_1.upperFirst)(indexConfig.indexFieldName)}Index`;
         indexNotifyCreateLines.push(`${memberName}.onCreate(obj, obj->${indexFieldGet}());`);
         indexNotifyUpdateLines.push(`if (fieldsChanged & ${reconcilerDef.type.getFieldBitMask(indexConfig.indexFieldName)}) {`, `  ${memberName}.onUpdate(obj, obj->${indexFieldGet}());`, `}`);
         indexNotifyDeleteLines.push(`${memberName}.onDelete(obj, obj->${indexFieldGet}());`);
@@ -348,7 +348,7 @@ function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
                 initialValue: new TypeValue_1.CodeLiteralValue(CppCodeGenImpl, `${indexBindingType}{${reconcilerDef.getInboundChangeBits()}}`),
             });
             classSpec.methods.push({
-                name: `add${(0, Helpers_1.upperFirst)(indexConfig.indexFieldName)}Binding`,
+                name: `add${(0, xrpa_utils_1.upperFirst)(indexConfig.indexFieldName)}Binding`,
                 parameters: [{
                         name: "indexValue",
                         type: indexFieldType,
@@ -361,7 +361,7 @@ function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
                 ],
             });
             classSpec.methods.push({
-                name: `remove${(0, Helpers_1.upperFirst)(indexConfig.indexFieldName)}Binding`,
+                name: `remove${(0, xrpa_utils_1.upperFirst)(indexConfig.indexFieldName)}Binding`,
                 parameters: [{
                         name: "indexValue",
                         type: indexFieldType,
