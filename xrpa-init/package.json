@@ -5,8 +5,10 @@
   "main": "js/index.ts",
   "private": true,
   "scripts": {
-    "lint": "eslint --ext .ts,.tsx ./src",
+    "postinstall": "ts-node ./js/index.ts",
     "update": "ts-node ./js/index.ts",
+    "codegen": "ts-node ./js/index.ts",
+    "lint": "eslint --ext .ts,.tsx ./src",
     "SignalProcessing": "node_modules/@xrpa/xred-signal-processing/bin/FbaProcessing.exe",
     "SignalOutput": "node_modules/@xrpa/xred-signal-output/bin/XredOutput.exe",
     "STO": "node_modules/@xrpa/xred-tracking/bin/PulsarSTO.exe",
