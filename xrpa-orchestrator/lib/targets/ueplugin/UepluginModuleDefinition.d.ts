@@ -31,7 +31,7 @@ export declare class UepluginModuleDefinition extends CppModuleDefinition {
     constructor(name: string, datamap: DataMapDefinition, projectRoot: string, pluginsConfig: Record<string, PluginConfig>);
     createEnum(name: string, apiname: string, enumValues: Record<string, number>, localTypeOverride: TypeSpec | undefined): TypeDefinition;
     createStruct(name: string, apiname: string, fields: StructSpec, localTypeOverride: TypeSpec | undefined): StructTypeDefinition;
-    setCollectionAsInbound(type: CollectionTypeDefinition, reconciledTo: TypeSpec | undefined, indexes: Array<IndexConfiguration> | undefined): void;
+    setCollectionAsInbound(type: CollectionTypeDefinition, componentProps: ComponentProperties, reconciledTo: TypeSpec | undefined, indexes: Array<IndexConfiguration> | undefined): void;
     setCollectionAsOutbound(type: CollectionTypeDefinition, componentProps: ComponentProperties): void;
     doCodeGen(): FileWriter;
 }

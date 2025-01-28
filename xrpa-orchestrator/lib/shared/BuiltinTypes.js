@@ -59,7 +59,7 @@ exports.isBuiltinType = isBuiltinType;
 /*****************************************************/
 class TimestampType extends PrimitiveType_1.PrimitiveType {
     constructor(codegen, localType) {
-        super(codegen, "Timestamp", codegen.PRIMITIVE_INTRINSICS.uint64, localType, 8, false, new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.uint64.typename, 0), new TypeValue_1.CodeLiteralValue(codegen, codegen.GET_CURRENT_CLOCK_TIME));
+        super(codegen, "Timestamp", codegen.PRIMITIVE_INTRINSICS.uint64, localType, 8, false, new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.uint64.typename, 0), new TypeValue_1.CodeLiteralValue(codegen, codegen.genGetCurrentClockTime(null)));
     }
     getMetaType() {
         return TypeDefinition_1.TypeMetaType.CLEAR_SET;
@@ -115,7 +115,7 @@ class BooleanType extends PrimitiveType_1.PrimitiveType {
         if (value instanceof TypeValue_1.EmptyValue) {
             return new TypeValue_1.EmptyValue(this.codegen, this.datasetType.typename, value.defaultNamespace);
         }
-        return new TypeValue_1.CodeLiteralValue(this.codegen, `(${value} ? 1 : 0)`);
+        return new TypeValue_1.CodeLiteralValue(this.codegen, this.codegen.genConvertBoolToInt(value));
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     convertValueToLocal(_inNamespace, _includes, value) {
@@ -128,7 +128,7 @@ class BooleanType extends PrimitiveType_1.PrimitiveType {
         if (value instanceof TypeValue_1.EmptyValue) {
             return new TypeValue_1.EmptyValue(this.codegen, this.localType.typename, value.defaultNamespace);
         }
-        return new TypeValue_1.CodeLiteralValue(this.codegen, `(${value} == 1 ? true : false)`);
+        return new TypeValue_1.CodeLiteralValue(this.codegen, this.codegen.genConvertIntToBool(value));
     }
 }
 /*****************************************************/

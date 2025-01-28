@@ -34,12 +34,13 @@ export declare class StructType extends PrimitiveType implements StructTypeDefin
     getAllFields(): StructSpec;
     getStateFields(): StructSpec;
     getFieldsOfType<T extends TypeDefinition>(typeFilter: (typeDef: TypeDefinition | undefined) => typeDef is T): Record<string, T>;
-    getFieldBitMask(fieldName: string): number;
     getFieldIndex(fieldName: string): number;
+    getFieldBitMask(fieldName: string): number;
+    getFieldSize(fieldName: string): number;
+    getFieldOffset(fieldName: string): number;
     userDefaultToTypeValue(inNamespace: string, includes: IncludeAggregator | null, userDefault: UserDefaultValue): TypeValue | undefined;
     declareLocalFieldClassMember(classSpec: ClassSpec, fieldName: string, memberName: string, includeComments: boolean, decorations: string[], visibility?: ClassVisibility): void;
     resetLocalFieldVarToDefault(inNamespace: string, includes: IncludeAggregator | null, fieldName: string, varName: string, isSetter?: boolean): string[];
-    private getFieldOffsetDeclarations;
     private getFieldTypes;
     protected getFieldTransforms(inNamespace: string, includes: IncludeAggregator | null): {
         fieldsFromLocal: Record<string, TypeValue>;

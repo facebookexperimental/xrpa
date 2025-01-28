@@ -22,14 +22,14 @@ const PrimitiveType_1 = require("./PrimitiveType");
 const TypeDefinition_1 = require("./TypeDefinition");
 const TypeValue_1 = require("./TypeValue");
 class ReferenceType extends PrimitiveType_1.PrimitiveType {
-    constructor(codegen, toType, dsIdentifierType) {
+    constructor(codegen, toType, objectUuidType) {
         const zero = new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.uint64.typename, 0);
-        super(codegen, `Reference<${toType.getName()}>`, dsIdentifierType.datasetType, dsIdentifierType.localType, dsIdentifierType.getTypeSize(), true, new TypeValue_1.StructValue(codegen, dsIdentifierType.getInternalType("", null), false, [
+        super(codegen, `Reference<${toType.getName()}>`, objectUuidType.datasetType, objectUuidType.localType, objectUuidType.getTypeSize(), true, new TypeValue_1.StructValue(codegen, objectUuidType.getInternalType("", null), false, [
             ["ID0", zero],
             ["ID1", zero],
         ], ""));
         this.toType = toType;
-        this.dsIdentifierType = dsIdentifierType;
+        this.objectUuidType = objectUuidType;
     }
     getMetaType() {
         return TypeDefinition_1.TypeMetaType.TYPE_REFERENCE;
@@ -42,7 +42,7 @@ class ReferenceType extends PrimitiveType_1.PrimitiveType {
     }
     convertValueFromLocal(inNamespace, includes, value) {
         if (typeof value === "string") {
-            value = new TypeValue_1.CodeLiteralValue(this.codegen, this.codegen.genReferencePtrToID(value, this.toType.getPtrType(), this.dsIdentifierType.getLocalType(inNamespace, includes)));
+            value = new TypeValue_1.CodeLiteralValue(this.codegen, this.codegen.genReferencePtrToID(value, this.toType.getPtrType(), this.objectUuidType.getLocalType(inNamespace, includes)));
         }
         return value;
     }

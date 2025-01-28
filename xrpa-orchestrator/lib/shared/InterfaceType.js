@@ -18,13 +18,11 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InterfaceType = void 0;
-const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const StructWithAccessorType_1 = require("./StructWithAccessorType");
 const TypeDefinition_1 = require("./TypeDefinition");
-const TypeValue_1 = require("./TypeValue");
 class InterfaceType extends StructWithAccessorType_1.StructWithAccessorType {
-    constructor(codegen, interfaceName, apiname, dsIdentifierType, fields, parentType = undefined) {
-        super(codegen, interfaceName, apiname, dsIdentifierType, parentType, fields);
+    constructor(codegen, interfaceName, apiname, objectUuidType, fields, parentType = undefined) {
+        super(codegen, interfaceName, apiname, objectUuidType, parentType, fields);
         this.collections = [];
         this.ptrType = codegen.DEFAULT_INTERFACE_PTR_TYPE;
         if (this.getMetaType() === TypeDefinition_1.TypeMetaType.INTERFACE) {
@@ -45,7 +43,12 @@ class InterfaceType extends StructWithAccessorType_1.StructWithAccessorType {
         this.collections.push(collection);
     }
     getCompatibleTypeList(inNamespace, includes) {
-        return this.collections.map(typeDef => typeDef.getLocalTypePtr(inNamespace, includes)).sort();
+        return this.collections.map(typeDef => {
+            return {
+                collectionName: typeDef.getName(),
+                typeName: typeDef.getLocalType(inNamespace, includes),
+            };
+        }).sort((a, b) => a.collectionName.localeCompare(b.collectionName));
     }
     isBarePtr() {
         return this.ptrType === "bare";
@@ -56,26 +59,6 @@ class InterfaceType extends StructWithAccessorType_1.StructWithAccessorType {
     }
     getPtrType() {
         return this.ptrType;
-    }
-    getChangedBit(inNamespace, includes, fieldName) {
-        return this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, xrpa_utils_1.upperFirst)(fieldName)}ChangedBit`);
-    }
-    getFieldSize(inNamespace, includes, fieldName) {
-        return this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, xrpa_utils_1.upperFirst)(fieldName)}FieldSize`);
-    }
-    genReadWriteValueFunctions(classSpec) {
-        let fieldCount = 0;
-        const fields = this.getStateFields();
-        for (const name in fields) {
-            classSpec.members.push({
-                name: `${(0, xrpa_utils_1.upperFirst)(name)}ChangedBit`,
-                type: this.codegen.PRIMITIVE_INTRINSICS.uint64.typename,
-                initialValue: new TypeValue_1.PrimitiveValue(this.codegen, this.codegen.PRIMITIVE_INTRINSICS.uint64.typename, 1 << fieldCount),
-                isStatic: true,
-                isConst: true,
-            });
-            fieldCount++;
-        }
     }
     genStaticAccessorFields(classSpec) {
         const lines = super.genStaticAccessorFields(classSpec);

@@ -53,7 +53,6 @@ const CsharpCodeGenImpl_1 = require("./CsharpCodeGenImpl");
 const CsharpCodeGenImpl = __importStar(require("./CsharpCodeGenImpl"));
 const CsharpDatasetLibraryTypes_1 = require("./CsharpDatasetLibraryTypes");
 const GenReadReconcilerDataStore_1 = require("./GenReadReconcilerDataStore");
-const GenTypesDefinitions_1 = require("./GenTypesDefinitions");
 const GenWriteReconcilerDataStore_1 = require("./GenWriteReconcilerDataStore");
 function genMsgHandler(msg) {
     return CsharpCodeGenImpl.privateMember(`${msg}MessageHandler`);
@@ -64,40 +63,25 @@ function genReconcilerConstructorContents(ctx) {
     for (const reconcilerDef of ctx.storeDef.getInputReconcilers()) {
         const typeDef = reconcilerDef.type;
         const className = (0, GenDataStoreShared_1.getInboundCollectionClassName)(ctx, typeDef);
-        const varName = reconcilerDef.getDataStoreAccessorName();
+        const varName = typeDef.getName();
         lines.push(`${varName} = new ${className}(this);`, `RegisterCollection(${varName});`);
     }
     for (const reconcilerDef of ctx.storeDef.getOutputReconcilers()) {
         const typeDef = reconcilerDef.type;
         const className = (0, GenDataStoreShared_1.getOutboundCollectionClassName)(ctx, typeDef);
-        const varName = reconcilerDef.getDataStoreAccessorName();
+        const varName = typeDef.getName();
         lines.push(`${varName} = new ${className}(this);`, `RegisterCollection(${varName});`);
     }
     return lines;
 }
-function genGetObjectByIDFunctions(ctx, includes) {
-    const lines = [];
-    for (const reconcilerDef of ctx.storeDef.getInputReconcilers()) {
-        const typeDef = reconcilerDef.type;
-        const varName = reconcilerDef.getDataStoreAccessorName();
-        lines.push(`public void GetObjectByID(${ctx.moduleDef.DSIdentifier.declareLocalParam(ctx.namespace, includes, "id")}, out ${typeDef.getLocalTypePtr(ctx.namespace, includes)} obj) {`, `  obj = ${varName}.GetObject(id);`, `}`, ``);
-    }
-    for (const reconcilerDef of ctx.storeDef.getOutputReconcilers()) {
-        const typeDef = reconcilerDef.type;
-        const varName = reconcilerDef.getDataStoreAccessorName();
-        lines.push(`public void GetObjectByID(${ctx.moduleDef.DSIdentifier.declareLocalParam(ctx.namespace, includes, "id")}, out ${typeDef.getLocalTypePtr(ctx.namespace, includes)} obj) {`, `  obj = ${varName}.GetObject(id);`, `}`, ``);
-    }
-    return lines;
-}
 function genDataStoreClass(ctx, includes) {
-    const className = (0, CsharpCodeGenImpl_1.getDataStoreName)(ctx.storeDef.apiname);
-    const baseClassName = CsharpDatasetLibraryTypes_1.DatasetReconciler.getLocalType(ctx.namespace, includes);
-    const hashName = (0, GenTypesDefinitions_1.getDataStoreSchemaHashName)(ctx.storeDef.apiname, true);
+    const className = (0, CsharpCodeGenImpl_1.getDataStoreClass)(ctx.storeDef.apiname, ctx.namespace, null);
+    const baseClassName = CsharpDatasetLibraryTypes_1.DataStoreReconciler.getLocalType(ctx.namespace, includes);
     const messagePoolSize = ctx.storeDef.datamodel.calcMessagePoolSize();
     const lines = [
         `public class ${className} : ${baseClassName} {`,
-        `  public ${className}(${CsharpDatasetLibraryTypes_1.DatasetInterface.declareLocalParam(ctx.namespace, includes, "inboundDataset")}, ${CsharpDatasetLibraryTypes_1.DatasetInterface.declareLocalParam(ctx.namespace, includes, "outboundDataset")})`,
-        `      : base(inboundDataset, outboundDataset, ${hashName}, ${messagePoolSize}) {`,
+        `  public ${className}(${CsharpDatasetLibraryTypes_1.TransportStream.declareLocalParam(ctx.namespace, includes, "inboundTransport")}, ${CsharpDatasetLibraryTypes_1.TransportStream.declareLocalParam(ctx.namespace, includes, "outboundTransport")})`,
+        `      : base(inboundTransport, outboundTransport, ${messagePoolSize}) {`,
         ...(0, xrpa_utils_1.indent)(2, genReconcilerConstructorContents(ctx)),
         `  }`,
         ``,
@@ -105,7 +89,7 @@ function genDataStoreClass(ctx, includes) {
     for (const reconcilerDef of ctx.storeDef.getInputReconcilers()) {
         const typeDef = reconcilerDef.type;
         const className = (0, GenDataStoreShared_1.getInboundCollectionClassName)(ctx, typeDef);
-        const varName = reconcilerDef.getDataStoreAccessorName();
+        const varName = typeDef.getName();
         lines.push(...(0, xrpa_utils_1.indent)(1, [
             `public ${className} ${varName};`,
         ]));
@@ -113,12 +97,11 @@ function genDataStoreClass(ctx, includes) {
     for (const reconcilerDef of ctx.storeDef.getOutputReconcilers()) {
         const typeDef = reconcilerDef.type;
         const className = (0, GenDataStoreShared_1.getOutboundCollectionClassName)(ctx, typeDef);
-        const varName = reconcilerDef.getDataStoreAccessorName();
+        const varName = typeDef.getName();
         lines.push(...(0, xrpa_utils_1.indent)(1, [
             `public ${className} ${varName};`,
         ]));
     }
-    lines.push("", ...(0, xrpa_utils_1.indent)(1, genGetObjectByIDFunctions(ctx, includes)));
     lines.push(`}`);
     return lines;
 }
@@ -154,10 +137,10 @@ function genInterfaceTypes(ctx, includes) {
             classSpec.constructors.push({
                 parameters: [{
                         name: "id",
-                        type: ctx.moduleDef.DSIdentifier,
+                        type: ctx.moduleDef.ObjectUuid,
                     }, {
                         name: "collection",
-                        type: CsharpDatasetLibraryTypes_1.CollectionInterface,
+                        type: CsharpDatasetLibraryTypes_1.IObjectCollection,
                     }],
                 superClassInitializers: ["id", "collection"],
                 body: [],

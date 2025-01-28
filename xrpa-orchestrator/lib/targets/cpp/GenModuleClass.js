@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genModuleClass = exports.genDatasetDeclarations = exports.genOutboundDatasetDeclaration = exports.genInboundDatasetDeclaration = exports.getOutboundDatasetVarName = exports.getInboundDatasetVarName = exports.getModuleHeaderName = void 0;
+exports.genModuleClass = exports.genTransportDeclarations = exports.genOutboundTransportDeclaration = exports.genInboundTransportDeclaration = exports.getOutboundTransportVarName = exports.getInboundTransportVarName = exports.getModuleHeaderName = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
@@ -29,57 +29,53 @@ function getModuleHeaderName(moduleDef) {
     return `${moduleDef.name}Module.h`;
 }
 exports.getModuleHeaderName = getModuleHeaderName;
-function getInboundDatasetVarName(storeDef) {
-    return `${storeDef.dataset}InboundDataset`;
+function getInboundTransportVarName(storeDef) {
+    return `${storeDef.dataset}InboundTransport`;
 }
-exports.getInboundDatasetVarName = getInboundDatasetVarName;
-function getOutboundDatasetVarName(storeDef) {
-    return `${storeDef.dataset}OutboundDataset`;
+exports.getInboundTransportVarName = getInboundTransportVarName;
+function getOutboundTransportVarName(storeDef) {
+    return `${storeDef.dataset}OutboundTransport`;
 }
-exports.getOutboundDatasetVarName = getOutboundDatasetVarName;
-function genInboundDatasetDeclaration(storeDef, namespace, includes, semicolonTerminate) {
+exports.getOutboundTransportVarName = getOutboundTransportVarName;
+function genInboundTransportDeclaration(storeDef, namespace, includes, semicolonTerminate) {
     includes.addFile({
         filename: "<memory>",
         typename: "std::shared_ptr",
     });
-    return `std::shared_ptr<${CppDatasetLibraryTypes_1.DatasetInterface.getLocalType(namespace, includes)}> ${getInboundDatasetVarName(storeDef)}` + (semicolonTerminate ? ";" : "");
+    return `std::shared_ptr<${CppDatasetLibraryTypes_1.TransportStream.getLocalType(namespace, includes)}> ${getInboundTransportVarName(storeDef)}` + (semicolonTerminate ? ";" : "");
 }
-exports.genInboundDatasetDeclaration = genInboundDatasetDeclaration;
-function genOutboundDatasetDeclaration(storeDef, namespace, includes, semicolonTerminate) {
+exports.genInboundTransportDeclaration = genInboundTransportDeclaration;
+function genOutboundTransportDeclaration(storeDef, namespace, includes, semicolonTerminate) {
     includes.addFile({
         filename: "<memory>",
         typename: "std::shared_ptr",
     });
-    return `std::shared_ptr<${CppDatasetLibraryTypes_1.DatasetInterface.getLocalType(namespace, includes)}> ${getOutboundDatasetVarName(storeDef)}` + (semicolonTerminate ? ";" : "");
+    return `std::shared_ptr<${CppDatasetLibraryTypes_1.TransportStream.getLocalType(namespace, includes)}> ${getOutboundTransportVarName(storeDef)}` + (semicolonTerminate ? ";" : "");
 }
-exports.genOutboundDatasetDeclaration = genOutboundDatasetDeclaration;
-function genDatasetDeclarations(moduleDef, namespace, includes, semicolonTerminate) {
+exports.genOutboundTransportDeclaration = genOutboundTransportDeclaration;
+function genTransportDeclarations(moduleDef, namespace, includes, semicolonTerminate) {
     const lines = [];
     includes.addFile({
         filename: "<memory>",
         typename: "std::shared_ptr",
     });
     for (const storeDef of moduleDef.getDataStores()) {
-        lines.push(genInboundDatasetDeclaration(storeDef, namespace, includes, semicolonTerminate));
-        lines.push(genOutboundDatasetDeclaration(storeDef, namespace, includes, semicolonTerminate));
+        lines.push(genInboundTransportDeclaration(storeDef, namespace, includes, semicolonTerminate));
+        lines.push(genOutboundTransportDeclaration(storeDef, namespace, includes, semicolonTerminate));
     }
     return lines;
 }
-exports.genDatasetDeclarations = genDatasetDeclarations;
-function genDataStoreInits(moduleDef, includes) {
+exports.genTransportDeclarations = genTransportDeclarations;
+function genDataStoreInits(moduleDef, namespace, includes) {
     return moduleDef.getDataStores().map(storeDef => {
         const dataStoreName = (0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname);
-        includes.addFile({
-            filename: (0, CppCodeGenImpl_1.getDataStoreHeaderName)(storeDef.apiname),
-            namespace: dataStoreName,
-        });
-        return `${(0, xrpa_utils_1.lowerFirst)(dataStoreName)} = std::make_shared<${dataStoreName}::${dataStoreName}>(${getInboundDatasetVarName(storeDef)}, ${getOutboundDatasetVarName(storeDef)});`;
+        return `${(0, xrpa_utils_1.lowerFirst)(dataStoreName)} = std::make_shared<${(0, CppCodeGenImpl_1.getDataStoreClass)(storeDef.apiname, namespace, includes)}>(${getInboundTransportVarName(storeDef)}, ${getOutboundTransportVarName(storeDef)});`;
     });
 }
-function genDataStoreDecls(moduleDef) {
+function genDataStoreDecls(moduleDef, namespace, includes) {
     return moduleDef.getDataStores().map(storeDef => {
         const dataStoreName = (0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname);
-        return `std::shared_ptr<${dataStoreName}::${dataStoreName}> ${(0, xrpa_utils_1.lowerFirst)(dataStoreName)};`;
+        return `std::shared_ptr<${(0, CppCodeGenImpl_1.getDataStoreClass)(storeDef.apiname, namespace, includes)}> ${(0, xrpa_utils_1.lowerFirst)(dataStoreName)};`;
     });
 }
 function genModuleSettings(namespace, includes, moduleDef) {
@@ -102,26 +98,31 @@ function genModuleClass(fileWriter, libDir, moduleDef) {
     ]);
     const moduleSettings = genModuleSettings(namespace, includes, moduleDef);
     const lines = [
-        `class ${className} : public ${CppDatasetLibraryTypes_1.DatasetModule.getLocalType(namespace, includes)} {`,
+        `class ${className} : public ${CppDatasetLibraryTypes_1.XrpaModule.getLocalType(namespace, includes)} {`,
         ` public:`,
-        `  ${className}(${genDatasetDeclarations(moduleDef, namespace, includes, false).join(", ")}) {`,
-        ...(0, xrpa_utils_1.indent)(2, genDataStoreInits(moduleDef, includes)),
+        `  ${className}(${genTransportDeclarations(moduleDef, namespace, includes, false).join(", ")}) {`,
+        ...(0, xrpa_utils_1.indent)(2, genDataStoreInits(moduleDef, namespace, includes)),
         `  }`,
         ``,
-        ...(0, xrpa_utils_1.indent)(1, genDataStoreDecls(moduleDef)),
+        `  virtual ~${className}() override {`,
+        `    shutdown();`,
+        `  }`,
+        ``,
+        ...(0, xrpa_utils_1.indent)(1, genDataStoreDecls(moduleDef, namespace, includes)),
         ``,
         ...(0, xrpa_utils_1.indent)(1, moduleSettings),
         ``,
+        `  virtual void shutdown() override {`,
+        ...(0, xrpa_utils_1.indent)(2, moduleDef.getDataStores().map(storeDef => `${(0, xrpa_utils_1.lowerFirst)((0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname))}->shutdown();`)),
+        `  }`,
+        ``,
+        ` protected:`,
         `  virtual void tickInputs() override {`,
         ...(0, xrpa_utils_1.indent)(2, moduleDef.getDataStores().map(storeDef => `${(0, xrpa_utils_1.lowerFirst)((0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname))}->tickInbound();`)),
         `  }`,
         ``,
         `  virtual void tickOutputs() override {`,
         ...(0, xrpa_utils_1.indent)(2, moduleDef.getDataStores().map(storeDef => `${(0, xrpa_utils_1.lowerFirst)((0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname))}->tickOutbound();`)),
-        `  }`,
-        ``,
-        `  virtual void shutdown() override {`,
-        ...(0, xrpa_utils_1.indent)(2, moduleDef.getDataStores().map(storeDef => `${(0, xrpa_utils_1.lowerFirst)((0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname))}->shutdown();`)),
         `  }`,
         `};`,
         ``,

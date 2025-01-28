@@ -44,9 +44,9 @@ export declare abstract class ModuleDefinition implements CodeGen {
     private settingsSpec;
     protected primitiveTypes: Record<string, TypeDefinition>;
     private dataflowPrograms;
-    readonly DSIdentifier: StructType;
+    readonly ObjectUuid: StructType;
     constructor(codegen: TargetCodeGenImpl, name: string, datamap: DataMapDefinition, guidGen: GuidGenSpec);
-    protected abstract createDSIdentifier(): StructTypeDefinition;
+    protected abstract createObjectUuid(): StructTypeDefinition;
     getTypeMap(): TypeMap;
     getLocalCoordinateSystem(): CoordinateSystemDef;
     addDataStore(params: {
@@ -73,10 +73,10 @@ export declare abstract class ModuleDefinition implements CodeGen {
     createStruct(name: string, apiname: string, fields: StructSpec, localTypeOverride: TypeSpec | undefined): StructTypeDefinition;
     createMessageStruct(name: string, apiname: string, fields: StructSpec): MessageDataTypeDefinition;
     createInterface(name: string, apiname: string, fields: StructSpec): InterfaceTypeDefinition;
-    createCollection(name: string, apiname: string, fields: StructSpec, interfaceType: InterfaceTypeDefinition | undefined, maxCount: number, dsType: number): CollectionTypeDefinition;
+    createCollection(name: string, apiname: string, fields: StructSpec, interfaceType: InterfaceTypeDefinition | undefined, maxCount: number, collectionId: number): CollectionTypeDefinition;
     createFixedArray(name: string, apiname: string, innerType: TypeDefinition, arraySize: number): TypeDefinition;
     createFixedString(name: string, apiname: string, maxBytes: number): TypeDefinition;
-    setCollectionAsInbound(type: CollectionTypeDefinition, reconciledTo: TypeSpec | undefined, _indexes: Array<IndexConfiguration> | undefined): void;
+    setCollectionAsInbound(type: CollectionTypeDefinition, _componentProps: ComponentProperties, reconciledTo: TypeSpec | undefined, _indexes: Array<IndexConfiguration> | undefined): void;
     setCollectionAsOutbound(type: CollectionTypeDefinition, _componentProps: ComponentProperties): void;
     addDataflowProgram(programDef: DataflowProgramDefinition): void;
     getDataflowPrograms(): Array<DataflowProgramDefinition>;

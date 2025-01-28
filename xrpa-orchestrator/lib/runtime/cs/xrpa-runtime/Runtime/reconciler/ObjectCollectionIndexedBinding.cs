@@ -65,7 +65,12 @@ namespace Xrpa
                 if (localObj.AddXrpaBinding(reconciledObj))
                 {
                     var id = reconciledObj.GetXrpaId();
-                    _boundLocalObjects[id].Add(localObj);
+                    if (!_boundLocalObjects.TryGetValue(id, out var localBoundObjects))
+                    {
+                        localBoundObjects = new List<LocalType>();
+                        _boundLocalObjects[id] = localBoundObjects;
+                    }
+                    localBoundObjects.Add(localObj);
                     localObj.ProcessDSUpdate(_inboundFieldMask);
                 }
             }
@@ -161,7 +166,7 @@ namespace Xrpa
             }
         }
 
-        public void WriteChanges(DSIdentifier id)
+        public void WriteChanges(ObjectUuid id)
         {
             if (_boundLocalObjects.TryGetValue(id, out var localBoundObjects))
             {
@@ -172,7 +177,7 @@ namespace Xrpa
             }
         }
 
-        public void ProcessUpdate(DSIdentifier id, ulong fieldsChanged)
+        public void ProcessUpdate(ObjectUuid id, ulong fieldsChanged)
         {
             if (_boundLocalObjects.TryGetValue(id, out var localBoundObjects))
             {
@@ -183,7 +188,7 @@ namespace Xrpa
             }
         }
 
-        public void ProcessMessage(DSIdentifier id, int messageType, int timestamp, MemoryAccessor msgAccessor)
+        public void ProcessMessage(ObjectUuid id, int messageType, int timestamp, MemoryAccessor msgAccessor)
         {
             if (_boundLocalObjects.TryGetValue(id, out var localBoundObjects))
             {
@@ -196,7 +201,7 @@ namespace Xrpa
 
         private ulong _inboundFieldMask;
         private Dictionary<IndexFieldType, List<LocalType>> _localObjects = new();
-        private Dictionary<DSIdentifier, List<LocalType>> _boundLocalObjects = new();
+        private Dictionary<ObjectUuid, List<LocalType>> _boundLocalObjects = new();
     }
 
 }

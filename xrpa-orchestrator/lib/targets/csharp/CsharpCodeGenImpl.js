@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.refParam = exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genMethodBind = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genWriteValue = exports.genReadValue = exports.genClassDefinition = exports.makeObjectAccessor = exports.getTypesHeaderName = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.constRef = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.CsIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.GET_CURRENT_CLOCK_TIME = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.HEADER = exports.XRPA_NAMESPACE = exports.registerXrpaTypes = void 0;
+exports.genConvertIntToBool = exports.genConvertBoolToInt = exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genMethodBind = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genWriteValue = exports.genReadValue = exports.genClassDefinition = exports.makeObjectAccessor = exports.getTypesHeaderNamespace = exports.getTypesHeaderName = exports.getDataStoreClass = exports.getDataStoreHeaderNamespace = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.constRef = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.CsIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.genGetCurrentClockTime = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.HEADER = exports.XRPA_NAMESPACE = exports.registerXrpaTypes = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
@@ -82,8 +82,13 @@ exports.PRIMITIVE_INTRINSICS = {
     float32: { typename: "float" },
     bool: { typename: "bool" },
     arrayFloat3: { typename: "float3[]" },
+    TRUE: "true",
+    FALSE: "false",
 };
-exports.GET_CURRENT_CLOCK_TIME = `${exports.XRPA_NAMESPACE}.DatasetAccessor.GetCurrentClockTimeMicroseconds()`;
+function genGetCurrentClockTime() {
+    return `${exports.XRPA_NAMESPACE}.TimeUtils.GetCurrentClockTimeMicroseconds()`;
+}
+exports.genGetCurrentClockTime = genGetCurrentClockTime;
 exports.DEFAULT_INTERFACE_PTR_TYPE = "bare";
 const nsSep = ".";
 class CsIncludeAggregator {
@@ -237,11 +242,25 @@ function getDataStoreHeaderName(apiname) {
     return apiname ? `${getDataStoreName(apiname)}.cs` : "";
 }
 exports.getDataStoreHeaderName = getDataStoreHeaderName;
+function getDataStoreHeaderNamespace(apiname) {
+    return getDataStoreName(apiname);
+}
+exports.getDataStoreHeaderNamespace = getDataStoreHeaderNamespace;
+function getDataStoreClass(apiname, inNamespace, includes) {
+    const fullName = nsJoin(getDataStoreHeaderNamespace(apiname), getDataStoreName(apiname));
+    includes?.addFile({ filename: getDataStoreHeaderName(apiname), typename: fullName });
+    return nsQualify(fullName, inNamespace);
+}
+exports.getDataStoreClass = getDataStoreClass;
 function getTypesHeaderName(apiname) {
     return apiname ? `${apiname}Types.cs` : "";
 }
 exports.getTypesHeaderName = getTypesHeaderName;
-function makeObjectAccessor(classSpec, isWriteAccessor, dsIdentifierType) {
+function getTypesHeaderNamespace(apiname) {
+    return getDataStoreHeaderNamespace(apiname);
+}
+exports.getTypesHeaderNamespace = getTypesHeaderNamespace;
+function makeObjectAccessor(classSpec, isWriteAccessor, objectUuidType) {
     (0, assert_1.default)(gXrpaTypes, "Expected Xrpa types to be registered");
     if (!classSpec.superClass) {
         classSpec.superClass = gXrpaTypes.ObjectAccessorInterface.getLocalType(classSpec.namespace, classSpec.includes);
@@ -256,10 +275,13 @@ function makeObjectAccessor(classSpec, isWriteAccessor, dsIdentifierType) {
             name: "Create",
             parameters: [{
                     name: "accessor",
-                    type: gXrpaTypes.DatasetAccessor,
+                    type: gXrpaTypes.TransportStreamAccessor,
+                }, {
+                    name: "collectionId",
+                    type: exports.PRIMITIVE_INTRINSICS.int32.typename,
                 }, {
                     name: "id",
-                    type: dsIdentifierType,
+                    type: objectUuidType,
                 }, {
                     name: "changeByteCount",
                     type: exports.PRIMITIVE_INTRINSICS.int32.typename,
@@ -269,8 +291,8 @@ function makeObjectAccessor(classSpec, isWriteAccessor, dsIdentifierType) {
                 }],
             returnType: classSpec.name,
             body: [
-                `var changeEvent = accessor.WriteChangeEvent<Xrpa.DSCollectionChangeEventAccessor>((int)Xrpa.DSChangeType.CreateObject, changeByteCount, timestamp);`,
-                `changeEvent.SetCollectionId(DS_TYPE);`,
+                `var changeEvent = accessor.WriteChangeEvent<Xrpa.CollectionChangeEventAccessor>((int)Xrpa.CollectionChangeType.CreateObject, changeByteCount, timestamp);`,
+                `changeEvent.SetCollectionId(collectionId);`,
                 `changeEvent.SetObjectId(id);`,
                 `return new ${classSpec.name}(changeEvent.AccessChangeData());`,
             ],
@@ -281,10 +303,13 @@ function makeObjectAccessor(classSpec, isWriteAccessor, dsIdentifierType) {
             name: "Update",
             parameters: [{
                     name: "accessor",
-                    type: gXrpaTypes.DatasetAccessor,
+                    type: gXrpaTypes.TransportStreamAccessor,
+                }, {
+                    name: "collectionId",
+                    type: exports.PRIMITIVE_INTRINSICS.int32.typename,
                 }, {
                     name: "id",
-                    type: dsIdentifierType,
+                    type: objectUuidType,
                 }, {
                     name: "fieldsChanged",
                     type: exports.PRIMITIVE_INTRINSICS.uint64.typename,
@@ -294,8 +319,8 @@ function makeObjectAccessor(classSpec, isWriteAccessor, dsIdentifierType) {
                 }],
             returnType: classSpec.name,
             body: [
-                `var changeEvent = accessor.WriteChangeEvent<Xrpa.DSCollectionUpdateChangeEventAccessor>((int)Xrpa.DSChangeType.UpdateObject, changeByteCount);`,
-                `changeEvent.SetCollectionId(DS_TYPE);`,
+                `var changeEvent = accessor.WriteChangeEvent<Xrpa.CollectionUpdateChangeEventAccessor>((int)Xrpa.CollectionChangeType.UpdateObject, changeByteCount);`,
+                `changeEvent.SetCollectionId(collectionId);`,
                 `changeEvent.SetObjectId(id);`,
                 `changeEvent.SetFieldsChanged(fieldsChanged);`,
                 `return new ${classSpec.name}(changeEvent.AccessChangeData());`,
@@ -369,7 +394,7 @@ function genClassDefinitionConstructors(classSpec, includes) {
         }
         const initializersStr = initializers.length > 0 ? ` : ${initializers.join(", ")}` : "";
         const decl = `${visibility} ${classSpec.name}(${params})${initializersStr}`;
-        const body = typeof def.body === "function" ? def.body(includes) : (def.body ?? []);
+        const body = (0, xrpa_utils_1.resolveThunkWithParam)(def.body ?? [], includes);
         const allBodyLines = [
             ...(def.memberInitializers?.map(initializersToString) ?? []),
             ...body,
@@ -384,7 +409,7 @@ function genClassDefinitionConstructors(classSpec, includes) {
         lines.push(``);
     }
     if (classSpec.destructorBody) {
-        const destructorBody = typeof classSpec.destructorBody === "function" ? classSpec.destructorBody(includes) : (classSpec.destructorBody ?? []);
+        const destructorBody = (0, xrpa_utils_1.resolveThunkWithParam)(classSpec.destructorBody ?? [], includes);
         lines.push(`public void Dispose() {`, `  Dispose(true);`, `  GC.SuppressFinalize(this);`, `}`, ``, `protected virtual void Dispose(bool disposing) {`, ...(0, xrpa_utils_1.indent)(1, destructorBody), `}`, ``, `~${classSpec.name}() {`, `  Dispose(false);`, `}`, ``);
     }
     return lines;
@@ -418,7 +443,7 @@ function genClassDefinitionMethods(classSpec, includes) {
             lines.push(`${decl};`);
         }
         else {
-            const body = typeof def.body === "function" ? def.body(includes) : def.body;
+            const body = (0, xrpa_utils_1.resolveThunkWithParam)(def.body, includes);
             lines.push(`${decl} {`, ...(0, xrpa_utils_1.indent)(1, body), `}`, ``);
         }
     }
@@ -482,14 +507,14 @@ function genReadWriteValueFunctions(classSpec, params) {
             accessor: field.accessor,
             accessorIsStruct: field.accessorIsStruct,
             accessorMaxBytes: field.accessorMaxBytes,
-            fieldOffset: `offset + ${field.fieldOffsetName}`,
+            fieldOffset: `offset + ${field.fieldOffset}`,
             memAccessorVar: "memAccessor",
         });
         const writeValue = genWriteValue({
             accessor: field.accessor,
             accessorIsStruct: field.accessorIsStruct,
             accessorMaxBytes: field.accessorMaxBytes,
-            fieldOffset: `offset + ${field.fieldOffsetName}`,
+            fieldOffset: `offset + ${field.fieldOffset}`,
             memAccessorVar: "memAccessor",
             value: params.fieldsFromLocal[name],
         });
@@ -556,8 +581,8 @@ function getNullValue() {
     return "null";
 }
 exports.getNullValue = getNullValue;
-function genReferencePtrToID(varName, _ptrType, dsIdentifierType) {
-    return `${varName}?.GetXrpaId() ?? new ${dsIdentifierType}()`;
+function genReferencePtrToID(varName, _ptrType, objectUuidType) {
+    return `${varName}?.GetXrpaId() ?? new ${objectUuidType}()`;
 }
 exports.genReferencePtrToID = genReferencePtrToID;
 function genFieldGetter(classSpec, params) {
@@ -576,16 +601,18 @@ function genFieldGetter(classSpec, params) {
             returnType,
             parameters: [{
                     name: "datastore",
-                    type: getDataStoreName(params.apiname),
+                    type: getDataStoreClass(params.apiname, classSpec.namespace, classSpec.includes),
                 }],
             isConst: params.isConst,
             noDiscard: true,
             visibility: params.visibility,
             body: includes => {
-                const body = [];
+                const body = [
+                    `var objId = ${fieldVar};`,
+                ];
                 const validLeafTypes = fieldType.getReferencedTypeList(classSpec.namespace, includes);
                 for (const leafType of validLeafTypes) {
-                    body.push(`datastore.GetObjectByID(${fieldVar}, out ${leafType} ${leafType}Val);`, `if (${leafType}Val != null) {`, `  return ${leafType}Val;`, `}`);
+                    body.push(`var ${leafType.collectionName}Val = datastore.${leafType.collectionName}.GetObject(objId);`, `if (${leafType.collectionName}Val != null) {`, `  return ${leafType.collectionName}Val;`, `}`);
                 }
                 body.push(`return null;`);
                 return body;
@@ -634,7 +661,7 @@ function genFieldSetter(classSpec, params) {
         name: `Set${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
         parameters: [{
                 name: "value",
-                type: isRef ? params.fieldType.dsIdentifierType : params.fieldType,
+                type: isRef ? params.fieldType.objectUuidType : params.fieldType,
             }],
         body: includes => {
             const value = (params.convertFromLocal && !isRef) ? `${params.fieldType.convertValueFromLocal(classSpec.namespace, includes, "value")}` : "value";
@@ -656,8 +683,8 @@ function genFieldChangedCheck(classSpec, params) {
         visibility: params.visibility,
         isConst: true,
         isInline: true,
-        body: includes => [
-            `return (fieldsChanged & ${params.parentType.getChangedBit(classSpec.namespace, includes, params.fieldName)}) != 0;`,
+        body: [
+            `return (fieldsChanged & ${params.parentType.getFieldBitMask(params.fieldName)}) != 0;`,
         ],
     });
 }
@@ -673,15 +700,18 @@ function injectGeneratedTag(fileData) {
 exports.injectGeneratedTag = injectGeneratedTag;
 function genRuntimeGuid(params) {
     if (params.idParts) {
-        return `new ${params.dsIdentifierType}(${params.idParts.join(", ")})`;
+        return `new ${params.objectUuidType}(${params.idParts.join(", ")})`;
     }
     for (const entry of params.guidGen.includes ?? []) {
         params.includes?.addFile(entry);
     }
-    return `new ${params.dsIdentifierType}(${params.guidGen.code})`;
+    return `new ${params.objectUuidType}(${params.guidGen.code})`;
 }
 exports.genRuntimeGuid = genRuntimeGuid;
 function genDeref(ptrName, memberName) {
+    if (!ptrName) {
+        return memberName;
+    }
     return `${ptrName}.${memberName}`;
 }
 exports.genDeref = genDeref;
@@ -714,8 +744,12 @@ function genObjectPtrType(type) {
     return type;
 }
 exports.genObjectPtrType = genObjectPtrType;
-function refParam(varName) {
-    return `ref ${varName}`;
+function genConvertBoolToInt(value) {
+    return `(${value} ? 1 : 0)`;
 }
-exports.refParam = refParam;
+exports.genConvertBoolToInt = genConvertBoolToInt;
+function genConvertIntToBool(value) {
+    return `(${value} == 1 ? true : false)`;
+}
+exports.genConvertIntToBool = genConvertIntToBool;
 //# sourceMappingURL=CsharpCodeGenImpl.js.map

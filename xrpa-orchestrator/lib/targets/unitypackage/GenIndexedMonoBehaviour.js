@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genIndexedMonoBehaviour = void 0;
+exports.genSpawnedMonoBehaviour = exports.genIndexedMonoBehaviour = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const ClassSpec_1 = require("../../shared/ClassSpec");
@@ -31,15 +31,18 @@ const GenWriteReconcilerDataStore_1 = require("../csharp/GenWriteReconcilerDataS
 const GenDataStoreSubsystem_1 = require("./GenDataStoreSubsystem");
 const MonoBehaviourShared_1 = require("./MonoBehaviourShared");
 const GenReadReconcilerDataStore_1 = require("../csharp/GenReadReconcilerDataStore");
-const PROXY_OBJ = "_reconciledObj";
-function genComponentInit(ctx, includes, reconcilerDef) {
-    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.Instance.DataStore.${reconcilerDef.getDataStoreAccessorName()}`, "this", MonoBehaviourShared_1.getFieldMemberName);
+const GenCollectionEntitySpawner_1 = require("./GenCollectionEntitySpawner");
+function genComponentInit(ctx, includes, reconcilerDef, proxyObj) {
+    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.Instance.DataStore.${reconcilerDef.type.getName()}`, "this", MonoBehaviourShared_1.getFieldMemberName);
     return [
         `if (_dsIsInitialized) {`,
         `  return;`,
         `}`,
         `_dsIsInitialized = true;`,
         `_changeBits = ${reconcilerDef.getOutboundChangeBits()};`,
+        ...(proxyObj ? [] : [
+            `_hasNotifiedNeedsWrite = false;`,
+        ]),
         ``,
         ...(0, MonoBehaviourShared_1.genFieldInitializers)(ctx, includes, reconcilerDef),
         ``,
@@ -49,7 +52,7 @@ function genComponentInit(ctx, includes, reconcilerDef) {
     ];
 }
 function genComponentDeinit(ctx, reconcilerDef) {
-    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.MaybeInstance?.DataStore.${reconcilerDef.getDataStoreAccessorName()}`, "this", MonoBehaviourShared_1.getFieldMemberName);
+    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.MaybeInstance?.DataStore.${reconcilerDef.type.getName()}`, "this", MonoBehaviourShared_1.getFieldMemberName);
     return [
         `if (!_dsIsInitialized) {`,
         `  return;`,
@@ -59,7 +62,7 @@ function genComponentDeinit(ctx, reconcilerDef) {
     ];
 }
 function getFieldSetterHooks(ctx, reconcilerDef) {
-    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.Instance.DataStore.${reconcilerDef.getDataStoreAccessorName()}`, "this", (reconcilerDef, fieldName) => {
+    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.Instance.DataStore.${reconcilerDef.type.getName()}`, "this", (reconcilerDef, fieldName) => {
         return (0, CsharpCodeGenImpl_1.privateMember)((0, MonoBehaviourShared_1.getFieldMemberName)(reconcilerDef, fieldName));
     });
     const ret = {};
@@ -71,7 +74,7 @@ function getFieldSetterHooks(ctx, reconcilerDef) {
     }
     return ret;
 }
-function genIndexedMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
+function genInboundMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir, proxyObj) {
     const baseComponentType = (0, xrpa_utils_1.filterToString)(reconcilerDef.componentProps.basetype) ?? "MonoBehaviour";
     (0, assert_1.default)(!reconcilerDef.type.interfaceType); // not yet supported
     let hasTransformMapping = false;
@@ -87,14 +90,16 @@ function genIndexedMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
     const classSpec = new ClassSpec_1.ClassSpec({
         name: (0, MonoBehaviourShared_1.getComponentClassName)(reconcilerDef.type, reconcilerDef.componentProps.idName),
         superClass: baseComponentType,
-        interfaceName: `${CsharpDatasetLibraryTypes_1.IIndexBoundType.getLocalType(ctx.namespace, rootIncludes)}<${readAccessor}, ${reconciledType}>`,
+        interfaceName: proxyObj ?
+            `${CsharpDatasetLibraryTypes_1.IIndexBoundType.getLocalType(ctx.namespace, rootIncludes)}<${readAccessor}, ${reconciledType}>` :
+            `${CsharpDatasetLibraryTypes_1.IDataStoreObjectAccessor.getLocalType(ctx.namespace, rootIncludes)}<${readAccessor}>`,
         namespace: ctx.namespace,
         includes: rootIncludes,
         decorations: reconcilerDef.componentProps.internalOnly ? [
             `[AddComponentMenu("")]`,
         ] : undefined,
     });
-    (0, MonoBehaviourShared_1.genFieldProperties)(classSpec, { ctx, reconcilerDef, setterHooks: getFieldSetterHooks(ctx, reconcilerDef), proxyObj: PROXY_OBJ });
+    (0, MonoBehaviourShared_1.genFieldProperties)(classSpec, { ctx, reconcilerDef, setterHooks: getFieldSetterHooks(ctx, reconcilerDef), proxyObj });
     classSpec.methods.push({
         name: "Start",
         body: [
@@ -109,79 +114,110 @@ function genIndexedMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
         ],
         visibility: "private",
     });
-    classSpec.members.push({
-        name: `OnXrpaBindingGained`,
-        type: `event System.Action<int>`,
-    });
-    classSpec.members.push({
-        name: `OnXrpaBindingLost`,
-        type: `event System.Action<int>`,
-    });
-    const outboundChangeBits = reconcilerDef.getOutboundChangeBits();
-    classSpec.methods.push({
-        name: "AddXrpaBinding",
-        parameters: [{
-                name: "reconciledObj",
-                type: reconciledType,
-            }],
-        returnType: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.bool.typename,
-        body: [
-            `if (${PROXY_OBJ} != null) {`,
-            `  return false;`,
-            `}`,
-            `${PROXY_OBJ} = reconciledObj;`,
-            ...(outboundChangeBits !== 0 ? [
-                `_changeBits = ${outboundChangeBits};`,
-                `${PROXY_OBJ}.NotifyNeedsWrite();`,
-            ] : []),
-            `OnXrpaBindingGained?.Invoke(0);`,
-            `return true;`,
-        ],
-    });
-    classSpec.methods.push({
-        name: "RemoveXrpaBinding",
-        parameters: [{
-                name: "reconciledObj",
-                type: reconciledType,
-            }],
-        body: [
-            `if (${PROXY_OBJ} == reconciledObj) {`,
-            `  ${PROXY_OBJ} = null;`,
-            `  OnXrpaBindingLost?.Invoke(0);`,
-            `}`,
-        ],
-    });
+    if (proxyObj) {
+        classSpec.members.push({
+            name: `OnXrpaBindingGained`,
+            type: `event System.Action<int>`,
+        });
+        classSpec.members.push({
+            name: `OnXrpaBindingLost`,
+            type: `event System.Action<int>`,
+        });
+        const outboundChangeBits = reconcilerDef.getOutboundChangeBits();
+        classSpec.methods.push({
+            name: "AddXrpaBinding",
+            parameters: [{
+                    name: "reconciledObj",
+                    type: reconciledType,
+                }],
+            returnType: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.bool.typename,
+            body: [
+                `if (${proxyObj} != null) {`,
+                `  return false;`,
+                `}`,
+                `${proxyObj} = reconciledObj;`,
+                ...(outboundChangeBits !== 0 ? [
+                    `_changeBits = ${outboundChangeBits};`,
+                    `${proxyObj}.NotifyNeedsWrite();`,
+                ] : []),
+                `OnXrpaBindingGained?.Invoke(0);`,
+                `return true;`,
+            ],
+        });
+        classSpec.methods.push({
+            name: "RemoveXrpaBinding",
+            parameters: [{
+                    name: "reconciledObj",
+                    type: reconciledType,
+                }],
+            body: [
+                `if (${proxyObj} == reconciledObj) {`,
+                `  ${proxyObj} = null;`,
+                `  OnXrpaBindingLost?.Invoke(0);`,
+                `}`,
+            ],
+        });
+    }
+    else {
+        classSpec.methods.push({
+            name: "SetXrpaId",
+            parameters: [{
+                    name: "id",
+                    type: ctx.moduleDef.ObjectUuid,
+                }],
+            body: [
+                `_id = id;`,
+            ]
+        });
+        (0, MonoBehaviourShared_1.genDataStoreObjectAccessors)(ctx, classSpec);
+        classSpec.methods.push({
+            name: "ProcessDSDelete",
+            body: [
+                `Destroy(gameObject);`
+            ],
+        });
+    }
     if (hasTransformMapping) {
         classSpec.methods.push({
             name: "Update",
-            body: includes => (0, MonoBehaviourShared_1.genTransformUpdates)({ ctx, includes, reconcilerDef, proxyObj: PROXY_OBJ }),
+            body: includes => (0, MonoBehaviourShared_1.genTransformUpdates)({ ctx, includes, reconcilerDef, proxyObj }),
             visibility: "private",
         });
     }
     classSpec.methods.push({
         name: "WriteDSChanges",
+        parameters: proxyObj ? undefined : [{
+                name: "accessor",
+                type: CsharpDatasetLibraryTypes_1.TransportStreamAccessor,
+            }],
         body: includes => (0, GenWriteReconcilerDataStore_1.genWriteFunctionBody)({
             ctx,
             includes,
             reconcilerDef,
             fieldToMemberVar: fieldName => (0, MonoBehaviourShared_1.getFieldMemberName)(reconcilerDef, fieldName),
             canCreate: false,
-            proxyObj: PROXY_OBJ,
+            proxyObj,
         }),
     });
     classSpec.methods.push({
         name: "ProcessDSUpdate",
-        parameters: [{
+        parameters: proxyObj ? [{
+                name: "fieldsChanged",
+                type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
+            }] : [{
+                name: "value",
+                type: readAccessor,
+            }, {
                 name: "fieldsChanged",
                 type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
             }],
-        body: includes => (0, MonoBehaviourShared_1.genProcessUpdateBody)({ ctx, includes, reconcilerDef, proxyObj: PROXY_OBJ }),
+        body: includes => (0, MonoBehaviourShared_1.genProcessUpdateBody)({ ctx, includes, reconcilerDef, proxyObj }),
     });
     (0, MonoBehaviourShared_1.genUnityMessageFieldAccessors)(classSpec, {
         ctx,
         reconcilerDef,
         genMsgHandler: GenDataStore_1.genMsgHandler,
-        proxyObj: PROXY_OBJ,
+        proxyObj,
     });
     (0, MonoBehaviourShared_1.genUnityMessageChannelDispatch)(classSpec, {
         ctx,
@@ -189,7 +225,7 @@ function genIndexedMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
     });
     classSpec.methods.push({
         name: "InitializeDS",
-        body: includes => genComponentInit(ctx, includes, reconcilerDef),
+        body: includes => genComponentInit(ctx, includes, reconcilerDef, proxyObj),
         isOverride: Boolean(reconcilerDef.type.interfaceType),
     });
     classSpec.methods.push({
@@ -197,17 +233,27 @@ function genIndexedMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
         body: genComponentDeinit(ctx, reconcilerDef),
         visibility: "private",
     });
-    classSpec.members.push({
-        name: PROXY_OBJ,
-        type: reconciledType,
-        visibility: "private",
-    });
+    if (proxyObj) {
+        classSpec.members.push({
+            name: proxyObj,
+            type: reconciledType,
+            visibility: "private",
+        });
+    }
     classSpec.members.push({
         name: "changeBits",
         type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
         initialValue: "0",
         visibility: "private",
     });
+    if (!proxyObj) {
+        classSpec.members.push({
+            name: "changeByteCount",
+            type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
+            initialValue: "0",
+            visibility: "private",
+        });
+    }
     classSpec.members.push({
         name: "dsIsInitialized",
         type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.bool.typename,
@@ -216,5 +262,13 @@ function genIndexedMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
     });
     (0, MonoBehaviourShared_1.writeMonoBehaviour)(classSpec, { fileWriter, outDir });
 }
+function genIndexedMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
+    genInboundMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir, "_reconciledObj");
+}
 exports.genIndexedMonoBehaviour = genIndexedMonoBehaviour;
+function genSpawnedMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
+    genInboundMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir, null);
+    (0, GenCollectionEntitySpawner_1.genCollectionEntitySpawner)(ctx, fileWriter, reconcilerDef, outDir);
+}
+exports.genSpawnedMonoBehaviour = genSpawnedMonoBehaviour;
 //# sourceMappingURL=GenIndexedMonoBehaviour.js.map

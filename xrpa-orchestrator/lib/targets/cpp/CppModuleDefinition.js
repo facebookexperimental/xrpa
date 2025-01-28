@@ -61,20 +61,20 @@ class CppModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
             includes: [{
                     filename: "<xrpa-runtime/external_utils/UuidGen.h>",
                 }],
-            code: (0, CppCodeGenImpl_1.nsJoin)(CppCodeGenImpl_1.XRPA_NAMESPACE, "generateDSID()"),
+            code: (0, CppCodeGenImpl_1.nsJoin)(CppCodeGenImpl_1.XRPA_NAMESPACE, "generateUuid()"),
         });
         this.genOutputDir = genOutputDir;
         this.buckDef = buckDef;
         this.libDir = path_1.default.join(this.genOutputDir, "lib");
         this.runtimeDir = path_1.default.join(this.genOutputDir, "xrpa-runtime");
     }
-    createDSIdentifier() {
-        const DSIdentifier = this.createStruct("Identifier", "", {
+    createObjectUuid() {
+        const ObjectUuid = this.createStruct("Identifier", "", {
             id0: { type: this.getPrimitiveTypeDefinition(BuiltinTypes_1.BuiltinType.BitField) },
             id1: { type: this.getPrimitiveTypeDefinition(BuiltinTypes_1.BuiltinType.BitField) },
-        }, { typename: this.codegen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "DSIdentifier"), headerFile: "<xrpa-runtime/core/DatasetTypes.h>" });
-        DSIdentifier.datasetType = { typename: this.codegen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "DSIdentifier"), headerFile: "<xrpa-runtime/core/DatasetTypes.h>" };
-        return DSIdentifier;
+        }, { typename: this.codegen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "ObjectUuid"), headerFile: "<xrpa-runtime/utils/XrpaTypes.h>" });
+        ObjectUuid.datasetType = { typename: this.codegen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "ObjectUuid"), headerFile: "<xrpa-runtime/utils/XrpaTypes.h>" };
+        return ObjectUuid;
     }
     doCodeGen() {
         const fileWriter = new xrpa_utils_1.FileWriter();
@@ -97,7 +97,7 @@ class CppModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
             const ctx = {
                 moduleDef: this,
                 storeDef,
-                namespace: this.codegen.getDataStoreName(storeDef.apiname),
+                namespace: this.codegen.getDataStoreHeaderNamespace(storeDef.apiname),
             };
             (0, GenDataStore_1.genDataStore)(fileWriter, this.libDir, ctx);
         }
@@ -116,8 +116,9 @@ class CppModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
             const runtimeRelPath = path_1.default.relative(buckRoot, this.runtimeDir);
             const runtimeDepPath = `//${runtimeRelPath.replace(/\\/g, "/")}`;
             const deps = (moduleDef.datamap.typeBuckDeps).map(s => `"${s}",`).concat([
-                `"${runtimeDepPath}:core",`,
                 `"${runtimeDepPath}:reconciler",`,
+                `"${runtimeDepPath}:transport",`,
+                `"${runtimeDepPath}:utils",`,
             ]).sort();
             return [
                 ...CppCodeGenImpl.BUCK_HEADER,

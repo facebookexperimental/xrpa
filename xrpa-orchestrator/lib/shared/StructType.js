@@ -39,13 +39,15 @@ class StructType extends PrimitiveType_1.PrimitiveType {
                 throw new Error(`Field "${key}" is an interface or collection, but should be a reference.`);
             }
         }
-        const namespace = codegen.getDataStoreName(apiname);
-        super(codegen, name, { typename: codegen.nsJoin(namespace, `DS${name}`), headerFile: codegen.getTypesHeaderName(apiname) }, localTypeOverride ?? { typename: codegen.nsJoin(namespace, name), headerFile: codegen.getTypesHeaderName(apiname) }, 0, // getTypeSize() is overridden
-        false, new TypeValue_1.EmptyValue(codegen, codegen.nsJoin(namespace, `DS${name}`), ""));
+        super(codegen, name, { typename: codegen.nsJoin(codegen.getTypesHeaderNamespace(apiname), `DS${name}`), headerFile: codegen.getTypesHeaderName(apiname) }, localTypeOverride ?? { typename: codegen.nsJoin(codegen.getTypesHeaderNamespace(apiname), name), headerFile: codegen.getTypesHeaderName(apiname) }, 0, // getTypeSize() is overridden
+        false, new TypeValue_1.EmptyValue(codegen, codegen.nsJoin(codegen.getTypesHeaderNamespace(apiname), `DS${name}`), ""));
         this.apiname = apiname;
         this.parentType = parentType;
         this.fields = fields;
         this.localTypeOverride = localTypeOverride;
+        if (!localTypeOverride && this.getMetaType() !== TypeDefinition_1.TypeMetaType.STRUCT) {
+            this.localType = { typename: codegen.nsJoin(codegen.getDataStoreHeaderNamespace(apiname), name), headerFile: codegen.getDataStoreHeaderName(apiname) };
+        }
     }
     getMetaType() {
         return TypeDefinition_1.TypeMetaType.STRUCT;
@@ -91,17 +93,6 @@ class StructType extends PrimitiveType_1.PrimitiveType {
         }
         return ret;
     }
-    getFieldBitMask(fieldName) {
-        const fields = this.getStateFields();
-        let fieldCount = 0;
-        for (const name in fields) {
-            if (fieldName === name) {
-                return 1 << fieldCount;
-            }
-            fieldCount++;
-        }
-        return 0;
-    }
     getFieldIndex(fieldName) {
         const fields = this.getAllFields();
         let fieldCount = 0;
@@ -112,6 +103,36 @@ class StructType extends PrimitiveType_1.PrimitiveType {
             fieldCount++;
         }
         return -1;
+    }
+    getFieldBitMask(fieldName) {
+        const fields = this.getStateFields();
+        let fieldCount = 0;
+        for (const name in fields) {
+            if (fieldName === name) {
+                return 1 << fieldCount;
+            }
+            fieldCount++;
+        }
+        throw new Error(`Field ${fieldName} not found in ${this.getName()}`);
+    }
+    getFieldSize(fieldName) {
+        const fields = this.getStateFields();
+        if (!(fieldName in fields)) {
+            throw new Error(`Field ${fieldName} not found in ${this.getName()}`);
+        }
+        return fields[fieldName].type.getTypeSize();
+    }
+    getFieldOffset(fieldName) {
+        const fields = this.getStateFields();
+        let byteOffset = 0;
+        for (const name in fields) {
+            const byteCount = fields[name].type.getTypeSize();
+            if (name === fieldName) {
+                return byteOffset;
+            }
+            byteOffset += byteCount;
+        }
+        throw new Error(`Field ${fieldName} not found in ${this.getName()}`);
     }
     userDefaultToTypeValue(inNamespace, includes, userDefault) {
         const fields = this.getStateFields();
@@ -151,28 +172,6 @@ class StructType extends PrimitiveType_1.PrimitiveType {
         const fieldSpec = this.getStateFields()[fieldName];
         return fieldSpec.type.resetLocalVarToDefault(inNamespace, includes, varName, isSetter, fieldSpec.defaultValue);
     }
-    getFieldOffsetDeclarations(classSpec) {
-        const fields = this.getStateFields();
-        let byteOffset = 0;
-        for (const name in fields) {
-            const byteCount = fields[name].type.getTypeSize();
-            classSpec.members.push({
-                type: this.codegen.PRIMITIVE_INTRINSICS.int32.typename,
-                name: `${(0, xrpa_utils_1.upperFirst)(name)}FieldOffset`,
-                initialValue: new TypeValue_1.PrimitiveValue(this.codegen, this.codegen.PRIMITIVE_INTRINSICS.int32.typename, byteOffset),
-                isStatic: true,
-                isConst: true,
-            });
-            classSpec.members.push({
-                type: this.codegen.PRIMITIVE_INTRINSICS.int32.typename,
-                name: `${(0, xrpa_utils_1.upperFirst)(name)}FieldSize`,
-                initialValue: new TypeValue_1.PrimitiveValue(this.codegen, this.codegen.PRIMITIVE_INTRINSICS.int32.typename, byteCount),
-                isStatic: true,
-                isConst: true,
-            });
-            byteOffset += byteCount;
-        }
-    }
     getFieldTypes(inNamespace, includes) {
         const ret = {};
         const fields = this.getStateFields();
@@ -186,7 +185,7 @@ class StructType extends PrimitiveType_1.PrimitiveType {
                 accessor,
                 accessorIsStruct,
                 accessorMaxBytes,
-                fieldOffsetName: `${(0, xrpa_utils_1.upperFirst)(name)}FieldOffset`,
+                fieldOffset: this.getFieldOffset(name),
             };
         }
         return ret;
@@ -216,16 +215,12 @@ class StructType extends PrimitiveType_1.PrimitiveType {
         });
     }
     genTypeDefinition(includes) {
-        if (this.getMetaType() === TypeDefinition_1.TypeMetaType.INTERFACE) {
-            return null;
-        }
         const inNamespace = this.codegen.nsExtract(this.datasetType.typename);
         const classSpec = new ClassSpec_1.ClassSpec({
             name: this.getInternalType(inNamespace, null),
             namespace: inNamespace,
             includes,
         });
-        this.getFieldOffsetDeclarations(classSpec);
         this.genReadWriteValueFunctions(classSpec);
         return (0, xrpa_utils_1.trimTrailingEmptyLines)(this.codegen.genClassDefinition(classSpec));
     }

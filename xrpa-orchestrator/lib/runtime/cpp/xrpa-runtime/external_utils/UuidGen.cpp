@@ -22,7 +22,7 @@
 
 namespace Xrpa {
 
-DSIdentifier generateDSID() {
+ObjectUuid generateUuid() {
   boost::uuids::random_generator generator;
   boost::uuids::uuid uuid1 = generator();
   uint64_t high = 0, low = 0;

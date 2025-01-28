@@ -51,7 +51,7 @@ class ModuleDefinition {
         this.settingsSpec = {};
         this.dataflowPrograms = {};
         this.primitiveTypes = (0, BuiltinTypes_1.genPrimitiveTypes)(codegen, datamap.typeMap);
-        this.DSIdentifier = this.createDSIdentifier();
+        this.ObjectUuid = this.createObjectUuid();
     }
     getTypeMap() {
         return this.datamap.typeMap;
@@ -160,19 +160,19 @@ class ModuleDefinition {
         return new EnumType_1.EnumType(this.codegen, name, apiname, enumValues, localTypeOverride);
     }
     createReference(toType) {
-        return new ReferenceType_1.ReferenceType(this.codegen, toType, this.DSIdentifier);
+        return new ReferenceType_1.ReferenceType(this.codegen, toType, this.ObjectUuid);
     }
     createStruct(name, apiname, fields, localTypeOverride) {
         return new StructType_1.StructType(this.codegen, name, apiname, undefined, fields, localTypeOverride);
     }
     createMessageStruct(name, apiname, fields) {
-        return new MessageDataType_1.MessageDataType(this.codegen, name, apiname, this.DSIdentifier, fields);
+        return new MessageDataType_1.MessageDataType(this.codegen, name, apiname, this.ObjectUuid, fields);
     }
     createInterface(name, apiname, fields) {
-        return new InterfaceType_1.InterfaceType(this.codegen, name, apiname, this.DSIdentifier, fields);
+        return new InterfaceType_1.InterfaceType(this.codegen, name, apiname, this.ObjectUuid, fields);
     }
-    createCollection(name, apiname, fields, interfaceType, maxCount, dsType) {
-        return new CollectionType_1.CollectionType(this.codegen, name, apiname, this.DSIdentifier, fields, dsType, maxCount, interfaceType);
+    createCollection(name, apiname, fields, interfaceType, maxCount, collectionId) {
+        return new CollectionType_1.CollectionType(this.codegen, name, apiname, this.ObjectUuid, fields, collectionId, maxCount, interfaceType);
     }
     createFixedArray(name, apiname, innerType, arraySize) {
         return new FixedArrayType_1.FixedArrayType(this.codegen, name, apiname, innerType, arraySize, this.datamap.localArrayType);
@@ -181,20 +181,18 @@ class ModuleDefinition {
         return new FixedStringType_1.FixedStringType(this.codegen, name, apiname, maxBytes, this.datamap.typeMap);
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    setCollectionAsInbound(type, reconciledTo, _indexes) {
+    setCollectionAsInbound(type, _componentProps, reconciledTo, _indexes) {
         const collection = type;
-        const namespace = this.codegen.nsExtract(collection.datasetType.typename);
         collection.localType = reconciledTo ?? {
-            typename: this.codegen.nsJoin(namespace, `Reconciled${type.getName()}`),
+            typename: this.codegen.nsJoin(this.codegen.getDataStoreHeaderNamespace(collection.apiname), `Reconciled${type.getName()}`),
             headerFile: this.codegen.getDataStoreHeaderName(collection.apiname),
         };
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     setCollectionAsOutbound(type, _componentProps) {
         const collection = type;
-        const namespace = this.codegen.nsExtract(collection.datasetType.typename);
         collection.localType = {
-            typename: this.codegen.nsJoin(namespace, `Outbound${type.getName()}`),
+            typename: this.codegen.nsJoin(this.codegen.getDataStoreHeaderNamespace(collection.apiname), `Outbound${type.getName()}`),
             headerFile: this.codegen.getDataStoreHeaderName(collection.apiname),
         };
     }

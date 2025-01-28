@@ -26,7 +26,7 @@ export declare class UnityPackageModuleDefinition extends CsharpModuleDefinition
     readonly projectRoot: string;
     readonly packageInfos: Record<string, PackageInfo>;
     constructor(name: string, datamap: DataMapDefinition, projectRoot: string, packageInfos: Record<string, PackageInfo>);
-    setCollectionAsInbound(type: CollectionTypeDefinition, reconciledTo: TypeSpec | undefined, indexes: Array<IndexConfiguration> | undefined): void;
+    setCollectionAsInbound(type: CollectionTypeDefinition, componentProps: ComponentProperties, reconciledTo: TypeSpec | undefined, indexes: Array<IndexConfiguration> | undefined): void;
     setCollectionAsOutbound(type: CollectionTypeDefinition, componentProps: ComponentProperties): void;
     doCodeGen(): FileWriter;
 }

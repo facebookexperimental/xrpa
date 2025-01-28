@@ -17,12 +17,14 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.XrpaNativeCppProgram = exports.addBuckDependency = exports.useBuck = exports.StdVectorArrayType = exports.OvrCoordinateSystem = exports.withHeader = void 0;
+exports.XrpaPythonApplication = exports.XrpaNativePythonProgram = exports.XrpaNativeCppProgram = exports.addBuckDependency = exports.useBuck = exports.StdVectorArrayType = exports.OvrCoordinateSystem = exports.withHeader = void 0;
 const NativeProgram_1 = require("./NativeProgram");
 const RuntimeEnvironment_1 = require("./RuntimeEnvironment");
 const XrpaLanguage_1 = require("./XrpaLanguage");
 const CoordinateTransformer_1 = require("./shared/CoordinateTransformer");
 const CppModuleDefinition_1 = require("./targets/cpp/CppModuleDefinition");
+const PythonApplication_1 = require("./targets/python/PythonApplication");
+const PythonModuleDefinition_1 = require("./targets/python/PythonModuleDefinition");
 function withHeader(headerFile, types) {
     const ret = {};
     for (const key in types) {
@@ -89,4 +91,23 @@ function XrpaNativeCppProgram(name, outputDir, callback) {
     return ret;
 }
 exports.XrpaNativeCppProgram = XrpaNativeCppProgram;
+function XrpaNativePythonProgram(name, outputDir, callback) {
+    const ctx = {
+        __isRuntimeEnvironmentContext: true,
+        __isNativeProgramContext: true,
+        programInterface: undefined,
+        externalProgramInterfaces: {},
+        properties: {},
+    };
+    (0, XrpaLanguage_1.runInContext)(ctx, callback);
+    const datamap = (0, RuntimeEnvironment_1.getDataMap)(ctx);
+    const ret = new PythonModuleDefinition_1.PythonModuleDefinition(name, datamap, outputDir);
+    (0, NativeProgram_1.applyNativeProgramContext)(ctx, ret);
+    return ret;
+}
+exports.XrpaNativePythonProgram = XrpaNativePythonProgram;
+function XrpaPythonApplication(name, outputDir, callback) {
+    return new PythonApplication_1.PythonApplication(XrpaNativePythonProgram(name, outputDir, callback));
+}
+exports.XrpaPythonApplication = XrpaPythonApplication;
 //# sourceMappingURL=ConvenienceWrappers.js.map

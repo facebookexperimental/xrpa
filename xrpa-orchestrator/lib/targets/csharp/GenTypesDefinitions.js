@@ -20,28 +20,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genTypesDefinitions = exports.getDataStoreSchemaHashName = void 0;
+exports.genTypesDefinitions = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
 const CsharpCodeGenImpl_1 = require("./CsharpCodeGenImpl");
 const CsharpDatasetLibraryTypes_1 = require("./CsharpDatasetLibraryTypes");
-function getDataStoreSchemaHashName(apiname, fullyQualified) {
-    const hashName = `${apiname.toUpperCase()}_SCHEMA_HASH`;
-    if (fullyQualified) {
-        return (0, CsharpCodeGenImpl_1.nsJoin)((0, CsharpCodeGenImpl_1.getDataStoreName)(apiname) + "Config", hashName);
-    }
-    return hashName;
-}
-exports.getDataStoreSchemaHashName = getDataStoreSchemaHashName;
-function genDatasetConfig(apiname, datamodel, namespace, includes) {
+function genTransportConfig(apiname, datamodel, namespace, includes, hashInit) {
     let changelogByteCount = datamodel.calcMessagePoolSize();
     for (const typeDef of datamodel.getCollections()) {
         changelogByteCount += typeDef.maxCount * typeDef.getTypeSize();
     }
     return [
-        `public static ${CsharpDatasetLibraryTypes_1.DatasetConfig.getLocalType(namespace, includes)} GenDatasetConfig() {`,
-        `  ${CsharpDatasetLibraryTypes_1.DatasetConfig.getLocalType(namespace, includes)} config = new();`,
-        `  config.SchemaHash = ${getDataStoreSchemaHashName(apiname, false)};`,
+        `public static ${CsharpDatasetLibraryTypes_1.TransportConfig.getLocalType(namespace, includes)} GenTransportConfig() {`,
+        `  ${CsharpDatasetLibraryTypes_1.TransportConfig.getLocalType(namespace, includes)} config = new();`,
+        `  config.SchemaHash = new ${CsharpDatasetLibraryTypes_1.HashValue.getLocalType(namespace, includes)}(${hashInit});`,
         `  config.ChangelogByteCount = ${changelogByteCount};`,
         `  return config;`,
         `}`,
@@ -70,16 +62,14 @@ function genTypesDefinitions(fileWriter, outdir, def) {
         "System.Runtime.InteropServices",
     ]);
     const headerName = (0, CsharpCodeGenImpl_1.getTypesHeaderName)(def.apiname);
-    const namespace = (0, CsharpCodeGenImpl_1.getDataStoreName)(def.apiname);
+    const namespace = (0, CsharpCodeGenImpl_1.getTypesHeaderNamespace)(def.apiname);
     const schemaHash = def.datamodel.getHash();
     const hashInit = schemaHash.values.map(str => "0x" + str).join(", ");
     const lines = [
         `namespace ${namespace} {`,
         ``,
         `public class ${namespace}Config {`,
-        `  public static readonly ${CsharpDatasetLibraryTypes_1.DSHashValue.getLocalType(namespace, includes)} ${getDataStoreSchemaHashName(def.apiname, false)} = new(${hashInit});`,
-        ``,
-        ...(0, xrpa_utils_1.indent)(1, genDatasetConfig(def.apiname, def.datamodel, namespace, includes)),
+        ...(0, xrpa_utils_1.indent)(1, genTransportConfig(def.apiname, def.datamodel, namespace, includes, hashInit)),
         `}`,
         ``,
         ...genTypeDefinitions(namespace, def.datamodel, includes),

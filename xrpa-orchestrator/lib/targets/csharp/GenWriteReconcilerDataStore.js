@@ -56,7 +56,7 @@ const GenMessageAccessors_1 = require("./GenMessageAccessors");
 const GenDataStore_1 = require("./GenDataStore");
 const GenReadReconcilerDataStore_1 = require("./GenReadReconcilerDataStore");
 function genFieldSetDirty(params) {
-    const changeBit = params.typeDef.getChangedBit(params.ctx.namespace, params.includes, params.fieldName);
+    const changeBit = params.typeDef.getFieldBitMask(params.fieldName);
     if (params.proxyObj) {
         return [
             `if ((_changeBits & ${changeBit}) == 0) {`,
@@ -68,14 +68,19 @@ function genFieldSetDirty(params) {
         ];
     }
     else {
-        const fieldSize = params.typeDef.getFieldSize(params.ctx.namespace, params.includes, params.fieldName);
+        const fieldSize = params.typeDef.getFieldSize(params.fieldName);
         return [
             `if ((_changeBits & ${changeBit}) == 0) {`,
             `  _changeBits |= ${changeBit};`,
             `  _changeByteCount += ${fieldSize};`,
             `}`,
             `if (_collection != null) {`,
-            `  _collection.SetDirty(GetXrpaId(), ref _hasNotifiedNeedsWrite, ${changeBit});`,
+            `  if (!_hasNotifiedNeedsWrite)`,
+            `  {`,
+            `    _collection.NotifyObjectNeedsWrite(GetXrpaId());`,
+            `    _hasNotifiedNeedsWrite = true;`,
+            `  }`,
+            `  _collection.SetDirty(GetXrpaId(), ${changeBit});`,
             `}`,
         ];
     }
@@ -205,7 +210,7 @@ function genWriteFunctionBody(params) {
         const pascalFieldName = (0, xrpa_utils_1.upperFirst)(fieldName);
         if (!params.reconcilerDef.isInboundField(fieldName)) {
             const fieldVar = params.fieldToMemberVar(fieldName);
-            fieldUpdateLines.push(`if ((_changeBits & ${params.reconcilerDef.type.getChangedBit(params.ctx.namespace, params.includes, fieldName)}) != 0) {`, `  ${accessor}.Set${pascalFieldName}(${fieldVar});`, `}`);
+            fieldUpdateLines.push(`if ((_changeBits & ${params.reconcilerDef.type.getFieldBitMask(fieldName)}) != 0) {`, `  ${accessor}.Set${pascalFieldName}(${fieldVar});`, `}`);
         }
     }
     if (!params.canCreate && !fieldUpdateLines.length) {
@@ -228,16 +233,16 @@ function genWriteFunctionBody(params) {
                 `if (!_createWritten) {`,
                 `  _changeBits = ${params.reconcilerDef.getOutboundChangeBits()};`,
                 `  _changeByteCount = ${params.reconcilerDef.getOutboundChangeByteCount()};`,
-                `  objAccessor = ${writeAccessor}.Create(accessor, GetXrpaId(), _changeByteCount, _createTimestamp);`,
+                `  objAccessor = ${writeAccessor}.Create(accessor, GetCollectionId(), GetXrpaId(), _changeByteCount, _createTimestamp);`,
                 `  _createWritten = true;`,
                 `} else if (_changeBits != 0) {`,
-                `  objAccessor = ${writeAccessor}.Update(accessor, GetXrpaId(), _changeBits, _changeByteCount);`,
+                `  objAccessor = ${writeAccessor}.Update(accessor, GetCollectionId(), GetXrpaId(), _changeBits, _changeByteCount);`,
                 `}`,
             ] : [
                 `if (_changeBits == 0) {`,
                 `  return;`,
                 `}`,
-                `var objAccessor = ${writeAccessor}.Update(accessor, GetXrpaId(), _changeBits, _changeByteCount);`,
+                `var objAccessor = ${writeAccessor}.Update(accessor, GetCollectionId(), GetXrpaId(), _changeBits, _changeByteCount);`,
             ]),
             `if (objAccessor.IsNull()) {`,
             `  return;`,
@@ -292,11 +297,11 @@ function genOutboundReconciledTypes(ctx, includesIn) {
         classSpec.constructors.push({
             parameters: [{
                     name: "id",
-                    type: ctx.moduleDef.DSIdentifier,
+                    type: ctx.moduleDef.ObjectUuid,
                 }],
             superClassInitializers: ["id", "null"],
             memberInitializers: [
-                ["_createTimestamp", CsharpCodeGenImpl_1.GET_CURRENT_CLOCK_TIME],
+                ["_createTimestamp", (0, CsharpCodeGenImpl_1.genGetCurrentClockTime)()],
             ],
             body: [],
         });
@@ -312,7 +317,7 @@ function genOutboundReconciledTypes(ctx, includesIn) {
             name: "WriteDSChanges",
             parameters: [{
                     name: "accessor",
-                    type: CsharpDatasetLibraryTypes_1.DatasetAccessor,
+                    type: CsharpDatasetLibraryTypes_1.TransportStreamAccessor,
                 }],
             body: includes => genWriteFunctionBody({
                 ctx,

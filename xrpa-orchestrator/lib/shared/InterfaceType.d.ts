@@ -20,21 +20,18 @@ import { IncludeAggregator } from "./Helpers";
 import { StructType } from "./StructType";
 import { StructWithAccessorType } from "./StructWithAccessorType";
 import { TargetCodeGenImpl, TypeSpec } from "./TargetCodeGen";
-import { CollectionTypeDefinition, InterfaceTypeDefinition, StructSpec, StructTypeDefinition, TypeMetaType } from "./TypeDefinition";
+import { CollectionNameAndType, CollectionTypeDefinition, InterfaceTypeDefinition, StructSpec, StructTypeDefinition, TypeMetaType } from "./TypeDefinition";
 export declare class InterfaceType extends StructWithAccessorType implements InterfaceTypeDefinition {
     private collections;
     private ptrType;
-    constructor(codegen: TargetCodeGenImpl, interfaceName: string, apiname: string, dsIdentifierType: StructType, fields: StructSpec, parentType?: StructTypeDefinition | undefined);
+    constructor(codegen: TargetCodeGenImpl, interfaceName: string, apiname: string, objectUuidType: StructType, fields: StructSpec, parentType?: StructTypeDefinition | undefined);
     getMetaType(): TypeMetaType;
     getLocalTypePtr(inNamespace: string, includes: IncludeAggregator | null): string;
     registerCollection(collection: CollectionTypeDefinition): void;
-    getCompatibleTypeList(inNamespace: string, includes: IncludeAggregator | null): string[];
+    getCompatibleTypeList(inNamespace: string, includes: IncludeAggregator | null): CollectionNameAndType[];
     isBarePtr(): boolean;
     setToBarePtr(localType?: TypeSpec): void;
     getPtrType(): string;
-    getChangedBit(inNamespace: string, includes: IncludeAggregator | null, fieldName: string): string;
-    getFieldSize(inNamespace: string, includes: IncludeAggregator | null, fieldName: string): string;
-    protected genReadWriteValueFunctions(classSpec: ClassSpec): void;
     protected genStaticAccessorFields(classSpec: ClassSpec): void;
 }
 

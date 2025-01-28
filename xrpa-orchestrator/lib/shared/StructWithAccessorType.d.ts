@@ -21,15 +21,17 @@ import { StructType } from "./StructType";
 import { TargetCodeGenImpl, TypeSpec } from "./TargetCodeGen";
 import { StructSpec, StructTypeDefinition, StructWithAccessorTypeDefinition } from "./TypeDefinition";
 export declare class StructWithAccessorType extends StructType implements StructWithAccessorTypeDefinition {
-    readonly dsIdentifierType: StructType;
-    constructor(codegen: TargetCodeGenImpl, name: string, apiname: string, dsIdentifierType: StructType, parentType: StructTypeDefinition | undefined, fields: StructSpec, localTypeOverride?: TypeSpec);
+    readonly objectUuidType: StructType;
+    constructor(codegen: TargetCodeGenImpl, name: string, apiname: string, objectUuidType: StructType, parentType: StructTypeDefinition | undefined, fields: StructSpec, localTypeOverride?: TypeSpec);
+    genTypeDefinition(_includes: IncludeAggregator | null): string[] | null;
     genLocalTypeDefinition(_inNamespace: string, _includes: IncludeAggregator | null): string[] | null;
     protected genReadWriteValueFunctions(_classSpec: ClassSpec): void;
+    private getBaseAccessorTypeName;
     getReadAccessorType(inNamespace: string, includes: IncludeAggregator | null): string;
     getWriteAccessorType(inNamespace: string, includes: IncludeAggregator | null): string;
     genReadAccessorDefinition(inNamespace: string, includes: IncludeAggregator | null): ClassSpec | null;
     genWriteAccessorDefinition(inNamespace: string, includes: IncludeAggregator | null): ClassSpec | null;
-    protected getDSType(): number;
-    protected genStaticAccessorFields(classSpec: ClassSpec): void;
+    getCollectionId(): number;
+    protected genStaticAccessorFields(_classSpec: ClassSpec): void;
 }
 

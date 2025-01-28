@@ -32,7 +32,7 @@ export interface FieldTypeAndAccessor {
     accessor: string;
     accessorIsStruct: boolean;
     accessorMaxBytes: number | null;
-    fieldOffsetName: string;
+    fieldOffset: number;
 }
 export interface PrimitiveIntrinsics {
     string: TypeSpec;
@@ -45,6 +45,8 @@ export interface PrimitiveIntrinsics {
     float32: TypeSpec;
     bool: TypeSpec;
     arrayFloat3: TypeSpec;
+    TRUE: string;
+    FALSE: string;
 }
 export interface GuidGenSpec {
     includes: Array<{
@@ -57,7 +59,6 @@ export interface TargetCodeGenImpl {
     HEADER: string[];
     UNIT_TRANSFORMER: UnitTransformer;
     PRIMITIVE_INTRINSICS: PrimitiveIntrinsics;
-    GET_CURRENT_CLOCK_TIME: string;
     DEFAULT_INTERFACE_PTR_TYPE: string;
     XRPA_NAMESPACE: string;
     nsQualify(qualifiedName: string, inNamespace: string): string;
@@ -66,6 +67,7 @@ export interface TargetCodeGenImpl {
     privateMember(memberVarName: string): string;
     methodMember(methodName: string): string;
     genCommentLines(str?: string): string[];
+    genGetCurrentClockTime(includes: IncludeAggregator | null): string;
     genPrimitiveValue(typename: string, value: string | boolean | number | null): string;
     genMultiValue(typename: string, hasInitializerConstructor: boolean, valueStrings: [string, string][]): string;
     genDeclaration(params: {
@@ -93,7 +95,7 @@ export interface TargetCodeGenImpl {
         memAccessorVar: string;
         value: string | TypeValue;
     }): string;
-    makeObjectAccessor(classSpec: ClassSpec, isWriteAccessor: boolean, dsIdentifierType: string): void;
+    makeObjectAccessor(classSpec: ClassSpec, isWriteAccessor: boolean, objectUuidType: string): void;
     genClassDefinition(classSpec: ClassSpec): string[];
     genReadWriteValueFunctions(classSpec: ClassSpec, params: {
         localType: TypeDefinition | string;
@@ -124,16 +126,19 @@ export interface TargetCodeGenImpl {
         fieldName: string;
         visibility?: ClassVisibility;
     }): void;
-    genEnumDefinition(enumName: string, enumValues: Record<string, number>): string[];
+    genEnumDefinition(enumName: string, enumValues: Record<string, number>, includes: IncludeAggregator | null): string[];
     genEnumDynamicConversion(targetTypename: string, value: TypeValue): string;
-    genReferencePtrToID(varName: string, ptrType: string, dsIdentifierType: string): string;
+    genReferencePtrToID(varName: string, ptrType: string, objectUuidType: string): string;
     constRef(type: string, byteSize: number): string;
     reinterpretValue(fromType: string, toType: string, value: TypeValue): string;
     getDataStoreName(apiname: string): string;
     getDataStoreHeaderName(apiname: string): string;
+    getDataStoreHeaderNamespace(apiname: string): string;
+    getDataStoreClass(apiname: string, inNamespace: string, includes: IncludeAggregator | null): string;
     getTypesHeaderName(apiname: string): string;
+    getTypesHeaderNamespace(apiname: string): string;
     genRuntimeGuid(params: {
-        dsIdentifierType: string;
+        objectUuidType: string;
         guidGen: GuidGenSpec;
         idParts?: number[];
         includes: IncludeAggregator | null;
@@ -145,6 +150,7 @@ export interface TargetCodeGenImpl {
     genNonNullCheck(ptrName: string): string;
     genCreateObject(type: string, params: string[]): string;
     genObjectPtrType(type: string): string;
-    refParam(varName: string): string;
+    genConvertBoolToInt(value: TypeValue): string;
+    genConvertIntToBool(value: TypeValue): string;
 }
 

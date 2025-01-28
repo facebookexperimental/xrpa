@@ -52,7 +52,7 @@ class MemoryAccessor {
     return *this;
   }
 
-  [[nodiscard]] MemoryAccessor slice(int32_t offset, int32_t size = -1) {
+  [[nodiscard]] MemoryAccessor slice(int32_t offset, int32_t size = -1) const {
     if (size < 0 || size > size_ - offset) {
       size = size_ - offset;
     }

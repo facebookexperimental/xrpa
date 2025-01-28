@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <xrpa-runtime/reconciler/DatasetReconcilerInterfaces.h>
+#include <xrpa-runtime/reconciler/DataStoreInterfaces.h>
 
 #include <unordered_map>
 #include <vector>
@@ -63,7 +63,7 @@ class ObjectCollectionIndex {
   }
 
  protected:
-  std::unordered_map<DSIdentifier, IndexFieldType> valueMap_;
+  std::unordered_map<ObjectUuid, IndexFieldType> valueMap_;
   std::unordered_map<IndexFieldType, std::vector<ReconciledTypePtr>> objectIndex_;
   const std::vector<ReconciledTypePtr> emptyVec_;
 };

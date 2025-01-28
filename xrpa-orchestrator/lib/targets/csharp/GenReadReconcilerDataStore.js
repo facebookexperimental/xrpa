@@ -87,10 +87,10 @@ function genInboundReconciledTypes(ctx, includesIn) {
         classSpec.constructors.push({
             parameters: [{
                     name: "id",
-                    type: ctx.moduleDef.DSIdentifier,
+                    type: ctx.moduleDef.ObjectUuid,
                 }, {
                     name: "collection",
-                    type: CsharpDatasetLibraryTypes_1.CollectionInterface,
+                    type: CsharpDatasetLibraryTypes_1.IObjectCollection,
                 }],
             superClassInitializers: ["id", "collection"],
             body: [],
@@ -132,13 +132,13 @@ function genInboundReconciledTypes(ctx, includesIn) {
                 returnType: classSpec.name,
                 parameters: [{
                         name: "id",
-                        type: ctx.moduleDef.DSIdentifier,
+                        type: ctx.moduleDef.ObjectUuid,
                     }, {
                         name: "obj",
                         type: readAccessor,
                     }, {
                         name: "collection",
-                        type: CsharpDatasetLibraryTypes_1.CollectionInterface,
+                        type: CsharpDatasetLibraryTypes_1.IObjectCollection,
                     }],
                 body: [
                     `return new ${classSpec.name}(id, collection);`,
@@ -203,7 +203,7 @@ function genInboundReconciledTypes(ctx, includesIn) {
             name: "WriteDSChanges",
             parameters: [{
                     name: "accessor",
-                    type: CsharpDatasetLibraryTypes_1.DatasetAccessor,
+                    type: CsharpDatasetLibraryTypes_1.TransportStreamAccessor,
                 }],
             body: includes => (0, GenWriteReconcilerDataStore_1.genWriteFunctionBody)({
                 ctx,
@@ -279,7 +279,7 @@ function genObjectCollectionClasses(ctx, includesIn) {
                 name: "RemoveObject",
                 parameters: [{
                         name: "id",
-                        type: ctx.moduleDef.DSIdentifier,
+                        type: ctx.moduleDef.ObjectUuid,
                     }],
                 body: ["RemoveObjectInternal(id);"],
             });
@@ -287,11 +287,11 @@ function genObjectCollectionClasses(ctx, includesIn) {
         classSpec.constructors.push({
             parameters: [{
                     name: "reconciler",
-                    type: CsharpDatasetLibraryTypes_1.DatasetReconciler,
+                    type: CsharpDatasetLibraryTypes_1.DataStoreReconciler,
                 }],
             superClassInitializers: [
                 "reconciler",
-                typeDef.getDSTypeID(ctx.namespace, classSpec.includes),
+                `${typeDef.getCollectionId()}`,
                 `${inboundFieldMask}`,
                 `${indexedFieldMask}`,
                 `${isLocalOwned}`,
@@ -395,7 +395,7 @@ function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
             name: "BindingWriteChanges",
             parameters: [{
                     name: "id",
-                    type: ctx.moduleDef.DSIdentifier,
+                    type: ctx.moduleDef.ObjectUuid,
                 }],
             body: bindingWriteChangesLines,
             isOverride: true,
@@ -407,7 +407,7 @@ function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
             name: "BindingProcessMessage",
             parameters: [{
                     name: "id",
-                    type: ctx.moduleDef.DSIdentifier,
+                    type: ctx.moduleDef.ObjectUuid,
                 }, {
                     name: "messageType",
                     type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,

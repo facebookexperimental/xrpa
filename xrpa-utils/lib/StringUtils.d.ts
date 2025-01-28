@@ -24,4 +24,5 @@ export declare function lowerFirst(str: string): string;
 export declare function appendAligned(str: string, suffix: string, alignment: number): string;
 export declare function removeLastTrailingComma(strs: string[]): string[];
 export declare function genCommentLinesWithCommentMarker(commentMarker: string, str?: string): string[];
+export declare function normalizeIdentifier(name: string): string[];
 

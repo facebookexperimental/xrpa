@@ -17,7 +17,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.chainAsyncThunk = exports.resolveAsyncThunk = exports.chainThunk = exports.resolveThunk = exports.isExcluded = exports.filterToNumberArray = exports.filterToNumber = exports.filterToStringPairArray = exports.filterToStringArray = exports.filterToString = exports.assertIsKeyOf = exports.throwBadValue = exports.absurd = void 0;
+exports.chainAsyncThunk = exports.resolveAsyncThunk = exports.chainThunk = exports.resolveThunkWithParam = exports.resolveThunk = exports.isExcluded = exports.filterToNumberArray = exports.filterToNumber = exports.filterToStringPairArray = exports.filterToStringArray = exports.filterToString = exports.assertIsKeyOf = exports.throwBadValue = exports.absurd = void 0;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function absurd(v) {
     // this function intentionally left blank
@@ -112,6 +112,13 @@ function resolveThunk(value) {
     return value;
 }
 exports.resolveThunk = resolveThunk;
+function resolveThunkWithParam(value, param) {
+    if (typeof value === "function") {
+        return value(param);
+    }
+    return value;
+}
+exports.resolveThunkWithParam = resolveThunkWithParam;
 function chainThunk(value, next) {
     return () => next(resolveThunk(value));
 }

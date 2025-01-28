@@ -17,6 +17,5 @@
 
 import { FileWriter } from "@xrpa/xrpa-utils";
 import { DataStoreDefinition } from "../../shared/DataStore";
-export declare function getDataStoreSchemaHashName(apiname: string): string;
 export declare function genTypesHeader(fileWriter: FileWriter, outdir: string, def: DataStoreDefinition): void;
 

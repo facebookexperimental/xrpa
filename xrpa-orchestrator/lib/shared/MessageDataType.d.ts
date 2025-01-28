@@ -22,7 +22,7 @@ import { StructWithAccessorType } from "./StructWithAccessorType";
 import { TargetCodeGenImpl } from "./TargetCodeGen";
 import { MessageDataTypeDefinition, StructSpec, TypeMetaType } from "./TypeDefinition";
 export declare class MessageDataType extends StructWithAccessorType implements MessageDataTypeDefinition {
-    constructor(codegen: TargetCodeGenImpl, name: string, apiname: string, dsIdentifierType: StructType, fields: StructSpec);
+    constructor(codegen: TargetCodeGenImpl, name: string, apiname: string, objectUuidType: StructType, fields: StructSpec);
     getMetaType(): TypeMetaType.MESSAGE_DATA;
     hasFields(): boolean;
     genReadAccessorDefinition(inNamespace: string, includes: IncludeAggregator | null): ClassSpec | null;

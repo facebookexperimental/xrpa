@@ -20,23 +20,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genTypesHeader = exports.getDataStoreSchemaHashName = void 0;
+exports.genTypesHeader = void 0;
 const path_1 = __importDefault(require("path"));
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
 const CppDatasetLibraryTypes_1 = require("./CppDatasetLibraryTypes");
-function getDataStoreSchemaHashName(apiname) {
-    return `${apiname.toUpperCase()}_SCHEMA_HASH`;
-}
-exports.getDataStoreSchemaHashName = getDataStoreSchemaHashName;
-function genDatasetConfig(apiname, datamodel, namespace, includes) {
+function genTransportConfig(apiname, datamodel, namespace, includes, hashInit) {
     let changelogByteCount = datamodel.calcMessagePoolSize();
     for (const typeDef of datamodel.getCollections()) {
         changelogByteCount += typeDef.maxCount * typeDef.getTypeSize();
     }
     return [
-        `static inline ${CppDatasetLibraryTypes_1.DatasetConfig.getLocalType(namespace, includes)} GenDatasetConfig() {`,
-        `  ${CppDatasetLibraryTypes_1.DatasetConfig.getLocalType(namespace, includes)} config;`,
-        `  config.schemaHash = ${getDataStoreSchemaHashName(apiname)};`,
+        `static inline ${CppDatasetLibraryTypes_1.TransportConfig.getLocalType(namespace, includes)} GenTransportConfig() {`,
+        `  ${CppDatasetLibraryTypes_1.TransportConfig.getLocalType(namespace, includes)} config;`,
+        `  config.schemaHash = ${CppDatasetLibraryTypes_1.HashValue.getLocalType(namespace, includes)}(${hashInit});`,
         `  config.changelogByteCount = ${changelogByteCount};`,
         `  return config;`,
         `}`,
@@ -69,15 +65,13 @@ function genTypeDefinitions(namespace, datamodel, includes) {
 function genTypesHeader(fileWriter, outdir, def) {
     const includes = new CppCodeGenImpl_1.CppIncludeAggregator();
     const headerName = (0, CppCodeGenImpl_1.getTypesHeaderName)(def.apiname);
-    const namespace = (0, CppCodeGenImpl_1.getDataStoreName)(def.apiname);
+    const namespace = (0, CppCodeGenImpl_1.getTypesHeaderNamespace)(def.apiname);
     const schemaHash = def.datamodel.getHash();
     const hashInit = schemaHash.values.map(str => "0x" + str).join(", ");
     const lines = [
         `namespace ${namespace} {`,
         ``,
-        `constexpr ${CppDatasetLibraryTypes_1.DSHashValue.getLocalType(namespace, includes)} ${getDataStoreSchemaHashName(def.apiname)}(${hashInit});`,
-        ``,
-        ...genDatasetConfig(def.apiname, def.datamodel, namespace, includes),
+        ...genTransportConfig(def.apiname, def.datamodel, namespace, includes, hashInit),
         ``,
         ...genTypeDefinitions(namespace, def.datamodel, includes),
         `} // namespace ${namespace}`,

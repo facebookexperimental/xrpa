@@ -19,14 +19,14 @@ import { IncludeAggregator } from "./Helpers";
 import { PrimitiveType } from "./PrimitiveType";
 import { StructType } from "./StructType";
 import { TargetCodeGenImpl } from "./TargetCodeGen";
-import { InterfaceTypeDefinition, ReferenceTypeDefinition, TypeMetaType } from "./TypeDefinition";
+import { CollectionNameAndType, InterfaceTypeDefinition, ReferenceTypeDefinition, TypeMetaType } from "./TypeDefinition";
 import { TypeValue } from "./TypeValue";
 export declare class ReferenceType extends PrimitiveType implements ReferenceTypeDefinition {
     readonly toType: InterfaceTypeDefinition;
-    readonly dsIdentifierType: StructType;
-    constructor(codegen: TargetCodeGenImpl, toType: InterfaceTypeDefinition, dsIdentifierType: StructType);
+    readonly objectUuidType: StructType;
+    constructor(codegen: TargetCodeGenImpl, toType: InterfaceTypeDefinition, objectUuidType: StructType);
     getMetaType(): TypeMetaType;
-    getReferencedTypeList(inNamespace: string, includes: IncludeAggregator | null): string[];
+    getReferencedTypeList(inNamespace: string, includes: IncludeAggregator | null): CollectionNameAndType[];
     getReferencedSuperType(inNamespace: string, includes: IncludeAggregator | null): string;
     convertValueFromLocal(inNamespace: string, includes: IncludeAggregator | null, value: string | TypeValue): TypeValue;
     convertValueToLocal(_inNamespace: string, _includes: IncludeAggregator | null, value: string | TypeValue): TypeValue;

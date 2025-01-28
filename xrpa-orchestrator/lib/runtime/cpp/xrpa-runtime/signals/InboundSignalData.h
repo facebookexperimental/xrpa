@@ -19,8 +19,7 @@
 #include <xrpa-runtime/signals/SignalRingBuffer.h>
 #include <xrpa-runtime/signals/SignalShared.h>
 #include <xrpa-runtime/utils/MemoryAccessor.h>
-#include <chrono>
-#include <functional>
+#include <vector>
 
 namespace Xrpa {
 

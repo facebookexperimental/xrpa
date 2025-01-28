@@ -23,16 +23,16 @@ import { FieldTypeAndAccessor, GuidGenSpec, PrimitiveIntrinsics } from "../../sh
 import { InterfaceTypeDefinition, TypeDefinition } from "../../shared/TypeDefinition";
 import { TypeValue } from "../../shared/TypeValue";
 interface DependentXrpaTypes {
-    DatasetAccessor: TypeDefinition;
     MemoryAccessor: TypeDefinition;
     ObjectAccessorInterface: TypeDefinition;
+    TransportStreamAccessor: TypeDefinition;
 }
 export declare function registerXrpaTypes(types: DependentXrpaTypes): void;
 export declare const XRPA_NAMESPACE = "Xrpa";
 export declare const HEADER: string[];
 export declare const UNIT_TRANSFORMER: UnitTransformer;
 export declare const PRIMITIVE_INTRINSICS: PrimitiveIntrinsics;
-export declare const GET_CURRENT_CLOCK_TIME: string;
+export declare function genGetCurrentClockTime(): string;
 export declare const DEFAULT_INTERFACE_PTR_TYPE = "bare";
 export declare class CsIncludeAggregator implements IncludeAggregator {
     private importNamespaces;
@@ -67,8 +67,11 @@ export declare function genPointer(ptrType: string, localType: string): string;
 export declare function reinterpretValue(_fromType: string, _toType: string, value: TypeValue): string;
 export declare function getDataStoreName(apiname: string): string;
 export declare function getDataStoreHeaderName(apiname: string): string;
+export declare function getDataStoreHeaderNamespace(apiname: string): string;
+export declare function getDataStoreClass(apiname: string, inNamespace: string, includes: IncludeAggregator | null): string;
 export declare function getTypesHeaderName(apiname: string): string;
-export declare function makeObjectAccessor(classSpec: ClassSpec, isWriteAccessor: boolean, dsIdentifierType: string): void;
+export declare function getTypesHeaderNamespace(apiname: string): string;
+export declare function makeObjectAccessor(classSpec: ClassSpec, isWriteAccessor: boolean, objectUuidType: string): void;
 export declare function genClassDefinition(classSpec: ClassSpec): string[];
 export declare function genReadValue(params: {
     accessor: string;
@@ -96,7 +99,7 @@ export declare function genReadWriteValueFunctions(classSpec: ClassSpec, params:
 export declare function genEnumDefinition(enumName: string, enumValues: Record<string, number>): string[];
 export declare function genEnumDynamicConversion(targetTypename: string, value: TypeValue): string;
 export declare function getNullValue(): string;
-export declare function genReferencePtrToID(varName: string, _ptrType: string, dsIdentifierType: string): string;
+export declare function genReferencePtrToID(varName: string, _ptrType: string, objectUuidType: string): string;
 export declare function genFieldGetter(classSpec: ClassSpec, params: {
     apiname: string;
     fieldName: string;
@@ -120,7 +123,7 @@ export declare function genFieldChangedCheck(classSpec: ClassSpec, params: {
 }): void;
 export declare function injectGeneratedTag(fileData: Buffer): Buffer;
 export declare function genRuntimeGuid(params: {
-    dsIdentifierType: string;
+    objectUuidType: string;
     guidGen: GuidGenSpec;
     idParts?: number[];
     includes: IncludeAggregator | null;
@@ -131,6 +134,7 @@ export declare function genMethodBind(ptrName: string, methodName: string, param
 export declare function genNonNullCheck(ptrName: string): string;
 export declare function genCreateObject(type: string, params: string[]): string;
 export declare function genObjectPtrType(type: string): string;
-export declare function refParam(varName: string): string;
+export declare function genConvertBoolToInt(value: TypeValue): string;
+export declare function genConvertIntToBool(value: TypeValue): string;
 export {};
 

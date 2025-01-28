@@ -27,7 +27,7 @@ export declare class EnumType extends PrimitiveType {
     constructor(codegen: TargetCodeGenImpl, enumName: string, apiname: string, enumValues: Record<string, number>, localTypeOverride?: TypeSpec | undefined);
     getHashData(): Record<string, unknown>;
     userDefaultToTypeValue(inNamespace: string, _includes: IncludeAggregator | null, userDefault: UserDefaultValue): TypeValue | undefined;
-    genTypeDefinition(): string[] | null;
+    genTypeDefinition(includes: IncludeAggregator | null): string[] | null;
     convertValueFromLocal(inNamespace: string, includes: IncludeAggregator | null, value: string | TypeValue): TypeValue;
     convertValueToLocal(inNamespace: string, includes: IncludeAggregator | null, value: string | TypeValue): TypeValue;
 }

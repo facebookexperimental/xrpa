@@ -20,6 +20,11 @@
 
 namespace Xrpa {
 
+inline uint64_t getCurrentClockTimeMicroseconds() {
+  auto duration = std::chrono::system_clock::now().time_since_epoch();
+  return std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
+}
+
 void sleepFor(std::chrono::microseconds duration);
 
 } // namespace Xrpa

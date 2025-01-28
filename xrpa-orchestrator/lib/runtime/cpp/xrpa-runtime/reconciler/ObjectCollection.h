@@ -16,17 +16,19 @@
 
 #pragma once
 
-#include <xrpa-runtime/core/DatasetTypes.h>
-#include <xrpa-runtime/reconciler/DatasetReconcilerInterfaces.h>
+#include <xrpa-runtime/reconciler/CollectionChangeTypes.h>
+#include <xrpa-runtime/reconciler/DataStoreInterfaces.h>
+#include <xrpa-runtime/utils/XrpaTypes.h>
+
+#include <functional>
 #include <iostream>
-#include <memory>
-#include <type_traits>
+#include <unordered_map>
 
 namespace Xrpa {
 
 template <typename ObjectAccessorType, typename ReconciledTypePtr>
-class ObjectCollection : public CollectionInterface {
-  using CollectionEntryMap = std::unordered_map<DSIdentifier, ReconciledTypePtr>;
+class ObjectCollection : public IObjectCollection {
+  using CollectionEntryMap = std::unordered_map<ObjectUuid, ReconciledTypePtr>;
   using CollectionEntryIter = typename CollectionEntryMap::iterator;
 
   class Iterator {
@@ -51,21 +53,21 @@ class ObjectCollection : public CollectionInterface {
   };
 
  public:
-  using CreateDelegateFunction = std::function<
-      ReconciledTypePtr(const DSIdentifier&, ObjectAccessorType&, CollectionInterface*)>;
+  using CreateDelegateFunction =
+      std::function<ReconciledTypePtr(const ObjectUuid&, ObjectAccessorType&, IObjectCollection*)>;
 
   ObjectCollection(
-      DatasetReconciler* reconciler,
+      DataStoreReconciler* reconciler,
       int32_t collectionId,
       uint64_t inboundFieldMask,
       uint64_t indexedFieldMask,
       bool isLocalOwned)
-      : CollectionInterface(reconciler, collectionId),
+      : IObjectCollection(reconciler, collectionId),
         inboundFieldMask_(inboundFieldMask),
         indexedFieldMask_(indexedFieldMask),
         isLocalOwned_(isLocalOwned) {}
 
-  [[nodiscard]] const ReconciledTypePtr& getObject(const DSIdentifier& id) const {
+  [[nodiscard]] const ReconciledTypePtr& getObject(const ObjectUuid& id) const {
     auto iter = objects_.find(id);
     if (iter != objects_.end()) {
       return iter->second;
@@ -101,9 +103,9 @@ class ObjectCollection : public CollectionInterface {
   virtual void indexNotifyDelete(ReconciledTypePtr /*obj*/) {}
 
   virtual void bindingTick() {}
-  virtual void bindingWriteChanges(const DSIdentifier& /*id*/) {}
+  virtual void bindingWriteChanges(const ObjectUuid& /*id*/) {}
   virtual void bindingProcessMessage(
-      const DSIdentifier& /*id*/,
+      const ObjectUuid& /*id*/,
       int32_t /*messageType*/,
       int32_t /*timestamp*/,
       MemoryAccessor /*msgAccessor*/) {}
@@ -123,7 +125,7 @@ class ObjectCollection : public CollectionInterface {
     }
   }
 
-  void removeObjectInternal(const DSIdentifier& id) {
+  void removeObjectInternal(const ObjectUuid& id) {
     if (!isLocalOwned_) {
       return;
     }
@@ -166,10 +168,7 @@ class ObjectCollection : public CollectionInterface {
     }
   }
 
-  void setDirty(const DSIdentifier& objId, bool& hasNotifiedNeedsWrite, uint64_t fieldsChanged)
-      final {
-    CollectionInterface::setDirty(objId, hasNotifiedNeedsWrite, fieldsChanged);
-
+  void setDirty(const ObjectUuid& objId, uint64_t fieldsChanged) final {
     if ((indexedFieldMask_ & fieldsChanged) != 0) {
       auto iter = objects_.find(objId);
       if (iter != objects_.end()) {
@@ -178,7 +177,7 @@ class ObjectCollection : public CollectionInterface {
     }
   }
 
-  void processCreate(const DSIdentifier& id, MemoryAccessor memAccessor) final {
+  void processCreate(const ObjectUuid& id, MemoryAccessor memAccessor) final {
     if (isLocalOwned_) {
       return;
     }
@@ -226,7 +225,7 @@ class ObjectCollection : public CollectionInterface {
     return objects_.erase(iter);
   }
 
-  void processDelete(const DSIdentifier& id) final {
+  void processDelete(const ObjectUuid& id) final {
     if (isLocalOwned_) {
       return;
     }
@@ -237,13 +236,13 @@ class ObjectCollection : public CollectionInterface {
     }
   }
 
-  void processUpsert(const DSIdentifier& id, MemoryAccessor memAccessor) final {
+  void processUpsert(const ObjectUuid& id, MemoryAccessor memAccessor) final {
     if (!processUpdateInternal(id, memAccessor, inboundFieldMask_, true)) {
       processCreate(id, memAccessor);
     }
   }
 
-  void processFullReconcile(const std::unordered_set<DSIdentifier>& reconciledIds) final {
+  void processFullReconcile(const std::unordered_set<ObjectUuid>& reconciledIds) final {
     if (isLocalOwned_) {
       return;
     }
@@ -265,7 +264,7 @@ class ObjectCollection : public CollectionInterface {
     }
   }
 
-  void writeChanges(DatasetAccessor* accessor, const DSIdentifier& id) final {
+  void writeChanges(TransportStreamAccessor* accessor, const ObjectUuid& id) final {
     auto iter = objects_.find(id);
     if (iter != objects_.end()) {
       if (indexedFieldMask_ != 0) {
@@ -273,8 +272,8 @@ class ObjectCollection : public CollectionInterface {
       }
       iter->second->writeDSChanges(accessor);
     } else if (isLocalOwned_) {
-      auto changeEvent =
-          accessor->writeChangeEvent<DSCollectionChangeEventAccessor>(DSChangeType::DeleteObject);
+      auto changeEvent = accessor->writeChangeEvent<CollectionChangeEventAccessor>(
+          CollectionChangeType::DeleteObject);
       changeEvent.setCollectionId(collectionId_);
       changeEvent.setObjectId(id);
     }
@@ -289,13 +288,13 @@ class ObjectCollection : public CollectionInterface {
     }
   }
 
-  bool processUpdate(const DSIdentifier& id, MemoryAccessor memAccessor, uint64_t fieldsChanged)
+  bool processUpdate(const ObjectUuid& id, MemoryAccessor memAccessor, uint64_t fieldsChanged)
       final {
     return processUpdateInternal(id, memAccessor, fieldsChanged, true);
   }
 
   bool processUpdateInternal(
-      const DSIdentifier& id,
+      const ObjectUuid& id,
       MemoryAccessor memAccessor,
       uint64_t fieldsChanged,
       bool notify) {
@@ -329,7 +328,7 @@ class ObjectCollection : public CollectionInterface {
   }
 
   void processMessage(
-      const DSIdentifier& id,
+      const ObjectUuid& id,
       int32_t messageType,
       int32_t timestamp,
       MemoryAccessor msgAccessor) final {

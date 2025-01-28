@@ -19,8 +19,8 @@ import { FileWriter } from "@xrpa/xrpa-utils";
 import { IncludeAggregator } from "../../shared/Helpers";
 import { ModuleDefinition } from "../../shared/ModuleDefinition";
 import { DataStoreDefinition } from "../../shared/DataStore";
-export declare function genDatasetInitializer(storeDef: DataStoreDefinition, namespace: string, includes: IncludeAggregator): string[];
-export declare function genDatasetDeinitializer(storeDef: DataStoreDefinition): string[];
+export declare function genTransportInitializer(storeDef: DataStoreDefinition, namespace: string, includes: IncludeAggregator): string[];
+export declare function genTransportDeinitializer(storeDef: DataStoreDefinition): string[];
 export declare function genStandaloneCpp(fileWriter: FileWriter, outdir: string, moduleDef: ModuleDefinition): void;
 export declare function genStandaloneBuck(fileWriter: FileWriter, outdir: string, runtimeDir: string, buckTarget: string, moduleDef: ModuleDefinition, oncall: string): void;
 

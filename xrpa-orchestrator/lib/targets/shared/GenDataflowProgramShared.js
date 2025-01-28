@@ -53,7 +53,7 @@ function getInfoForObj(ctx, codegen, graphNode, includes) {
     return {
         objName,
         objType: reconcilerDef.type.getLocalType(ctx.namespace, includes),
-        reconcilerName: reconcilerDef.getDataStoreAccessorName(),
+        reconcilerName: reconcilerDef.type.getName(),
         objVarName: objToMemberName(codegen, objName),
         reconcilerDef,
         storeDef,
@@ -105,7 +105,7 @@ function genCreateObjectsBody(ctx, codegen, programDef, includes) {
     const createLines = [];
     const updateLines = [];
     const idCall = codegen.genRuntimeGuid({
-        dsIdentifierType: ctx.moduleDef.DSIdentifier.getLocalType(ctx.namespace, includes),
+        objectUuidType: ctx.moduleDef.ObjectUuid.getLocalType(ctx.namespace, includes),
         guidGen: ctx.moduleDef.guidGen,
         includes,
     });
@@ -174,8 +174,8 @@ function genDataflowProgramClassSpec(ctx, codegen, programDef, includes) {
     const memberInitializers = [];
     for (const storeName of programDef.programInterfaceNames) {
         const storeDef = ctx.moduleDef.getDataStore(storeName);
-        const dsName = codegen.getDataStoreName(storeDef.apiname);
-        const storePtrType = codegen.genObjectPtrType(codegen.nsJoin(dsName, dsName));
+        const dataStoreClassName = codegen.getDataStoreClass(storeDef.apiname, classSpec.namespace, classSpec.includes);
+        const storePtrType = codegen.genObjectPtrType(dataStoreClassName);
         const storeVarName = storeToVarName(storeDef.apiname);
         classSpec.members.push({
             name: storeVarName,

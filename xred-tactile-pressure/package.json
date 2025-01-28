@@ -1,6 +1,6 @@
 {
   "name": "@xrpa/xred-tactile-pressure",
-  "version": "1.5.6",
+  "version": "1.6.0",
   "description": "Tactile pressure interface",
   "main": "lib/index.js",
   "files": [
@@ -8,6 +8,6 @@
   ],
   "license": "Apache-2.0",
   "peerDependencies": {
-    "@xrpa/xrpa-orchestrator": "1.5.6"
+    "@xrpa/xrpa-orchestrator": "1.6.0"
   }
 }

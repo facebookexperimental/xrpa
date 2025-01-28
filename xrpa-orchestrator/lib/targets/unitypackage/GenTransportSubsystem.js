@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genTransportSubsystem = exports.getOutboundDatasetVarName = exports.getInboundDatasetVarName = exports.getTransportSubsystemName = void 0;
+exports.genTransportSubsystem = exports.getOutboundTransportVarName = exports.getInboundTransportVarName = exports.getTransportSubsystemName = void 0;
 const path_1 = __importDefault(require("path"));
 const CsharpCodeGenImpl_1 = require("../csharp/CsharpCodeGenImpl");
 const CsharpDatasetLibraryTypes_1 = require("../csharp/CsharpDatasetLibraryTypes");
@@ -30,52 +30,50 @@ function getTransportSubsystemName(storeDef) {
     return `${storeDef.apiname}TransportSubsystem`;
 }
 exports.getTransportSubsystemName = getTransportSubsystemName;
-function getInboundDatasetVarName(storeDef) {
-    return `${storeDef.dataset}InboundDataset`;
+function getInboundTransportVarName(storeDef) {
+    return `${storeDef.dataset}InboundTransport`;
 }
-exports.getInboundDatasetVarName = getInboundDatasetVarName;
-function getOutboundDatasetVarName(storeDef) {
-    return `${storeDef.dataset}OutboundDataset`;
+exports.getInboundTransportVarName = getInboundTransportVarName;
+function getOutboundTransportVarName(storeDef) {
+    return `${storeDef.dataset}OutboundTransport`;
 }
-exports.getOutboundDatasetVarName = getOutboundDatasetVarName;
-function genDatasetDeclaration(storeDef, namespace, includes) {
+exports.getOutboundTransportVarName = getOutboundTransportVarName;
+function genTransportDeclaration(storeDef, namespace, includes) {
     return [
-        `public ${CsharpDatasetLibraryTypes_1.DatasetInterface.declareLocalVar(namespace, includes, getInboundDatasetVarName(storeDef))};`,
-        `public ${CsharpDatasetLibraryTypes_1.DatasetInterface.declareLocalVar(namespace, includes, getOutboundDatasetVarName(storeDef))};`,
+        `public ${CsharpDatasetLibraryTypes_1.TransportStream.declareLocalVar(namespace, includes, getInboundTransportVarName(storeDef))};`,
+        `public ${CsharpDatasetLibraryTypes_1.TransportStream.declareLocalVar(namespace, includes, getOutboundTransportVarName(storeDef))};`,
     ];
 }
-function genDatasetInitializer(storeDef, namespace, includes) {
+function genTransportInitializer(storeDef, namespace, includes) {
     includes.addFile({ filename: (0, CsharpCodeGenImpl_1.getTypesHeaderName)(storeDef.apiname) });
-    const inboundDatasetVar = getInboundDatasetVarName(storeDef);
-    const outboundDatasetVar = getOutboundDatasetVarName(storeDef);
+    const inboundTransportVar = getInboundTransportVarName(storeDef);
+    const outboundTransportVar = getOutboundTransportVarName(storeDef);
     const inboundMemMarker = storeDef.isModuleProgramInterface ? "Input" : "Output";
     const outboundMemMarker = storeDef.isModuleProgramInterface ? "Output" : "Input";
     return [
         `{`,
-        `  var local${inboundDatasetVar} = new ${CsharpDatasetLibraryTypes_1.SharedDataset.getLocalType(namespace, includes)}("${storeDef.dataset}${inboundMemMarker}", ${(0, CsharpCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}.${(0, CsharpCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}Config.GenDatasetConfig());`,
-        `  local${inboundDatasetVar}.Initialize();`,
-        `  ${inboundDatasetVar} = local${inboundDatasetVar};`,
+        `  var local${inboundTransportVar} = new ${CsharpDatasetLibraryTypes_1.SharedMemoryTransportStream.getLocalType(namespace, includes)}("${storeDef.dataset}${inboundMemMarker}", ${(0, CsharpCodeGenImpl_1.getTypesHeaderNamespace)(storeDef.apiname)}.${(0, CsharpCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}Config.GenTransportConfig());`,
+        `  ${inboundTransportVar} = local${inboundTransportVar};`,
         ``,
-        `  var local${outboundDatasetVar} = new ${CsharpDatasetLibraryTypes_1.SharedDataset.getLocalType(namespace, includes)}("${storeDef.dataset}${outboundMemMarker}", ${(0, CsharpCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}.${(0, CsharpCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}Config.GenDatasetConfig());`,
-        `  local${outboundDatasetVar}.Initialize();`,
-        `  ${outboundDatasetVar} = local${outboundDatasetVar};`,
+        `  var local${outboundTransportVar} = new ${CsharpDatasetLibraryTypes_1.SharedMemoryTransportStream.getLocalType(namespace, includes)}("${storeDef.dataset}${outboundMemMarker}", ${(0, CsharpCodeGenImpl_1.getTypesHeaderNamespace)(storeDef.apiname)}.${(0, CsharpCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}Config.GenTransportConfig());`,
+        `  ${outboundTransportVar} = local${outboundTransportVar};`,
         `}`,
     ];
 }
-function genDatasetDeinitializer(storeDef) {
+function genTransportDeinitializer(storeDef) {
     return [
         `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(storeDef)}.MaybeInstance?.Shutdown();`,
-        `${getOutboundDatasetVarName(storeDef)}?.Dispose();`,
-        `${getOutboundDatasetVarName(storeDef)} = null;`,
-        `${getInboundDatasetVarName(storeDef)}?.Dispose();`,
-        `${getInboundDatasetVarName(storeDef)} = null;`,
+        `${getOutboundTransportVarName(storeDef)}?.Dispose();`,
+        `${getOutboundTransportVarName(storeDef)} = null;`,
+        `${getInboundTransportVarName(storeDef)}?.Dispose();`,
+        `${getInboundTransportVarName(storeDef)} = null;`,
     ];
 }
 function genTransportSubsystem(fileWriter, outDir, storeDef) {
     const className = getTransportSubsystemName(storeDef);
     const namespace = "";
     const includes = new CsharpCodeGenImpl_1.CsIncludeAggregator(["UnityEngine"]);
-    const lines = (0, UnityHelpers_1.genUnitySingleton)(className, genDatasetInitializer(storeDef, namespace, includes), genDatasetDeinitializer(storeDef), genDatasetDeclaration(storeDef, namespace, includes));
+    const lines = (0, UnityHelpers_1.genUnitySingleton)(className, genTransportInitializer(storeDef, namespace, includes), genTransportDeinitializer(storeDef), genTransportDeclaration(storeDef, namespace, includes));
     lines.unshift(...CsharpCodeGenImpl_1.HEADER, ...includes.getNamespaceImports(), ``);
     fileWriter.writeFile(path_1.default.join(outDir, `${className}.cs`), lines);
 }

@@ -59,13 +59,13 @@ class CsharpModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
         });
         this.outputDir = outputDir;
     }
-    createDSIdentifier() {
-        const DSIdentifier = this.createStruct("Identifier", "", {
+    createObjectUuid() {
+        const ObjectUuid = this.createStruct("Identifier", "", {
             ID0: { type: this.getPrimitiveTypeDefinition(BuiltinTypes_1.BuiltinType.BitField) },
             ID1: { type: this.getPrimitiveTypeDefinition(BuiltinTypes_1.BuiltinType.BitField) },
-        }, { typename: this.codegen.nsJoin(CsharpCodeGenImpl_1.XRPA_NAMESPACE, "DSIdentifier") });
-        DSIdentifier.datasetType = { typename: this.codegen.nsJoin(CsharpCodeGenImpl_1.XRPA_NAMESPACE, "DSIdentifier") };
-        return DSIdentifier;
+        }, { typename: this.codegen.nsJoin(CsharpCodeGenImpl_1.XRPA_NAMESPACE, "ObjectUuid") });
+        ObjectUuid.datasetType = { typename: this.codegen.nsJoin(CsharpCodeGenImpl_1.XRPA_NAMESPACE, "ObjectUuid") };
+        return ObjectUuid;
     }
     doCodeGen() {
         const fileWriter = new xrpa_utils_1.FileWriter();
@@ -76,7 +76,7 @@ class CsharpModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
             const ctx = {
                 moduleDef: this,
                 storeDef,
-                namespace: this.codegen.getDataStoreName(storeDef.apiname),
+                namespace: this.codegen.getDataStoreHeaderNamespace(storeDef.apiname),
             };
             (0, GenDataStore_1.genDataStore)(fileWriter, this.outputDir, ctx);
         }

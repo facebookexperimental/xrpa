@@ -31,7 +31,7 @@ function getDataStoreSubsystemName(storeDef) {
 exports.getDataStoreSubsystemName = getDataStoreSubsystemName;
 function genDataStoreSubsystem(fileWriter, outSrcDir, storeDef, pluginName) {
     const name = getDataStoreSubsystemName(storeDef);
-    const dataStoreName = (0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname);
+    const dataStoreClassName = (0, CppCodeGenImpl_1.getDataStoreClass)(storeDef.apiname, "", null);
     const cppLines = [
         ...CppCodeGenImpl_1.HEADER,
         `#include "${name}.h"`,
@@ -47,7 +47,7 @@ function genDataStoreSubsystem(fileWriter, outSrcDir, storeDef, pluginName) {
         `  Super::Initialize(Collection);`,
         ``,
         `  auto transportSubsystem = GEngine->GetEngineSubsystem<U${(0, GenTransportSubsystem_1.getTransportSubsystemName)(storeDef)}>();`,
-        `  DataStore = std::make_shared<${dataStoreName}::${dataStoreName}>(transportSubsystem->${(0, GenModuleClass_1.getInboundDatasetVarName)(storeDef)}, transportSubsystem->${(0, GenModuleClass_1.getOutboundDatasetVarName)(storeDef)});`,
+        `  DataStore = std::make_shared<${dataStoreClassName}>(transportSubsystem->${(0, GenModuleClass_1.getInboundTransportVarName)(storeDef)}, transportSubsystem->${(0, GenModuleClass_1.getOutboundTransportVarName)(storeDef)});`,
         `}`,
         ``,
         `void U${name}::Deinitialize() {`,
@@ -87,7 +87,7 @@ function genDataStoreSubsystem(fileWriter, outSrcDir, storeDef, pluginName) {
         `  virtual void Deinitialize() override;`,
         `  virtual void Tick(float DeltaTime) override;`,
         ``,
-        `  std::shared_ptr<${dataStoreName}::${dataStoreName}> DataStore;`,
+        `  std::shared_ptr<${dataStoreClassName}> DataStore;`,
         `};`,
         ``,
     ];

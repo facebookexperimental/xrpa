@@ -65,6 +65,7 @@ export declare function genProcessUpdateBody(params: {
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
     proxyObj: string | null;
 }): string[];
+export declare function genDataStoreObjectAccessors(ctx: GenDataStoreContext, classSpec: ClassSpec): void;
 export declare function writeMonoBehaviour(classSpec: ClassSpec, params: {
     fileWriter: FileWriter;
     outDir: string;

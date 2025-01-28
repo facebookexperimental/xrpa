@@ -15,15 +15,19 @@
  */
 
 
+import { NativeProgramContext } from "./NativeProgram";
 import { RuntimeEnvironmentContext } from "./RuntimeEnvironment";
 import { PropertyCondition } from "./XrpaLanguage";
 import { CoordinateSystemDef } from "./shared/CoordinateTransformer";
 import { ArrayTypeSpec } from "./shared/TypeDefinition";
+import { UnityPackageModuleDefinition } from "./targets/unitypackage/UnityPackageModuleDefinition";
 export declare const UnityCoordinateSystem: CoordinateSystemDef;
 export declare const UnityArrayType: ArrayTypeSpec;
 export interface UnityRuntimeContext extends RuntimeEnvironmentContext {
     __UnityRuntime: true;
 }
+export type UnityProgramContext = UnityRuntimeContext & NativeProgramContext;
 export declare const IfUnity: PropertyCondition;
 export declare function UnityProject(projectPath: string, projectName: string, callback: (ctx: UnityRuntimeContext) => void): Promise<void>;
+export declare function XrpaNativeUnityProgram(packageName: string, outputPath: string, callback: (ctx: UnityRuntimeContext) => void): UnityPackageModuleDefinition;
 

@@ -29,6 +29,7 @@ export interface ComponentProperties {
     internalOnly?: boolean;
     ephemeralProperties?: Array<string>;
     fieldToPropertyBindings?: Record<string, PropertyBinding>;
+    generateSpawner?: boolean;
 }
 export interface IndexConfiguration {
     indexFieldName: string;
@@ -63,14 +64,12 @@ export declare class InputReconcilerDefinition extends BaseReconcilerDefinition 
     readonly inboundFields: null;
     constructor(type: CollectionTypeDefinition, outboundFields: Array<string>, fieldAccessorNameOverrides: FieldAccessorNames, componentProps: ComponentProperties, useGenericReconciledType: boolean, indexConfigs: Array<IndexConfiguration>);
     shouldGenerateConcreteReconciledType(): boolean;
-    getDataStoreAccessorName(): string;
 }
 export declare class OutputReconcilerDefinition extends BaseReconcilerDefinition {
     private useGenericReconciledType;
     readonly outboundFields: null;
     constructor(type: CollectionTypeDefinition, inboundFields: Array<string>, fieldAccessorNameOverrides: FieldAccessorNames, componentProps: ComponentProperties, useGenericReconciledType: boolean, indexConfigs: Array<IndexConfiguration>);
     shouldGenerateConcreteReconciledType(): boolean;
-    getDataStoreAccessorName(): string;
 }
 export declare class DataStoreDefinition {
     readonly moduleDef: ModuleDefinition;

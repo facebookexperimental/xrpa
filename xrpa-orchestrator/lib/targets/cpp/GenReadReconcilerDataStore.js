@@ -86,10 +86,10 @@ function genInboundReconciledTypes(ctx, includesIn) {
         classSpec.constructors.push({
             parameters: [{
                     name: "id",
-                    type: ctx.moduleDef.DSIdentifier,
+                    type: ctx.moduleDef.ObjectUuid,
                 }, {
                     name: "collection",
-                    type: CppDatasetLibraryTypes_1.CollectionInterface.getLocalType(ctx.namespace, classSpec.includes) + "*",
+                    type: CppDatasetLibraryTypes_1.IObjectCollection.getLocalType(ctx.namespace, classSpec.includes) + "*",
                 }],
             superClassInitializers: ["id", "collection"],
         });
@@ -132,13 +132,13 @@ function genInboundReconciledTypes(ctx, includesIn) {
                 returnType: localPtr,
                 parameters: [{
                         name: "id",
-                        type: ctx.moduleDef.DSIdentifier,
+                        type: ctx.moduleDef.ObjectUuid,
                     }, {
                         name: "obj",
                         type: readAccessor,
                     }, {
                         name: "collection",
-                        type: CppDatasetLibraryTypes_1.CollectionInterface.getLocalType(ctx.namespace, classSpec.includes) + "*",
+                        type: CppDatasetLibraryTypes_1.IObjectCollection.getLocalType(ctx.namespace, classSpec.includes) + "*",
                     }],
                 body: [
                     `return std::make_shared<${classSpec.name}>(id, collection);`,
@@ -209,7 +209,7 @@ function genInboundReconciledTypes(ctx, includesIn) {
             name: "writeDSChanges",
             parameters: [{
                     name: "accessor",
-                    type: CppDatasetLibraryTypes_1.DatasetAccessor.getLocalType(ctx.namespace, classSpec.includes) + "*",
+                    type: CppDatasetLibraryTypes_1.TransportStreamAccessor.getLocalType(ctx.namespace, classSpec.includes) + "*",
                 }],
             body: includes => (0, GenWriteReconcilerDataStore_1.genWriteFunctionBody)({
                 ctx,
@@ -284,7 +284,7 @@ function genObjectCollectionClasses(ctx, includesIn) {
                 name: "removeObject",
                 parameters: [{
                         name: "id",
-                        type: ctx.moduleDef.DSIdentifier,
+                        type: ctx.moduleDef.ObjectUuid,
                     }],
                 body: ["removeObjectInternal(id);"],
             });
@@ -292,11 +292,11 @@ function genObjectCollectionClasses(ctx, includesIn) {
         classSpec.constructors.push({
             parameters: [{
                     name: "reconciler",
-                    type: CppDatasetLibraryTypes_1.DatasetReconciler.getLocalType(ctx.namespace, classSpec.includes) + "*",
+                    type: CppDatasetLibraryTypes_1.DataStoreReconciler.getLocalType(ctx.namespace, classSpec.includes) + "*",
                 }],
             superClassInitializers: [
                 "reconciler",
-                typeDef.getDSTypeID(ctx.namespace, classSpec.includes),
+                `${typeDef.getCollectionId()}`,
                 `${inboundFieldMask}`,
                 `${indexedFieldMask}`,
                 `${isLocalOwned}`,
@@ -399,7 +399,7 @@ function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
             name: "bindingWriteChanges",
             parameters: [{
                     name: "id",
-                    type: ctx.moduleDef.DSIdentifier,
+                    type: ctx.moduleDef.ObjectUuid,
                 }],
             body: bindingWriteChangesLines,
             isOverride: true,
@@ -411,7 +411,7 @@ function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
             name: "bindingProcessMessage",
             parameters: [{
                     name: "id",
-                    type: ctx.moduleDef.DSIdentifier,
+                    type: ctx.moduleDef.ObjectUuid,
                 }, {
                     name: "messageType",
                     type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,

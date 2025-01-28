@@ -22,11 +22,14 @@ const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const ClassSpec_1 = require("./ClassSpec");
 const StructType_1 = require("./StructType");
 const TypeDefinition_1 = require("./TypeDefinition");
-const TypeValue_1 = require("./TypeValue");
 class StructWithAccessorType extends StructType_1.StructType {
-    constructor(codegen, name, apiname, dsIdentifierType, parentType, fields, localTypeOverride) {
+    constructor(codegen, name, apiname, objectUuidType, parentType, fields, localTypeOverride) {
         super(codegen, name, apiname, parentType, fields, localTypeOverride);
-        this.dsIdentifierType = dsIdentifierType;
+        this.objectUuidType = objectUuidType;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    genTypeDefinition(_includes) {
+        return null;
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     genLocalTypeDefinition(_inNamespace, _includes) {
@@ -36,17 +39,21 @@ class StructWithAccessorType extends StructType_1.StructType {
     genReadWriteValueFunctions(_classSpec) {
         // no-op
     }
-    getReadAccessorType(inNamespace, includes) {
+    getBaseAccessorTypeName(inNamespace, includes) {
         includes?.addFile({
             filename: this.codegen.getDataStoreHeaderName(this.getApiName()),
             typename: this.getInternalType("", null),
         });
         const dsType = this.getInternalType(inNamespace, null);
         const rawType = this.codegen.nsQualify(dsType, xrpa_utils_1.EXCLUDE_NAMESPACE).slice(2);
-        return this.codegen.nsJoin(this.codegen.nsExtract(dsType), rawType);
+        const fullType = this.codegen.nsJoin(this.codegen.getDataStoreHeaderNamespace(this.getApiName()), rawType);
+        return this.codegen.nsQualify(fullType, inNamespace);
+    }
+    getReadAccessorType(inNamespace, includes) {
+        return this.getBaseAccessorTypeName(inNamespace, includes) + "Reader";
     }
     getWriteAccessorType(inNamespace, includes) {
-        return this.getReadAccessorType(inNamespace, includes) + "Write";
+        return this.getBaseAccessorTypeName(inNamespace, includes) + "Writer";
     }
     genReadAccessorDefinition(inNamespace, includes) {
         if (this.getMetaType() === TypeDefinition_1.TypeMetaType.INTERFACE) {
@@ -58,7 +65,7 @@ class StructWithAccessorType extends StructType_1.StructType {
             namespace: inNamespace,
             includes,
         });
-        this.codegen.makeObjectAccessor(classSpec, false, this.dsIdentifierType.getLocalType(inNamespace, includes));
+        this.codegen.makeObjectAccessor(classSpec, false, this.objectUuidType.getLocalType(inNamespace, includes));
         const fields = this.getStateFields();
         for (const fieldName in fields) {
             const fieldSpec = fields[fieldName];
@@ -67,8 +74,6 @@ class StructWithAccessorType extends StructType_1.StructType {
                 fieldName,
                 fieldType: fieldSpec.type,
                 fieldToMemberVar: fieldName => {
-                    const fieldOffset = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, xrpa_utils_1.upperFirst)(fieldName)}FieldOffset`);
-                    const fieldSize = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, xrpa_utils_1.upperFirst)(fieldName)}FieldSize`);
                     const accessor = fieldSpec.type.getInternalType(inNamespace, includes);
                     const accessorIsStruct = (0, TypeDefinition_1.typeIsStruct)(fieldSpec.type) || (0, TypeDefinition_1.typeIsReference)(fieldSpec.type);
                     const accessorMaxBytes = fieldSpec.type.getInternalMaxBytes();
@@ -76,8 +81,8 @@ class StructWithAccessorType extends StructType_1.StructType {
                         accessor,
                         accessorIsStruct,
                         accessorMaxBytes,
-                        fieldOffset: isMessageStruct ? fieldOffset : this.codegen.genDerefMethodCall("", "advanceReadPos", [fieldSize]),
-                        memAccessorVar: this.codegen.privateMember("memAccessor"),
+                        fieldOffset: isMessageStruct ? `${this.getFieldOffset(fieldName)}` : this.codegen.genDerefMethodCall("", "advanceReadPos", [`${this.getFieldSize(fieldName)}`]),
+                        memAccessorVar: this.codegen.genDeref("", this.codegen.privateMember("memAccessor")),
                     });
                 },
                 convertToLocal: true,
@@ -99,7 +104,7 @@ class StructWithAccessorType extends StructType_1.StructType {
             includes,
             superClass: this.getReadAccessorType(inNamespace, null),
         });
-        this.codegen.makeObjectAccessor(classSpec, !isMessageStruct, this.dsIdentifierType.getLocalType(inNamespace, includes));
+        this.codegen.makeObjectAccessor(classSpec, !isMessageStruct, this.objectUuidType.getLocalType(inNamespace, includes));
         const fields = this.getStateFields();
         for (const fieldName in fields) {
             const fieldSpec = fields[fieldName];
@@ -107,8 +112,6 @@ class StructWithAccessorType extends StructType_1.StructType {
                 fieldName,
                 fieldType: fieldSpec.type,
                 valueToMemberWrite: value => {
-                    const fieldOffset = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, xrpa_utils_1.upperFirst)(fieldName)}FieldOffset`);
-                    const fieldSize = this.codegen.nsJoin(this.getInternalType(inNamespace, includes), `${(0, xrpa_utils_1.upperFirst)(fieldName)}FieldSize`);
                     const accessor = fieldSpec.type.getInternalType(inNamespace, includes);
                     const accessorIsStruct = (0, TypeDefinition_1.typeIsStruct)(fieldSpec.type) || (0, TypeDefinition_1.typeIsReference)(fieldSpec.type);
                     const accessorMaxBytes = fieldSpec.type.getInternalMaxBytes();
@@ -116,8 +119,8 @@ class StructWithAccessorType extends StructType_1.StructType {
                         accessor,
                         accessorIsStruct,
                         accessorMaxBytes,
-                        fieldOffset: isMessageStruct ? fieldOffset : this.codegen.genDerefMethodCall("", "advanceWritePos", [fieldSize]),
-                        memAccessorVar: this.codegen.privateMember("memAccessor"),
+                        fieldOffset: isMessageStruct ? `${this.getFieldOffset(fieldName)}` : this.codegen.genDerefMethodCall("", "advanceWritePos", [`${this.getFieldSize(fieldName)}`]),
+                        memAccessorVar: this.codegen.genDeref("", this.codegen.privateMember("memAccessor")),
                         value,
                     });
                 },
@@ -126,24 +129,12 @@ class StructWithAccessorType extends StructType_1.StructType {
         }
         return classSpec;
     }
-    getDSType() {
+    getCollectionId() {
         return -1;
     }
-    genStaticAccessorFields(classSpec) {
-        classSpec.members.push({
-            name: "DS_TYPE",
-            type: this.codegen.PRIMITIVE_INTRINSICS.int32.typename,
-            initialValue: new TypeValue_1.PrimitiveValue(this.codegen, this.codegen.PRIMITIVE_INTRINSICS.int32.typename, this.getDSType()),
-            isStatic: true,
-            isConst: true,
-        });
-        classSpec.members.push({
-            name: "DS_SIZE",
-            type: this.codegen.PRIMITIVE_INTRINSICS.int32.typename,
-            initialValue: new TypeValue_1.PrimitiveValue(this.codegen, this.codegen.PRIMITIVE_INTRINSICS.int32.typename, this.getTypeSize()),
-            isStatic: true,
-            isConst: true,
-        });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    genStaticAccessorFields(_classSpec) {
+        // inherited
     }
 }
 exports.StructWithAccessorType = StructWithAccessorType;

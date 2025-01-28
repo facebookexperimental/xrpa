@@ -45,6 +45,9 @@ export declare function HiddenGameComponent(condition: PropertyCondition, dataTy
 export declare function Ephemeral<T extends XrpaDataType>(dataType: Thunk<T>): T;
 export declare function Ephemeral<T extends XrpaDataType>(condition: PropertyCondition): XrpaTypeAugmenter<T>;
 export declare function Ephemeral<T extends XrpaDataType>(condition: PropertyCondition, dataType: Thunk<T>): T;
+export declare function Spawnable<T extends XrpaDataType>(dataType: Thunk<T>): T;
+export declare function Spawnable<T extends XrpaDataType>(condition: PropertyCondition): XrpaTypeAugmenter<T>;
+export declare function Spawnable<T extends XrpaDataType>(condition: PropertyCondition, dataType: Thunk<T>): T;
 export declare function GameComponentBindingsDisabled(collection: Thunk<XrpaCollectionType>): XrpaCollectionType;
 export declare function GameComponentBindingsDisabled(): undefined;
 export declare function GameComponentBinding(dataType: Thunk<XrpaCollectionType>): XrpaCollectionType;

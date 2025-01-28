@@ -21,9 +21,9 @@ exports.CollectionType = void 0;
 const InterfaceType_1 = require("./InterfaceType");
 const TypeDefinition_1 = require("./TypeDefinition");
 class CollectionType extends InterfaceType_1.InterfaceType {
-    constructor(codegen, collectionName, apiname, dsIdentifierType, fields, dsType, maxCount, interfaceType) {
-        super(codegen, collectionName, apiname, dsIdentifierType, fields, interfaceType);
-        this.dsType = dsType;
+    constructor(codegen, collectionName, apiname, objectUuidType, fields, collectionId, maxCount, interfaceType) {
+        super(codegen, collectionName, apiname, objectUuidType, fields, interfaceType);
+        this.collectionId = collectionId;
         this.maxCount = maxCount;
         this.interfaceType = interfaceType;
         if (interfaceType) {
@@ -36,7 +36,7 @@ class CollectionType extends InterfaceType_1.InterfaceType {
     getHashData() {
         return {
             ...super.getHashData(),
-            dsType: this.dsType,
+            collectionId: this.collectionId,
         };
     }
     getAllFields() {
@@ -46,13 +46,13 @@ class CollectionType extends InterfaceType_1.InterfaceType {
         };
     }
     getCompatibleTypeList(inNamespace, includes) {
-        return [this.getLocalTypePtr(inNamespace, includes)];
+        return [{
+                collectionName: this.getName(),
+                typeName: this.getLocalType(inNamespace, includes),
+            }];
     }
-    getDSType() {
-        return this.dsType;
-    }
-    getDSTypeID(inNamespace, includes) {
-        return this.codegen.nsJoin(this.getReadAccessorType(inNamespace, includes), "DS_TYPE");
+    getCollectionId() {
+        return this.collectionId;
     }
 }
 exports.CollectionType = CollectionType;

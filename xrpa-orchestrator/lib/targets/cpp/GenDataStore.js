@@ -28,7 +28,6 @@ const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
 const CppDatasetLibraryTypes_1 = require("./CppDatasetLibraryTypes");
 const GenReadReconcilerDataStore_1 = require("./GenReadReconcilerDataStore");
-const GenTypesHeader_1 = require("./GenTypesHeader");
 const GenWriteReconcilerDataStore_1 = require("./GenWriteReconcilerDataStore");
 const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
 function genMsgHandler(fieldName) {
@@ -50,45 +49,26 @@ function genReconcilerConstructorContents(ctx) {
     for (const reconcilerDef of ctx.storeDef.getInputReconcilers()) {
         const typeDef = reconcilerDef.type;
         const className = (0, GenDataStoreShared_1.getInboundCollectionClassName)(ctx, typeDef);
-        const varName = reconcilerDef.getDataStoreAccessorName();
+        const varName = typeDef.getName();
         lines.push(`${varName} = std::make_shared<${className}>(this);`, `registerCollection(${varName});`);
     }
     for (const reconcilerDef of ctx.storeDef.getOutputReconcilers()) {
         const typeDef = reconcilerDef.type;
         const className = (0, GenDataStoreShared_1.getOutboundCollectionClassName)(ctx, typeDef);
-        const varName = reconcilerDef.getDataStoreAccessorName();
+        const varName = typeDef.getName();
         lines.push(`${varName} = std::make_shared<${className}>(this);`, `registerCollection(${varName});`);
     }
     return lines;
 }
-function genGetObjectConditional(ctx, includes) {
-    const lines = [];
-    let iffer = "if";
-    for (const reconcilerDef of ctx.storeDef.getInputReconcilers()) {
-        const typeDef = reconcilerDef.type;
-        const varName = reconcilerDef.getDataStoreAccessorName();
-        lines.push(`${iffer} constexpr (std::is_same_v<Ts, ${typeDef.getLocalTypePtr(ctx.namespace, includes)}>) {`, `  ret = ${varName}->getObject(id);`);
-        iffer = "} else if";
-    }
-    for (const reconcilerDef of ctx.storeDef.getOutputReconcilers()) {
-        const typeDef = reconcilerDef.type;
-        const varName = reconcilerDef.getDataStoreAccessorName();
-        lines.push(`${iffer} constexpr (std::is_same_v<Ts, ${typeDef.getLocalTypePtr(ctx.namespace, includes)}>) {`, `  ret = ${varName}->getObject(id);`);
-        iffer = "} else if";
-    }
-    lines.push(`}`);
-    return lines;
-}
 function genDataStoreClass(ctx, includes) {
-    const className = (0, CppCodeGenImpl_1.getDataStoreName)(ctx.storeDef.apiname);
-    const baseClassName = CppDatasetLibraryTypes_1.DatasetReconciler.getLocalType(ctx.namespace, includes);
-    const hashName = (0, GenTypesHeader_1.getDataStoreSchemaHashName)(ctx.storeDef.apiname);
+    const className = (0, CppCodeGenImpl_1.getDataStoreClass)(ctx.storeDef.apiname, ctx.namespace, null);
+    const baseClassName = CppDatasetLibraryTypes_1.DataStoreReconciler.getLocalType(ctx.namespace, includes);
     const messagePoolSize = ctx.storeDef.datamodel.calcMessagePoolSize();
     const lines = [
         `class ${className} : public ${baseClassName} {`,
         ` public:`,
-        `  ${className}(std::weak_ptr<${CppDatasetLibraryTypes_1.DatasetInterface.getLocalType(ctx.namespace, includes)}> inboundDataset, std::weak_ptr<${CppDatasetLibraryTypes_1.DatasetInterface.getLocalType(ctx.namespace, includes)}> outboundDataset)`,
-        `      : ${baseClassName}(inboundDataset, outboundDataset, ${hashName}, ${messagePoolSize}) {`,
+        `  ${className}(std::weak_ptr<${CppDatasetLibraryTypes_1.TransportStream.getLocalType(ctx.namespace, includes)}> inboundTransport, std::weak_ptr<${CppDatasetLibraryTypes_1.TransportStream.getLocalType(ctx.namespace, includes)}> outboundTransport)`,
+        `      : ${baseClassName}(inboundTransport, outboundTransport, ${messagePoolSize}) {`,
         ...(0, xrpa_utils_1.indent)(2, genReconcilerConstructorContents(ctx)),
         `  }`,
         ``,
@@ -96,7 +76,7 @@ function genDataStoreClass(ctx, includes) {
     for (const reconcilerDef of ctx.storeDef.getInputReconcilers()) {
         const typeDef = reconcilerDef.type;
         const className = (0, GenDataStoreShared_1.getInboundCollectionClassName)(ctx, typeDef);
-        const varName = reconcilerDef.getDataStoreAccessorName();
+        const varName = typeDef.getName();
         lines.push(...(0, xrpa_utils_1.indent)(1, [
             `std::shared_ptr<${className}> ${varName};`,
         ]));
@@ -104,28 +84,11 @@ function genDataStoreClass(ctx, includes) {
     for (const reconcilerDef of ctx.storeDef.getOutputReconcilers()) {
         const typeDef = reconcilerDef.type;
         const className = (0, GenDataStoreShared_1.getOutboundCollectionClassName)(ctx, typeDef);
-        const varName = reconcilerDef.getDataStoreAccessorName();
+        const varName = typeDef.getName();
         lines.push(...(0, xrpa_utils_1.indent)(1, [
             `std::shared_ptr<${className}> ${varName};`,
         ]));
     }
-    lines.push(...(0, xrpa_utils_1.indent)(1, [
-        ``,
-        `template <typename R, typename... Ts>`,
-        `[[nodiscard]] R getObjectByID(${ctx.moduleDef.DSIdentifier.declareLocalParam(ctx.namespace, includes, "id")}) const {`,
-        `  R ret = nullptr;`,
-        `  (`,
-        `      [&]() {`,
-        `        if (ret != nullptr) {`,
-        `          return;`,
-        `        }`,
-        ...(0, xrpa_utils_1.indent)(4, genGetObjectConditional(ctx, includes)),
-        `      }(),`,
-        `      ...);`,
-        `  return ret;`,
-        `}`,
-        ``,
-    ]));
     lines.push(`};`);
     return lines;
 }
@@ -182,10 +145,10 @@ function genInterfaceTypes(ctx, includes) {
             classSpec.constructors.push({
                 parameters: [{
                         name: "id",
-                        type: ctx.moduleDef.DSIdentifier,
+                        type: ctx.moduleDef.ObjectUuid,
                     }, {
                         name: "collection",
-                        type: CppDatasetLibraryTypes_1.CollectionInterface.getLocalType(ctx.namespace, classSpec.includes) + "*",
+                        type: CppDatasetLibraryTypes_1.IObjectCollection.getLocalType(ctx.namespace, classSpec.includes) + "*",
                     }],
                 superClassInitializers: ["id", "collection"],
                 body: [],
@@ -211,7 +174,7 @@ function genDataStore(fileWriter, outdir, ctx) {
         ``,
         `namespace ${ctx.namespace} {`,
         ``,
-        (0, CppCodeGenImpl_1.forwardDeclareClass)((0, CppCodeGenImpl_1.getDataStoreName)(ctx.storeDef.apiname)),
+        (0, CppCodeGenImpl_1.forwardDeclareClass)((0, CppCodeGenImpl_1.getDataStoreClass)(ctx.storeDef.apiname, ctx.namespace, null)),
         ...genForwardDeclarations(ctx),
         ``,
         ...(0, xrpa_utils_1.mapAndCollapse)(accessors, CppCodeGenImpl_1.genClassHeaderDefinition),

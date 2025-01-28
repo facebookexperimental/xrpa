@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <xrpa-runtime/core/DatasetTypes.h>
 #include <xrpa-runtime/signals/SignalShared.h>
+#include <xrpa-runtime/utils/XrpaTypes.h>
 #include <chrono>
 #include <functional>
 
@@ -52,7 +52,7 @@ class OutboundSignalData {
   // caller is responsible for filling in the channel data
   template <typename MessageSender, typename SampleType>
   SignalChannelData<SampleType> sendSignalData(
-      const DSIdentifier& id,
+      const ObjectUuid& id,
       int32_t messageType,
       MessageSender* messageSender,
       int32_t frameCount) {
@@ -61,7 +61,7 @@ class OutboundSignalData {
   }
 
   template <typename MessageSender>
-  void tick(const DSIdentifier& id, int32_t messageType, MessageSender* messageSender) {
+  void tick(const ObjectUuid& id, int32_t messageType, MessageSender* messageSender) {
     auto endTime = std::chrono::high_resolution_clock::now();
     for (auto frameCount = getNextFrameCount(endTime); frameCount > 0;
          frameCount = getNextFrameCount(endTime)) {
@@ -106,7 +106,7 @@ class OutboundSignalData {
   // caller is responsible for filling in the channel data
   template <typename MessageSender>
   SignalPacket sendSignalPacket(
-      const DSIdentifier& id,
+      const ObjectUuid& id,
       int32_t messageType,
       MessageSender* messageSender,
       int32_t frameCount) {

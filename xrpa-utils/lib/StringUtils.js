@@ -17,7 +17,8 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genCommentLinesWithCommentMarker = exports.removeLastTrailingComma = exports.appendAligned = exports.lowerFirst = exports.upperFirst = exports.removeSuperfluousEmptyLines = exports.trimTrailingEmptyLines = exports.indentMatch = exports.indent = void 0;
+exports.normalizeIdentifier = exports.genCommentLinesWithCommentMarker = exports.removeLastTrailingComma = exports.appendAligned = exports.lowerFirst = exports.upperFirst = exports.removeSuperfluousEmptyLines = exports.trimTrailingEmptyLines = exports.indentMatch = exports.indent = void 0;
+const ArrayUtils_1 = require("./ArrayUtils");
 function indent(count, lines) {
     const indentStr = " ".repeat(count * 2);
     const ret = [];
@@ -113,4 +114,8 @@ function genCommentLinesWithCommentMarker(commentMarker, str) {
     return [];
 }
 exports.genCommentLinesWithCommentMarker = genCommentLinesWithCommentMarker;
+function normalizeIdentifier(name) {
+    return (0, ArrayUtils_1.collapse)(name.split("_").map(s => s.split(/(?=[A-Z][a-z]|(?<=[a-z])[A-Z])/))).filter(s => s.length > 0).map(s => s.toLowerCase());
+}
+exports.normalizeIdentifier = normalizeIdentifier;
 //# sourceMappingURL=StringUtils.js.map

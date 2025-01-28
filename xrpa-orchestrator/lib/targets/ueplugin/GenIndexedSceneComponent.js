@@ -33,7 +33,7 @@ const GenReadReconcilerDataStore_1 = require("../cpp/GenReadReconcilerDataStore"
 const GenBlueprintTypes_1 = require("./GenBlueprintTypes");
 const PROXY_OBJ = "reconciledObj_";
 function genComponentInit(ctx, includes, reconcilerDef) {
-    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `GetDataStoreSubsystem()->DataStore->${reconcilerDef.getDataStoreAccessorName()}`, "this", SceneComponentShared_1.getFieldMemberName);
+    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `GetDataStoreSubsystem()->DataStore->${reconcilerDef.type.getName()}`, "this", SceneComponentShared_1.getFieldMemberName);
     return [
         `if (dsIsInitialized_) {`,
         `  return;`,
@@ -49,7 +49,7 @@ function genComponentInit(ctx, includes, reconcilerDef) {
     ];
 }
 function genComponentDeinit(ctx, reconcilerDef) {
-    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `GetDataStoreSubsystem()->DataStore->${reconcilerDef.getDataStoreAccessorName()}`, "this", SceneComponentShared_1.getFieldMemberName);
+    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `GetDataStoreSubsystem()->DataStore->${reconcilerDef.type.getName()}`, "this", SceneComponentShared_1.getFieldMemberName);
     return [
         `if (!dsIsInitialized_) {`,
         `  return;`,
@@ -59,7 +59,7 @@ function genComponentDeinit(ctx, reconcilerDef) {
     ];
 }
 function getFieldSetterHooks(ctx, reconcilerDef) {
-    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `GetDataStoreSubsystem()->DataStore->${reconcilerDef.getDataStoreAccessorName()}`, "this", SceneComponentShared_1.getFieldMemberName);
+    const bindingCalls = (0, GenReadReconcilerDataStore_1.genIndexedBindingCalls)(ctx, reconcilerDef, `GetDataStoreSubsystem()->DataStore->${reconcilerDef.type.getName()}`, "this", SceneComponentShared_1.getFieldMemberName);
     const ret = {};
     for (const fieldName in bindingCalls) {
         ret[fieldName] = {

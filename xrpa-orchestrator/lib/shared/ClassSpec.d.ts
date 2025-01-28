@@ -15,6 +15,7 @@
  */
 
 
+import { ThunkWithParam } from "@xrpa/xrpa-utils";
 import { IncludeAggregator } from "./Helpers";
 import { TypeDefinition } from "./TypeDefinition";
 import { TypeValue } from "./TypeValue";
@@ -24,7 +25,7 @@ export interface MethodParam {
     defaultValue?: string;
 }
 export type ClassVisibility = "public" | "private" | "protected";
-export type ClassBodyThunk = Array<string> | ((includes: IncludeAggregator | null) => Array<string>);
+export type ClassBodyThunk = ThunkWithParam<Array<string>, IncludeAggregator | null>;
 export declare class ClassSpec {
     constructor(params: {
         name: string;

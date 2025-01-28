@@ -22,7 +22,7 @@ const PrimitiveType_1 = require("./PrimitiveType");
 const TypeValue_1 = require("./TypeValue");
 class EnumType extends PrimitiveType_1.PrimitiveType {
     constructor(codegen, enumName, apiname, enumValues, localTypeOverride) {
-        const typename = codegen.nsJoin(codegen.getDataStoreName(apiname), enumName);
+        const typename = codegen.nsJoin(codegen.getTypesHeaderNamespace(apiname), enumName);
         super(codegen, enumName, codegen.PRIMITIVE_INTRINSICS.uint32, localTypeOverride ?? { typename, headerFile: codegen.getTypesHeaderName(apiname) }, 4, true, new TypeValue_1.EnumValue(codegen, typename, Object.keys(enumValues)[0], ""));
         this.enumName = enumName;
         this.enumValues = enumValues;
@@ -40,11 +40,11 @@ class EnumType extends PrimitiveType_1.PrimitiveType {
         }
         return undefined;
     }
-    genTypeDefinition() {
+    genTypeDefinition(includes) {
         if (this.localTypeOverride) {
             return null;
         }
-        return this.codegen.genEnumDefinition(this.enumName, this.enumValues);
+        return this.codegen.genEnumDefinition(this.enumName, this.enumValues, includes);
     }
     convertValueFromLocal(inNamespace, includes, value) {
         if (typeof value === "string") {

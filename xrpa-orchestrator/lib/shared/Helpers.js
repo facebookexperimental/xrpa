@@ -28,6 +28,9 @@ if (!fs_extra_1.default.pathExistsSync(runtimeSrcRootPath)) {
     runtimeSrcRootPath = path_1.default.join(__dirname, "../../../runtime");
 }
 function getRuntimeSrcPath(target) {
+    if (target === "python") {
+        return path_1.default.join(runtimeSrcRootPath, target, "xrpa_runtime");
+    }
     return path_1.default.join(runtimeSrcRootPath, target, "xrpa-runtime");
 }
 exports.getRuntimeSrcPath = getRuntimeSrcPath;

@@ -16,14 +16,20 @@
 
 "use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ClassSpec = void 0;
+const assert_1 = __importDefault(require("assert"));
 class ClassSpec {
     constructor(params) {
         this.constructors = [];
         this.virtualDestructor = false;
         this.methods = [];
         this.members = [];
+        (0, assert_1.default)(!params.name.includes("::"), `Class name cannot contain :: (found ${params.name})`);
+        (0, assert_1.default)(!params.name.includes("."), `Class name cannot contain . (found ${params.name})`);
         this.name = params.name;
         this.namespace = params.namespace;
         this.includes = params.includes;

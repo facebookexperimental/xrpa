@@ -143,9 +143,6 @@ class InputReconcilerDefinition extends BaseReconcilerDefinition {
     shouldGenerateConcreteReconciledType() {
         return this.useGenericReconciledType || this.hasIndexedBinding();
     }
-    getDataStoreAccessorName() {
-        return this.type.getName() + "In";
-    }
 }
 exports.InputReconcilerDefinition = InputReconcilerDefinition;
 class OutputReconcilerDefinition extends BaseReconcilerDefinition {
@@ -156,9 +153,6 @@ class OutputReconcilerDefinition extends BaseReconcilerDefinition {
     }
     shouldGenerateConcreteReconciledType() {
         return this.useGenericReconciledType;
-    }
-    getDataStoreAccessorName() {
-        return this.type.getName() + "Out";
     }
 }
 exports.OutputReconcilerDefinition = OutputReconcilerDefinition;
@@ -182,7 +176,7 @@ class DataStoreDefinition {
             throw new Error(`Type ${params.type} is not a collection`);
         }
         const inputDef = new InputReconcilerDefinition(type, params.outboundFields ?? [], params.fieldAccessorNameOverrides ?? {}, params.componentProps ?? {}, params.useGenericReconciledType ?? false, params.indexes ?? []);
-        this.moduleDef.setCollectionAsInbound(type, params.reconciledTo, inputDef.indexConfigs);
+        this.moduleDef.setCollectionAsInbound(type, inputDef.componentProps, params.reconciledTo, inputDef.indexConfigs);
         this.inputs.push(inputDef);
         return inputDef;
     }

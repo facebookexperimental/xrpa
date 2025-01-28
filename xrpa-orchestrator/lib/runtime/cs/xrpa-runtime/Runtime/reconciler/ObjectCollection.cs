@@ -19,26 +19,26 @@ using System.Collections.Generic;
 namespace Xrpa
 {
 
-    public abstract class ObjectCollection<ObjectAccessorType, ReconciledType> : CollectionInterface, IEnumerable<ReconciledType>
+    public abstract class ObjectCollection<ObjectAccessorType, ReconciledType> : IObjectCollection, IEnumerable<ReconciledType>
       where ObjectAccessorType : ObjectAccessorInterface, new()
       where ReconciledType : class, IDataStoreObjectAccessor<ObjectAccessorType>
     {
 
         public delegate ReconciledType CreateDelegateFunction(
-          DSIdentifier id,
+          ObjectUuid id,
           ObjectAccessorType remoteValue,
-          CollectionInterface collection
+          IObjectCollection collection
         );
 
         private readonly ulong _inboundFieldMask;
         private readonly ulong _indexedFieldMask;
         private readonly bool _isLocalOwned;
 
-        private readonly Dictionary<DSIdentifier, ReconciledType> _objects;
+        private readonly Dictionary<ObjectUuid, ReconciledType> _objects;
         private CreateDelegateFunction _createDelegate;
 
         public ObjectCollection(
-          DatasetReconciler reconciler,
+          DataStoreReconciler reconciler,
           int collectionId,
           ulong inboundFieldMask,
           ulong indexedFieldMask,
@@ -56,7 +56,7 @@ namespace Xrpa
             return _isLocalOwned;
         }
 
-        public ReconciledType GetObject(DSIdentifier id)
+        public ReconciledType GetObject(ObjectUuid id)
         {
             if (_objects.TryGetValue(id, out ReconciledType entry))
             {
@@ -83,9 +83,9 @@ namespace Xrpa
         protected virtual void IndexNotifyDelete(ReconciledType obj) { }
 
         protected virtual void BindingTick() { }
-        protected virtual void BindingWriteChanges(DSIdentifier id) { }
+        protected virtual void BindingWriteChanges(ObjectUuid id) { }
         protected virtual void BindingProcessMessage(
-            DSIdentifier id,
+            ObjectUuid id,
             int messageType,
             int timestamp,
             MemoryAccessor msgAccessor)
@@ -100,7 +100,7 @@ namespace Xrpa
                 return;
             }
 
-            DSIdentifier id = obj.GetXrpaId();
+            ObjectUuid id = obj.GetXrpaId();
             _objects.Add(id, obj);
             obj.SetXrpaCollection(this);
 
@@ -110,7 +110,7 @@ namespace Xrpa
             }
         }
 
-        protected void RemoveObjectInternal(DSIdentifier id)
+        protected void RemoveObjectInternal(ObjectUuid id)
         {
             if (!_isLocalOwned)
             {
@@ -139,10 +139,8 @@ namespace Xrpa
             _createDelegate = createDelegate;
         }
 
-        public override void SetDirty(DSIdentifier id, ref bool hasNotifiedNeedsWrite, ulong fieldsChanged)
+        public override void SetDirty(ObjectUuid id, ulong fieldsChanged)
         {
-            base.SetDirty(id, ref hasNotifiedNeedsWrite, fieldsChanged);
-
             if ((_indexedFieldMask & fieldsChanged) != 0)
             {
                 if (_objects.TryGetValue(id, out ReconciledType obj))
@@ -165,7 +163,7 @@ namespace Xrpa
             }
         }
 
-        public override void WriteChanges(DatasetAccessor accessor, DSIdentifier id)
+        public override void WriteChanges(TransportStreamAccessor accessor, ObjectUuid id)
         {
             if (_objects.TryGetValue(id, out ReconciledType obj))
             {
@@ -177,7 +175,7 @@ namespace Xrpa
             }
             else if (_isLocalOwned)
             {
-                var changeEvent = accessor.WriteChangeEvent<DSCollectionChangeEventAccessor>((int)DSChangeType.DeleteObject);
+                var changeEvent = accessor.WriteChangeEvent<CollectionChangeEventAccessor>((int)CollectionChangeType.DeleteObject);
                 changeEvent.SetCollectionId(GetId());
                 changeEvent.SetObjectId(id);
             }
@@ -196,7 +194,7 @@ namespace Xrpa
 
         }
 
-        public override void ProcessCreate(DSIdentifier id, MemoryAccessor memAccessor)
+        public override void ProcessCreate(ObjectUuid id, MemoryAccessor memAccessor)
         {
             if (_isLocalOwned)
             {
@@ -224,7 +222,7 @@ namespace Xrpa
         }
 
         public override bool ProcessUpdate(
-            DSIdentifier id,
+            ObjectUuid id,
             MemoryAccessor memAccessor,
             ulong fieldsChanged)
         {
@@ -232,7 +230,7 @@ namespace Xrpa
         }
 
         private bool ProcessUpdateInternal(
-            DSIdentifier id,
+            ObjectUuid id,
             MemoryAccessor memAccessor,
             ulong fieldsChanged,
             bool notify)
@@ -261,7 +259,7 @@ namespace Xrpa
             return true;
         }
 
-        public override void ProcessDelete(DSIdentifier id)
+        public override void ProcessDelete(ObjectUuid id)
         {
             if (_isLocalOwned)
             {
@@ -274,7 +272,7 @@ namespace Xrpa
             }
         }
 
-        private void ProcessDeleteInternal(DSIdentifier id, ReconciledType obj)
+        private void ProcessDeleteInternal(ObjectUuid id, ReconciledType obj)
         {
             if (_indexedFieldMask != 0)
             {
@@ -287,7 +285,7 @@ namespace Xrpa
         }
 
         public override void ProcessMessage(
-            DSIdentifier id,
+            ObjectUuid id,
             int messageType,
             int timestamp,
             MemoryAccessor msgAccessor)
@@ -305,7 +303,7 @@ namespace Xrpa
             }
         }
 
-        public override void ProcessUpsert(DSIdentifier id, MemoryAccessor memAccessor)
+        public override void ProcessUpsert(ObjectUuid id, MemoryAccessor memAccessor)
         {
             if (!ProcessUpdateInternal(id, memAccessor, _inboundFieldMask, true))
             {
@@ -313,14 +311,14 @@ namespace Xrpa
             }
         }
 
-        public override void ProcessFullReconcile(HashSet<DSIdentifier> reconciledIds)
+        public override void ProcessFullReconcile(HashSet<ObjectUuid> reconciledIds)
         {
             if (_isLocalOwned)
             {
                 return;
             }
 
-            List<DSIdentifier> toDelete = new();
+            List<ObjectUuid> toDelete = new();
             foreach (var kvp in _objects)
             {
                 if (!reconciledIds.Contains(kvp.Key))
@@ -340,7 +338,7 @@ namespace Xrpa
             {
                 return;
             }
-            (new List<DSIdentifier>(_objects.Keys)).ForEach(id => ProcessDeleteInternal(id, _objects[id]));
+            (new List<ObjectUuid>(_objects.Keys)).ForEach(id => ProcessDeleteInternal(id, _objects[id]));
         }
     }
 

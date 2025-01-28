@@ -43,7 +43,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.writeMonoBehaviour = exports.genProcessUpdateBody = exports.genTransformUpdates = exports.genTransformInitializers = exports.genFieldInitializers = exports.genFieldDefaultInitializers = exports.genUnityMessageFieldAccessors = exports.genUnityMessageChannelDispatch = exports.genFieldProperties = exports.getFieldMemberName = exports.getMessageDelegateName = exports.getComponentClassName = exports.checkForTransformMapping = exports.IntrinsicProperty = void 0;
+exports.writeMonoBehaviour = exports.genDataStoreObjectAccessors = exports.genProcessUpdateBody = exports.genTransformUpdates = exports.genTransformInitializers = exports.genFieldInitializers = exports.genFieldDefaultInitializers = exports.genUnityMessageFieldAccessors = exports.genUnityMessageChannelDispatch = exports.genFieldProperties = exports.getFieldMemberName = exports.getMessageDelegateName = exports.getComponentClassName = exports.checkForTransformMapping = exports.IntrinsicProperty = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
@@ -53,6 +53,7 @@ const GenMessageAccessors_1 = require("../csharp/GenMessageAccessors");
 const GenWriteReconcilerDataStore_1 = require("../csharp/GenWriteReconcilerDataStore");
 const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
 const GenDataStoreSubsystem_1 = require("./GenDataStoreSubsystem");
+const CsharpDatasetLibraryTypes_1 = require("../csharp/CsharpDatasetLibraryTypes");
 var IntrinsicProperty;
 (function (IntrinsicProperty) {
     IntrinsicProperty["position"] = "position";
@@ -461,6 +462,61 @@ function genProcessUpdateBody(params) {
     return lines;
 }
 exports.genProcessUpdateBody = genProcessUpdateBody;
+function genDataStoreObjectAccessors(ctx, classSpec) {
+    classSpec.methods.push({
+        name: "GetXrpaId",
+        returnType: ctx.moduleDef.ObjectUuid.declareLocalReturnType(ctx.namespace, classSpec.includes, true),
+        body: [
+            `return _id;`,
+        ]
+    });
+    classSpec.members.push({
+        name: "id",
+        type: ctx.moduleDef.ObjectUuid,
+        visibility: "protected",
+    });
+    classSpec.members.push({
+        name: "hasNotifiedNeedsWrite",
+        type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.bool.typename,
+        initialValue: "false",
+        visibility: "protected",
+    });
+    classSpec.methods.push({
+        name: "SetXrpaCollection",
+        parameters: [{
+                name: "collection",
+                type: CsharpDatasetLibraryTypes_1.IObjectCollection,
+            }],
+        body: [
+            `if (collection == null && _collection != null && !_hasNotifiedNeedsWrite) {`,
+            `  // object removed from collection`,
+            `  _collection.NotifyObjectNeedsWrite(_id);`,
+            `  _hasNotifiedNeedsWrite = true;`,
+            `}`,
+            ``,
+            `_collection = collection;`,
+            ``,
+            `if (_collection != null && !_hasNotifiedNeedsWrite) {`,
+            `  // object added to collection`,
+            `  _collection.NotifyObjectNeedsWrite(_id);`,
+            `  _hasNotifiedNeedsWrite = true;`,
+            `}`,
+        ],
+    });
+    classSpec.methods.push({
+        name: "GetCollectionId",
+        returnType: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
+        body: [
+            `return _collection == null ? -1 : _collection.GetId();`,
+        ],
+    });
+    classSpec.members.push({
+        name: "collection",
+        type: CsharpDatasetLibraryTypes_1.IObjectCollection,
+        visibility: "protected",
+    });
+}
+exports.genDataStoreObjectAccessors = genDataStoreObjectAccessors;
 function writeMonoBehaviour(classSpec, params) {
     const lines = (0, CsharpCodeGenImpl_1.genClassDefinition)(classSpec);
     lines.unshift(...CsharpCodeGenImpl_1.HEADER, `#pragma warning disable CS0414`, // disable unused private member warning

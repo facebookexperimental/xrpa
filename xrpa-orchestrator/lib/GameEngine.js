@@ -17,7 +17,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateComponentProperties = exports.GameComponentBaseClassOverride = exports.GameComponentBinding = exports.GameComponentBindingsDisabled = exports.Ephemeral = exports.HiddenGameComponent = exports.GameComponentOwner = exports.GameComponentParent = exports.getGameEngineConfig = exports.GameEngineConfig = exports.IfNotGameEngine = exports.IfGameEngine = exports.COMPONENT_BASE_CLASS = void 0;
+exports.generateComponentProperties = exports.GameComponentBaseClassOverride = exports.GameComponentBinding = exports.GameComponentBindingsDisabled = exports.Spawnable = exports.Ephemeral = exports.HiddenGameComponent = exports.GameComponentOwner = exports.GameComponentParent = exports.getGameEngineConfig = exports.GameEngineConfig = exports.IfNotGameEngine = exports.IfGameEngine = exports.COMPONENT_BASE_CLASS = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const simply_immutable_1 = require("simply-immutable");
 const Coordinates_1 = require("./Coordinates");
@@ -28,6 +28,7 @@ const PARENT_BINDING = "xrpa.gamecomponent.parentBinding";
 const GAME_OBJECT_BINDING = "xrpa.gamecomponent.gameObjectBinding";
 const HIDE_COMPONENT = "xrpa.gamecomponent.hideComponent";
 const EPHEMERAL_PROPERTY = "xrpa.gamecomponent.ephemeral";
+const SPAWNABLE_COMPONENT = "xrpa.gamecomponent.spawnable";
 const GAME_COMPONENT_BINDING_ENABLED = (0, XrpaLanguage_1.InheritedProperty)("xrpa.gamecomponent.bindingEnabled");
 const BINDING_CONFIG = (0, XrpaLanguage_1.InheritedProperty)("xrpa.gamecomponent.bindingConfig");
 exports.COMPONENT_BASE_CLASS = (0, XrpaLanguage_1.InheritedProperty)("xrpa.gamecomponent.componentBaseClass");
@@ -66,6 +67,13 @@ function Ephemeral(arg0, arg1) {
     return (0, XrpaLanguage_1.setPropertiesOrCurry)({ [EPHEMERAL_PROPERTY]: true }, arg0, arg1);
 }
 exports.Ephemeral = Ephemeral;
+function Spawnable(arg0, arg1) {
+    return (0, XrpaLanguage_1.setPropertiesOrCurry)({
+        [SPAWNABLE_COMPONENT]: true,
+        [HIDE_COMPONENT]: true,
+    }, arg0, arg1);
+}
+exports.Spawnable = Spawnable;
 function GameComponentBindingsDisabled(collection) {
     if (collection) {
         return (0, XrpaLanguage_1.setProperty)((0, xrpa_utils_1.resolveThunk)(collection), GAME_COMPONENT_BINDING_ENABLED, false);
@@ -130,8 +138,9 @@ function generateComponentProperties(ctx, collection) {
     return {
         basetype: (0, XrpaLanguage_1.evalProperty)(collection.properties, COMPONENT_BASE_CLASS_OVERRIDE) ?? config.componentBaseClass,
         fieldToPropertyBindings,
-        internalOnly: collection.properties[HIDE_COMPONENT] === true,
+        internalOnly: (0, XrpaLanguage_1.evalProperty)(collection.properties, HIDE_COMPONENT) === true,
         ephemeralProperties: Object.keys(collection.fieldsStruct.fields).filter(k => (0, XrpaLanguage_1.evalProperty)(collection.fieldsStruct.fields[k].properties, EPHEMERAL_PROPERTY) === true),
+        generateSpawner: (0, XrpaLanguage_1.evalProperty)(collection.properties, SPAWNABLE_COMPONENT) === true,
     };
 }
 exports.generateComponentProperties = generateComponentProperties;

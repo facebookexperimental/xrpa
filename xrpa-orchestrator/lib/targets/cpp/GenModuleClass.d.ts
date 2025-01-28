@@ -20,10 +20,10 @@ import { DataStoreDefinition } from "../../shared/DataStore";
 import { IncludeAggregator } from "../../shared/Helpers";
 import { ModuleDefinition } from "../../shared/ModuleDefinition";
 export declare function getModuleHeaderName(moduleDef: ModuleDefinition): string;
-export declare function getInboundDatasetVarName(storeDef: DataStoreDefinition): string;
-export declare function getOutboundDatasetVarName(storeDef: DataStoreDefinition): string;
-export declare function genInboundDatasetDeclaration(storeDef: DataStoreDefinition, namespace: string, includes: IncludeAggregator, semicolonTerminate: boolean): string;
-export declare function genOutboundDatasetDeclaration(storeDef: DataStoreDefinition, namespace: string, includes: IncludeAggregator, semicolonTerminate: boolean): string;
-export declare function genDatasetDeclarations(moduleDef: ModuleDefinition, namespace: string, includes: IncludeAggregator, semicolonTerminate: boolean): string[];
+export declare function getInboundTransportVarName(storeDef: DataStoreDefinition): string;
+export declare function getOutboundTransportVarName(storeDef: DataStoreDefinition): string;
+export declare function genInboundTransportDeclaration(storeDef: DataStoreDefinition, namespace: string, includes: IncludeAggregator, semicolonTerminate: boolean): string;
+export declare function genOutboundTransportDeclaration(storeDef: DataStoreDefinition, namespace: string, includes: IncludeAggregator, semicolonTerminate: boolean): string;
+export declare function genTransportDeclarations(moduleDef: ModuleDefinition, namespace: string, includes: IncludeAggregator, semicolonTerminate: boolean): string[];
 export declare function genModuleClass(fileWriter: FileWriter, libDir: string, moduleDef: ModuleDefinition): void;
 

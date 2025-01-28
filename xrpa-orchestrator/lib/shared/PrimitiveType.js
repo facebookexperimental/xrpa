@@ -128,7 +128,13 @@ class PrimitiveType {
         if (!paramName) {
             return paramType;
         }
-        return `${paramType} ${paramName}`;
+        return this.codegen.genDeclaration({
+            typename: paramType,
+            inNamespace: "",
+            varName: paramName,
+            initialValue: new TypeValue_1.EmptyValue(this.codegen, paramType, ""),
+            includeTerminator: false,
+        });
     }
     declareLocalReturnType(inNamespace, includes, canBeRef) {
         if (!canBeRef) {

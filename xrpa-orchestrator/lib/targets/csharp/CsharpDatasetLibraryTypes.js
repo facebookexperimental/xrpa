@@ -40,7 +40,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SharedDataset = exports.ObjectCollectionIndexedBinding = exports.IIndexBoundType = exports.ObjectCollectionIndex = exports.ObjectCollection = exports.CollectionInterface = exports.DataStoreObject = exports.IDataStoreObjectAccessor = exports.IDataStoreObject = exports.DatasetReconciler = exports.DatasetInterface = exports.DatasetConfig = exports.DatasetAccessor = exports.ObjectAccessorInterface = exports.DSHashValue = exports.MemoryAccessor = void 0;
+exports.SharedMemoryTransportStream = exports.HeapMemoryTransportStream = exports.TransportStreamAccessor = exports.TransportStream = exports.ObjectCollectionIndexedBinding = exports.IIndexBoundType = exports.ObjectCollectionIndex = exports.ObjectCollection = exports.IObjectCollection = exports.DataStoreObject = exports.IDataStoreObjectAccessor = exports.IDataStoreObject = exports.DataStoreReconciler = exports.ObjectAccessorInterface = exports.TransportConfig = exports.HashValue = exports.MemoryAccessor = void 0;
 const PrimitiveType_1 = require("../../shared/PrimitiveType");
 const TypeValue_1 = require("../../shared/TypeValue");
 const CodeGen = __importStar(require("./CsharpCodeGenImpl"));
@@ -49,32 +49,33 @@ function CsPrimitiveType(name, size = 0) {
     return new PrimitiveType_1.PrimitiveType(CodeGen, name, { typename: CodeGen.nsJoin(CsharpCodeGenImpl_1.XRPA_NAMESPACE, name) }, { typename: CodeGen.nsJoin(CsharpCodeGenImpl_1.XRPA_NAMESPACE, name) }, size, true, new TypeValue_1.EmptyValue(CodeGen, CodeGen.nsJoin(CsharpCodeGenImpl_1.XRPA_NAMESPACE, name), ""));
 }
 ///////////////////////////////////////////////////////////////////////////////
-// Core:
+// Utils:
 exports.MemoryAccessor = CsPrimitiveType("MemoryAccessor", 16);
-exports.DSHashValue = CsPrimitiveType("DSHashValue", 32);
+exports.HashValue = CsPrimitiveType("HashValue", 32);
+exports.TransportConfig = CsPrimitiveType("TransportConfig");
 exports.ObjectAccessorInterface = CsPrimitiveType("ObjectAccessorInterface", 8);
-exports.DatasetAccessor = CsPrimitiveType("DatasetAccessor");
-exports.DatasetConfig = CsPrimitiveType("DatasetConfig");
-exports.DatasetInterface = CsPrimitiveType("DatasetInterface");
 ///////////////////////////////////////////////////////////////////////////////
 // Transport reconciler:
-exports.DatasetReconciler = CsPrimitiveType("DatasetReconciler");
+exports.DataStoreReconciler = CsPrimitiveType("DataStoreReconciler");
 ///////////////////////////////////////////////////////////////////////////////
 // Collections:
 exports.IDataStoreObject = CsPrimitiveType("IDataStoreObject");
 exports.IDataStoreObjectAccessor = CsPrimitiveType("IDataStoreObjectAccessor");
 exports.DataStoreObject = CsPrimitiveType("DataStoreObject");
-exports.CollectionInterface = CsPrimitiveType("CollectionInterface");
+exports.IObjectCollection = CsPrimitiveType("IObjectCollection");
 exports.ObjectCollection = CsPrimitiveType("ObjectCollection");
 exports.ObjectCollectionIndex = CsPrimitiveType("ObjectCollectionIndex");
 exports.IIndexBoundType = CsPrimitiveType("IIndexBoundType");
 exports.ObjectCollectionIndexedBinding = CsPrimitiveType("ObjectCollectionIndexedBinding");
 ///////////////////////////////////////////////////////////////////////////////
 // Transport:
-exports.SharedDataset = CsPrimitiveType("SharedDataset");
+exports.TransportStream = CsPrimitiveType("TransportStream");
+exports.TransportStreamAccessor = CsPrimitiveType("TransportStreamAccessor");
+exports.HeapMemoryTransportStream = CsPrimitiveType("HeapMemoryTransportStream");
+exports.SharedMemoryTransportStream = CsPrimitiveType("SharedMemoryTransportStream");
 CodeGen.registerXrpaTypes({
-    DatasetAccessor: exports.DatasetAccessor,
     MemoryAccessor: exports.MemoryAccessor,
     ObjectAccessorInterface: exports.ObjectAccessorInterface,
+    TransportStreamAccessor: exports.TransportStreamAccessor,
 });
 //# sourceMappingURL=CsharpDatasetLibraryTypes.js.map

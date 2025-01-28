@@ -31,10 +31,10 @@ function getDataStoreSubsystemName(storeDef) {
 exports.getDataStoreSubsystemName = getDataStoreSubsystemName;
 function genDataStoreSubsystem(fileWriter, outSrcDir, storeDef) {
     const className = getDataStoreSubsystemName(storeDef);
-    const dataStoreName = (0, CsharpCodeGenImpl_1.getDataStoreName)(storeDef.apiname);
+    const dataStoreClassName = (0, CsharpCodeGenImpl_1.getDataStoreClass)(storeDef.apiname, "", null);
     const lines = (0, UnityHelpers_1.genUnitySingleton)(className, [
         `var transportSubsystem = ${(0, GenTransportSubsystem_1.getTransportSubsystemName)(storeDef)}.Instance;`,
-        `DataStore = new ${dataStoreName}.${dataStoreName}(transportSubsystem.${(0, GenTransportSubsystem_1.getInboundDatasetVarName)(storeDef)}, transportSubsystem.${(0, GenTransportSubsystem_1.getOutboundDatasetVarName)(storeDef)});`,
+        `DataStore = new ${dataStoreClassName}(transportSubsystem.${(0, GenTransportSubsystem_1.getInboundTransportVarName)(storeDef)}, transportSubsystem.${(0, GenTransportSubsystem_1.getOutboundTransportVarName)(storeDef)});`,
     ], [
         `DataStore?.Shutdown();`,
         `DataStore = null;`,
@@ -51,7 +51,7 @@ function genDataStoreSubsystem(fileWriter, outSrcDir, storeDef) {
         `  OnDestroy();`,
         `}`,
         ``,
-        `public ${dataStoreName}.${dataStoreName} DataStore;`,
+        `public ${dataStoreClassName} DataStore;`,
     ]);
     lines.unshift(...CsharpCodeGenImpl_1.HEADER, ``, `using UnityEngine;`, ``);
     fileWriter.writeFile(path_1.default.join(outSrcDir, `${className}.cs`), lines);

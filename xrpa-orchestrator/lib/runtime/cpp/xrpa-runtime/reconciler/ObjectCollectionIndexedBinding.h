@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <xrpa-runtime/reconciler/DatasetReconcilerInterfaces.h>
+#include <xrpa-runtime/reconciler/DataStoreInterfaces.h>
 #include <xrpa-runtime/reconciler/ObjectCollectionIndex.h>
 
 #include <unordered_map>
@@ -78,8 +78,8 @@ class ObjectCollectionIndexedBinding
 
     // bind local objects to reconciled object
     auto id = reconciledObj->getXrpaId();
-    auto& objVec = localObjects_[indexValue];
-    for (auto& localObj : objVec) {
+    auto& localObjects = localObjects_[indexValue];
+    for (auto& localObj : localObjects) {
       if (localObj->addXrpaBinding(reconciledObj)) {
         boundLocalObjects_[id].emplace_back(localObj);
         localObj->processDSUpdate(inboundFieldMask_);
@@ -124,7 +124,7 @@ class ObjectCollectionIndexedBinding
     }
   }
 
-  void writeChanges(const DSIdentifier& id) {
+  void writeChanges(const ObjectUuid& id) {
     auto vecIter = boundLocalObjects_.find(id);
     if (vecIter == boundLocalObjects_.end()) {
       return;
@@ -134,7 +134,7 @@ class ObjectCollectionIndexedBinding
     }
   }
 
-  void processUpdate(const DSIdentifier& id, uint64_t fieldsChanged) {
+  void processUpdate(const ObjectUuid& id, uint64_t fieldsChanged) {
     auto vecIter = boundLocalObjects_.find(id);
     if (vecIter == boundLocalObjects_.end()) {
       return;
@@ -145,7 +145,7 @@ class ObjectCollectionIndexedBinding
   }
 
   void processMessage(
-      const DSIdentifier& id,
+      const ObjectUuid& id,
       int32_t messageType,
       int32_t timestamp,
       MemoryAccessor messageData) {
@@ -161,7 +161,7 @@ class ObjectCollectionIndexedBinding
  private:
   uint64_t inboundFieldMask_;
   std::unordered_map<IndexFieldType, std::vector<LocalTypePtr>> localObjects_;
-  std::unordered_map<DSIdentifier, std::vector<LocalTypePtr>> boundLocalObjects_;
+  std::unordered_map<ObjectUuid, std::vector<LocalTypePtr>> boundLocalObjects_;
 };
 
 } // namespace Xrpa

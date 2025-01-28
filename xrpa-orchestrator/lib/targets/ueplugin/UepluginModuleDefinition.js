@@ -57,13 +57,13 @@ class UepluginModuleDefinition extends CppModuleDefinition_1.CppModuleDefinition
     createStruct(name, apiname, fields, localTypeOverride) {
         return new UeTypeDefinitions_1.StructTypeUe(this.codegen, name, apiname, undefined, fields, localTypeOverride);
     }
-    setCollectionAsInbound(type, reconciledTo, indexes) {
+    setCollectionAsInbound(type, componentProps, reconciledTo, indexes) {
         for (const index of (indexes ?? [])) {
             if (index.boundClassName === "") {
                 index.boundClassName = (0, SceneComponentShared_1.getComponentClassName)(null, type);
             }
         }
-        super.setCollectionAsInbound(type, reconciledTo, indexes);
+        super.setCollectionAsInbound(type, componentProps, reconciledTo, indexes);
     }
     setCollectionAsOutbound(type, componentProps) {
         if ((0, xrpa_utils_1.filterToString)(componentProps.basetype)?.endsWith("Component")) {
@@ -98,7 +98,7 @@ class UepluginModuleDefinition extends CppModuleDefinition_1.CppModuleDefinition
             const ctx = {
                 moduleDef: this,
                 storeDef,
-                namespace: this.codegen.getDataStoreName(storeDef.apiname),
+                namespace: this.codegen.getDataStoreHeaderNamespace(storeDef.apiname),
             };
             (0, GenDataStore_1.genDataStore)(fileWriter, data.privateSrcDir, ctx);
             // generate DataStore subsystem files

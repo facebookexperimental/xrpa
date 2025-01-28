@@ -19,17 +19,16 @@ import { IncludeAggregator } from "./Helpers";
 import { InterfaceType } from "./InterfaceType";
 import { StructType } from "./StructType";
 import { TargetCodeGenImpl } from "./TargetCodeGen";
-import { CollectionTypeDefinition, InterfaceTypeDefinition, StructSpec, TypeMetaType } from "./TypeDefinition";
+import { CollectionNameAndType, CollectionTypeDefinition, InterfaceTypeDefinition, StructSpec, TypeMetaType } from "./TypeDefinition";
 export declare class CollectionType extends InterfaceType implements CollectionTypeDefinition {
-    readonly dsType: number;
+    readonly collectionId: number;
     readonly maxCount: number;
     readonly interfaceType: InterfaceTypeDefinition | undefined;
-    constructor(codegen: TargetCodeGenImpl, collectionName: string, apiname: string, dsIdentifierType: StructType, fields: StructSpec, dsType: number, maxCount: number, interfaceType: InterfaceTypeDefinition | undefined);
+    constructor(codegen: TargetCodeGenImpl, collectionName: string, apiname: string, objectUuidType: StructType, fields: StructSpec, collectionId: number, maxCount: number, interfaceType: InterfaceTypeDefinition | undefined);
     getMetaType(): TypeMetaType;
     getHashData(): Record<string, unknown>;
     getAllFields(): StructSpec;
-    getCompatibleTypeList(inNamespace: string, includes: IncludeAggregator | null): string[];
-    protected getDSType(): number;
-    getDSTypeID(inNamespace: string, includes: IncludeAggregator | null): string;
+    getCompatibleTypeList(inNamespace: string, includes: IncludeAggregator | null): CollectionNameAndType[];
+    getCollectionId(): number;
 }
 

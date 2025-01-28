@@ -73,7 +73,7 @@ function genSendMessageBody(params) {
         const messageType = params.typeDef.getFieldIndex(params.fieldName);
         if (params.fieldType.hasFields()) {
             const msgWriteAccessor = params.fieldType.getWriteAccessorType(params.ctx.namespace, params.includes);
-            lines.push(`auto message = ${msgWriteAccessor}(collection_->sendMessage(`, `    getXrpaId(),`, `    ${messageType},`, `    ${msgWriteAccessor}::DS_SIZE));`, ...genMessageParamInitializer(params.ctx, params.includes, params.fieldType));
+            lines.push(`auto message = ${msgWriteAccessor}(collection_->sendMessage(`, `    getXrpaId(),`, `    ${messageType},`, `    ${params.fieldType.getTypeSize()}));`, ...genMessageParamInitializer(params.ctx, params.includes, params.fieldType));
         }
         else {
             lines.push(`collection_->sendMessage(`, `    getXrpaId(),`, `    ${messageType},`, `    0);`);
@@ -118,7 +118,7 @@ function genMessageDispatchBody(params) {
 function genOnMessageAccessor(classSpec, params) {
     const paramTypes = [CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename];
     if (params.fieldType.hasFields()) {
-        paramTypes.push(params.fieldType.declareLocalParam(params.ctx.namespace, classSpec.includes, ""));
+        paramTypes.push(params.fieldType.getReadAccessorType(params.ctx.namespace, classSpec.includes));
     }
     const msgHandler = params.genMsgHandler(params.fieldName);
     classSpec.methods.push({

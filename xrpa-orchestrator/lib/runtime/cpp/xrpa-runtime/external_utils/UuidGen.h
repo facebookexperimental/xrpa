@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include <xrpa-runtime/core/DatasetTypes.h>
+#include <xrpa-runtime/utils/XrpaTypes.h>
 
 namespace Xrpa {
 
-DSIdentifier generateDSID();
+ObjectUuid generateUuid();
 
 } // namespace Xrpa

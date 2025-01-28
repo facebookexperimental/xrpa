@@ -18,7 +18,6 @@
 
 #include <cstring>
 #include <mutex>
-#include <utility>
 #include <vector>
 
 namespace Xrpa {

@@ -75,6 +75,8 @@ export interface StructTypeDefinition extends TypeDefinition {
     getFieldsOfType<T extends TypeDefinition>(typeFilter: (typeDef: TypeDefinition | undefined) => typeDef is T): Record<string, T>;
     getFieldBitMask(fieldName: string): number;
     getFieldIndex(fieldName: string): number;
+    getFieldSize(fieldName: string): number;
+    getFieldOffset(fieldName: string): number;
     declareLocalFieldClassMember(classSpec: ClassSpec, fieldName: string, memberName: string, includeComments: boolean, decorations: string[], visibility?: ClassVisibility): void;
     resetLocalFieldVarToDefault(inNamespace: string, includes: IncludeAggregator | null, fieldName: string, varName: string, isSetter?: boolean): string[];
 }
@@ -91,24 +93,26 @@ export interface MessageDataTypeDefinition extends StructWithAccessorTypeDefinit
 export interface SignalDataTypeDefinition extends TypeDefinition {
     getMetaType(): TypeMetaType.SIGNAL_DATA;
 }
+export interface CollectionNameAndType {
+    collectionName: string;
+    typeName: string;
+}
 export interface InterfaceTypeDefinition extends StructWithAccessorTypeDefinition {
     getLocalTypePtr(inNamespace: string, includes: IncludeAggregator | null): string;
-    getCompatibleTypeList(inNamespace: string, includes: IncludeAggregator | null): string[];
+    getCompatibleTypeList(inNamespace: string, includes: IncludeAggregator | null): CollectionNameAndType[];
     registerCollection(collection: CollectionTypeDefinition): void;
     isBarePtr(): boolean;
     setToBarePtr(localType?: TypeSpec): void;
     getPtrType(): string;
-    getChangedBit(inNamespace: string, includes: IncludeAggregator | null, fieldName: string): string;
-    getFieldSize(inNamespace: string, includes: IncludeAggregator | null, fieldName: string): string;
 }
 export interface CollectionTypeDefinition extends InterfaceTypeDefinition {
     readonly maxCount: number;
     readonly interfaceType: InterfaceTypeDefinition | undefined;
-    getDSTypeID(inNamespace: string, includes: IncludeAggregator | null): string;
+    getCollectionId(): number;
 }
 export interface ReferenceTypeDefinition extends TypeDefinition {
     readonly toType: InterfaceTypeDefinition;
-    getReferencedTypeList(inNamespace: string, includes: IncludeAggregator | null): string[];
+    getReferencedTypeList(inNamespace: string, includes: IncludeAggregator | null): CollectionNameAndType[];
     getReferencedSuperType(inNamespace: string, includes: IncludeAggregator | null): string;
 }
 export declare function typeIsClearSet(typeDef: TypeDefinition): boolean;

@@ -23,7 +23,7 @@ import { StructTypeDefinition } from "../../shared/TypeDefinition";
 export declare class CsharpModuleDefinition extends ModuleDefinition {
     readonly outputDir: string;
     constructor(datamap: DataMapDefinition, name: string, outputDir: string, guidGen?: GuidGenSpec);
-    protected createDSIdentifier(): StructTypeDefinition;
+    protected createObjectUuid(): StructTypeDefinition;
     doCodeGen(): FileWriter;
 }
 

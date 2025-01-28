@@ -70,7 +70,7 @@ namespace Xrpa
             }
         }
 
-        protected Dictionary<DSIdentifier, IndexFieldType> _valueMap = new();
+        protected Dictionary<ObjectUuid, IndexFieldType> _valueMap = new();
         protected Dictionary<IndexFieldType, List<ReconciledType>> _objectIndex = new();
         protected List<ReconciledType> _emptyList = new();
     }

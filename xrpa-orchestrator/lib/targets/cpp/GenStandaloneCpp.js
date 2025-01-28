@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genStandaloneBuck = exports.genStandaloneCpp = exports.genDatasetDeinitializer = exports.genDatasetInitializer = void 0;
+exports.genStandaloneBuck = exports.genStandaloneCpp = exports.genTransportDeinitializer = exports.genTransportInitializer = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
@@ -56,32 +56,30 @@ function genStandaloneHeader(fileWriter, outdir) {
     ];
     fileWriter.writeFile(path_1.default.join(outdir, "Standalone.h"), lines);
 }
-function genDatasetInitializer(storeDef, namespace, includes) {
+function genTransportInitializer(storeDef, namespace, includes) {
     includes.addFile({ filename: (0, CppCodeGenImpl_1.getTypesHeaderName)(storeDef.apiname) });
-    const inboundDatasetVar = (0, GenModuleClass_1.getInboundDatasetVarName)(storeDef);
-    const outboundDatasetVar = (0, GenModuleClass_1.getOutboundDatasetVarName)(storeDef);
+    const inboundTransportVar = (0, GenModuleClass_1.getInboundTransportVarName)(storeDef);
+    const outboundTransportVar = (0, GenModuleClass_1.getOutboundTransportVarName)(storeDef);
     const inboundMemMarker = storeDef.isModuleProgramInterface ? "Input" : "Output";
     const outboundMemMarker = storeDef.isModuleProgramInterface ? "Output" : "Input";
     return [
         `{`,
-        `  auto local${inboundDatasetVar} = std::make_shared<${CppDatasetLibraryTypes_1.SharedDataset.getLocalType(namespace, includes)}>("${storeDef.dataset}${inboundMemMarker}", ${(0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}::GenDatasetConfig());`,
-        `  local${inboundDatasetVar}->initialize();`,
-        `  ${inboundDatasetVar} = local${inboundDatasetVar};`,
+        `  auto local${inboundTransportVar} = std::make_shared<${CppDatasetLibraryTypes_1.SharedMemoryTransportStream.getLocalType(namespace, includes)}>("${storeDef.dataset}${inboundMemMarker}", ${(0, CppCodeGenImpl_1.getTypesHeaderNamespace)(storeDef.apiname)}::GenTransportConfig());`,
+        `  ${inboundTransportVar} = local${inboundTransportVar};`,
         ``,
-        `  auto local${outboundDatasetVar} = std::make_shared<${CppDatasetLibraryTypes_1.SharedDataset.getLocalType(namespace, includes)}>("${storeDef.dataset}${outboundMemMarker}", ${(0, CppCodeGenImpl_1.getDataStoreName)(storeDef.apiname)}::GenDatasetConfig());`,
-        `  local${outboundDatasetVar}->initialize();`,
-        `  ${outboundDatasetVar} = local${outboundDatasetVar};`,
+        `  auto local${outboundTransportVar} = std::make_shared<${CppDatasetLibraryTypes_1.SharedMemoryTransportStream.getLocalType(namespace, includes)}>("${storeDef.dataset}${outboundMemMarker}", ${(0, CppCodeGenImpl_1.getTypesHeaderNamespace)(storeDef.apiname)}::GenTransportConfig());`,
+        `  ${outboundTransportVar} = local${outboundTransportVar};`,
         `}`,
     ];
 }
-exports.genDatasetInitializer = genDatasetInitializer;
-function genDatasetDeinitializer(storeDef) {
+exports.genTransportInitializer = genTransportInitializer;
+function genTransportDeinitializer(storeDef) {
     return [
-        `${(0, GenModuleClass_1.getOutboundDatasetVarName)(storeDef)}.reset();`,
-        `${(0, GenModuleClass_1.getInboundDatasetVarName)(storeDef)}.reset();`,
+        `${(0, GenModuleClass_1.getOutboundTransportVarName)(storeDef)}.reset();`,
+        `${(0, GenModuleClass_1.getInboundTransportVarName)(storeDef)}.reset();`,
     ];
 }
-exports.genDatasetDeinitializer = genDatasetDeinitializer;
+exports.genTransportDeinitializer = genTransportDeinitializer;
 function genSettingsParsing(moduleDef) {
     const fields = moduleDef.getSettings().getAllFields();
     if ((0, xrpa_utils_1.objectIsEmpty)(fields)) {
@@ -104,6 +102,7 @@ function genStandaloneWrapper(fileWriter, outdir, moduleDef) {
     const namespace = "";
     const includes = new CppCodeGenImpl_1.CppIncludeAggregator([
         "<memory>",
+        "<thread>",
         (0, GenModuleClass_1.getModuleHeaderName)(moduleDef),
     ], headerFile => {
         if (headerFile.startsWith(`"`)) {
@@ -115,18 +114,18 @@ function genStandaloneWrapper(fileWriter, outdir, moduleDef) {
         includes.addFile({ filename: "<xrpa-runtime/external_utils/CommandLineUtils.h>" });
         includes.addFile({ filename: "<CLI/CLI.hpp>" });
     }
-    const datasetVars = [];
+    const transportVars = [];
     for (const storeDef of moduleDef.getDataStores()) {
-        datasetVars.push((0, GenModuleClass_1.getInboundDatasetVarName)(storeDef));
-        datasetVars.push((0, GenModuleClass_1.getOutboundDatasetVarName)(storeDef));
+        transportVars.push((0, GenModuleClass_1.getInboundTransportVarName)(storeDef));
+        transportVars.push((0, GenModuleClass_1.getOutboundTransportVarName)(storeDef));
     }
     const lines = [
         `void EntryPoint(${moduleClassName}* moduleData);`,
         ``,
         `int RunStandalone(int argc, char** argv) {`,
-        ...(0, xrpa_utils_1.indent)(1, (0, GenModuleClass_1.genDatasetDeclarations)(moduleDef, namespace, includes, true)),
-        ...(0, xrpa_utils_1.indent)(1, moduleDef.getDataStores().map(storeDef => genDatasetInitializer(storeDef, namespace, includes))),
-        `  auto moduleData = std::make_unique<${moduleClassName}>(${datasetVars.join(", ")});`,
+        ...(0, xrpa_utils_1.indent)(1, (0, GenModuleClass_1.genTransportDeclarations)(moduleDef, namespace, includes, true)),
+        ...(0, xrpa_utils_1.indent)(1, moduleDef.getDataStores().map(storeDef => genTransportInitializer(storeDef, namespace, includes))),
+        `  auto moduleData = std::make_unique<${moduleClassName}>(${transportVars.join(", ")});`,
         ...(0, xrpa_utils_1.indent)(1, genSettingsParsing(moduleDef)),
         ``,
         `  std::thread dataThread(EntryPoint, moduleData.get());`,
@@ -152,8 +151,8 @@ function genStandaloneBuck(fileWriter, outdir, runtimeDir, buckTarget, moduleDef
         const runtimeRelPath = path_1.default.relative(buckRoot, runtimeDir);
         const runtimeDepPath = `//${runtimeRelPath.replace(/\\/g, "/")}`;
         const deps = [
-            `"${runtimeDepPath}:core",`,
-            `"${runtimeDepPath}:sharedmem",`,
+            `"${runtimeDepPath}:transport",`,
+            `"${runtimeDepPath}:utils",`,
             `"${buckTarget}",`,
         ];
         if (!(0, xrpa_utils_1.objectIsEmpty)(moduleDef.getSettings().getAllFields())) {

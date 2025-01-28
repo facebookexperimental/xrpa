@@ -17,19 +17,20 @@
 
 import { TypeDefinition } from "../../shared/TypeDefinition";
 export declare const MemoryAccessor: TypeDefinition;
-export declare const DSHashValue: TypeDefinition;
+export declare const HashValue: TypeDefinition;
+export declare const TransportConfig: TypeDefinition;
 export declare const ObjectAccessorInterface: TypeDefinition;
-export declare const DatasetAccessor: TypeDefinition;
-export declare const DatasetConfig: TypeDefinition;
-export declare const DatasetInterface: TypeDefinition;
-export declare const DatasetReconciler: TypeDefinition;
+export declare const DataStoreReconciler: TypeDefinition;
 export declare const IDataStoreObject: TypeDefinition;
 export declare const IDataStoreObjectAccessor: TypeDefinition;
 export declare const DataStoreObject: TypeDefinition;
-export declare const CollectionInterface: TypeDefinition;
+export declare const IObjectCollection: TypeDefinition;
 export declare const ObjectCollection: TypeDefinition;
 export declare const ObjectCollectionIndex: TypeDefinition;
 export declare const IIndexBoundType: TypeDefinition;
 export declare const ObjectCollectionIndexedBinding: TypeDefinition;
-export declare const SharedDataset: TypeDefinition;
+export declare const TransportStream: TypeDefinition;
+export declare const TransportStreamAccessor: TypeDefinition;
+export declare const HeapMemoryTransportStream: TypeDefinition;
+export declare const SharedMemoryTransportStream: TypeDefinition;
 

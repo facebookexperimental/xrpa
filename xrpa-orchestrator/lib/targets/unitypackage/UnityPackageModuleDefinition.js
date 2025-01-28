@@ -42,13 +42,25 @@ class UnityPackageModuleDefinition extends CsharpModuleDefinition_1.CsharpModule
         this.projectRoot = projectRoot;
         this.packageInfos = packageInfos;
     }
-    setCollectionAsInbound(type, reconciledTo, indexes) {
-        for (const index of (indexes ?? [])) {
-            if (index.boundClassName === "") {
-                index.boundClassName = (0, MonoBehaviourShared_1.getComponentClassName)(type);
+    setCollectionAsInbound(type, componentProps, reconciledTo, indexes) {
+        if (componentProps.generateSpawner && (0, xrpa_utils_1.filterToString)(componentProps.basetype)) {
+            type.setToBarePtr({
+                typename: (0, MonoBehaviourShared_1.getComponentClassName)(type),
+            });
+            if (type.interfaceType) {
+                type.interfaceType.setToBarePtr({
+                    typename: (0, MonoBehaviourShared_1.getComponentClassName)(type.interfaceType),
+                });
             }
         }
-        super.setCollectionAsInbound(type, reconciledTo, indexes);
+        else {
+            for (const index of (indexes ?? [])) {
+                if (index.boundClassName === "") {
+                    index.boundClassName = (0, MonoBehaviourShared_1.getComponentClassName)(type);
+                }
+            }
+            super.setCollectionAsInbound(type, componentProps, reconciledTo, indexes);
+        }
     }
     setCollectionAsOutbound(type, componentProps) {
         if ((0, xrpa_utils_1.filterToString)(componentProps.basetype)) {
@@ -68,11 +80,16 @@ class UnityPackageModuleDefinition extends CsharpModuleDefinition_1.CsharpModule
     doCodeGen() {
         const fileWriter = new xrpa_utils_1.FileWriter();
         const packagesDir = path_1.default.join(this.projectRoot, "Packages");
-        for (const storeDef of this.getDataStores()) {
-            const packageInfo = this.packageInfos[storeDef.apiname];
+        const runtimeDirs = {};
+        for (const key in this.packageInfos) {
+            const packageInfo = this.packageInfos[key];
             const packageRootDir = path_1.default.join(packagesDir, packageInfo.packageName);
             // generate package directory structure and files
             const { runtimeDir } = (0, GenPackage_1.genPackage)(fileWriter, packageRootDir, packageInfo);
+            runtimeDirs[key] = runtimeDir;
+        }
+        for (const storeDef of this.getDataStores()) {
+            const runtimeDir = runtimeDirs[storeDef.apiname];
             // generate TransportSubsystem
             (0, GenTransportSubsystem_1.genTransportSubsystem)(fileWriter, runtimeDir, storeDef);
             // generate DS types using csharp codegen
@@ -81,7 +98,7 @@ class UnityPackageModuleDefinition extends CsharpModuleDefinition_1.CsharpModule
             const ctx = {
                 moduleDef: this,
                 storeDef,
-                namespace: this.codegen.getDataStoreName(storeDef.apiname),
+                namespace: this.codegen.getDataStoreHeaderNamespace(storeDef.apiname),
             };
             (0, GenDataStore_1.genDataStore)(fileWriter, runtimeDir, ctx);
             // generate DataStore subsystem files
@@ -94,7 +111,10 @@ class UnityPackageModuleDefinition extends CsharpModuleDefinition_1.CsharpModule
                 }
             }
             for (const accessor of storeDef.getInputReconcilers()) {
-                if (accessor.hasIndexedBinding()) {
+                if (accessor.componentProps.generateSpawner && (0, xrpa_utils_1.filterToString)(accessor.componentProps.basetype)) {
+                    (0, GenIndexedMonoBehaviour_1.genSpawnedMonoBehaviour)(ctx, fileWriter, accessor, runtimeDir);
+                }
+                else if (accessor.hasIndexedBinding()) {
                     (0, GenIndexedMonoBehaviour_1.genIndexedMonoBehaviour)(ctx, fileWriter, accessor, runtimeDir);
                 }
             }
