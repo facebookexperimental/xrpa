@@ -168,7 +168,7 @@ function genInitializer(values) {
 }
 function genPrimitiveValue(typename, value) {
     if (value === null) {
-        if (typename === "string") {
+        if (typename === exports.PRIMITIVE_INTRINSICS.string.typename) {
             return `""`;
         }
         if (typename) {

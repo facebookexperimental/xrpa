@@ -145,7 +145,7 @@ class MemoryAccessor:
             struct.pack("<Q", val)
         )
 
-    def read_string(self, offset: int, max_bytes: int) -> str:
+    def read_str(self, offset: int, max_bytes: int) -> str:
         str_max_bytes = max_bytes - 4
         byte_count = self.read_int(offset)
         assert 0 <= byte_count <= str_max_bytes
@@ -160,7 +160,7 @@ class MemoryAccessor:
             .decode("utf-8")
         )
 
-    def write_string(self, val: str, offset: int, max_bytes: int):
+    def write_str(self, val: str, offset: int, max_bytes: int):
         raw_bytes = val.encode("utf-8")
         byte_count = len(raw_bytes)
         str_max_bytes = max_bytes - 4

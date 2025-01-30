@@ -1,6 +1,6 @@
 {
   "name": "@xrpa/xrpa-utils",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Xrpa Utils",
   "main": "lib/index.js",
   "license": "Apache-2.0",
