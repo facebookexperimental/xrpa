@@ -29,6 +29,7 @@ export declare function genFieldSetDirty(params: {
     includes: IncludeAggregator | null;
     typeDef: CollectionTypeDefinition;
     fieldName: string;
+    fieldVar: string;
     proxyObj: string | null;
 }): string[];
 export declare function genClearSetSetterFunctionBody(params: {
@@ -75,6 +76,7 @@ export declare function genPrepFullUpdateFunctionBody(params: {
     ctx: GenDataStoreContext;
     includes: IncludeAggregator | null;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
+    fieldToMemberVar: (fieldName: string) => string;
     canCreate?: boolean;
 }): string[];
 export declare function defaultFieldToMemberVar(fieldName: string): string;

@@ -15,7 +15,7 @@
  */
 
 
-import { Count, Distance, Scalar, XrpaDataflowForeignObjectInstantiation, XrpaDataflowGraphNode, XrpaFieldValue, XrpaProgramParam } from "@xrpa/xrpa-orchestrator";
+import { Count, Distance, Scalar, XrpaDataflowConnection, XrpaDataflowForeignObjectInstantiation, XrpaDataflowGraphNode, XrpaFieldValue, XrpaProgramParam } from "@xrpa/xrpa-orchestrator";
 export interface AcceptsStartEvent {
     setStartEvent(ev: FiresEvent | null, autoStart?: boolean): void;
 }
@@ -98,6 +98,12 @@ export declare class ISignalNodeType extends SPNode {
     protected setOutputChannelsPassthrough(source: ISignalNodeType): void;
     protected setOutputChannelsToMaxInputChannels(): void;
     protected setOutputChannelsToSumInputChannels(): void;
+}
+export declare class SignalSourceType extends ISignalNodeType {
+    constructor(params: {
+        numChannels: number;
+        signal: XrpaDataflowConnection;
+    });
 }
 export declare class SignalSourceFileType extends ISignalNodeType {
     constructor(params: {

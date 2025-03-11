@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "@xrpa/xrpa-utils";
+import { FileWriter } from "@xrpa/xrpa-file-utils";
 import { DataStoreDefinition } from "../../shared/DataStore";
 export declare function getDataStoreSubsystemName(storeDef: DataStoreDefinition): string;
 export declare function genDataStoreSubsystem(fileWriter: FileWriter, outSrcDir: string, storeDef: DataStoreDefinition): void;

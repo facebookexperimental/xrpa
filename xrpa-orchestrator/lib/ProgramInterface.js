@@ -36,7 +36,7 @@ function isProgramInterfaceContext(ctx) {
 }
 exports.isProgramInterfaceContext = isProgramInterfaceContext;
 function getProgramInterfaceContext() {
-    return (0, XrpaLanguage_1.getContext)(isProgramInterfaceContext, "Call is only valid within a ProgramInterface");
+    return (0, xrpa_utils_1.getContext)(isProgramInterfaceContext, "Call is only valid within a ProgramInterface");
 }
 exports.getProgramInterfaceContext = getProgramInterfaceContext;
 function Input(dataType) {
@@ -189,7 +189,7 @@ function XrpaProgramInterface(name, callback) {
         parameters: {},
         properties: {},
     };
-    (0, XrpaLanguage_1.runInContext)(ctx, callback);
+    (0, xrpa_utils_1.runInContext)(ctx, callback);
     const programInterface = {
         ...ctx,
         companyName: split[0],

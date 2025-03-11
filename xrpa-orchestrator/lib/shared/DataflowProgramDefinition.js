@@ -17,7 +17,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDataflowInputStructSpec = exports.getDataflowInputs = exports.isDataflowProgramDefinition = exports.isDataflowForeignObjectInstantiation = exports.isDataflowGraphNode = void 0;
+exports.getDataflowInputStructSpec = exports.getDataflowInputs = exports.isDataflowProgramDefinition = exports.isDataflowConnection = exports.isDataflowForeignObjectInstantiation = exports.isDataflowGraphNode = void 0;
 const InterfaceTypes_1 = require("../InterfaceTypes");
 const ProgramInterface_1 = require("../ProgramInterface");
 const ProgramInterfaceConverter_1 = require("../ProgramInterfaceConverter");
@@ -29,6 +29,10 @@ function isDataflowForeignObjectInstantiation(obj) {
     return Boolean(typeof obj === "object" && obj && obj.__isDataflowObjectInstantiation === true);
 }
 exports.isDataflowForeignObjectInstantiation = isDataflowForeignObjectInstantiation;
+function isDataflowConnection(obj) {
+    return Boolean(typeof obj === "object" && obj && obj.__isDataflowConnection === true);
+}
+exports.isDataflowConnection = isDataflowConnection;
 function isDataflowProgramDefinition(obj) {
     return Boolean(typeof obj === "object" && obj && obj.__isDataflowProgramDefinition === true);
 }

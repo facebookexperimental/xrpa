@@ -28,7 +28,6 @@ const InterfaceTypes_1 = require("./InterfaceTypes");
 const GameEngine_1 = require("./GameEngine");
 const ProgramInterfaceConverter_1 = require("./ProgramInterfaceConverter");
 const RuntimeEnvironment_1 = require("./RuntimeEnvironment");
-const XrpaLanguage_1 = require("./XrpaLanguage");
 const CoordinateTransformer_1 = require("./shared/CoordinateTransformer");
 const SceneComponentShared_1 = require("./targets/ueplugin/SceneComponentShared");
 const UepluginModuleDefinition_1 = require("./targets/ueplugin/UepluginModuleDefinition");
@@ -42,7 +41,6 @@ exports.UnrealCoordinateSystem = {
 exports.UnrealArrayType = {
     headerFile: "Engine.h",
     typename: "TArray",
-    getSize: "Num()",
     setSize: "SetNum()",
     removeAll: "Empty()",
     addItem: "Add()",
@@ -86,7 +84,7 @@ async function UnrealProject(projectPath, projectName, callback) {
         intrinsicParentProperty: SceneComponentShared_1.IntrinsicProperty.Parent,
         intrinsicGameObjectProperty: SceneComponentShared_1.IntrinsicProperty.Parent,
     });
-    (0, XrpaLanguage_1.runInContext)(ctx, ctx => {
+    (0, xrpa_utils_1.runInContext)(ctx, callback, () => {
         (0, Coordinates_1.useCoordinateSystem)(exports.UnrealCoordinateSystem);
         (0, RuntimeEnvironment_1.mapType)(InterfaceTypes_1.String, {
             typename: "FString",
@@ -129,7 +127,6 @@ async function UnrealProject(projectPath, projectName, callback) {
             },
         });
         (0, RuntimeEnvironment_1.mapArrays)(exports.UnrealArrayType);
-        callback(ctx);
     });
     const pluginConfigs = {};
     for (const name in ctx.externalProgramInterfaces) {

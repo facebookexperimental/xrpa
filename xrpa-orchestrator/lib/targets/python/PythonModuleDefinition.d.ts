@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "@xrpa/xrpa-utils";
+import { FileWriter } from "@xrpa/xrpa-file-utils";
 import { DataMapDefinition } from "../../shared/DataMap";
 import { ModuleDefinition } from "../../shared/ModuleDefinition";
 import { GuidGenSpec } from "../../shared/TargetCodeGen";

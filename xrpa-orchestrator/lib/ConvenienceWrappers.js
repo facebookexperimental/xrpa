@@ -17,10 +17,11 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.XrpaPythonApplication = exports.XrpaNativePythonProgram = exports.XrpaNativeCppProgram = exports.addBuckDependency = exports.useBuck = exports.StdVectorArrayType = exports.OvrCoordinateSystem = exports.withHeader = void 0;
+exports.XrpaPythonApplication = exports.XrpaNativePythonProgram = exports.XrpaNativeCppProgram = exports.addBuckDependency = exports.useBuck = exports.PythonListType = exports.StdVectorArrayType = exports.OvrCoordinateSystem = exports.withHeader = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
+const InterfaceTypes_1 = require("./InterfaceTypes");
 const NativeProgram_1 = require("./NativeProgram");
 const RuntimeEnvironment_1 = require("./RuntimeEnvironment");
-const XrpaLanguage_1 = require("./XrpaLanguage");
 const CoordinateTransformer_1 = require("./shared/CoordinateTransformer");
 const CppModuleDefinition_1 = require("./targets/cpp/CppModuleDefinition");
 const PythonApplication_1 = require("./targets/python/PythonApplication");
@@ -46,10 +47,15 @@ exports.OvrCoordinateSystem = {
 exports.StdVectorArrayType = {
     headerFile: "<vector>",
     typename: "std::vector",
-    getSize: "size()",
     setSize: "resize()",
     removeAll: "clear()",
     addItem: "push()",
+};
+exports.PythonListType = {
+    typename: "typing.List",
+    setSize: null,
+    removeAll: "clear()",
+    addItem: "append()",
 };
 //////////////////////////////////////////////////////////////////////////////
 const BUCK_CONFIG = "xrpa.cpp.buckConfig";
@@ -66,7 +72,7 @@ function addBuckDependency(dep) {
     const buckConfig = getBuckConfig(ctx);
     if (buckConfig) {
         if (buckConfig.deps) {
-            buckConfig.deps.push(dep);
+            (0, xrpa_utils_1.pushUnique)(buckConfig.deps, dep);
         }
         else {
             buckConfig.deps = [dep];
@@ -74,6 +80,47 @@ function addBuckDependency(dep) {
     }
 }
 exports.addBuckDependency = addBuckDependency;
+function mapInterfaceImageTypes(programInterface, usingBuck) {
+    let hasImageTypes = false;
+    for (const name in programInterface.namedTypes) {
+        const type = programInterface.namedTypes[name];
+        if (type.properties[InterfaceTypes_1.IS_IMAGE_TYPE] === true) {
+            (0, RuntimeEnvironment_1.mapInterfaceType)(programInterface, type.name, {
+                typename: "ImageTypes::Image",
+                headerFile: "<ImageTypes.h>",
+            });
+            hasImageTypes = true;
+        }
+    }
+    if (hasImageTypes) {
+        (0, RuntimeEnvironment_1.mapInterfaceType)(programInterface, "ImageFormat", {
+            typename: "ImageTypes::Format",
+            headerFile: "<ImageTypes.h>",
+        });
+        (0, RuntimeEnvironment_1.mapInterfaceType)(programInterface, "ImageEncoding", {
+            typename: "ImageTypes::Encoding",
+            headerFile: "<ImageTypes.h>",
+        });
+        (0, RuntimeEnvironment_1.mapInterfaceType)(programInterface, "ImageOrientation", {
+            typename: "ImageTypes::Orientation",
+            headerFile: "<ImageTypes.h>",
+        });
+        if (usingBuck) {
+            addBuckDependency("//arvr/projects/xred/platform/modules/Shared/image:ImageTypes");
+        }
+    }
+}
+function mapCppImageTypes() {
+    const ctx = (0, NativeProgram_1.getNativeProgramContext)();
+    const usingBuck = getBuckConfig(ctx) != undefined;
+    if (ctx.programInterface) {
+        mapInterfaceImageTypes(ctx.programInterface, usingBuck);
+    }
+    for (const key in ctx.externalProgramInterfaces) {
+        const programInterface = ctx.externalProgramInterfaces[key].programInterface;
+        mapInterfaceImageTypes(programInterface, usingBuck);
+    }
+}
 function XrpaNativeCppProgram(name, outputDir, callback) {
     const ctx = {
         __isRuntimeEnvironmentContext: true,
@@ -82,7 +129,10 @@ function XrpaNativeCppProgram(name, outputDir, callback) {
         externalProgramInterfaces: {},
         properties: {},
     };
-    (0, XrpaLanguage_1.runInContext)(ctx, callback);
+    (0, xrpa_utils_1.runInContext)(ctx, callback, () => {
+        (0, RuntimeEnvironment_1.mapArrays)(exports.StdVectorArrayType);
+    });
+    (0, xrpa_utils_1.runInContext)(ctx, mapCppImageTypes);
     const buckConfig = getBuckConfig(ctx);
     const datamap = (0, RuntimeEnvironment_1.getDataMap)(ctx);
     datamap.typeBuckDeps = buckConfig?.deps ?? [];
@@ -99,7 +149,9 @@ function XrpaNativePythonProgram(name, outputDir, callback) {
         externalProgramInterfaces: {},
         properties: {},
     };
-    (0, XrpaLanguage_1.runInContext)(ctx, callback);
+    (0, xrpa_utils_1.runInContext)(ctx, callback, () => {
+        (0, RuntimeEnvironment_1.mapArrays)(exports.PythonListType);
+    });
     const datamap = (0, RuntimeEnvironment_1.getDataMap)(ctx);
     const ret = new PythonModuleDefinition_1.PythonModuleDefinition(name, datamap, outputDir);
     (0, NativeProgram_1.applyNativeProgramContext)(ctx, ret);

@@ -15,7 +15,7 @@
 from abc import ABC
 from typing import Callable, Type
 
-from xrpa_runtime.utils.memory_accessor import MemoryAccessor
+from xrpa_runtime.utils.memory_accessor import MemoryAccessor, MemoryOffset
 from xrpa_runtime.utils.time_utils import TimeUtils
 from xrpa_runtime.utils.xrpa_types import ObjectAccessorInterface
 
@@ -27,16 +27,16 @@ class ChangeEventAccessor(ObjectAccessorInterface):
         ObjectAccessorInterface.__init__(self, mem_accessor)
 
     def get_change_type(self) -> int:
-        return self._mem_accessor.read_int(0)
+        return self._mem_accessor.read_int(MemoryOffset(0))
 
     def set_change_type(self, change_type: int):
-        self._mem_accessor.write_int(change_type, 0)
+        self._mem_accessor.write_int(change_type, MemoryOffset(0))
 
     def get_timestamp(self) -> int:
-        return self._mem_accessor.read_int(4)
+        return self._mem_accessor.read_int(MemoryOffset(4))
 
     def set_timestamp(self, timestamp: int):
-        self._mem_accessor.write_int(timestamp, 4)
+        self._mem_accessor.write_int(timestamp, MemoryOffset(4))
 
 
 class TransportStreamIteratorData(ABC):

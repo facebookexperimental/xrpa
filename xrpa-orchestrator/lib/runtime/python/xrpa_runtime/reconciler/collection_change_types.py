@@ -16,7 +16,7 @@ from enum import Enum
 
 from xrpa_runtime.transport.transport_stream_accessor import ChangeEventAccessor
 
-from xrpa_runtime.utils.memory_accessor import MemoryAccessor
+from xrpa_runtime.utils.memory_accessor import MemoryAccessor, MemoryOffset
 from xrpa_runtime.utils.xrpa_types import ObjectUuid
 
 
@@ -37,16 +37,22 @@ class CollectionChangeEventAccessor(ChangeEventAccessor):
         ChangeEventAccessor.__init__(self, mem_accessor)
 
     def get_object_id(self) -> ObjectUuid:
-        return ObjectUuid.read_value(self._mem_accessor, ChangeEventAccessor.DS_SIZE)
+        return ObjectUuid.read_value(
+            self._mem_accessor, MemoryOffset(ChangeEventAccessor.DS_SIZE)
+        )
 
     def set_object_id(self, id: ObjectUuid):
-        ObjectUuid.write_value(id, self._mem_accessor, ChangeEventAccessor.DS_SIZE)
+        ObjectUuid.write_value(
+            id, self._mem_accessor, MemoryOffset(ChangeEventAccessor.DS_SIZE)
+        )
 
     def get_collection_id(self) -> int:
-        return self._mem_accessor.read_int(ChangeEventAccessor.DS_SIZE + 16)
+        return self._mem_accessor.read_int(
+            MemoryOffset(ChangeEventAccessor.DS_SIZE + 16)
+        )
 
     def set_collection_id(self, id: int):
-        self._mem_accessor.write_int(id, ChangeEventAccessor.DS_SIZE + 16)
+        self._mem_accessor.write_int(id, MemoryOffset(ChangeEventAccessor.DS_SIZE + 16))
 
     def access_change_data(self) -> MemoryAccessor:
         return self._mem_accessor.slice(self.DS_SIZE)
@@ -59,11 +65,13 @@ class CollectionUpdateChangeEventAccessor(CollectionChangeEventAccessor):
         CollectionChangeEventAccessor.__init__(self, mem_accessor)
 
     def get_fields_changed(self) -> int:
-        return self._mem_accessor.read_ulong(CollectionChangeEventAccessor.DS_SIZE)
+        return self._mem_accessor.read_ulong(
+            MemoryOffset(CollectionChangeEventAccessor.DS_SIZE)
+        )
 
     def set_fields_changed(self, fields_changed: int):
         self._mem_accessor.write_ulong(
-            fields_changed, CollectionChangeEventAccessor.DS_SIZE
+            fields_changed, MemoryOffset(CollectionChangeEventAccessor.DS_SIZE)
         )
 
     def access_change_data(self) -> MemoryAccessor:
@@ -71,17 +79,21 @@ class CollectionUpdateChangeEventAccessor(CollectionChangeEventAccessor):
 
 
 class CollectionMessageChangeEventAccessor(CollectionChangeEventAccessor):
-    # note: this appears to be a mistake in the c++ and c# implementations, it should be 4 bytes instead
+    # TODO this should be 4 bytes, not 8
     DS_SIZE = CollectionChangeEventAccessor.DS_SIZE + 8
 
     def __init__(self, mem_accessor: MemoryAccessor):
         CollectionChangeEventAccessor.__init__(self, mem_accessor)
 
     def get_field_id(self) -> int:
-        return self._mem_accessor.read_int(CollectionChangeEventAccessor.DS_SIZE)
+        return self._mem_accessor.read_int(
+            MemoryOffset(CollectionChangeEventAccessor.DS_SIZE)
+        )
 
     def set_field_id(self, field_id: int):
-        self._mem_accessor.write_int(field_id, CollectionChangeEventAccessor.DS_SIZE)
+        self._mem_accessor.write_int(
+            field_id, MemoryOffset(CollectionChangeEventAccessor.DS_SIZE)
+        )
 
     def access_change_data(self) -> MemoryAccessor:
         return self._mem_accessor.slice(self.DS_SIZE)

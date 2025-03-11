@@ -25,11 +25,17 @@ const TypeDefinition_1 = require("./TypeDefinition");
 const TypeValue_1 = require("./TypeValue");
 const ClassSpec_1 = require("./ClassSpec");
 function calcStructSize(fields) {
-    let size = 0;
+    let staticSize = 0;
+    let dynamicSizeEstimate = 0;
     for (const key in fields) {
-        size += fields[key].type.getTypeSize();
+        const typeSize = fields[key].type.getTypeSize();
+        staticSize += typeSize.staticSize;
+        dynamicSizeEstimate += typeSize.dynamicSizeEstimate;
     }
-    return size;
+    return {
+        staticSize,
+        dynamicSizeEstimate,
+    };
 }
 class StructType extends PrimitiveType_1.PrimitiveType {
     constructor(codegen, name, apiname, parentType, fields, localTypeOverride) {
@@ -115,24 +121,12 @@ class StructType extends PrimitiveType_1.PrimitiveType {
         }
         throw new Error(`Field ${fieldName} not found in ${this.getName()}`);
     }
-    getFieldSize(fieldName) {
+    getStateField(fieldName) {
         const fields = this.getStateFields();
         if (!(fieldName in fields)) {
             throw new Error(`Field ${fieldName} not found in ${this.getName()}`);
         }
-        return fields[fieldName].type.getTypeSize();
-    }
-    getFieldOffset(fieldName) {
-        const fields = this.getStateFields();
-        let byteOffset = 0;
-        for (const name in fields) {
-            const byteCount = fields[name].type.getTypeSize();
-            if (name === fieldName) {
-                return byteOffset;
-            }
-            byteOffset += byteCount;
-        }
-        throw new Error(`Field ${fieldName} not found in ${this.getName()}`);
+        return fields[fieldName].type;
     }
     userDefaultToTypeValue(inNamespace, includes, userDefault) {
         const fields = this.getStateFields();
@@ -179,13 +173,11 @@ class StructType extends PrimitiveType_1.PrimitiveType {
             const fieldSpec = fields[name];
             const accessor = fieldSpec.type.getInternalType(inNamespace, includes);
             const accessorIsStruct = (0, TypeDefinition_1.typeIsStruct)(fieldSpec.type);
-            const accessorMaxBytes = fieldSpec.type.getInternalMaxBytes();
             ret[name] = {
                 typename: accessorIsStruct ? fieldSpec.type.getLocalType(inNamespace, includes) : accessor,
                 accessor,
                 accessorIsStruct,
-                accessorMaxBytes,
-                fieldOffset: this.getFieldOffset(name),
+                typeSize: fieldSpec.type.getTypeSize(),
             };
         }
         return ret;

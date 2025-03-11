@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "@xrpa/xrpa-utils";
+import { FileWriter } from "@xrpa/xrpa-file-utils";
 import { CodeGen } from "../../shared/CodeGen";
 import { PythonModuleDefinition } from "./PythonModuleDefinition";
 export declare class PythonApplication implements CodeGen {

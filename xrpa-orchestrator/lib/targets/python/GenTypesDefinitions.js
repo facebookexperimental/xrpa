@@ -55,13 +55,9 @@ function genTypesDefinitions(fileWriter, outdir, def) {
     const namespace = (0, PythonCodeGenImpl_1.getTypesHeaderNamespace)(def.apiname);
     const schemaHash = def.datamodel.getHash();
     const hashInit = schemaHash.values.map(str => "0x" + str).join(", ");
-    let changelogByteCount = def.datamodel.calcMessagePoolSize();
-    for (const typeDef of def.datamodel.getCollections()) {
-        changelogByteCount += typeDef.maxCount * typeDef.getTypeSize();
-    }
     const lines = [
         `class ${dataStoreName}_config:`,
-        `  transport_config = ${PythonDatasetLibraryTypes_1.TransportConfig.getLocalType(namespace, includes)}(${PythonDatasetLibraryTypes_1.HashValue.getLocalType(namespace, includes)}(${hashInit}), ${changelogByteCount})`,
+        `  transport_config = ${PythonDatasetLibraryTypes_1.TransportConfig.getLocalType(namespace, includes)}(${PythonDatasetLibraryTypes_1.HashValue.getLocalType(namespace, includes)}(${hashInit}), ${def.datamodel.calcChangelogSize()})`,
         ``,
         ...genTypeDefinitions(namespace, def.datamodel, includes),
         ``,

@@ -35,22 +35,22 @@ namespace Xrpa
 
         public int GetChangeType()
         {
-            return _memAccessor.ReadInt(0);
+            return _memAccessor.ReadInt(new MemoryOffset(0));
         }
 
         public void SetChangeType(int type)
         {
-            _memAccessor.WriteInt(type, 0);
+            _memAccessor.WriteInt(type, new MemoryOffset(0));
         }
 
         public int GetTimestamp()
         {
-            return _memAccessor.ReadInt(4);
+            return _memAccessor.ReadInt(new MemoryOffset(4));
         }
 
         public void SetTimestamp(int timestamp)
         {
-            _memAccessor.WriteInt(timestamp, 4);
+            _memAccessor.WriteInt(timestamp, new MemoryOffset(4));
         }
     }
 

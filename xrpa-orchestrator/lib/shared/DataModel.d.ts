@@ -15,7 +15,7 @@
  */
 
 
-import { HashValue } from "@xrpa/xrpa-utils";
+import { HashValue } from "@xrpa/xrpa-file-utils";
 import { CoordinateSystemDef } from "./CoordinateTransformer";
 import { DataStoreDefinition } from "./DataStore";
 import { ModuleDefinition, UserTypeSpec } from "./ModuleDefinition";
@@ -48,7 +48,7 @@ export declare class DataModelDefinition {
     addEnum(name: string, enumValues: string[]): TypeDefinition;
     addReference(toType: InterfaceTypeDefinition): TypeDefinition;
     addStruct(name: string, fields: UserStructSpec): StructTypeDefinition;
-    addMessageStruct(name: string, fields: UserStructSpec): MessageDataTypeDefinition;
+    addMessageStruct(name: string, fields: UserStructSpec, expectedRatePerSecond: number): MessageDataTypeDefinition;
     addInterface(params: {
         name: string;
         fields?: UserStructSpec;
@@ -60,11 +60,10 @@ export declare class DataModelDefinition {
         maxCount: number;
     }): CollectionTypeDefinition;
     addFixedArray(innerType: UserTypeSpec, arraySize: number): TypeDefinition;
-    addFixedString(maxBytes: number): TypeDefinition;
+    addByteArray(expectedSize: number): TypeDefinition;
     private convertUserType;
     convertUserTypeSpec(typeSpec: UserTypeSpec): FieldTypeSpec;
     private convertUserStructSpec;
-    convertMessagesStructSpec(parentName: string, messages: Record<string, UserStructSpec | null>): Record<string, MessageDataTypeDefinition>;
     getHash(): HashValue;
     getAllTypeDefinitions(): TypeDefinition[];
     getTypeDefinitionsForHeader(headerFile: string): TypeDefinition[];
@@ -72,5 +71,6 @@ export declare class DataModelDefinition {
     getCollections(): CollectionTypeDefinition[];
     private getStructMessagePoolSize;
     calcMessagePoolSize(): number;
+    calcChangelogSize(): number;
 }
 

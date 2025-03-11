@@ -21,6 +21,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UepluginModuleDefinition = void 0;
+const xrpa_file_utils_1 = require("@xrpa/xrpa-file-utils");
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const path_1 = __importDefault(require("path"));
@@ -83,7 +84,7 @@ class UepluginModuleDefinition extends CppModuleDefinition_1.CppModuleDefinition
         }
     }
     doCodeGen() {
-        const fileWriter = new xrpa_utils_1.FileWriter();
+        const fileWriter = new xrpa_file_utils_1.FileWriter();
         const pluginsDir = path_1.default.join(this.projectRoot, "Plugins");
         for (const storeDef of this.getDataStores()) {
             const pluginConfig = this.pluginsConfig[storeDef.apiname];

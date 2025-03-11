@@ -20,6 +20,23 @@ using System.Text;
 namespace Xrpa
 {
 
+    public class MemoryOffset
+    {
+        public MemoryOffset(int offset = 0)
+        {
+            _offset = offset;
+        }
+
+        public int Advance(int numBytes)
+        {
+            var pos = _offset;
+            _offset += numBytes;
+            return pos;
+        }
+
+        public int _offset;
+    }
+
     unsafe public class MemoryAccessor
     {
         public MemoryAccessor() { }
@@ -60,22 +77,20 @@ namespace Xrpa
 
         public void WriteToZeros()
         {
-            for (int pos = 0; pos < _size;)
+            MemoryOffset writePos = new();
+            while (writePos._offset < _size)
             {
-                if (_size - pos >= 8)
+                if (_size - writePos._offset >= 8)
                 {
-                    WriteUlong(0, pos);
-                    pos += 8;
+                    WriteUlong(0, writePos);
                 }
-                else if (_size - pos >= 4)
+                else if (_size - writePos._offset >= 4)
                 {
-                    WriteInt(0, pos);
-                    pos += 4;
+                    WriteInt(0, writePos);
                 }
                 else
                 {
-                    WriteByte(0, pos);
-                    pos += 1;
+                    WriteByte(0, writePos);
                 }
             }
         }
@@ -87,117 +102,130 @@ namespace Xrpa
                 return;
             }
             int size = other.Size < _size ? other.Size : _size;
-            for (int pos = 0; pos < size;)
+            MemoryOffset readPos = new();
+            MemoryOffset writePos = new();
+            while (readPos._offset < size)
             {
-                if (size - pos >= 8)
+                if (size - readPos._offset >= 8)
                 {
-                    WriteUlong(other.ReadUlong(pos), pos);
-                    pos += 8;
+                    WriteUlong(other.ReadUlong(readPos), writePos);
                 }
-                else if (size - pos >= 4)
+                else if (size - readPos._offset >= 4)
                 {
-                    WriteInt(other.ReadInt(pos), pos);
-                    pos += 4;
+                    WriteInt(other.ReadInt(readPos), writePos);
                 }
                 else
                 {
-                    WriteByte(other.ReadByte(pos), pos);
-                    pos += 1;
+                    WriteByte(other.ReadByte(readPos), writePos);
                 }
             }
         }
 
-        public byte ReadByte(int offset)
+        public byte ReadByte(MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset, 1, 0, _size);
-            return *(_dataSource + _memOffset + offset);
+            XrpaUtils.BoundsAssert(offset._offset, 1, 0, _size);
+            return *(_dataSource + _memOffset + offset.Advance(1));
         }
 
-        public void WriteByte(byte val, int offset)
+        public void WriteByte(byte val, MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset, 1, 0, _size);
-            *(_dataSource + _memOffset + offset) = val;
+            XrpaUtils.BoundsAssert(offset._offset, 1, 0, _size);
+            *(_dataSource + _memOffset + offset.Advance(1)) = val;
         }
 
-        public int ReadInt(int offset)
+        public int ReadInt(MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset, 4, 0, _size);
-            return *((int*)(_dataSource + _memOffset + offset));
+            XrpaUtils.BoundsAssert(offset._offset, 4, 0, _size);
+            return *((int*)(_dataSource + _memOffset + offset.Advance(4)));
         }
 
-        public void WriteInt(int val, int offset)
+        public void WriteInt(int val, MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset, 4, 0, _size);
-            *((int*)(_dataSource + _memOffset + offset)) = val;
+            XrpaUtils.BoundsAssert(offset._offset, 4, 0, _size);
+            *((int*)(_dataSource + _memOffset + offset.Advance(4))) = val;
         }
 
-        public uint ReadUint(int offset)
+        public uint ReadUint(MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset, 4, 0, _size);
-            return *((uint*)(_dataSource + _memOffset + offset));
+            XrpaUtils.BoundsAssert(offset._offset, 4, 0, _size);
+            return *((uint*)(_dataSource + _memOffset + offset.Advance(4)));
         }
 
-        public void WriteUint(uint val, int offset)
+        public void WriteUint(uint val, MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset, 4, 0, _size);
-            *((uint*)(_dataSource + _memOffset + offset)) = val;
+            XrpaUtils.BoundsAssert(offset._offset, 4, 0, _size);
+            *((uint*)(_dataSource + _memOffset + offset.Advance(4))) = val;
         }
 
-        public float ReadFloat(int offset)
+        public float ReadFloat(MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset, 4, 0, _size);
-            return *((float*)(_dataSource + _memOffset + offset));
+            XrpaUtils.BoundsAssert(offset._offset, 4, 0, _size);
+            return *((float*)(_dataSource + _memOffset + offset.Advance(4)));
         }
 
-        public void WriteFloat(float val, int offset)
+        public void WriteFloat(float val, MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset, 4, 0, _size);
-            *((float*)(_dataSource + _memOffset + offset)) = val;
+            XrpaUtils.BoundsAssert(offset._offset, 4, 0, _size);
+            *((float*)(_dataSource + _memOffset + offset.Advance(4))) = val;
         }
 
-        public ulong ReadUlong(int offset)
+        public ulong ReadUlong(MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset, 8, 0, _size);
-            return *((ulong*)(_dataSource + _memOffset + offset));
+            XrpaUtils.BoundsAssert(offset._offset, 8, 0, _size);
+            return *((ulong*)(_dataSource + _memOffset + offset.Advance(8)));
         }
 
-        public void WriteUlong(ulong val, int offset)
+        public void WriteUlong(ulong val, MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset, 8, 0, _size);
-            *((ulong*)(_dataSource + _memOffset + offset)) = val;
+            XrpaUtils.BoundsAssert(offset._offset, 8, 0, _size);
+            *((ulong*)(_dataSource + _memOffset + offset.Advance(8))) = val;
         }
 
-        public string ReadString(int offset, int maxBytes)
+        public string ReadString(MemoryOffset offset)
         {
-            int strMaxBytes = maxBytes - 4;
+            byte[] byteArray = ReadBytes(offset);
+            return Encoding.UTF8.GetString(byteArray, 0, byteArray.Length);
+        }
+
+        public void WriteString(string val, MemoryOffset offset)
+        {
+            WriteBytes(Encoding.UTF8.GetBytes(val), offset);
+        }
+
+        public static int DynSizeOfString(string val)
+        {
+            return Encoding.UTF8.GetBytes(val).Length;
+        }
+
+        public byte[] ReadBytes(MemoryOffset offset)
+        {
             int byteCount = ReadInt(offset);
-            XrpaUtils.DebugAssert(byteCount <= strMaxBytes);
-            offset += 4;
-
-            XrpaUtils.BoundsAssert(offset, strMaxBytes, 0, _size);
+            int strOffset = offset.Advance(byteCount);
+            XrpaUtils.BoundsAssert(strOffset, byteCount, 0, _size);
             byte[] byteArray = new byte[byteCount];
             for (int i = 0; i < byteCount; i++)
             {
-                byteArray[i] = *(_dataSource + _memOffset + offset + i);
+                byteArray[i] = *(_dataSource + _memOffset + strOffset + i);
             }
-            return Encoding.UTF8.GetString(byteArray, 0, byteCount);
+            return byteArray;
         }
 
-        public void WriteString(string val, int offset, int maxBytes)
+        public void WriteBytes(byte[] val, MemoryOffset offset)
         {
-            byte[] byteArray = Encoding.UTF8.GetBytes(val);
-            int byteCount = byteArray.Length;
-            int strMaxBytes = maxBytes - 4;
-            // truncate the string to fit in the buffer
-            byteCount = Math.Min(strMaxBytes, byteCount);
+            int byteCount = val.Length;
             WriteInt(byteCount, offset);
-            offset += 4;
 
-            XrpaUtils.BoundsAssert(offset, strMaxBytes, 0, _size);
+            int strOffset = offset.Advance(byteCount);
+            XrpaUtils.BoundsAssert(strOffset, byteCount, 0, _size);
             for (int i = 0; i < byteCount; i++)
             {
-                *(_dataSource + _memOffset + offset + i) = byteArray[i];
+                *(_dataSource + _memOffset + strOffset + i) = val[i];
             }
+        }
+
+        public static int DynSizeOfBytes(byte[] val)
+        {
+            return val.Length;
         }
     }
 

@@ -40,7 +40,7 @@ exports.XredTactilePressureInterface = (0, xrpa_orchestrator_1.XrpaProgramInterf
     (0, xrpa_orchestrator_1.ProgramInput)("TactileDeviceConfig", (0, xrpa_orchestrator_1.Collection)({
         maxCount: 20,
         fields: {
-            filename: (0, xrpa_orchestrator_1.FixedString)(512),
+            filename: xrpa_orchestrator_1.String,
         },
     }));
     const TactileSurface = (0, xrpa_orchestrator_1.ProgramInput)("TactileSurface", (0, xrpa_orchestrator_1.Collection)({
@@ -56,10 +56,10 @@ exports.XredTactilePressureInterface = (0, xrpa_orchestrator_1.XrpaProgramInterf
         maxCount: 10,
         fields: {
             // constant:
-            name: (0, xrpa_orchestrator_1.PrimaryKey)(xrpa_orchestrator_1.IfInput, (0, xrpa_orchestrator_1.FixedString)(64)),
-            skeleton: (0, xrpa_orchestrator_1.FixedString)(64),
-            subskeleton: (0, xrpa_orchestrator_1.FixedString)(32),
-            bone: (0, xrpa_orchestrator_1.FixedString)(32),
+            name: (0, xrpa_orchestrator_1.PrimaryKey)(xrpa_orchestrator_1.IfInput, xrpa_orchestrator_1.String),
+            skeleton: xrpa_orchestrator_1.String,
+            subskeleton: xrpa_orchestrator_1.String,
+            bone: xrpa_orchestrator_1.String,
             boneSpaceBounds: BoundingBox,
             // dynamic:
             touchingSurface: (0, xrpa_orchestrator_1.ReferenceTo)(TactileSurface),
@@ -71,7 +71,7 @@ exports.XredTactilePressureInterface = (0, xrpa_orchestrator_1.XrpaProgramInterf
         maxCount: 1024,
         fields: {
             // constant:
-            location: (0, xrpa_orchestrator_1.FixedString)(16),
+            location: xrpa_orchestrator_1.String,
             cluster: (0, xrpa_orchestrator_1.IndexKey)(xrpa_orchestrator_1.IfInput, (0, xrpa_orchestrator_1.ReferenceTo)(TactileCluster)),
             column: xrpa_orchestrator_1.Count,
             row: xrpa_orchestrator_1.Count,

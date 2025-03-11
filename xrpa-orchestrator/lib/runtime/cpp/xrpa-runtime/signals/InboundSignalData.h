@@ -74,6 +74,10 @@ class InboundSignalData : public InboundSignalDataInterface {
     return ringBuffer_.readInterleavedData(outputBuffer, framesNeeded);
   }
 
+  bool readDeinterleavedData(SampleType* outputBuffer, int framesNeeded, int outputStride) {
+    return ringBuffer_.readDeinterleavedData(outputBuffer, framesNeeded, outputStride);
+  }
+
  private:
   Xrpa::SignalRingBuffer<SampleType> ringBuffer_;
   std::vector<SampleType> tempData_;

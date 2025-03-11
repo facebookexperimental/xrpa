@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SignalOutputDeviceType = exports.SignalOutputDataType = exports.SignalSoftClipType = exports.SignalPitchShiftType = exports.SignalMultiplexerType = exports.SignalMathOpType = exports.SignalParametricEqualizerType = exports.SignalFeedbackType = exports.SignalDelayType = exports.SignalCurveType = exports.SignalChannelStackType = exports.SignalChannelSelectType = exports.SignalChannelRouterType = exports.SignalOscillatorType = exports.SignalSourceFileType = exports.ISignalNodeType = exports.SignalEventCombinerType = exports.SignalEventType = exports.FilterTypeEnum = exports.EventCombinerParameterMode = exports.DeviceHandednessFilterEnum = exports.SampleTypeEnum = exports.MathOperationEnum = exports.WaveformTypeEnum = void 0;
+exports.SignalOutputDeviceType = exports.SignalOutputDataType = exports.SignalSoftClipType = exports.SignalPitchShiftType = exports.SignalMultiplexerType = exports.SignalMathOpType = exports.SignalParametricEqualizerType = exports.SignalFeedbackType = exports.SignalDelayType = exports.SignalCurveType = exports.SignalChannelStackType = exports.SignalChannelSelectType = exports.SignalChannelRouterType = exports.SignalOscillatorType = exports.SignalSourceFileType = exports.SignalSourceType = exports.ISignalNodeType = exports.SignalEventCombinerType = exports.SignalEventType = exports.FilterTypeEnum = exports.EventCombinerParameterMode = exports.DeviceHandednessFilterEnum = exports.SampleTypeEnum = exports.MathOperationEnum = exports.WaveformTypeEnum = void 0;
 const assert_1 = __importDefault(require("assert"));
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const SignalProcessingInterface_1 = require("./SignalProcessingInterface");
@@ -206,17 +206,15 @@ class ISignalNodeType extends SPNode {
     }
 }
 exports.ISignalNodeType = ISignalNodeType;
-/*
-export class SignalSourceType extends ISignalNodeType {
-  // TODO implement in FbaProcessor
-  constructor(params: {
-    srcData: XrpaSignal;
-  }) {
-    super("SignalSource");
-    this.setField("srcData", params.srcData);
-  }
+class SignalSourceType extends ISignalNodeType {
+    constructor(params) {
+        super("SignalSource");
+        this.setField("numChannels", params.numChannels);
+        this.setField("srcData", params.signal);
+        this.numOutputChannels = params.numChannels;
+    }
 }
-*/
+exports.SignalSourceType = SignalSourceType;
 class SignalSourceFileType extends ISignalNodeType {
     constructor(params) {
         super("SignalSourceFile");

@@ -15,27 +15,15 @@
 import uuid
 from dataclasses import dataclass
 
-from xrpa_runtime.utils.memory_accessor import MemoryAccessor
+from xrpa_runtime.utils.memory_accessor import MemoryAccessor, MemoryOffset
 
 
 class ObjectAccessorInterface:
     def __init__(self, mem_accessor: "MemoryAccessor" = None):
         self._mem_accessor = mem_accessor
-        self._cur_read_pos = 0
-        self._cur_write_pos = 0
 
     def is_null(self) -> bool:
         return self._mem_accessor is None or self._mem_accessor.is_null()
-
-    def advance_read_pos(self, num_bytes: int) -> int:
-        pos = self._cur_read_pos
-        self._cur_read_pos += num_bytes
-        return pos
-
-    def advance_write_pos(self, num_bytes: int) -> int:
-        pos = self._cur_write_pos
-        self._cur_write_pos += num_bytes
-        return pos
 
 
 class HashValue:
@@ -60,20 +48,19 @@ class HashValue:
         return hash((self.Value0, self.Value1, self.Value2, self.Value3))
 
     @staticmethod
-    def read_value(mem_accessor, offset: int) -> "HashValue":
-        return HashValue(
-            mem_accessor.read_ulong(offset),
-            mem_accessor.read_ulong(offset + 8),
-            mem_accessor.read_ulong(offset + 16),
-            mem_accessor.read_ulong(offset + 24),
-        )
+    def read_value(mem_accessor, offset: MemoryOffset) -> "HashValue":
+        v0 = mem_accessor.read_ulong(offset)
+        v1 = mem_accessor.read_ulong(offset)
+        v2 = mem_accessor.read_ulong(offset)
+        v3 = mem_accessor.read_ulong(offset)
+        return HashValue(v0, v1, v2, v3)
 
     @staticmethod
-    def write_value(value, mem_accessor, offset: int):
+    def write_value(value, mem_accessor, offset: MemoryOffset):
         mem_accessor.write_ulong(value.Value0, offset)
-        mem_accessor.write_ulong(value.Value1, offset + 8)
-        mem_accessor.write_ulong(value.Value2, offset + 16)
-        mem_accessor.write_ulong(value.Value3, offset + 24)
+        mem_accessor.write_ulong(value.Value1, offset)
+        mem_accessor.write_ulong(value.Value2, offset)
+        mem_accessor.write_ulong(value.Value3, offset)
 
 
 @dataclass(frozen=True)
@@ -123,12 +110,14 @@ class ObjectUuid:
         return self.ID0 < other.ID0 and -1 or 1
 
     @staticmethod
-    def read_value(mem_accessor: MemoryAccessor, offset: int) -> "ObjectUuid":
-        return ObjectUuid(
-            mem_accessor.read_ulong(offset), mem_accessor.read_ulong(offset + 8)
-        )
+    def read_value(mem_accessor: MemoryAccessor, offset: MemoryOffset) -> "ObjectUuid":
+        id0 = mem_accessor.read_ulong(offset)
+        id1 = mem_accessor.read_ulong(offset)
+        return ObjectUuid(id0, id1)
 
     @staticmethod
-    def write_value(value: "ObjectUuid", mem_accessor: MemoryAccessor, offset: int):
+    def write_value(
+        value: "ObjectUuid", mem_accessor: MemoryAccessor, offset: MemoryOffset
+    ):
         mem_accessor.write_ulong(value.ID0, offset)
-        mem_accessor.write_ulong(value.ID1, offset + 8)
+        mem_accessor.write_ulong(value.ID1, offset)

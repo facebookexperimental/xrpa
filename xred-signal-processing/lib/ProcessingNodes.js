@@ -40,7 +40,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PitchShift = exports.BandPassFilter = exports.HighPassFilter = exports.LowPassFilter = exports.ParametricEqualizer = exports.Feedback = exports.Delay = exports.Sequence = exports.AudioStream = exports.AdsrEnvelope = exports.TrapezoidCurve = exports.ClickPulse = exports.RepeatAndStack = exports.StackChannels = exports.SelectChannel = exports.RouteToChannel = exports.SoftClip = exports.CustomWave = exports.WhiteNoise = exports.SquareWave = exports.TriangleWave = exports.SawtoothWave = exports.SineWave = exports.DoneWhen = exports.OutputToDevice = void 0;
+exports.PitchShift = exports.BandPassFilter = exports.HighPassFilter = exports.LowPassFilter = exports.ParametricEqualizer = exports.Feedback = exports.Delay = exports.Sequence = exports.AudioStream = exports.SignalStream = exports.AdsrEnvelope = exports.TrapezoidCurve = exports.ClickPulse = exports.RepeatAndStack = exports.StackChannels = exports.SelectChannel = exports.RouteToChannel = exports.SoftClip = exports.CustomWave = exports.WhiteNoise = exports.SquareWave = exports.TriangleWave = exports.SawtoothWave = exports.SineWave = exports.DoneWhen = exports.OutputToDevice = void 0;
 const path = __importStar(require("path"));
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const MathOps_1 = require("./MathOps");
@@ -246,6 +246,10 @@ function AdsrEnvelope(params) {
     });
 }
 exports.AdsrEnvelope = AdsrEnvelope;
+function SignalStream(params) {
+    return new SignalProcessingTypes_1.SignalSourceType(params);
+}
+exports.SignalStream = SignalStream;
 function AudioStream(filename, params) {
     return new SignalProcessingTypes_1.SignalSourceFileType({
         filePath: path.resolve(path.dirname(process.execPath), filename),

@@ -20,14 +20,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.applyNativeProgramContext = exports.setProgramInterface = exports.addSetting = exports.getNativeProgramContext = exports.isNativeProgramContext = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const ProgramInterfaceConverter_1 = require("./ProgramInterfaceConverter");
-const XrpaLanguage_1 = require("./XrpaLanguage");
 const MODULE_SETTINGS = "xrpa.nativeProgram.settings";
 function isNativeProgramContext(ctx) {
     return typeof ctx === "object" && ctx !== null && "__isNativeProgramContext" in ctx;
 }
 exports.isNativeProgramContext = isNativeProgramContext;
 function getNativeProgramContext() {
-    return (0, XrpaLanguage_1.getContext)(isNativeProgramContext, "Call must be made within a native program");
+    return (0, xrpa_utils_1.getContext)(isNativeProgramContext, "Call must be made within a native program");
 }
 exports.getNativeProgramContext = getNativeProgramContext;
 function addSetting(name, dataType) {

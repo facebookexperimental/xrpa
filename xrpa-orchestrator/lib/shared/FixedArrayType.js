@@ -32,7 +32,7 @@ class FixedArrayType extends StructType_1.StructType {
             fieldMap[`[${i}]`] = valueName;
         }
         const localType = localArrayType ? {
-            typename: `${localArrayType.typename}<${innerType.getLocalType("", null)}>`,
+            typename: codegen.applyTemplateParams(localArrayType.typename, innerType.getLocalType("", null)),
             headerFile: localArrayType.headerFile,
             hasInitializerConstructor: true,
             fieldMap,

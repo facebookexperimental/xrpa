@@ -227,6 +227,7 @@ function genInboundReconciledTypes(ctx, includesIn) {
                 ctx,
                 includes,
                 reconcilerDef,
+                fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar,
                 canCreate: false,
             }),
         });

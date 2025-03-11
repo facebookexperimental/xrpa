@@ -21,6 +21,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genStandaloneBuck = exports.genStandaloneCpp = exports.genTransportDeinitializer = exports.genTransportInitializer = void 0;
+const xrpa_file_utils_1 = require("@xrpa/xrpa-file-utils");
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
@@ -147,7 +148,7 @@ function genStandaloneCpp(fileWriter, outdir, moduleDef) {
 exports.genStandaloneCpp = genStandaloneCpp;
 function genStandaloneBuck(fileWriter, outdir, runtimeDir, buckTarget, moduleDef, oncall) {
     fileWriter.writeFile(path_1.default.join(outdir, "BUCK"), async () => {
-        const buckRoot = await (0, xrpa_utils_1.buckRootDir)();
+        const buckRoot = await (0, xrpa_file_utils_1.buckRootDir)();
         const runtimeRelPath = path_1.default.relative(buckRoot, runtimeDir);
         const runtimeDepPath = `//${runtimeRelPath.replace(/\\/g, "/")}`;
         const deps = [

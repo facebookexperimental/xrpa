@@ -62,6 +62,21 @@ function genMessageParamInitializer(ctx, includes, msgType) {
     }
     return lines;
 }
+function genMessageSize(ctx, includes, msgType) {
+    const dynFieldSizes = [];
+    let staticSize = 0;
+    const msgFields = msgType.getStateFields();
+    for (const key in msgFields) {
+        const fieldType = msgFields[key].type;
+        const byteCount = fieldType.getRuntimeByteCount(key, ctx.namespace, includes);
+        staticSize += byteCount[0];
+        if (byteCount[1] !== null) {
+            dynFieldSizes.push(byteCount[1]);
+        }
+    }
+    dynFieldSizes.push(staticSize.toString());
+    return dynFieldSizes.join(" + ");
+}
 function genSendMessageBody(params) {
     const lines = [];
     if (params.proxyObj) {
@@ -72,7 +87,7 @@ function genSendMessageBody(params) {
         const messageType = params.typeDef.getFieldIndex(params.fieldName);
         if (params.fieldType.hasFields()) {
             const msgWriteAccessor = params.fieldType.getWriteAccessorType(params.ctx.namespace, params.includes);
-            lines.push(`message = ${msgWriteAccessor}(self._collection.send_message(`, `    self.get_xrpa_id(),`, `    ${messageType},`, `    ${params.fieldType.getTypeSize()}))`, ...genMessageParamInitializer(params.ctx, params.includes, params.fieldType));
+            lines.push(`message = ${msgWriteAccessor}(self._collection.send_message(`, `    self.get_xrpa_id(),`, `    ${messageType},`, `    ${genMessageSize(params.ctx, params.includes, params.fieldType)}))`, ...genMessageParamInitializer(params.ctx, params.includes, params.fieldType));
         }
         else {
             lines.push(`self._collection.send_message(`, `    self.get_xrpa_id(),`, `    ${messageType},`, `    0)`);

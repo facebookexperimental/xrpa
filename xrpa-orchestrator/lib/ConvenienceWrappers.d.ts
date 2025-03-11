@@ -24,6 +24,7 @@ import { PythonModuleDefinition } from "./targets/python/PythonModuleDefinition"
 export declare function withHeader<T extends Record<string, string>>(headerFile: string, types: T): TypeMap;
 export declare const OvrCoordinateSystem: CoordinateSystemDef;
 export declare const StdVectorArrayType: ArrayTypeSpec;
+export declare const PythonListType: ArrayTypeSpec;
 interface BuckConfig extends ModuleBuckConfig {
     deps?: string[];
 }

@@ -17,18 +17,23 @@
 
 import { ProgramInterfaceContext } from "./ProgramInterface";
 import { ExternalProgramCallerContext, ExternalProgramInterfaceContext } from "./RuntimeEnvironment";
-import { DataflowConnection, DataflowProgramDefinition, XrpaDataflowGraphNode, XrpaFieldValue } from "./shared/DataflowProgramDefinition";
-export { XrpaDataflowForeignObjectInstantiation, XrpaDataflowGraphNode, XrpaFieldValue, isDataflowForeignObjectInstantiation, isDataflowGraphNode, } from "./shared/DataflowProgramDefinition";
+import { DataflowProgramDefinition, XrpaDataflowConnection, XrpaDataflowGraphNode, XrpaFieldValue } from "./shared/DataflowProgramDefinition";
+export { XrpaDataflowConnection, XrpaDataflowForeignObjectInstantiation, XrpaDataflowGraphNode, XrpaFieldValue, isDataflowConnection, isDataflowForeignObjectInstantiation, isDataflowGraphNode, } from "./shared/DataflowProgramDefinition";
 export interface DataflowProgramContext extends ProgramInterfaceContext, ExternalProgramCallerContext {
     __isDataflowProgramContext: true;
     idCount: number;
     programInterfaceNames: Set<string>;
     graphNodes: XrpaDataflowGraphNode[];
-    selfTerminateEvents: DataflowConnection[];
+    selfTerminateEvents: XrpaDataflowConnection[];
 }
 export declare function isDataflowProgramContext(ctx: unknown): ctx is DataflowProgramContext;
 export declare function getDataflowProgramContext(): DataflowProgramContext;
 export declare function Instantiate(collection: [ExternalProgramInterfaceContext, string], fieldValues: Record<string, XrpaFieldValue>, isBuffered?: boolean): XrpaDataflowGraphNode;
-export declare function SelfTerminateOn(trigger: DataflowConnection): void;
+export declare function ObjectReference(node: XrpaDataflowGraphNode): XrpaDataflowConnection;
+export declare function ObjectField(node: XrpaDataflowGraphNode, fieldName: string): XrpaDataflowConnection;
+export declare function SelfTerminateOn(fieldValue: {
+    targetNode: XrpaDataflowGraphNode;
+    targetPort: string;
+}): void;
 export declare function XrpaDataflowProgram(name: string, callback: (ctx: DataflowProgramContext) => void): DataflowProgramDefinition;
 

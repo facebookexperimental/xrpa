@@ -15,6 +15,12 @@
  */
 
 
+export type KeysMatching<T, V> = {
+    [K in keyof T]-?: T[K] extends V ? K : never;
+}[keyof T];
+export type StringValued<T> = KeysMatching<T, string>;
+export type BooleanValued<T> = KeysMatching<T, boolean>;
+export type StringKey<T> = string & keyof T;
 export declare function absurd(v: never): void;
 export declare function throwBadValue(val: unknown, expected: string): void;
 export declare function assertIsKeyOf(val: unknown, enumOrLookup: Record<string, unknown>): asserts val is string;
@@ -24,12 +30,4 @@ export declare function filterToStringPairArray(val: unknown, minLength?: number
 export declare function filterToNumber(val: unknown): number | undefined;
 export declare function filterToNumberArray(val: unknown, minLength?: number): number[] | undefined;
 export declare function isExcluded(key: string, includeList: string[] | null | undefined, excludeList: string[] | null | undefined): boolean;
-export type Thunk<T> = T | (() => T);
-export type ThunkWithParam<T, P> = T | ((param: P) => T);
-export type AsyncThunk<T> = Thunk<T> | Promise<T> | (() => Promise<T>);
-export declare function resolveThunk<T>(value: Thunk<T>): T;
-export declare function resolveThunkWithParam<T, P>(value: ThunkWithParam<T, P>, param: P): T;
-export declare function chainThunk<IN, OUT>(value: Thunk<IN>, next: (value: IN) => OUT): Thunk<OUT>;
-export declare function resolveAsyncThunk<T>(value: AsyncThunk<T>): Promise<T>;
-export declare function chainAsyncThunk<IN, OUT>(value: AsyncThunk<IN>, next: (value: IN) => OUT): AsyncThunk<OUT>;
 

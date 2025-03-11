@@ -16,6 +16,7 @@
 
 
 import { TypeDefinition } from "../../shared/TypeDefinition";
+export declare const MemoryOffset: TypeDefinition;
 export declare const MemoryAccessor: TypeDefinition;
 export declare const HashValue: TypeDefinition;
 export declare const TransportConfig: TypeDefinition;
@@ -32,4 +33,5 @@ export declare const ObjectCollectionIndexedBinding: TypeDefinition;
 export declare const TransportStream: TypeDefinition;
 export declare const TransportStreamAccessor: TypeDefinition;
 export declare const SharedMemoryTransportStream: TypeDefinition;
+export declare const InboundSignalForwarder: TypeDefinition;
 

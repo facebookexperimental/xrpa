@@ -68,12 +68,16 @@ function genFieldSetDirty(params) {
         ];
     }
     else {
-        const fieldSize = params.typeDef.getFieldSize(params.fieldName);
+        const fieldSize = params.typeDef.getStateField(params.fieldName).getRuntimeByteCount(params.fieldVar, params.ctx.namespace, params.includes);
         return [
             `if ((_changeBits & ${changeBit}) == 0) {`,
             `  _changeBits |= ${changeBit};`,
-            `  _changeByteCount += ${fieldSize};`,
+            `  _changeByteCount += ${fieldSize[0]};`,
             `}`,
+            ...(fieldSize[1] === null ? [] : [
+                // TODO if the field is set more than once, we will count the dynamic size multiple times
+                `_changeByteCount += ${fieldSize[1]};`,
+            ]),
             `if (_collection != null) {`,
             `  if (!_hasNotifiedNeedsWrite)`,
             `  {`,
@@ -135,7 +139,7 @@ function genWriteFieldSetters(classSpec, params) {
                 }],
             body: includes => [
                 `${fieldVar} = ${fieldType.convertValueFromLocal(params.ctx.namespace, includes, params.fieldName)};`,
-                ...genFieldSetDirty({ ...params, includes }),
+                ...genFieldSetDirty({ ...params, includes, fieldVar }),
             ],
         });
         classSpec.methods.push({
@@ -146,7 +150,7 @@ function genWriteFieldSetters(classSpec, params) {
                 }],
             body: includes => [
                 `${fieldVar} = ${params.fieldName};`,
-                ...genFieldSetDirty({ ...params, includes }),
+                ...genFieldSetDirty({ ...params, includes, fieldVar }),
             ],
         });
     }
@@ -160,7 +164,7 @@ function genWriteFieldSetters(classSpec, params) {
                 }],
             body: includes => [
                 `${fieldVar} = ${params.fieldName};`,
-                ...genFieldSetDirty({ ...params, includes }),
+                ...genFieldSetDirty({ ...params, includes, fieldVar }),
             ],
         });
     }
@@ -227,12 +231,17 @@ function genWriteFunctionBody(params) {
         ];
     }
     else {
+        const outboundChangeBytes = params.reconcilerDef.getOutboundChangeByteCount({
+            inNamespace: params.ctx.namespace,
+            includes: params.includes,
+            fieldToMemberVar: params.fieldToMemberVar,
+        });
         return [
             ...(params.canCreate ? [
                 `${writeAccessor} objAccessor = new();`,
                 `if (!_createWritten) {`,
                 `  _changeBits = ${params.reconcilerDef.getOutboundChangeBits()};`,
-                `  _changeByteCount = ${params.reconcilerDef.getOutboundChangeByteCount()};`,
+                `  _changeByteCount = ${outboundChangeBytes};`,
                 `  objAccessor = ${writeAccessor}.Create(accessor, GetCollectionId(), GetXrpaId(), _changeByteCount, _createTimestamp);`,
                 `  _createWritten = true;`,
                 `} else if (_changeBits != 0) {`,
@@ -260,12 +269,17 @@ function genPrepFullUpdateFunctionBody(params) {
     if (!outboundChangeBits && !params.canCreate) {
         return ["return 0;"];
     }
+    const outboundChangeBytes = params.reconcilerDef.getOutboundChangeByteCount({
+        inNamespace: params.ctx.namespace,
+        includes: params.includes,
+        fieldToMemberVar: params.fieldToMemberVar,
+    });
     return [
         ...(params.canCreate ? [
             `_createWritten = false;`,
         ] : []),
         `_changeBits = ${outboundChangeBits};`,
-        `_changeByteCount = ${params.reconcilerDef.getOutboundChangeByteCount()};`,
+        `_changeByteCount = ${outboundChangeBytes};`,
         ...(params.canCreate ? [
             `return _createTimestamp;`,
         ] : [
@@ -335,6 +349,7 @@ function genOutboundReconciledTypes(ctx, includesIn) {
                 ctx,
                 includes,
                 reconcilerDef,
+                fieldToMemberVar: defaultFieldToMemberVar,
                 canCreate: true,
             }),
         });

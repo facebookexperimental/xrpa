@@ -22,18 +22,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genTypesHeader = void 0;
 const path_1 = __importDefault(require("path"));
+const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
 const CppDatasetLibraryTypes_1 = require("./CppDatasetLibraryTypes");
 function genTransportConfig(apiname, datamodel, namespace, includes, hashInit) {
-    let changelogByteCount = datamodel.calcMessagePoolSize();
-    for (const typeDef of datamodel.getCollections()) {
-        changelogByteCount += typeDef.maxCount * typeDef.getTypeSize();
-    }
     return [
         `static inline ${CppDatasetLibraryTypes_1.TransportConfig.getLocalType(namespace, includes)} GenTransportConfig() {`,
         `  ${CppDatasetLibraryTypes_1.TransportConfig.getLocalType(namespace, includes)} config;`,
         `  config.schemaHash = ${CppDatasetLibraryTypes_1.HashValue.getLocalType(namespace, includes)}(${hashInit});`,
-        `  config.changelogByteCount = ${changelogByteCount};`,
+        `  config.changelogByteCount = ${datamodel.calcChangelogSize()};`,
         `  return config;`,
         `}`,
     ];
@@ -46,15 +43,29 @@ function genTypeDefinitions(namespace, datamodel, includes) {
         ret.push(`class ${typeDef.getReadAccessorType(namespace, null)};`);
     }
     ret.push("");
-    // define the local types first, so that the to/fromLocal functions can use them
-    for (const typeDef of datamodel.getAllTypeDefinitions()) {
+    const typeDefs = datamodel.getAllTypeDefinitions();
+    // define enums first
+    for (const typeDef of typeDefs) {
+        if (!(0, TypeDefinition_1.typeIsEnum)(typeDef)) {
+            continue;
+        }
+        const lines = typeDef.genTypeDefinition(includes);
+        if (lines) {
+            ret.push(...lines, "");
+        }
+    }
+    // define the local types next, so that the to/fromLocal functions can use them
+    for (const typeDef of typeDefs) {
         const lines = typeDef.genLocalTypeDefinition(namespace, includes);
         if (lines) {
             ret.push(...lines, "");
         }
     }
     // define the dataset types last
-    for (const typeDef of datamodel.getAllTypeDefinitions()) {
+    for (const typeDef of typeDefs) {
+        if ((0, TypeDefinition_1.typeIsEnum)(typeDef)) {
+            continue;
+        }
         const lines = typeDef.genTypeDefinition(includes);
         if (lines) {
             ret.push(...lines, "");

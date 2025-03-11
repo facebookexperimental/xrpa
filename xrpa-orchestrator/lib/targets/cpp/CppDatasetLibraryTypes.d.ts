@@ -17,6 +17,7 @@
 
 import { PrimitiveType } from "../../shared/PrimitiveType";
 import { TypeDefinition } from "../../shared/TypeDefinition";
+export declare const MemoryOffset: TypeDefinition;
 export declare const MemoryAccessor: TypeDefinition;
 export declare const HashValue: PrimitiveType;
 export declare const TransportConfig: TypeDefinition;
@@ -33,6 +34,9 @@ export declare const TransportStream: TypeDefinition;
 export declare const HeapMemoryTransportStream: TypeDefinition;
 export declare const SharedMemoryTransportStream: TypeDefinition;
 export declare const InboundSignalDataInterface: TypeDefinition;
+export declare const InboundSignalForwarder: TypeDefinition;
 export declare const OutboundSignalData: TypeDefinition;
 export declare const SignalProducerCallback: TypeDefinition;
+export declare const SignalRingBuffer: TypeDefinition;
+export declare const SignalPacket: TypeDefinition;
 

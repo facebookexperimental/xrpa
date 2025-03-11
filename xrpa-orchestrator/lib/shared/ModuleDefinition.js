@@ -27,7 +27,6 @@ const CollectionType_1 = require("./CollectionType");
 const DataStore_1 = require("./DataStore");
 const EnumType_1 = require("./EnumType");
 const FixedArrayType_1 = require("./FixedArrayType");
-const FixedStringType_1 = require("./FixedStringType");
 const InterfaceType_1 = require("./InterfaceType");
 const MessageDataType_1 = require("./MessageDataType");
 const ReferenceType_1 = require("./ReferenceType");
@@ -165,8 +164,8 @@ class ModuleDefinition {
     createStruct(name, apiname, fields, localTypeOverride) {
         return new StructType_1.StructType(this.codegen, name, apiname, undefined, fields, localTypeOverride);
     }
-    createMessageStruct(name, apiname, fields) {
-        return new MessageDataType_1.MessageDataType(this.codegen, name, apiname, this.ObjectUuid, fields);
+    createMessageStruct(name, apiname, fields, expectedRatePerSecond) {
+        return new MessageDataType_1.MessageDataType(this.codegen, name, apiname, this.ObjectUuid, fields, expectedRatePerSecond);
     }
     createInterface(name, apiname, fields) {
         return new InterfaceType_1.InterfaceType(this.codegen, name, apiname, this.ObjectUuid, fields);
@@ -177,8 +176,8 @@ class ModuleDefinition {
     createFixedArray(name, apiname, innerType, arraySize) {
         return new FixedArrayType_1.FixedArrayType(this.codegen, name, apiname, innerType, arraySize, this.datamap.localArrayType);
     }
-    createFixedString(name, apiname, maxBytes) {
-        return new FixedStringType_1.FixedStringType(this.codegen, name, apiname, maxBytes, this.datamap.typeMap);
+    createByteArray(expectedSize) {
+        return new BuiltinTypes_1.ByteArrayType(this.codegen, expectedSize);
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     setCollectionAsInbound(type, _componentProps, reconciledTo, _indexes) {

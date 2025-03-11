@@ -21,8 +21,22 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <vector>
 
 namespace Xrpa {
+
+class MemoryOffset {
+ public:
+  explicit MemoryOffset(int32_t offset = 0) : offset_(offset) {}
+
+  int32_t advance(int32_t numBytes) {
+    auto pos = offset_;
+    offset_ += numBytes;
+    return pos;
+  }
+
+  int32_t offset_;
+};
 
 class MemoryAccessor {
  public:
@@ -76,16 +90,14 @@ class MemoryAccessor {
   }
 
   void writeToZeros() {
-    for (int32_t pos = 0; pos < size_;) {
-      if (size_ - pos >= 8) {
-        writeValue<uint64_t>(0, pos);
-        pos += 8;
-      } else if (size_ - pos >= 4) {
-        writeValue<uint32_t>(0, pos);
-        pos += 4;
+    MemoryOffset writePos;
+    while (writePos.offset_ < size_) {
+      if (size_ - writePos.offset_ >= 8) {
+        writeValue<uint64_t>(0, writePos);
+      } else if (size_ - writePos.offset_ >= 4) {
+        writeValue<uint32_t>(0, writePos);
       } else {
-        writeValue<uint8_t>(0, pos);
-        pos += 1;
+        writeValue<uint8_t>(0, writePos);
       }
     }
   }
@@ -95,16 +107,15 @@ class MemoryAccessor {
       return;
     }
     int32_t size = other.size_ < size_ ? other.size_ : size_;
-    for (int32_t pos = 0; pos < size;) {
-      if (size - pos >= 8) {
-        writeValue<uint64_t>(other.readValue<uint64_t>(pos), pos);
-        pos += 8;
-      } else if (size - pos >= 4) {
-        writeValue<uint32_t>(other.readValue<uint32_t>(pos), pos);
-        pos += 4;
+    MemoryOffset readPos;
+    MemoryOffset writePos;
+    while (readPos.offset_ < size) {
+      if (size - readPos.offset_ >= 8) {
+        writeValue<uint64_t>(other.readValue<uint64_t>(readPos), writePos);
+      } else if (size - readPos.offset_ >= 4) {
+        writeValue<uint32_t>(other.readValue<uint32_t>(readPos), writePos);
       } else {
-        writeValue<uint8_t>(other.readValue<uint8_t>(pos), pos);
-        pos += 1;
+        writeValue<uint8_t>(other.readValue<uint8_t>(readPos), writePos);
       }
     }
   }
@@ -114,71 +125,71 @@ class MemoryAccessor {
       return;
     }
     auto* src = reinterpret_cast<uint8_t*>(ptr);
-    for (int32_t pos = 0; pos < size_;) {
-      if (size_ - pos >= 8) {
-        writeValue<uint64_t>(*reinterpret_cast<uint64_t*>(src + pos), pos);
-        pos += 8;
-      } else if (size_ - pos >= 4) {
-        writeValue<uint32_t>(*reinterpret_cast<uint32_t*>(src + pos), pos);
-        pos += 4;
+    MemoryOffset readPos;
+    MemoryOffset writePos;
+    while (readPos.offset_ < size_) {
+      if (size_ - readPos.offset_ >= 8) {
+        writeValue<uint64_t>(*reinterpret_cast<uint64_t*>(src + readPos.advance(8)), writePos);
+      } else if (size_ - readPos.offset_ >= 4) {
+        writeValue<uint32_t>(*reinterpret_cast<uint32_t*>(src + readPos.advance(4)), writePos);
       } else {
-        writeValue<uint8_t>(*reinterpret_cast<uint8_t*>(src + pos), pos);
-        pos += 1;
+        writeValue<uint8_t>(*reinterpret_cast<uint8_t*>(src + readPos.advance(1)), writePos);
       }
     }
   }
 
   template <typename T>
-  [[nodiscard]] T readValue(int32_t pos) const {
-    xrpaDebugBoundsAssert(pos, sizeof(T), 0, size_);
-    return *reinterpret_cast<T*>(memPtr_ + offset_ + pos);
-  }
-
-  template <typename T>
-  [[nodiscard]] T readValue(int32_t /*pos*/, int32_t /*maxBytes*/) const {
-    // this is not implemented generically, it is just for strings right now
-    // (this used to be a static_assert but some compilers compile this anyway for some reason and
-    // the static assert fires)
-    xrpaDebugAssert(false);
+  [[nodiscard]] T readValue(MemoryOffset& pos) const {
+    xrpaDebugBoundsAssert(pos.offset_, sizeof(T), 0, size_);
+    return *reinterpret_cast<T*>(memPtr_ + offset_ + pos.advance(sizeof(T)));
   }
 
   template <>
-  [[nodiscard]] std::string readValue<std::string>(int32_t pos, int32_t maxBytes) const {
-    int32_t strMaxBytes = maxBytes - 4;
+  [[nodiscard]] std::string readValue<std::string>(MemoryOffset& pos) const {
     auto byteCount = readValue<int32_t>(pos);
-    xrpaDebugAssert(byteCount <= strMaxBytes);
-    pos += 4;
 
-    xrpaDebugBoundsAssert(pos, strMaxBytes, 0, size_);
-    return std::string(reinterpret_cast<char*>(memPtr_ + offset_ + pos), byteCount);
-  }
-
-  template <typename T>
-  void writeValue(const T& val, int32_t pos) {
-    xrpaDebugBoundsAssert(pos, sizeof(T), 0, size_);
-    *reinterpret_cast<T*>(memPtr_ + offset_ + pos) = val;
-  }
-
-  template <typename T>
-  void writeValue(const T& /*val*/, int32_t /*pos*/, int32_t /*maxBytes*/) {
-    // this is not implemented generically, it is just for strings right now
-    // (this used to be a static_assert but some compilers compile this anyway for some reason and
-    // the static assert fires)
-    xrpaDebugAssert(false);
+    xrpaDebugBoundsAssert(pos.offset_, byteCount, 0, size_);
+    return std::string(
+        reinterpret_cast<char*>(memPtr_ + offset_ + pos.advance(byteCount)), byteCount);
   }
 
   template <>
-  void writeValue<std::string>(const std::string& val, int32_t pos, int32_t maxBytes) {
+  [[nodiscard]] std::vector<uint8_t> readValue<std::vector<uint8_t>>(MemoryOffset& pos) const {
+    auto byteCount = readValue<int32_t>(pos);
+
+    xrpaDebugBoundsAssert(pos.offset_, byteCount, 0, size_);
+    auto ret = std::vector<uint8_t>(byteCount);
+    std::memcpy(ret.data(), memPtr_ + offset_ + pos.advance(byteCount), byteCount);
+    return ret;
+  }
+
+  template <typename T>
+  void writeValue(const T& val, MemoryOffset& pos) {
+    xrpaDebugBoundsAssert(pos.offset_, sizeof(T), 0, size_);
+    *reinterpret_cast<T*>(memPtr_ + offset_ + pos.advance(sizeof(T))) = val;
+  }
+
+  template <>
+  void writeValue<std::string>(const std::string& val, MemoryOffset& pos) {
     int32_t byteCount = val.size();
-    int32_t strMaxBytes = maxBytes - 4;
-
-    // truncate string to fit in the buffer
-    byteCount = std::min(strMaxBytes, byteCount);
     writeValue<int32_t>(byteCount, pos);
-    pos += 4;
 
-    xrpaDebugBoundsAssert(pos, strMaxBytes, 0, size_);
-    std::memcpy(memPtr_ + offset_ + pos, val.data(), byteCount);
+    xrpaDebugBoundsAssert(pos.offset_, byteCount, 0, size_);
+    std::memcpy(memPtr_ + offset_ + pos.advance(byteCount), val.data(), byteCount);
+  }
+
+  template <>
+  void writeValue<std::vector<uint8_t>>(const std::vector<uint8_t>& val, MemoryOffset& pos) {
+    int32_t byteCount = val.size();
+    writeValue<int32_t>(byteCount, pos);
+
+    xrpaDebugBoundsAssert(pos.offset_, byteCount, 0, size_);
+    std::memcpy(memPtr_ + offset_ + pos.advance(byteCount), val.data(), byteCount);
+  }
+
+  template <typename T>
+  [[nodiscard]] static int32_t dynSizeOfValue(const T& /*val*/) {
+    return 0;
   }
 
   void* getRawPointer(int32_t pos, int32_t maxBytes) {
@@ -191,5 +202,16 @@ class MemoryAccessor {
   int32_t offset_ = 0;
   int32_t size_ = 0;
 };
+
+template <>
+[[nodiscard]] inline int32_t MemoryAccessor::dynSizeOfValue<std::string>(const std::string& val) {
+  return val.size();
+}
+
+template <>
+[[nodiscard]] inline int32_t MemoryAccessor::dynSizeOfValue<std::vector<uint8_t>>(
+    const std::vector<uint8_t>& val) {
+  return val.size();
+}
 
 } // namespace Xrpa

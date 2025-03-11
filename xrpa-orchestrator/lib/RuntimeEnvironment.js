@@ -30,7 +30,7 @@ function isExternalProgramCallerContext(ctx) {
 }
 exports.isExternalProgramCallerContext = isExternalProgramCallerContext;
 function getExternalProgramCallerContext() {
-    return (0, XrpaLanguage_1.getContext)(isExternalProgramCallerContext, "Call is only valid within a context which can bind external programs");
+    return (0, xrpa_utils_1.getContext)(isExternalProgramCallerContext, "Call is only valid within a context which can bind external programs");
 }
 exports.getExternalProgramCallerContext = getExternalProgramCallerContext;
 function isRuntimeEnvironmentContext(ctx) {
@@ -38,7 +38,7 @@ function isRuntimeEnvironmentContext(ctx) {
 }
 exports.isRuntimeEnvironmentContext = isRuntimeEnvironmentContext;
 function getRuntimeEnvironmentContext() {
-    return (0, XrpaLanguage_1.getContext)(isRuntimeEnvironmentContext, "Call is only valid within a runtime environment");
+    return (0, xrpa_utils_1.getContext)(isRuntimeEnvironmentContext, "Call is only valid within a runtime environment");
 }
 exports.getRuntimeEnvironmentContext = getRuntimeEnvironmentContext;
 function mapTypeInternal(typeMap, dataType, mapped) {

@@ -26,15 +26,11 @@ const path_1 = __importDefault(require("path"));
 const CsharpCodeGenImpl_1 = require("./CsharpCodeGenImpl");
 const CsharpDatasetLibraryTypes_1 = require("./CsharpDatasetLibraryTypes");
 function genTransportConfig(apiname, datamodel, namespace, includes, hashInit) {
-    let changelogByteCount = datamodel.calcMessagePoolSize();
-    for (const typeDef of datamodel.getCollections()) {
-        changelogByteCount += typeDef.maxCount * typeDef.getTypeSize();
-    }
     return [
         `public static ${CsharpDatasetLibraryTypes_1.TransportConfig.getLocalType(namespace, includes)} GenTransportConfig() {`,
         `  ${CsharpDatasetLibraryTypes_1.TransportConfig.getLocalType(namespace, includes)} config = new();`,
         `  config.SchemaHash = new ${CsharpDatasetLibraryTypes_1.HashValue.getLocalType(namespace, includes)}(${hashInit});`,
-        `  config.ChangelogByteCount = ${changelogByteCount};`,
+        `  config.ChangelogByteCount = ${datamodel.calcChangelogSize()};`,
         `  return config;`,
         `}`,
     ];

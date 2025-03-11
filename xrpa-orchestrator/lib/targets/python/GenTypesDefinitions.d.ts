@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "@xrpa/xrpa-utils";
+import { FileWriter } from "@xrpa/xrpa-file-utils";
 import { DataStoreDefinition } from "../../shared/DataStore";
 import { IncludeAggregator } from "../../shared/Helpers";
 export declare function getDataStoreConfigName(apiname: string, inNamespace: string, includes: IncludeAggregator | null): string;

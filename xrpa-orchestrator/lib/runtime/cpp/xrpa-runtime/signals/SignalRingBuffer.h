@@ -93,6 +93,21 @@ class SignalRingBuffer {
     return !didUnderflow;
   }
 
+  bool readDeinterleavedData(SampleType* outputBuffer, int framesNeeded, int outputStride) {
+    tempBuffer_.resize(framesNeeded * numChannels_);
+    auto filled = readInterleavedData(tempBuffer_.data(), framesNeeded);
+
+    SampleType* srcData = tempBuffer_.data();
+    for (int frameIdx = 0; frameIdx < framesNeeded; frameIdx++) {
+      for (int channelIdx = 0; channelIdx < numChannels_; channelIdx++) {
+        outputBuffer[channelIdx * outputStride + frameIdx] = *srcData;
+        srcData++;
+      }
+    }
+
+    return filled;
+  }
+
   // returns the number of frames actually written to the ring buffer (<= framesToWrite)
   int writeInterleavedData(const SampleType* inputBuffer, int framesToWrite) {
     std::unique_lock lock(mutex_);
@@ -128,6 +143,7 @@ class SignalRingBuffer {
  private:
   std::mutex mutex_;
   std::vector<SampleType> ringBuffer_;
+  std::vector<SampleType> tempBuffer_;
   int ringBufferReadPos_ = 0;
   int ringBufferWritePos_ = 0;
   int numChannels_ = 1;

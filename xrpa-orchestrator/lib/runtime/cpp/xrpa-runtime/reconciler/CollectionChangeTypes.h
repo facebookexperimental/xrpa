@@ -39,19 +39,23 @@ class CollectionChangeEventAccessor : public ChangeEventAccessor {
       : ChangeEventAccessor(std::move(memAccessor)) {}
 
   ObjectUuid getObjectId() {
-    return ObjectUuid::readValue(memAccessor_, ChangeEventAccessor::DS_SIZE);
+    auto offset = MemoryOffset(ChangeEventAccessor::DS_SIZE);
+    return ObjectUuid::readValue(memAccessor_, offset);
   }
 
   void setObjectId(const ObjectUuid& id) {
-    ObjectUuid::writeValue(id, memAccessor_, ChangeEventAccessor::DS_SIZE);
+    auto offset = MemoryOffset(ChangeEventAccessor::DS_SIZE);
+    ObjectUuid::writeValue(id, memAccessor_, offset);
   }
 
   int32_t getCollectionId() {
-    return memAccessor_.readValue<int32_t>(ChangeEventAccessor::DS_SIZE + 16);
+    auto offset = MemoryOffset(ChangeEventAccessor::DS_SIZE + 16);
+    return memAccessor_.readValue<int32_t>(offset);
   }
 
   void setCollectionId(int32_t collectionId) {
-    memAccessor_.writeValue<int32_t>(collectionId, ChangeEventAccessor::DS_SIZE + 16);
+    auto offset = MemoryOffset(ChangeEventAccessor::DS_SIZE + 16);
+    memAccessor_.writeValue<int32_t>(collectionId, offset);
   }
 
   virtual MemoryAccessor accessChangeData() {
@@ -67,11 +71,13 @@ class CollectionUpdateChangeEventAccessor : public CollectionChangeEventAccessor
       : CollectionChangeEventAccessor(std::move(memAccessor)) {}
 
   uint64_t getFieldsChanged() {
-    return memAccessor_.readValue<uint64_t>(CollectionChangeEventAccessor::DS_SIZE);
+    auto offset = MemoryOffset(CollectionChangeEventAccessor::DS_SIZE);
+    return memAccessor_.readValue<uint64_t>(offset);
   }
 
   void setFieldsChanged(uint64_t fieldsChanged) {
-    memAccessor_.writeValue<uint64_t>(fieldsChanged, CollectionChangeEventAccessor::DS_SIZE);
+    auto offset = MemoryOffset(CollectionChangeEventAccessor::DS_SIZE);
+    memAccessor_.writeValue<uint64_t>(fieldsChanged, offset);
   }
 
   MemoryAccessor accessChangeData() override {
@@ -81,17 +87,20 @@ class CollectionUpdateChangeEventAccessor : public CollectionChangeEventAccessor
 
 class CollectionMessageChangeEventAccessor : public CollectionChangeEventAccessor {
  public:
+  // TODO this should be 4 bytes, not 8
   static constexpr int32_t DS_SIZE = CollectionChangeEventAccessor::DS_SIZE + 8;
 
   explicit CollectionMessageChangeEventAccessor(MemoryAccessor memAccessor)
       : CollectionChangeEventAccessor(std::move(memAccessor)) {}
 
   int32_t getFieldId() {
-    return memAccessor_.readValue<int32_t>(CollectionChangeEventAccessor::DS_SIZE);
+    auto offset = MemoryOffset(CollectionChangeEventAccessor::DS_SIZE);
+    return memAccessor_.readValue<int32_t>(offset);
   }
 
   void setFieldId(int32_t fieldId) {
-    memAccessor_.writeValue<int32_t>(fieldId, CollectionChangeEventAccessor::DS_SIZE);
+    auto offset = MemoryOffset(CollectionChangeEventAccessor::DS_SIZE);
+    memAccessor_.writeValue<int32_t>(fieldId, offset);
   }
 
   MemoryAccessor accessChangeData() override {

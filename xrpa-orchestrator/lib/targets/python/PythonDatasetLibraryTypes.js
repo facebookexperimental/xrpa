@@ -40,7 +40,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SharedMemoryTransportStream = exports.TransportStreamAccessor = exports.TransportStream = exports.ObjectCollectionIndexedBinding = exports.ObjectCollectionIndex = exports.ObjectCollection = exports.IObjectCollection = exports.DataStoreObject = exports.IDataStoreObjectAccessor = exports.IDataStoreObject = exports.DataStoreReconciler = exports.XrpaModule = exports.ObjectAccessorInterface = exports.TransportConfig = exports.HashValue = exports.MemoryAccessor = void 0;
+exports.InboundSignalForwarder = exports.SharedMemoryTransportStream = exports.TransportStreamAccessor = exports.TransportStream = exports.ObjectCollectionIndexedBinding = exports.ObjectCollectionIndex = exports.ObjectCollection = exports.IObjectCollection = exports.DataStoreObject = exports.IDataStoreObjectAccessor = exports.IDataStoreObject = exports.DataStoreReconciler = exports.XrpaModule = exports.ObjectAccessorInterface = exports.TransportConfig = exports.HashValue = exports.MemoryAccessor = exports.MemoryOffset = void 0;
 const PrimitiveType_1 = require("../../shared/PrimitiveType");
 const TypeValue_1 = require("../../shared/TypeValue");
 const CodeGen = __importStar(require("./PythonCodeGenImpl"));
@@ -49,6 +49,7 @@ function PythonPrimitiveType(name, size = 0) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 // Utils:
+exports.MemoryOffset = PythonPrimitiveType("xrpa_runtime.utils.memory_accessor.MemoryOffset", 16);
 exports.MemoryAccessor = PythonPrimitiveType("xrpa_runtime.utils.memory_accessor.MemoryAccessor", 16);
 exports.HashValue = PythonPrimitiveType("xrpa_runtime.utils.xrpa_types.HashValue", 32);
 exports.TransportConfig = PythonPrimitiveType("xrpa_runtime.utils.xrpa_types.TransportConfig");
@@ -71,9 +72,14 @@ exports.ObjectCollectionIndexedBinding = PythonPrimitiveType("xrpa_runtime.recon
 exports.TransportStream = PythonPrimitiveType("xrpa_runtime.transport.transport_stream.TransportStream");
 exports.TransportStreamAccessor = PythonPrimitiveType("xrpa_runtime.transport.transport_stream_accessor.TransportStreamAccessor");
 exports.SharedMemoryTransportStream = PythonPrimitiveType("xrpa_runtime.transport.shared_memory_transport_stream.SharedMemoryTransportStream");
+///////////////////////////////////////////////////////////////////////////////
+// Signals:
+exports.InboundSignalForwarder = PythonPrimitiveType("xrpa_runtime.signals.inbound_signal_data.InboundSignalForwarder");
 CodeGen.registerXrpaTypes({
     MemoryAccessor: exports.MemoryAccessor,
+    MemoryOffset: exports.MemoryOffset,
     ObjectAccessorInterface: exports.ObjectAccessorInterface,
     TransportStreamAccessor: exports.TransportStreamAccessor,
+    InboundSignalForwarder: exports.InboundSignalForwarder,
 });
 //# sourceMappingURL=PythonDatasetLibraryTypes.js.map

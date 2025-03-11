@@ -21,7 +21,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DataModelDefinition = void 0;
-const xrpa_utils_1 = require("@xrpa/xrpa-utils");
+const xrpa_file_utils_1 = require("@xrpa/xrpa-file-utils");
 const assert_1 = __importDefault(require("assert"));
 const BuiltinTypes_1 = require("./BuiltinTypes");
 const CoordinateTransformer_1 = require("./CoordinateTransformer");
@@ -31,8 +31,12 @@ function verify(val) {
     (0, assert_1.default)(val !== undefined);
     return val;
 }
-const FIXED_STRING = "FixedString";
-const DSMessageSize = 28;
+// largest is sizeof(CollectionUpdateChangeEventAccessor)
+const CHANGE_EVENT_HEADER_SIZE = 36;
+// sizeof(CollectionMessageChangeEventAccessor)
+const MESSAGE_EVENT_HEADER_SIZE = 36;
+// sizeof(SignalPacket)
+const SIGNAL_PACKET_HEADER_SIZE = 16;
 class DataModelDefinition {
     constructor(moduleDef, dataStore) {
         this.moduleDef = moduleDef;
@@ -145,8 +149,8 @@ class DataModelDefinition {
     addStruct(name, fields) {
         return this.addType(name, this.moduleDef.createStruct(name, this.getApiName(), this.convertUserStructSpec(fields), this.typeMap[name]));
     }
-    addMessageStruct(name, fields) {
-        return this.addType(name, this.moduleDef.createMessageStruct(name, this.getApiName(), this.convertUserStructSpec(fields)));
+    addMessageStruct(name, fields, expectedRatePerSecond) {
+        return this.addType(name, this.moduleDef.createMessageStruct(name, this.getApiName(), this.convertUserStructSpec(fields), expectedRatePerSecond));
     }
     addInterface(params) {
         return this.addType(params.name, this.moduleDef.createInterface(params.name, this.getApiName(), this.convertUserStructSpec(params.fields ?? {})));
@@ -163,12 +167,12 @@ class DataModelDefinition {
         }
         return this.addType(name, this.moduleDef.createFixedArray(`${innerTypeName}_${arraySize}`, this.getApiName(), innerTypeSpec.type, arraySize));
     }
-    addFixedString(maxBytes) {
-        const name = `${FIXED_STRING}{${maxBytes}}`;
+    addByteArray(expectedSize) {
+        const name = `ByteArray[${expectedSize}]`;
         if (name in this.typeDefinitions) {
             return this.typeDefinitions[name];
         }
-        return this.addType(name, this.moduleDef.createFixedString(`${FIXED_STRING}_${maxBytes}`, this.getApiName(), maxBytes));
+        return this.addType(name, this.moduleDef.createByteArray(expectedSize));
     }
     convertUserType(typeStr) {
         const typeDef = this.getType(typeStr);
@@ -178,13 +182,13 @@ class DataModelDefinition {
         const bracketIdx = typeStr.indexOf("[");
         if (bracketIdx > -1 && typeStr.endsWith("]")) {
             const innerTypeName = typeStr.slice(0, bracketIdx);
-            const innerType = this.convertUserType(innerTypeName);
             const arraySize = parseInt(typeStr.slice(bracketIdx + 1, -1), 10);
-            return this.addFixedArray(innerType, arraySize);
-        }
-        if (typeStr.startsWith(`${FIXED_STRING}{`) && typeStr.endsWith("}")) {
-            const maxBytes = parseInt(typeStr.slice(`${FIXED_STRING}{`.length, -1), 10);
-            return this.addFixedString(maxBytes);
+            if (innerTypeName === "ByteArray") {
+                return this.addByteArray(arraySize);
+            }
+            else {
+                return this.addFixedArray(this.convertUserType(innerTypeName), arraySize);
+            }
         }
         return this.moduleDef.getPrimitiveTypeDefinition(typeStr);
     }
@@ -220,13 +224,6 @@ class DataModelDefinition {
             return fieldsOut;
         }, {});
     }
-    convertMessagesStructSpec(parentName, messages) {
-        return Object.keys(messages).reduce((messagesOut, msgName) => {
-            const messageSpec = messages[msgName];
-            messagesOut[msgName] = this.addMessageStruct(`${parentName}_${msgName}MessageData`, messageSpec === null ? {} : this.convertUserStructSpec(messageSpec));
-            return messagesOut;
-        }, {});
-    }
     getHash() {
         const lines = [];
         lines.push(JSON.stringify(this.storedCoordinateSystem));
@@ -234,7 +231,7 @@ class DataModelDefinition {
         for (const typeName of typeNames) {
             lines.push(JSON.stringify(this.typeDefinitions[typeName].getHashData()));
         }
-        return new xrpa_utils_1.HashValue(lines.join("\n"));
+        return new xrpa_file_utils_1.HashValue(lines.join("\n"));
     }
     getAllTypeDefinitions() {
         return Object.values(this.typeDefinitions);
@@ -276,16 +273,19 @@ class DataModelDefinition {
         for (const fieldName in fields) {
             const fieldType = fields[fieldName].type;
             if ((0, TypeDefinition_1.typeIsMessageData)(fieldType)) {
-                poolSize += (fieldType.getTypeSize() + DSMessageSize) * 16;
+                // want to hold 1/10th of a second worth of data
+                const typeSize = fieldType.getTypeSize();
+                poolSize += 0.1 * (typeSize.staticSize + typeSize.dynamicSizeEstimate + MESSAGE_EVENT_HEADER_SIZE) * fieldType.getExpectedRatePerSecond();
             }
             else if ((0, TypeDefinition_1.typeIsSignalData)(fieldType)) {
-                poolSize += (4800 /*samples*/ * 4 /*channels*/ * 4 /*bytesPerSample*/) + ((DSMessageSize + 16 /*header*/) * 20);
+                // assume 100 packets per second, want to hold 1/10th of a second worth of data
+                poolSize += 0.1 * (100 * (MESSAGE_EVENT_HEADER_SIZE + SIGNAL_PACKET_HEADER_SIZE) + fieldType.getExpectedBytesPerSecond());
             }
             else if ((0, TypeDefinition_1.typeIsStruct)(fieldType)) {
                 poolSize += this.getStructMessagePoolSize(fieldType);
             }
         }
-        return poolSize;
+        return Math.ceil(poolSize);
     }
     calcMessagePoolSize() {
         let poolSize = 0;
@@ -293,6 +293,14 @@ class DataModelDefinition {
             poolSize += typeDef.maxCount * this.getStructMessagePoolSize(typeDef);
         }
         return poolSize;
+    }
+    calcChangelogSize() {
+        let changelogByteCount = this.calcMessagePoolSize();
+        for (const typeDef of this.getCollections()) {
+            const typeSize = typeDef.getTypeSize();
+            changelogByteCount += 2 * typeDef.maxCount * (typeSize.staticSize + typeSize.dynamicSizeEstimate + CHANGE_EVENT_HEADER_SIZE);
+        }
+        return changelogByteCount;
     }
 }
 exports.DataModelDefinition = DataModelDefinition;

@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "@xrpa/xrpa-utils";
+import { FileWriter } from "@xrpa/xrpa-file-utils";
 import { DataMapDefinition } from "../../shared/DataMap";
 import { ComponentProperties, IndexConfiguration } from "../../shared/DataStore";
 import { TypeSpec } from "../../shared/TargetCodeGen";

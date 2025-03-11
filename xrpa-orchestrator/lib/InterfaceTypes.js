@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.propagateInheritableProperties = exports.walkTypeTree = exports.ReferenceTo = exports.isReferenceDataType = exports.hasFieldsStruct = exports.Collection = exports.isCollectionDataType = exports.Interface = exports.isInterfaceDataType = exports.Message = exports.isMessageDataType = exports.Struct = exports.isStructDataType = exports.FixedArray = exports.isFixedArrayDataType = exports.FixedString = exports.isFixedStringDataType = exports.Enum = exports.isEnumDataType = exports.isBuiltinDataType = exports.Signal = exports.ColorLinear = exports.ColorSRGBA = exports.Float3 = exports.String = exports.Timestamp = exports.Scalar = exports.BitField = exports.Count = exports.Boolean = exports.getUseGenericImplementation = exports.GenericImpl = exports.isFieldIndexKey = exports.IndexKey = exports.isFieldPrimaryKey = exports.PrimaryKey = exports.getFieldDefaultValue = exports.getFieldDescription = exports.Description = exports.FIELD_DEFAULT = exports.FIELD_DESCRIPTION = void 0;
+exports.propagateInheritableProperties = exports.walkTypeTree = exports.ReferenceTo = exports.isReferenceDataType = exports.hasFieldsStruct = exports.Collection = exports.isCollectionDataType = exports.Interface = exports.isInterfaceDataType = exports.MessageRate = exports.Message = exports.isMessageDataType = exports.Image = exports.Struct = exports.isStructDataType = exports.ByteArray = exports.isByteArrayDataType = exports.FixedArray = exports.isFixedArrayDataType = exports.Enum = exports.isEnumDataType = exports.isBuiltinDataType = exports.Signal = exports.ColorLinear = exports.ColorSRGBA = exports.Float3 = exports.String = exports.Timestamp = exports.Scalar = exports.BitField = exports.Count = exports.Boolean = exports.getUseGenericImplementation = exports.GenericImpl = exports.isFieldIndexKey = exports.IndexKey = exports.isFieldPrimaryKey = exports.PrimaryKey = exports.getFieldDefaultValue = exports.getFieldDescription = exports.Description = exports.IS_IMAGE_TYPE = exports.MESSAGE_RATE = exports.FIELD_DEFAULT = exports.FIELD_DESCRIPTION = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const simply_immutable_1 = require("simply-immutable");
@@ -32,6 +32,8 @@ exports.FIELD_DEFAULT = "xrpa.defaultValue";
 const PRIMARY_KEY = "xrpa.primaryKey";
 const INDEX_KEY = "xrpa.indexKey";
 const USE_GENERIC_IMPL = "xrpa.useGenericImpl";
+exports.MESSAGE_RATE = "xrpa.messageRate";
+exports.IS_IMAGE_TYPE = "xrpa.isImageType";
 function Description(description, dataType) {
     dataType = (0, xrpa_utils_1.resolveThunk)(dataType);
     if (description === undefined) {
@@ -203,22 +205,6 @@ function Enum(name, enumValues, description) {
     });
 }
 exports.Enum = Enum;
-function isFixedStringDataType(thing) {
-    return (0, XrpaLanguage_1.isXrpaDataType)(thing) && thing.typename === "FixedString";
-}
-exports.isFixedStringDataType = isFixedStringDataType;
-function FixedString(maxBytes, description) {
-    (0, assert_1.default)(maxBytes > 0, "FixedString maxBytes must be greater than 0");
-    return (0, xrpa_utils_1.safeDeepFreeze)({
-        __XrpaDataType: true,
-        typename: "FixedString",
-        properties: {
-            [exports.FIELD_DESCRIPTION]: description,
-        },
-        maxBytes,
-    });
-}
-exports.FixedString = FixedString;
 function isFixedArrayDataType(thing) {
     return (0, XrpaLanguage_1.isXrpaDataType)(thing) && thing.typename === "FixedArray";
 }
@@ -236,6 +222,21 @@ function FixedArray(innerType, arraySize, description) {
     });
 }
 exports.FixedArray = FixedArray;
+function isByteArrayDataType(thing) {
+    return (0, XrpaLanguage_1.isXrpaDataType)(thing) && thing.typename === "ByteArray";
+}
+exports.isByteArrayDataType = isByteArrayDataType;
+function ByteArray(expectedSize = 256, description) {
+    return (0, xrpa_utils_1.safeDeepFreeze)({
+        __XrpaDataType: true,
+        typename: "ByteArray",
+        properties: {
+            [exports.FIELD_DESCRIPTION]: description,
+        },
+        expectedSize,
+    });
+}
+exports.ByteArray = ByteArray;
 function isStructDataType(thing) {
     return (0, XrpaLanguage_1.isXrpaDataType)(thing) && thing.typename === "Struct";
 }
@@ -272,6 +273,23 @@ function resolveStruct(name, thing) {
     }
     return (0, XrpaLanguage_1.isXrpaDataType)(thing) ? (0, XrpaLanguage_1.NameType)(name, thing) : Struct(name, thing);
 }
+function Image(arg0, arg1) {
+    const [name, params] = extractNameAndValue(arg0, arg1);
+    (0, assert_1.default)(params);
+    const ret = (0, XrpaLanguage_1.setProperty)(Struct(name, {
+        width: Count(params.expectedWidth, "Image width"),
+        height: Count(params.expectedHeight, "Image height"),
+        format: Enum("ImageFormat", ["RGB8", "BGR8", "RGBA8", "Y8"]),
+        encoding: Enum("ImageEncoding", ["None", "Jpeg"]),
+        orientation: Enum("ImageOrientation", ["Oriented", "RotatedCW", "RotatedCCW", "Rotated180"]),
+        data: ByteArray(Math.ceil(params.expectedWidth * params.expectedHeight * params.expectedBytesPerPixel), "Image data"),
+    }), exports.IS_IMAGE_TYPE, true);
+    if (params.description) {
+        return Description(params.description, ret);
+    }
+    return ret;
+}
+exports.Image = Image;
 function isMessageDataType(thing) {
     return (0, XrpaLanguage_1.isXrpaDataType)(thing) && thing.typename === "Message";
 }
@@ -287,6 +305,10 @@ function Message(arg0, arg1) {
     });
 }
 exports.Message = Message;
+function MessageRate(expectedRatePerSecond, arg0, arg1) {
+    return (0, XrpaLanguage_1.setPropertiesOrCurry)({ [exports.MESSAGE_RATE]: expectedRatePerSecond }, arg0, arg1);
+}
+exports.MessageRate = MessageRate;
 function isInterfaceDataType(thing) {
     return (0, XrpaLanguage_1.isXrpaDataType)(thing) && thing.typename === "Interface";
 }

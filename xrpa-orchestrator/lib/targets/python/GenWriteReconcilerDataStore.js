@@ -66,11 +66,15 @@ function genFieldSetDirty(params) {
         ];
     }
     else {
-        const fieldSize = params.typeDef.getFieldSize(params.fieldName);
+        const fieldSize = params.typeDef.getStateField(params.fieldName).getRuntimeByteCount(params.fieldVar, params.ctx.namespace, params.includes);
         return [
             `if (self._change_bits & ${changeBit}) == 0:`,
             `  self._change_bits |= ${changeBit}`,
-            `  self._change_byte_count += ${fieldSize}`,
+            `  self._change_byte_count += ${fieldSize[0]}`,
+            ...(fieldSize[1] === null ? [] : [
+                // TODO if the field is set more than once, we will count the dynamic size multiple times
+                `self._change_byte_count += ${fieldSize[1]}`,
+            ]),
             `if self._collection is not None:`,
             `  if not self._has_notified_needs_write:`,
             `    self._collection.notify_object_needs_write(self.get_xrpa_id())`,
@@ -127,7 +131,7 @@ function genWriteFieldSetters(classSpec, params) {
                 }],
             body: includes => [
                 `${fieldVar} = ${fieldType.convertValueFromLocal(params.ctx.namespace, includes, (0, PythonCodeGenImpl_1.identifierName)(params.fieldName))}`,
-                ...genFieldSetDirty({ ...params, includes }),
+                ...genFieldSetDirty({ ...params, includes, fieldVar }),
             ],
         });
         classSpec.methods.push({
@@ -138,7 +142,7 @@ function genWriteFieldSetters(classSpec, params) {
                 }],
             body: includes => [
                 `${fieldVar} = ${(0, PythonCodeGenImpl_1.identifierName)(params.fieldName)}`,
-                ...genFieldSetDirty({ ...params, includes }),
+                ...genFieldSetDirty({ ...params, includes, fieldVar }),
             ],
         });
     }
@@ -152,7 +156,7 @@ function genWriteFieldSetters(classSpec, params) {
                 }],
             body: includes => [
                 `${fieldVar} = ${(0, PythonCodeGenImpl_1.identifierName)(params.fieldName)}`,
-                ...genFieldSetDirty({ ...params, includes }),
+                ...genFieldSetDirty({ ...params, includes, fieldVar }),
             ],
         });
     }
@@ -217,12 +221,17 @@ function genWriteFunctionBody(params) {
         ];
     }
     else {
+        const outboundChangeBytes = params.reconcilerDef.getOutboundChangeByteCount({
+            inNamespace: params.ctx.namespace,
+            includes: params.includes,
+            fieldToMemberVar: params.fieldToMemberVar,
+        });
         return [
             ...(params.canCreate ? [
                 `obj_accessor = None`,
                 `if not self._create_written:`,
                 `  self._change_bits = ${params.reconcilerDef.getOutboundChangeBits()}`,
-                `  self._change_byte_count = ${params.reconcilerDef.getOutboundChangeByteCount()}`,
+                `  self._change_byte_count = ${outboundChangeBytes}`,
                 `  obj_accessor = ${writeAccessor}.create(accessor, self.get_collection_id(), self.get_xrpa_id(), self._change_byte_count, self._create_timestamp)`,
                 `  self._create_written = True`,
                 `elif self._change_bits != 0:`,
@@ -247,12 +256,17 @@ function genPrepFullUpdateFunctionBody(params) {
     if (!outboundChangeBits && !params.canCreate) {
         return ["return 0"];
     }
+    const outboundChangeBytes = params.reconcilerDef.getOutboundChangeByteCount({
+        inNamespace: params.ctx.namespace,
+        includes: params.includes,
+        fieldToMemberVar: params.fieldToMemberVar,
+    });
     return [
         ...(params.canCreate ? [
             `self._create_written = False`,
         ] : []),
         `self._change_bits = ${outboundChangeBits}`,
-        `self._change_byte_count = ${params.reconcilerDef.getOutboundChangeByteCount()}`,
+        `self._change_byte_count = ${outboundChangeBytes}`,
         ...(params.canCreate ? [
             `return self._create_timestamp`,
         ] : [
@@ -322,6 +336,7 @@ function genOutboundReconciledTypes(ctx, includesIn) {
                 ctx,
                 includes,
                 reconcilerDef,
+                fieldToMemberVar: defaultFieldToMemberVar,
                 canCreate: true,
             }),
         });

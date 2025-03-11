@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "@xrpa/xrpa-utils";
+import { FileWriter } from "@xrpa/xrpa-file-utils";
 import { OutputReconcilerDefinition } from "../../shared/DataStore";
 import { GenDataStoreContext } from "../shared/GenDataStoreShared";
 export declare function genSceneComponent(ctx: GenDataStoreContext, fileWriter: FileWriter, reconcilerDef: OutputReconcilerDefinition, outSrcDir: string, outHeaderDir: string, pluginName: string): void;

@@ -69,12 +69,16 @@ function genFieldSetDirty(params) {
         ];
     }
     else {
-        const fieldSize = params.typeDef.getFieldSize(params.fieldName);
+        const fieldSize = params.typeDef.getStateField(params.fieldName).getRuntimeByteCount(params.fieldVar, params.ctx.namespace, params.includes);
         return [
             `if ((changeBits_ & ${changeBit}) == 0) {`,
             `  changeBits_ |= ${changeBit};`,
-            `  changeByteCount_ += ${fieldSize};`,
+            `  changeByteCount_ += ${fieldSize[0]};`,
             `}`,
+            ...(fieldSize[1] === null ? [] : [
+                // TODO if the field is set more than once, we will count the dynamic size multiple times
+                `changeByteCount_ += ${fieldSize[1]};`,
+            ]),
             `if (collection_) {`,
             `  if (!hasNotifiedNeedsWrite_) {`,
             `    collection_->notifyObjectNeedsWrite(getXrpaId());`,
@@ -135,7 +139,7 @@ function genWriteFieldSetters(classSpec, params) {
                 }],
             body: includes => [
                 `${fieldVar} = ${fieldType.convertValueFromLocal(params.ctx.namespace, includes, params.fieldName)};`,
-                ...genFieldSetDirty({ ...params, includes }),
+                ...genFieldSetDirty({ ...params, includes, fieldVar }),
             ],
             separateImplementation: true,
         });
@@ -147,7 +151,7 @@ function genWriteFieldSetters(classSpec, params) {
                 }],
             body: includes => [
                 `${fieldVar} = ${params.fieldName};`,
-                ...genFieldSetDirty({ ...params, includes }),
+                ...genFieldSetDirty({ ...params, includes, fieldVar }),
             ],
         });
     }
@@ -161,7 +165,7 @@ function genWriteFieldSetters(classSpec, params) {
                 }],
             body: includes => [
                 `${fieldVar} = ${params.fieldName};`,
-                ...genFieldSetDirty({ ...params, includes }),
+                ...genFieldSetDirty({ ...params, includes, fieldVar }),
             ],
         });
     }
@@ -228,12 +232,17 @@ function genWriteFunctionBody(params) {
         ];
     }
     else {
+        const outboundChangeBytes = params.reconcilerDef.getOutboundChangeByteCount({
+            inNamespace: params.ctx.namespace,
+            includes: params.includes,
+            fieldToMemberVar: params.fieldToMemberVar,
+        });
         return [
             ...(params.canCreate ? [
                 `${writeAccessor} objAccessor;`,
                 `if (!createWritten_) {`,
                 `  changeBits_ = ${params.reconcilerDef.getOutboundChangeBits()};`,
-                `  changeByteCount_ = ${params.reconcilerDef.getOutboundChangeByteCount()};`,
+                `  changeByteCount_ = ${outboundChangeBytes};`,
                 `  objAccessor = ${writeAccessor}::create(accessor, getCollectionId(), getXrpaId(), changeByteCount_, createTimestamp_);`,
                 `  createWritten_ = true;`,
                 `} else if (changeBits_ != 0) {`,
@@ -261,12 +270,17 @@ function genPrepFullUpdateFunctionBody(params) {
     if (!outboundChangeBits && !params.canCreate) {
         return ["return 0;"];
     }
+    const outboundChangeBytes = params.reconcilerDef.getOutboundChangeByteCount({
+        inNamespace: params.ctx.namespace,
+        includes: params.includes,
+        fieldToMemberVar: params.fieldToMemberVar,
+    });
     return [
         ...(params.canCreate ? [
             `createWritten_ = false;`,
         ] : []),
         `changeBits_ = ${outboundChangeBits};`,
-        `changeByteCount_ = ${params.reconcilerDef.getOutboundChangeByteCount()};`,
+        `changeByteCount_ = ${outboundChangeBytes};`,
         ...(params.canCreate ? [
             `return createTimestamp_;`,
         ] : [
@@ -335,6 +349,7 @@ function genOutboundReconciledTypes(ctx, includesIn) {
                 ctx,
                 includes,
                 reconcilerDef,
+                fieldToMemberVar: defaultFieldToMemberVar,
                 canCreate: true,
             }),
         });

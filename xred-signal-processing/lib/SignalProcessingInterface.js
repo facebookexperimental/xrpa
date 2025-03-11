@@ -52,6 +52,7 @@ exports.XredSignalProcessingInterface = (0, xrpa_orchestrator_1.XrpaProgramInter
         maxCount: 64,
         fields: {
             numOutputs: (0, xrpa_orchestrator_1.Count)(1),
+            numChannels: (0, xrpa_orchestrator_1.Count)(1),
             srcData: (0, xrpa_orchestrator_1.Signal)(),
         },
     }));
@@ -60,7 +61,7 @@ exports.XredSignalProcessingInterface = (0, xrpa_orchestrator_1.XrpaProgramInter
         maxCount: 64,
         fields: {
             numOutputs: (0, xrpa_orchestrator_1.Count)(1),
-            filePath: (0, xrpa_orchestrator_1.FixedString)(256),
+            filePath: xrpa_orchestrator_1.String,
             autoPlay: (0, xrpa_orchestrator_1.Boolean)(true),
         },
     }));
@@ -258,7 +259,7 @@ exports.XredSignalProcessingInterface = (0, xrpa_orchestrator_1.XrpaProgramInter
         fields: {
             srcNode: (0, xrpa_orchestrator_1.ReferenceTo)(ISignalNode),
             channelOffset: (0, xrpa_orchestrator_1.Count)(0),
-            deviceNameFilter: (0, xrpa_orchestrator_1.FixedString)(128, "pseudo-regex, with just $ and ^ supported for now"),
+            deviceNameFilter: (0, xrpa_orchestrator_1.String)("", "pseudo-regex, with just $ and ^ supported for now"),
             deviceHandednessFilter: (0, xrpa_orchestrator_1.Enum)("DeviceHandednessFilter", ["Any", "None", "Left", "Right"]),
             // TODO channelName, driverIdentifier, driverPort filters?
             foundMatch: (0, xrpa_orchestrator_1.Output)((0, xrpa_orchestrator_1.Boolean)(false, "Set to true if a matching device was found")),

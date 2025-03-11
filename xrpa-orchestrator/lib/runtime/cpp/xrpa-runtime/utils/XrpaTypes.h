@@ -52,20 +52,6 @@ class ObjectAccessorInterface {
 
  protected:
   MemoryAccessor memAccessor_;
-  int32_t curReadPos_ = 0;
-  int32_t curWritePos_ = 0;
-
-  int32_t advanceReadPos(int32_t numBytes) {
-    auto pos = curReadPos_;
-    curReadPos_ += numBytes;
-    return pos;
-  }
-
-  int32_t advanceWritePos(int32_t numBytes) {
-    auto pos = curWritePos_;
-    curWritePos_ += numBytes;
-    return pos;
-  }
 };
 
 struct HashValue {
@@ -89,19 +75,19 @@ struct HashValue {
         value3 != other.value3;
   }
 
-  static HashValue readValue(const MemoryAccessor& memAccessor, int32_t offset) {
-    return {
-        memAccessor.readValue<uint64_t>(offset),
-        memAccessor.readValue<uint64_t>(offset + 8),
-        memAccessor.readValue<uint64_t>(offset + 16),
-        memAccessor.readValue<uint64_t>(offset + 24)};
+  static HashValue readValue(const MemoryAccessor& memAccessor, MemoryOffset& offset) {
+    auto v0 = memAccessor.readValue<uint64_t>(offset);
+    auto v1 = memAccessor.readValue<uint64_t>(offset);
+    auto v2 = memAccessor.readValue<uint64_t>(offset);
+    auto v3 = memAccessor.readValue<uint64_t>(offset);
+    return {v0, v1, v2, v3};
   }
 
-  static void writeValue(const HashValue& value, MemoryAccessor memAccessor, int32_t offset) {
+  static void writeValue(const HashValue& value, MemoryAccessor memAccessor, MemoryOffset& offset) {
     memAccessor.writeValue<uint64_t>(value.value0, offset);
-    memAccessor.writeValue<uint64_t>(value.value1, offset + 8);
-    memAccessor.writeValue<uint64_t>(value.value2, offset + 16);
-    memAccessor.writeValue<uint64_t>(value.value3, offset + 24);
+    memAccessor.writeValue<uint64_t>(value.value1, offset);
+    memAccessor.writeValue<uint64_t>(value.value2, offset);
+    memAccessor.writeValue<uint64_t>(value.value3, offset);
   }
 };
 
@@ -161,13 +147,16 @@ struct ObjectUuid {
     return id0 < other.id0 ? -1 : 1;
   }
 
-  static ObjectUuid readValue(const MemoryAccessor& memAccessor, int32_t offset) {
-    return {memAccessor.readValue<uint64_t>(offset), memAccessor.readValue<uint64_t>(offset + 8)};
+  static ObjectUuid readValue(const MemoryAccessor& memAccessor, MemoryOffset& offset) {
+    auto v0 = memAccessor.readValue<uint64_t>(offset);
+    auto v1 = memAccessor.readValue<uint64_t>(offset);
+    return {v0, v1};
   }
 
-  static void writeValue(const ObjectUuid& value, MemoryAccessor memAccessor, int32_t offset) {
+  static void
+  writeValue(const ObjectUuid& value, MemoryAccessor memAccessor, MemoryOffset& offset) {
     memAccessor.writeValue<uint64_t>(value.id0, offset);
-    memAccessor.writeValue<uint64_t>(value.id1, offset + 8);
+    memAccessor.writeValue<uint64_t>(value.id1, offset);
   }
 };
 

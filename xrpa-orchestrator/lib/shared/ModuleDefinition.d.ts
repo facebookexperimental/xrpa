@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "@xrpa/xrpa-utils";
+import { FileWriter } from "@xrpa/xrpa-file-utils";
 import { BuiltinType } from "./BuiltinTypes";
 import { CodeGen } from "./CodeGen";
 import { CoordinateSystemDef } from "./CoordinateTransformer";
@@ -71,11 +71,11 @@ export declare abstract class ModuleDefinition implements CodeGen {
     createEnum(name: string, apiname: string, enumValues: Record<string, number>, localTypeOverride: TypeSpec | undefined): TypeDefinition;
     createReference(toType: InterfaceTypeDefinition): TypeDefinition;
     createStruct(name: string, apiname: string, fields: StructSpec, localTypeOverride: TypeSpec | undefined): StructTypeDefinition;
-    createMessageStruct(name: string, apiname: string, fields: StructSpec): MessageDataTypeDefinition;
+    createMessageStruct(name: string, apiname: string, fields: StructSpec, expectedRatePerSecond: number): MessageDataTypeDefinition;
     createInterface(name: string, apiname: string, fields: StructSpec): InterfaceTypeDefinition;
     createCollection(name: string, apiname: string, fields: StructSpec, interfaceType: InterfaceTypeDefinition | undefined, maxCount: number, collectionId: number): CollectionTypeDefinition;
     createFixedArray(name: string, apiname: string, innerType: TypeDefinition, arraySize: number): TypeDefinition;
-    createFixedString(name: string, apiname: string, maxBytes: number): TypeDefinition;
+    createByteArray(expectedSize: number): TypeDefinition;
     setCollectionAsInbound(type: CollectionTypeDefinition, _componentProps: ComponentProperties, reconciledTo: TypeSpec | undefined, _indexes: Array<IndexConfiguration> | undefined): void;
     setCollectionAsOutbound(type: CollectionTypeDefinition, _componentProps: ComponentProperties): void;
     addDataflowProgram(programDef: DataflowProgramDefinition): void;

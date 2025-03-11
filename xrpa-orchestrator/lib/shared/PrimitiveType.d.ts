@@ -17,24 +17,24 @@
 
 import { IncludeAggregator } from "./Helpers";
 import { TargetCodeGenImpl, TypeSpec } from "./TargetCodeGen";
-import { DSTypeSpec, TypeDefinition, TypeMetaType, UserDefaultValue } from "./TypeDefinition";
+import { DSTypeSpec, TypeDefinition, TypeMetaType, TypeSize, UserDefaultValue } from "./TypeDefinition";
 import { TypeValue } from "./TypeValue";
 export declare class PrimitiveType implements TypeDefinition {
     readonly codegen: TargetCodeGenImpl;
     readonly name: string;
     datasetType: DSTypeSpec;
     localType: TypeSpec;
-    readonly byteCount: number;
+    readonly byteCount: TypeSize | number;
     readonly isPassthrough: boolean;
     readonly defaultValue: TypeValue;
     readonly setterDefaultValue: TypeValue;
-    constructor(codegen: TargetCodeGenImpl, name: string, datasetType: DSTypeSpec, localType: TypeSpec, byteCount: number, isPassthrough: boolean, defaultValue: TypeValue, setterDefaultValue?: TypeValue);
+    constructor(codegen: TargetCodeGenImpl, name: string, datasetType: DSTypeSpec, localType: TypeSpec, byteCount: TypeSize | number, isPassthrough: boolean, defaultValue: TypeValue, setterDefaultValue?: TypeValue);
     toString(): string;
     getName(): string;
     getMetaType(): TypeMetaType;
-    getTypeSize(): number;
+    getTypeSize(): TypeSize;
+    getRuntimeByteCount(varName: string, inNamespace: string, includes: IncludeAggregator | null): [number, string | null];
     getHashData(): Record<string, unknown>;
-    getInternalMaxBytes(): number | null;
     getInternalType(inNamespace: string, includes: IncludeAggregator | null): string;
     getLocalType(inNamespace: string, includes: IncludeAggregator | null): string;
     getLocalHeaderFile(): string | undefined;

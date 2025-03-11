@@ -41,16 +41,34 @@ class PrimitiveType {
         return TypeDefinition_1.TypeMetaType.GET_SET;
     }
     getTypeSize() {
+        if (typeof this.byteCount === "number") {
+            return {
+                staticSize: this.byteCount,
+                dynamicSizeEstimate: 0,
+            };
+        }
         return this.byteCount;
     }
+    getRuntimeByteCount(varName, inNamespace, includes) {
+        const typeSize = this.getTypeSize();
+        let dynSize = null;
+        if (typeSize.dynamicSizeEstimate > 0) {
+            dynSize = this.codegen.genDynSizeOfValue({
+                accessor: this.getInternalType(inNamespace, includes),
+                accessorIsStruct: (0, TypeDefinition_1.typeIsStruct)(this),
+                inNamespace,
+                includes,
+                value: this.convertValueFromLocal(inNamespace, includes, varName),
+            });
+        }
+        return [typeSize.staticSize, dynSize];
+    }
     getHashData() {
+        const typeSize = this.getTypeSize();
         return {
             name: this.getName(),
-            byteCount: this.getTypeSize(),
+            byteCount: typeSize.staticSize + typeSize.dynamicSizeEstimate,
         };
-    }
-    getInternalMaxBytes() {
-        return null;
     }
     getInternalType(inNamespace, includes) {
         includes?.addFile({
@@ -124,7 +142,8 @@ class PrimitiveType {
         });
     }
     declareLocalParam(inNamespace, includes, paramName) {
-        const paramType = this.codegen.constRef(this.getLocalType(inNamespace, includes), this.getTypeSize());
+        const typeSize = this.getTypeSize();
+        const paramType = this.codegen.constRef(this.getLocalType(inNamespace, includes), typeSize.staticSize + typeSize.dynamicSizeEstimate);
         if (!paramName) {
             return paramType;
         }
@@ -140,7 +159,8 @@ class PrimitiveType {
         if (!canBeRef) {
             return this.getLocalType(inNamespace, includes);
         }
-        return this.codegen.constRef(this.getLocalType(inNamespace, includes), this.getTypeSize());
+        const typeSize = this.getTypeSize();
+        return this.codegen.constRef(this.getLocalType(inNamespace, includes), typeSize.staticSize + typeSize.dynamicSizeEstimate);
     }
     resetLocalVarToDefault(inNamespace, includes, varName, isSetter, defaultOverride) {
         const defaultValue = this.getLocalDefaultValue(inNamespace, includes, isSetter, defaultOverride);

@@ -20,13 +20,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.XrpaDataflowProgram = exports.SelfTerminateOn = exports.Instantiate = exports.getDataflowProgramContext = exports.isDataflowProgramContext = exports.isDataflowGraphNode = exports.isDataflowForeignObjectInstantiation = void 0;
+exports.XrpaDataflowProgram = exports.SelfTerminateOn = exports.ObjectField = exports.ObjectReference = exports.Instantiate = exports.getDataflowProgramContext = exports.isDataflowProgramContext = exports.isDataflowGraphNode = exports.isDataflowForeignObjectInstantiation = exports.isDataflowConnection = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const ProgramInterface_1 = require("./ProgramInterface");
-const XrpaLanguage_1 = require("./XrpaLanguage");
 const DataflowProgramDefinition_1 = require("./shared/DataflowProgramDefinition");
 var DataflowProgramDefinition_2 = require("./shared/DataflowProgramDefinition");
+Object.defineProperty(exports, "isDataflowConnection", { enumerable: true, get: function () { return DataflowProgramDefinition_2.isDataflowConnection; } });
 Object.defineProperty(exports, "isDataflowForeignObjectInstantiation", { enumerable: true, get: function () { return DataflowProgramDefinition_2.isDataflowForeignObjectInstantiation; } });
 Object.defineProperty(exports, "isDataflowGraphNode", { enumerable: true, get: function () { return DataflowProgramDefinition_2.isDataflowGraphNode; } });
 function isDataflowProgramContext(ctx) {
@@ -34,7 +34,7 @@ function isDataflowProgramContext(ctx) {
 }
 exports.isDataflowProgramContext = isDataflowProgramContext;
 function getDataflowProgramContext() {
-    return (0, XrpaLanguage_1.getContext)(isDataflowProgramContext, "Call is only valid within a DataflowProgram");
+    return (0, xrpa_utils_1.getContext)(isDataflowProgramContext, "Call is only valid within a DataflowProgram");
 }
 exports.getDataflowProgramContext = getDataflowProgramContext;
 function Instantiate(collection, fieldValues, isBuffered = false) {
@@ -55,9 +55,29 @@ function Instantiate(collection, fieldValues, isBuffered = false) {
     return ret;
 }
 exports.Instantiate = Instantiate;
-function SelfTerminateOn(trigger) {
+function ObjectReference(node) {
+    return {
+        __isDataflowConnection: true,
+        targetNode: node,
+        targetPort: "id",
+    };
+}
+exports.ObjectReference = ObjectReference;
+function ObjectField(node, fieldName) {
+    return {
+        __isDataflowConnection: true,
+        targetNode: node,
+        targetPort: fieldName,
+    };
+}
+exports.ObjectField = ObjectField;
+function SelfTerminateOn(fieldValue) {
     const ctx = getDataflowProgramContext();
-    ctx.selfTerminateEvents.push(trigger);
+    ctx.selfTerminateEvents.push({
+        __isDataflowConnection: true,
+        targetNode: fieldValue.targetNode,
+        targetPort: fieldValue.targetPort,
+    });
 }
 exports.SelfTerminateOn = SelfTerminateOn;
 function XrpaDataflowProgram(name, callback) {
@@ -71,7 +91,7 @@ function XrpaDataflowProgram(name, callback) {
             graphNodes: [],
             selfTerminateEvents: [],
         });
-        (0, XrpaLanguage_1.runInContext)(dfCtx, callback);
+        (0, xrpa_utils_1.runInContext)(dfCtx, callback);
         ctx = dfCtx;
     });
     (0, assert_1.default)(ctx);
@@ -100,12 +120,19 @@ function XrpaDataflowProgram(name, callback) {
         // recurse
         for (const fieldName in graphNode.fieldValues) {
             const fieldValue = graphNode.fieldValues[fieldName];
-            if ((0, DataflowProgramDefinition_1.isDataflowForeignObjectInstantiation)(fieldValue)) {
+            if ((0, DataflowProgramDefinition_1.isDataflowGraphNode)(fieldValue)) {
                 walkConnections(fieldValue, newGraphPath, pathBreaksCycles);
+            }
+            else if ((0, DataflowProgramDefinition_1.isDataflowConnection)(fieldValue)) {
+                walkConnections(fieldValue.targetNode, newGraphPath, pathBreaksCycles);
             }
             else if ((0, ProgramInterface_1.isXrpaProgramParam)(fieldValue)) {
                 const key = [fieldValue.name, graphNode.name, fieldName];
-                paramConnections[key.join("/")] = [fieldValue.name, { targetNode: graphNode, targetPort: fieldName }];
+                paramConnections[key.join("/")] = [fieldValue.name, {
+                        __isDataflowConnection: true,
+                        targetNode: graphNode,
+                        targetPort: fieldName,
+                    }];
             }
         }
     }

@@ -177,6 +177,7 @@ function genMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
             ctx,
             includes,
             reconcilerDef,
+            fieldToMemberVar: fieldName => (0, MonoBehaviourShared_1.getFieldMemberName)(reconcilerDef, fieldName),
             canCreate: true,
         }),
     });

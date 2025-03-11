@@ -17,7 +17,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSemanticType = exports.genPrimitiveTypes = exports.isBuiltinType = exports.BuiltinType = void 0;
+exports.getSemanticType = exports.genPrimitiveTypes = exports.ByteArrayType = exports.isBuiltinType = exports.BuiltinType = void 0;
 const CoordinateTransformer_1 = require("./CoordinateTransformer");
 const NumericSemanticType_1 = require("./NumericSemanticType");
 const PrimitiveType_1 = require("./PrimitiveType");
@@ -132,12 +132,26 @@ class BooleanType extends PrimitiveType_1.PrimitiveType {
     }
 }
 /*****************************************************/
+class ByteArrayType extends PrimitiveType_1.PrimitiveType {
+    constructor(codegen, dynamicSizeEstimate) {
+        super(codegen, "ByteArray", codegen.PRIMITIVE_INTRINSICS.bytearray, codegen.PRIMITIVE_INTRINSICS.bytearray, {
+            staticSize: 4,
+            dynamicSizeEstimate,
+        }, true, new TypeValue_1.EmptyValue(codegen, codegen.PRIMITIVE_INTRINSICS.bytearray.typename, ""));
+    }
+}
+exports.ByteArrayType = ByteArrayType;
+/*****************************************************/
 class SignalDataType extends PrimitiveType_1.PrimitiveType {
     constructor(codegen) {
         super(codegen, "Signal", { typename: "DSSignalData" }, { typename: "SignalData" }, 0, false, new TypeValue_1.EmptyValue(codegen, "DSSignalData", ""));
     }
     getMetaType() {
         return TypeDefinition_1.TypeMetaType.SIGNAL_DATA;
+    }
+    getExpectedBytesPerSecond() {
+        // 48kHz, 4 channels, 32-bit float
+        return 48000 * 4 * 4;
     }
 }
 /*****************************************************/
@@ -149,8 +163,10 @@ function genPrimitiveTypes(codegen, typeMap) {
         [BuiltinType.Count]: new PrimitiveType_1.PrimitiveType(codegen, BuiltinType.Count, codegen.PRIMITIVE_INTRINSICS.int32, typeMap[BuiltinType.Count] ?? codegen.PRIMITIVE_INTRINSICS.int, 4, true, new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.int32.typename, 0)),
         [BuiltinType.BitField]: new PrimitiveType_1.PrimitiveType(codegen, BuiltinType.BitField, codegen.PRIMITIVE_INTRINSICS.uint64, codegen.PRIMITIVE_INTRINSICS.uint64, 8, true, new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.uint64.typename, 0)),
         [BuiltinType.Timestamp]: new TimestampType(codegen, typeMap[BuiltinType.Timestamp] ?? codegen.PRIMITIVE_INTRINSICS.microseconds),
-        // TODO this is only to support string settings; actual string support in the dataset will need additional work
-        [BuiltinType.String]: new PrimitiveType_1.PrimitiveType(codegen, BuiltinType.String, codegen.PRIMITIVE_INTRINSICS.string, typeMap[BuiltinType.String] ?? codegen.PRIMITIVE_INTRINSICS.string, 0, true, new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.string.typename, "")),
+        [BuiltinType.String]: new PrimitiveType_1.PrimitiveType(codegen, BuiltinType.String, codegen.PRIMITIVE_INTRINSICS.string, typeMap[BuiltinType.String] ?? codegen.PRIMITIVE_INTRINSICS.string, {
+            staticSize: 4,
+            dynamicSizeEstimate: 252,
+        }, true, new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.string.typename, "")),
         [BuiltinType.Float3]: new StructType_1.StructType(codegen, BuiltinType.Float3, "", undefined, {
             x: { type: FloatType, defaultValue: 0 },
             y: { type: FloatType, defaultValue: 0 },

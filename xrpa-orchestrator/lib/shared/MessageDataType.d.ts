@@ -22,12 +22,14 @@ import { StructWithAccessorType } from "./StructWithAccessorType";
 import { TargetCodeGenImpl } from "./TargetCodeGen";
 import { MessageDataTypeDefinition, StructSpec, TypeMetaType } from "./TypeDefinition";
 export declare class MessageDataType extends StructWithAccessorType implements MessageDataTypeDefinition {
-    constructor(codegen: TargetCodeGenImpl, name: string, apiname: string, objectUuidType: StructType, fields: StructSpec);
+    readonly expectedRatePerSecond: number;
+    constructor(codegen: TargetCodeGenImpl, name: string, apiname: string, objectUuidType: StructType, fields: StructSpec, expectedRatePerSecond: number);
     getMetaType(): TypeMetaType.MESSAGE_DATA;
     hasFields(): boolean;
     genReadAccessorDefinition(inNamespace: string, includes: IncludeAggregator | null): ClassSpec | null;
     genWriteAccessorDefinition(inNamespace: string, includes: IncludeAggregator | null): ClassSpec | null;
     genTypeDefinition(includes: IncludeAggregator | null): string[] | null;
     genLocalTypeDefinition(inNamespace: string, includes: IncludeAggregator | null): string[] | null;
+    getExpectedRatePerSecond(): number;
 }
 

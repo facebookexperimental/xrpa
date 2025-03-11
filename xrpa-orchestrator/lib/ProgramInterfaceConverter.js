@@ -71,16 +71,16 @@ function convertDataTypeToUserTypeSpec(dataType, datamodel) {
                 defaultValue: (0, InterfaceTypes_1.getFieldDefaultValue)(dataType),
             };
         }
-        if ((0, InterfaceTypes_1.isFixedStringDataType)(dataType)) {
+        if ((0, InterfaceTypes_1.isReferenceDataType)(dataType)) {
             return {
-                type: datamodel.addFixedString(dataType.maxBytes),
+                type: datamodel.addReference(getInterfaceType(datamodel, dataType.targetType)),
                 description: (0, InterfaceTypes_1.getFieldDescription)(dataType),
                 defaultValue: (0, InterfaceTypes_1.getFieldDefaultValue)(dataType),
             };
         }
-        if ((0, InterfaceTypes_1.isReferenceDataType)(dataType)) {
+        if ((0, InterfaceTypes_1.isByteArrayDataType)(dataType)) {
             return {
-                type: datamodel.addReference(getInterfaceType(datamodel, dataType.targetType)),
+                type: datamodel.addByteArray(dataType.expectedSize),
                 description: (0, InterfaceTypes_1.getFieldDescription)(dataType),
                 defaultValue: (0, InterfaceTypes_1.getFieldDefaultValue)(dataType),
             };
@@ -113,7 +113,7 @@ function convertProgramInterfaceToDataModel(programInterface, datamodel) {
             datamodel.addStruct(name, convertStructFieldsToUserSpec(type.fields, datamodel));
         }
         else if ((0, InterfaceTypes_1.isMessageDataType)(type)) {
-            datamodel.addMessageStruct(name, convertStructFieldsToUserSpec(type.fieldsStruct.fields, datamodel));
+            datamodel.addMessageStruct(name, convertStructFieldsToUserSpec(type.fieldsStruct.fields, datamodel), (0, XrpaLanguage_1.evalProperty)(type.properties, InterfaceTypes_1.MESSAGE_RATE) ?? 30);
         }
         else if ((0, InterfaceTypes_1.isCollectionDataType)(type)) {
             datamodel.addCollection({

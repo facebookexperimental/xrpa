@@ -18,7 +18,7 @@
 import { ClassSpec, ClassVisibility } from "./ClassSpec";
 import { UnitTransformer } from "./CoordinateTransformer";
 import { IncludeAggregator } from "./Helpers";
-import { InterfaceTypeDefinition, TypeDefinition } from "./TypeDefinition";
+import { InterfaceTypeDefinition, TypeDefinition, TypeSize } from "./TypeDefinition";
 import { TypeValue } from "./TypeValue";
 export interface TypeSpec {
     typename: string;
@@ -31,8 +31,7 @@ export interface FieldTypeAndAccessor {
     typename: string;
     accessor: string;
     accessorIsStruct: boolean;
-    accessorMaxBytes: number | null;
-    fieldOffset: number;
+    typeSize: TypeSize;
 }
 export interface PrimitiveIntrinsics {
     string: TypeSpec;
@@ -45,6 +44,7 @@ export interface PrimitiveIntrinsics {
     float32: TypeSpec;
     bool: TypeSpec;
     arrayFloat3: TypeSpec;
+    bytearray: TypeSpec;
     TRUE: string;
     FALSE: string;
 }
@@ -55,12 +55,20 @@ export interface GuidGenSpec {
     }>;
     code: string;
 }
+export interface CoreXrpaTypes {
+    MemoryAccessor: TypeDefinition;
+    MemoryOffset: TypeDefinition;
+    ObjectAccessorInterface: TypeDefinition;
+    TransportStreamAccessor: TypeDefinition;
+    InboundSignalForwarder: TypeDefinition;
+}
 export interface TargetCodeGenImpl {
     HEADER: string[];
     UNIT_TRANSFORMER: UnitTransformer;
     PRIMITIVE_INTRINSICS: PrimitiveIntrinsics;
     DEFAULT_INTERFACE_PTR_TYPE: string;
     XRPA_NAMESPACE: string;
+    getXrpaTypes(): CoreXrpaTypes;
     nsQualify(qualifiedName: string, inNamespace: string): string;
     nsJoin(...names: string[]): string;
     nsExtract(qualifiedName: string, nonNamespacePartCount?: number): string;
@@ -83,19 +91,29 @@ export interface TargetCodeGenImpl {
     genReadValue(params: {
         accessor: string;
         accessorIsStruct: boolean;
-        accessorMaxBytes: number | null;
-        fieldOffset: string;
+        fieldOffsetVar: string;
         memAccessorVar: string;
     }): string;
     genWriteValue(params: {
         accessor: string;
         accessorIsStruct: boolean;
-        accessorMaxBytes: number | null;
-        fieldOffset: string;
+        fieldOffsetVar: string;
         memAccessorVar: string;
         value: string | TypeValue;
     }): string;
-    makeObjectAccessor(classSpec: ClassSpec, isWriteAccessor: boolean, objectUuidType: string): void;
+    genDynSizeOfValue(params: {
+        accessor: string;
+        accessorIsStruct: boolean;
+        value: string | TypeValue;
+        inNamespace: string;
+        includes: IncludeAggregator | null;
+    }): string;
+    makeObjectAccessor(params: {
+        classSpec: ClassSpec;
+        isWriteAccessor: boolean;
+        isMessageStruct: boolean;
+        objectUuidType: string;
+    }): string;
     genClassDefinition(classSpec: ClassSpec): string[];
     genReadWriteValueFunctions(classSpec: ClassSpec, params: {
         localType: TypeDefinition | string;
@@ -145,12 +163,13 @@ export interface TargetCodeGenImpl {
     }): string;
     genDeref(ptrName: string, memberName: string): string;
     genDerefMethodCall(ptrName: string, methodName: string, params: string[]): string;
-    genMethodBind(ptrName: string, methodName: string, params: string[], bindParamCount: number): string;
+    genMethodBind(ptrName: string, methodName: string, params: Record<string, string[]>, ignoreParamCount: number): string;
     getNullValue(): string;
     genNonNullCheck(ptrName: string): string;
     genCreateObject(type: string, params: string[]): string;
     genObjectPtrType(type: string): string;
     genConvertBoolToInt(value: TypeValue): string;
     genConvertIntToBool(value: TypeValue): string;
+    applyTemplateParams(typename: string, ...templateParams: string[]): string;
 }
 

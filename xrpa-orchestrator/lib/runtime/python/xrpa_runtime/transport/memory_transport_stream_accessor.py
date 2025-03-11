@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from xrpa_runtime.utils.memory_accessor import MemoryAccessor
+from xrpa_runtime.utils.memory_accessor import MemoryAccessor, MemoryOffset
 from xrpa_runtime.utils.placed_ring_buffer import PlacedRingBuffer
 from xrpa_runtime.utils.time_utils import TimeUtils
 from xrpa_runtime.utils.xrpa_types import HashValue, TransportConfig
@@ -28,43 +28,43 @@ class MemoryTransportStreamAccessor:
 
     @property
     def transport_version(self) -> int:
-        return self._mem_accessor.read_int(0)
+        return self._mem_accessor.read_int(MemoryOffset(0))
 
     @transport_version.setter
     def transport_version(self, value: int):
-        self._mem_accessor.write_int(value, 0)
+        self._mem_accessor.write_int(value, MemoryOffset(0))
 
     @property
     def total_bytes(self) -> int:
-        return self._mem_accessor.read_int(4)
+        return self._mem_accessor.read_int(MemoryOffset(4))
 
     @total_bytes.setter
     def total_bytes(self, value: int):
-        self._mem_accessor.write_int(value, 4)
+        self._mem_accessor.write_int(value, MemoryOffset(4))
 
     @property
     def schema_hash(self) -> HashValue:
-        return HashValue.read_value(self._mem_accessor, 8)
+        return HashValue.read_value(self._mem_accessor, MemoryOffset(8))
 
     @schema_hash.setter
     def schema_hash(self, value: HashValue):
-        HashValue.write_value(value, self._mem_accessor, 8)
+        HashValue.write_value(value, self._mem_accessor, MemoryOffset(8))
 
     @property
     def base_timestamp(self) -> int:
-        return self._mem_accessor.read_ulong(40)
+        return self._mem_accessor.read_ulong(MemoryOffset(40))
 
     @base_timestamp.setter
     def base_timestamp(self, value: int):
-        self._mem_accessor.write_ulong(value, 40)
+        self._mem_accessor.write_ulong(value, MemoryOffset(40))
 
     @property
     def last_changelog_id(self) -> int:
-        return self._mem_accessor.read_int(48)
+        return self._mem_accessor.read_int(MemoryOffset(48))
 
     @last_changelog_id.setter
     def last_changelog_id(self, value: int):
-        self._mem_accessor.write_int(value, 48)
+        self._mem_accessor.write_int(value, MemoryOffset(48))
 
     def get_changelog(self) -> PlacedRingBuffer:
         return PlacedRingBuffer(self._mem_source, MemoryTransportStreamAccessor.DS_SIZE)

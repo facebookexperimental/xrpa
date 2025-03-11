@@ -18,7 +18,7 @@
 import { IncludeAggregator } from "./Helpers";
 import { BuiltinType, SemanticConversionData } from "./BuiltinTypes";
 import { CoordTypeConfig } from "./CoordinateTransformer";
-import { StructType } from "./StructType";
+import { FieldTransforms, StructType } from "./StructType";
 import { TargetCodeGenImpl, TypeSpec } from "./TargetCodeGen";
 import { StructSpec } from "./TypeDefinition";
 import { TypeValue } from "./TypeValue";
@@ -28,10 +28,7 @@ export declare class NumericSemanticType extends StructType {
     readonly coordTypeConfig: CoordTypeConfig | null;
     constructor(codegen: TargetCodeGenImpl, semanticType: BuiltinType, localTypeOverride: TypeSpec | undefined, fields: StructSpec, conversionData: SemanticConversionData, coordTypeConfig: CoordTypeConfig | null);
     genLocalTypeDefinition(inNamespace: string, includes: IncludeAggregator | null): string[] | null;
-    protected getFieldTransforms(inNamespace: string, includes: IncludeAggregator | null): {
-        fieldsFromLocal: Record<string, TypeValue>;
-        fieldsToLocal: Record<string, TypeValue>;
-    };
+    protected getFieldTransforms(inNamespace: string, includes: IncludeAggregator | null): FieldTransforms;
     convertValueFromLocal(inNamespace: string, includes: IncludeAggregator | null, value: string | TypeValue): TypeValue;
     convertValueToLocal(inNamespace: string, includes: IncludeAggregator | null, value: string | TypeValue): TypeValue;
 }

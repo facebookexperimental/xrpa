@@ -16,13 +16,9 @@
 
 "use strict";
 
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runInContext = exports.popContext = exports.getContext = exports.getCurrentContext = exports.pushContext = exports.NameType = exports.isNamedDataType = exports.Augment = exports.ChainAugments = exports.isXrpaDataType = exports.setPropertiesOrCurry = exports.setProperties = exports.setProperty = exports.evalProperty = exports.FALSEY = exports.TRUTHY = exports.getInheritableProperties = exports.isInheritedProperty = exports.InheritedProperty = void 0;
+exports.NameType = exports.isNamedDataType = exports.Augment = exports.ChainAugments = exports.isXrpaDataType = exports.setPropertiesOrCurry = exports.setProperties = exports.setProperty = exports.evalProperty = exports.FALSEY = exports.TRUTHY = exports.getInheritableProperties = exports.isInheritedProperty = exports.InheritedProperty = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
-const assert_1 = __importDefault(require("assert"));
 const simply_immutable_1 = require("simply-immutable");
 const INHERIT_TAG = "<inherit>";
 function InheritedProperty(property) {
@@ -133,50 +129,4 @@ function NameType(name, dataType) {
     return (0, simply_immutable_1.replaceImmutable)(dataType, ["name"], name);
 }
 exports.NameType = NameType;
-////////////////////////////////////////////////////////////////////////////////
-// Context stack
-function getContextStack() {
-    // the context stack is stored in a global variable so it can be accessed across copies of xrpa-orchestrator
-    const globalStore = global;
-    globalStore["__XrpaContextStack"] = globalStore["__XrpaContextStack"] || [];
-    return globalStore["__XrpaContextStack"];
-}
-function pushContext(ctx) {
-    getContextStack().push(ctx);
-}
-exports.pushContext = pushContext;
-function getCurrentContext() {
-    const contextStack = getContextStack();
-    (0, assert_1.default)(contextStack.length > 0, "context stack is empty");
-    return contextStack[contextStack.length - 1];
-}
-exports.getCurrentContext = getCurrentContext;
-function getContext(filter, errMessage) {
-    const contextStack = getContextStack();
-    for (let i = contextStack.length - 1; i >= 0; --i) {
-        const ctx = contextStack[i];
-        if (filter(ctx)) {
-            return ctx;
-        }
-    }
-    (0, assert_1.default)(false, errMessage);
-}
-exports.getContext = getContext;
-function popContext(ctx) {
-    const contextStack = getContextStack();
-    (0, assert_1.default)(contextStack.length > 0, "context stack is empty");
-    (0, assert_1.default)(contextStack[contextStack.length - 1] === ctx, "context stack is not empty");
-    contextStack.pop();
-}
-exports.popContext = popContext;
-function runInContext(ctx, callback) {
-    pushContext(ctx);
-    try {
-        return callback(ctx);
-    }
-    finally {
-        popContext(ctx);
-    }
-}
-exports.runInContext = runInContext;
 //# sourceMappingURL=XrpaLanguage.js.map

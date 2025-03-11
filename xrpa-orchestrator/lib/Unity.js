@@ -21,13 +21,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.XrpaNativeUnityProgram = exports.UnityProject = exports.IfUnity = exports.UnityArrayType = exports.UnityCoordinateSystem = void 0;
+const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
 const Coordinates_1 = require("./Coordinates");
 const GameEngine_1 = require("./GameEngine");
 const InterfaceTypes_1 = require("./InterfaceTypes");
 const ProgramInterfaceConverter_1 = require("./ProgramInterfaceConverter");
 const RuntimeEnvironment_1 = require("./RuntimeEnvironment");
-const XrpaLanguage_1 = require("./XrpaLanguage");
 const CoordinateTransformer_1 = require("./shared/CoordinateTransformer");
 const DataflowProgramDefinition_1 = require("./shared/DataflowProgramDefinition");
 const MonoBehaviourShared_1 = require("./targets/unitypackage/MonoBehaviourShared");
@@ -41,7 +41,6 @@ exports.UnityCoordinateSystem = {
 };
 exports.UnityArrayType = {
     typename: "System.Collections.Generic.List",
-    getSize: "Count",
     setSize: null,
     removeAll: "Clear()",
     addItem: "Add()",
@@ -59,7 +58,7 @@ function runUnityContext(ctx, callback) {
         intrinsicParentProperty: MonoBehaviourShared_1.IntrinsicProperty.Parent,
         intrinsicGameObjectProperty: MonoBehaviourShared_1.IntrinsicProperty.gameObject,
     });
-    (0, XrpaLanguage_1.runInContext)(ctx, ctx => {
+    (0, xrpa_utils_1.runInContext)(ctx, callback, () => {
         (0, Coordinates_1.useCoordinateSystem)(exports.UnityCoordinateSystem);
         (0, RuntimeEnvironment_1.mapType)(InterfaceTypes_1.String, { typename: "string" });
         (0, RuntimeEnvironment_1.mapType)(Coordinates_1.Vector2, { typename: "UnityEngine.Vector2" });
@@ -82,7 +81,6 @@ function runUnityContext(ctx, callback) {
             },
         });
         (0, RuntimeEnvironment_1.mapArrays)(exports.UnityArrayType);
-        callback(ctx);
     });
 }
 async function UnityProject(projectPath, projectName, callback) {

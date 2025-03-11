@@ -31,19 +31,23 @@ class ChangeEventAccessor : public ObjectAccessorInterface {
       : ObjectAccessorInterface(std::move(memAccessor)) {}
 
   int32_t getChangeType() {
-    return memAccessor_.readValue<int32_t>(0);
+    auto offset = MemoryOffset(0);
+    return memAccessor_.readValue<int32_t>(offset);
   }
 
   void setChangeType(int32_t type) {
-    memAccessor_.writeValue<int32_t>(type, 0);
+    auto offset = MemoryOffset(0);
+    memAccessor_.writeValue<int32_t>(type, offset);
   }
 
   int32_t getTimestamp() {
-    return memAccessor_.readValue<int32_t>(4);
+    auto offset = MemoryOffset(4);
+    return memAccessor_.readValue<int32_t>(offset);
   }
 
   void setTimestamp(int32_t timestamp) {
-    memAccessor_.writeValue<int32_t>(timestamp, 4);
+    auto offset = MemoryOffset(4);
+    memAccessor_.writeValue<int32_t>(timestamp, offset);
   }
 };
 

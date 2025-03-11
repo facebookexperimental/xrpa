@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <xrpa-runtime/reconciler/DataStoreInterfaces.h>
 #include <xrpa-runtime/signals/SignalShared.h>
 #include <xrpa-runtime/utils/XrpaTypes.h>
 #include <chrono>
@@ -34,39 +35,41 @@ class OutboundSignalData {
       SignalProducerCallback<T> source,
       int32_t numChannels,
       int32_t framesPerSecond,
-      int32_t framesPerCallback) {
+      int32_t framesPerPacket) {
     // wrapper lambda for the type cast, =(
     signalSource_ = [source, this](SignalPacket& packet) {
       source(packet.accessChannelData<T>(), framesPerSecond_, curReadPos_);
     };
 
-    sampleType_ = inferSampleType<T>();
-    sampleSize_ = sizeof(T);
-    numChannels_ = numChannels;
-    framesPerSecond_ = framesPerSecond;
-    framesPerCallback_ = framesPerCallback;
-
-    prevFrameStartTime_ = std::chrono::high_resolution_clock::now();
+    setSignalSourceShared<T>(numChannels, framesPerSecond, framesPerPacket);
   }
 
-  // caller is responsible for filling in the channel data
-  template <typename MessageSender, typename SampleType>
-  SignalChannelData<SampleType> sendSignalData(
-      const ObjectUuid& id,
-      int32_t messageType,
-      MessageSender* messageSender,
-      int32_t frameCount) {
-    auto packet = sendSignalPacket(id, messageType, messageSender, frameCount);
-    return packet.template accessChannelData<SampleType>();
+  template <typename T>
+  void setSignalSource(
+      SignalRingBuffer<T>* ringBuffer,
+      int32_t numChannels,
+      int32_t framesPerSecond,
+      int32_t framesPerPacket) {
+    signalSource_ = [ringBuffer](SignalPacket& packet) {
+      packet.accessChannelData<T>().consumeFromRingBuffer(ringBuffer);
+    };
+
+    setSignalSourceShared<T>(numChannels, framesPerSecond, framesPerPacket);
   }
 
-  template <typename MessageSender>
-  void tick(const ObjectUuid& id, int32_t messageType, MessageSender* messageSender) {
+  void setRecipient(const ObjectUuid& id, IObjectCollection* collection, int32_t messageType) {
+    id_ = id;
+    collection_ = collection;
+    messageType_ = messageType;
+  }
+
+  void tick() {
     auto endTime = std::chrono::high_resolution_clock::now();
     for (auto frameCount = getNextFrameCount(endTime); frameCount > 0;
          frameCount = getNextFrameCount(endTime)) {
-      if (signalSource_) {
-        auto packet = sendSignalPacket(id, messageType, messageSender, frameCount);
+      if (signalSource_ && collection_) {
+        auto packet =
+            sendSignalPacket(sampleSize_, frameCount, sampleType_, numChannels_, framesPerSecond_);
         signalSource_(packet);
       }
 
@@ -74,17 +77,49 @@ class OutboundSignalData {
     }
   }
 
+  // caller is responsible for filling in the channel data
+  [[nodiscard]] SignalPacket sendSignalPacket(
+      int32_t sampleSize,
+      int32_t frameCount,
+      int32_t sampleType,
+      int32_t numChannels,
+      int32_t framesPerSecond) {
+    auto packet = SignalPacket(collection_->sendMessage(
+        id_, messageType_, SignalPacket::calcPacketSize(numChannels, sampleSize, frameCount)));
+    packet.setFrameCount(frameCount);
+    packet.setSampleType(sampleType);
+    packet.setNumChannels(numChannels);
+    packet.setFrameRate(framesPerSecond);
+    return packet;
+  }
+
  private:
+  ObjectUuid id_;
+  IObjectCollection* collection_ = nullptr;
+  int32_t messageType_ = 0;
+
   std::function<void(SignalPacket& packet)> signalSource_ = nullptr;
   int32_t sampleType_ = 0;
   int32_t sampleSize_ = 4;
   int32_t numChannels_ = 1;
   int32_t framesPerSecond_ = 10;
-  int32_t framesPerCallback_ = 1024;
+  int32_t framesPerPacket_ = 1024;
 
   // internal state management
   uint64_t curReadPos_ = 0;
   std::chrono::high_resolution_clock::time_point prevFrameStartTime_;
+
+  template <typename T>
+  void
+  setSignalSourceShared(int32_t numChannels, int32_t framesPerSecond, int32_t framesPerPacket) {
+    sampleType_ = inferSampleType<T>();
+    sampleSize_ = sizeof(T);
+    numChannels_ = numChannels;
+    framesPerSecond_ = framesPerSecond;
+    framesPerPacket_ = framesPerPacket;
+
+    prevFrameStartTime_ = std::chrono::high_resolution_clock::now();
+  }
 
   int getNextFrameCount(std::chrono::high_resolution_clock::time_point endTime) {
     if (!framesPerSecond_) {
@@ -95,28 +130,12 @@ class OutboundSignalData {
         std::chrono::duration_cast<std::chrono::microseconds>(endTime - prevFrameStartTime_);
 
     // generate signal in fixed-size packets of data
-    auto frameCount = deltaTime.count() < 0 ? 0 : framesPerCallback_;
+    auto frameCount = deltaTime.count() < 0 ? 0 : framesPerPacket_;
 
     // do NOT set to now(), as that will lead to accumulation of error
     prevFrameStartTime_ += std::chrono::microseconds(frameCount * 1000000 / framesPerSecond_);
 
     return frameCount;
-  }
-
-  // caller is responsible for filling in the channel data
-  template <typename MessageSender>
-  SignalPacket sendSignalPacket(
-      const ObjectUuid& id,
-      int32_t messageType,
-      MessageSender* messageSender,
-      int32_t frameCount) {
-    auto packet = SignalPacket(messageSender->sendMessage(
-        id, messageType, SignalPacket::calcPacketSize(numChannels_, sampleSize_, frameCount)));
-    packet.setFrameCount(frameCount);
-    packet.setSampleType(sampleType_);
-    packet.setNumChannels(numChannels_);
-    packet.setFrameRate(framesPerSecond_);
-    return packet;
   }
 };
 

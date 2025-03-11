@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from xrpa_runtime.utils.memory_accessor import MemoryAccessor
+from xrpa_runtime.utils.memory_accessor import MemoryAccessor, MemoryOffset
 
 
 class PlacedRingBuffer:
@@ -23,7 +23,7 @@ class PlacedRingBuffer:
         self._mem_source = mem_source
         self._props_accessor = mem_source.slice(mem_offset, self.PROPS_SIZE)
         self._pool_accessor = mem_source.slice(
-            mem_offset + self.PROPS_SIZE, self._props_accessor.read_int(0)
+            mem_offset + self.PROPS_SIZE, self._props_accessor.read_int(MemoryOffset(0))
         )
 
     @staticmethod
@@ -32,51 +32,51 @@ class PlacedRingBuffer:
 
     @property
     def pool_size(self) -> int:
-        return self._props_accessor.read_int(0)
+        return self._props_accessor.read_int(MemoryOffset(0))
 
     @pool_size.setter
     def pool_size(self, value: int):
-        self._props_accessor.write_int(value, 0)
+        self._props_accessor.write_int(value, MemoryOffset(0))
 
     @property
     def count(self) -> int:
-        return self._props_accessor.read_int(4)
+        return self._props_accessor.read_int(MemoryOffset(4))
 
     @count.setter
     def count(self, value: int):
-        self._props_accessor.write_int(value, 4)
+        self._props_accessor.write_int(value, MemoryOffset(4))
 
     @property
     def start_id(self) -> int:
-        return self._props_accessor.read_int(8)
+        return self._props_accessor.read_int(MemoryOffset(8))
 
     @start_id.setter
     def start_id(self, value: int):
-        self._props_accessor.write_int(value, 8)
+        self._props_accessor.write_int(value, MemoryOffset(8))
 
     @property
     def start_offset(self) -> int:
-        return self._props_accessor.read_int(12)
+        return self._props_accessor.read_int(MemoryOffset(12))
 
     @start_offset.setter
     def start_offset(self, value: int):
-        self._props_accessor.write_int(value, 12)
+        self._props_accessor.write_int(value, MemoryOffset(12))
 
     @property
     def last_elem_offset(self) -> int:
-        return self._props_accessor.read_int(16)
+        return self._props_accessor.read_int(MemoryOffset(16))
 
     @last_elem_offset.setter
     def last_elem_offset(self, value: int):
-        self._props_accessor.write_int(value, 16)
+        self._props_accessor.write_int(value, MemoryOffset(16))
 
     @property
     def prewrap_offset(self) -> int:
-        return self._props_accessor.read_int(20)
+        return self._props_accessor.read_int(MemoryOffset(20))
 
     @prewrap_offset.setter
     def prewrap_offset(self, value: int):
-        self._props_accessor.write_int(value, 20)
+        self._props_accessor.write_int(value, MemoryOffset(20))
 
     def init(self, pool_size: int):
         self.pool_size = pool_size
@@ -178,10 +178,10 @@ class PlacedRingBuffer:
 
     def _set_element_size(self, offset: int, num_bytes: int):
         assert num_bytes > 0
-        self._pool_accessor.write_int(num_bytes, offset)
+        self._pool_accessor.write_int(num_bytes, MemoryOffset(offset))
 
     def _get_element_size(self, offset: int) -> int:
-        return self._pool_accessor.read_int(offset)
+        return self._pool_accessor.read_int(MemoryOffset(offset))
 
     def get_element_accessor(self, offset: int) -> MemoryAccessor:
         return self._pool_accessor.slice(

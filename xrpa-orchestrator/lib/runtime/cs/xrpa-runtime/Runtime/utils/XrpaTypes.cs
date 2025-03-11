@@ -33,23 +33,6 @@ namespace Xrpa
         {
             return _memAccessor == null || _memAccessor.IsNull();
         }
-
-        protected int _curReadPos = 0;
-        protected int _curWritePos = 0;
-
-        protected int AdvanceReadPos(int numBytes)
-        {
-            var pos = _curReadPos;
-            _curReadPos += numBytes;
-            return pos;
-        }
-
-        protected int AdvanceWritePos(int numBytes)
-        {
-            var pos = _curWritePos;
-            _curWritePos += numBytes;
-            return pos;
-        }
     }
 
     public struct HashValue
@@ -102,23 +85,27 @@ namespace Xrpa
             return System.HashCode.Combine(Value0, Value1, Value2, Value3);
         }
 
-        public static HashValue ReadValue(MemoryAccessor memAccessor, int offset)
+        public static HashValue ReadValue(MemoryAccessor memAccessor, MemoryOffset offset)
         {
+            var v0 = memAccessor.ReadUlong(offset);
+            var v1 = memAccessor.ReadUlong(offset);
+            var v2 = memAccessor.ReadUlong(offset);
+            var v3 = memAccessor.ReadUlong(offset);
             return new HashValue
             {
-                Value0 = memAccessor.ReadUlong(offset),
-                Value1 = memAccessor.ReadUlong(offset + 8),
-                Value2 = memAccessor.ReadUlong(offset + 16),
-                Value3 = memAccessor.ReadUlong(offset + 24)
+                Value0 = v0,
+                Value1 = v1,
+                Value2 = v2,
+                Value3 = v3
             };
         }
 
-        public static void WriteValue(HashValue value, MemoryAccessor memAccessor, int offset)
+        public static void WriteValue(HashValue value, MemoryAccessor memAccessor, MemoryOffset offset)
         {
             memAccessor.WriteUlong(value.Value0, offset);
-            memAccessor.WriteUlong(value.Value1, offset + 8);
-            memAccessor.WriteUlong(value.Value2, offset + 16);
-            memAccessor.WriteUlong(value.Value3, offset + 24);
+            memAccessor.WriteUlong(value.Value1, offset);
+            memAccessor.WriteUlong(value.Value2, offset);
+            memAccessor.WriteUlong(value.Value3, offset);
         }
     }
 
@@ -208,15 +195,17 @@ namespace Xrpa
             return ID0 < other.ID0 ? -1 : 1;
         }
 
-        public static ObjectUuid ReadValue(MemoryAccessor memAccessor, int offset)
+        public static ObjectUuid ReadValue(MemoryAccessor memAccessor, MemoryOffset offset)
         {
-            return new ObjectUuid(memAccessor.ReadUlong(offset), memAccessor.ReadUlong(offset + 8));
+            var id0 = memAccessor.ReadUlong(offset);
+            var id1 = memAccessor.ReadUlong(offset);
+            return new ObjectUuid(id0, id1);
         }
 
-        public static void WriteValue(ObjectUuid value, MemoryAccessor memAccessor, int offset)
+        public static void WriteValue(ObjectUuid value, MemoryAccessor memAccessor, MemoryOffset offset)
         {
             memAccessor.WriteUlong(value.ID0, offset);
-            memAccessor.WriteUlong(value.ID1, offset + 8);
+            memAccessor.WriteUlong(value.ID1, offset);
         }
     }
 

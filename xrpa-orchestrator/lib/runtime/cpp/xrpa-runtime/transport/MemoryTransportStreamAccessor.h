@@ -36,43 +36,53 @@ class MemoryTransportStreamAccessor : public ObjectAccessorInterface {
       : ObjectAccessorInterface(memAccessor.slice(0, BYTE_COUNT)) {}
 
   int32_t getTransportVersion() {
-    return memAccessor_.readValue<int32_t>(0);
+    auto offset = MemoryOffset(0);
+    return memAccessor_.readValue<int32_t>(offset);
   }
 
   void setTransportVersion() {
-    memAccessor_.writeValue<int32_t>(TRANSPORT_VERSION, 0);
+    auto offset = MemoryOffset(0);
+    memAccessor_.writeValue<int32_t>(TRANSPORT_VERSION, offset);
   }
 
   int32_t getTotalBytes() {
-    return memAccessor_.readValue<int32_t>(4);
+    auto offset = MemoryOffset(4);
+    return memAccessor_.readValue<int32_t>(offset);
   }
 
   void setTotalBytes(int32_t type) {
-    memAccessor_.writeValue<int32_t>(type, 4);
+    auto offset = MemoryOffset(4);
+    memAccessor_.writeValue<int32_t>(type, offset);
   }
 
   HashValue getSchemaHash() {
-    return HashValue::readValue(memAccessor_, 8);
+    auto offset = MemoryOffset(8);
+    return HashValue::readValue(memAccessor_, offset);
   }
 
   void setSchemaHash(const HashValue& hash) {
-    HashValue::writeValue(hash, memAccessor_, 8);
+    auto offset = MemoryOffset(8);
+    HashValue::writeValue(hash, memAccessor_, offset);
   }
 
   uint64_t getBaseTimestamp() {
-    return memAccessor_.readValue<uint64_t>(40);
+    auto offset = MemoryOffset(40);
+    return memAccessor_.readValue<uint64_t>(offset);
   }
 
   void setBaseTimestamp(uint64_t timestamp) {
-    memAccessor_.writeValue<uint64_t>(timestamp, 40);
+    auto offset = MemoryOffset(40);
+    memAccessor_.writeValue<uint64_t>(timestamp, offset);
   }
 
   int32_t getLastChangelogID() {
-    return memAccessor_.readValue<int32_t>(48);
+    auto offset = MemoryOffset(48);
+    return memAccessor_.readValue<int32_t>(offset);
   }
 
   void setLastChangelogID(int32_t id) {
-    memAccessor_.writeValue<int32_t>(id, 48);
+    auto offset = MemoryOffset(48);
+    memAccessor_.writeValue<int32_t>(id, offset);
   }
 
   PlacedRingBuffer* getChangelog() {

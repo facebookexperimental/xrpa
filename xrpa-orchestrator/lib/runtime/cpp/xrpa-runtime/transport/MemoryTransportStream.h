@@ -32,7 +32,7 @@ namespace Xrpa {
 class MemoryTransportStream : public TransportStream {
  public:
   MemoryTransportStream(const std::string& name, const TransportConfig& config);
-  virtual ~MemoryTransportStream() = default;
+  ~MemoryTransportStream() override = default;
 
   bool transact(
       std::chrono::milliseconds timeout,

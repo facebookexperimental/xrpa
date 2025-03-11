@@ -21,6 +21,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UnityPackageModuleDefinition = void 0;
+const xrpa_file_utils_1 = require("@xrpa/xrpa-file-utils");
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
 const Helpers_1 = require("../../shared/Helpers");
@@ -78,7 +79,7 @@ class UnityPackageModuleDefinition extends CsharpModuleDefinition_1.CsharpModule
         }
     }
     doCodeGen() {
-        const fileWriter = new xrpa_utils_1.FileWriter();
+        const fileWriter = new xrpa_file_utils_1.FileWriter();
         const packagesDir = path_1.default.join(this.projectRoot, "Packages");
         const runtimeDirs = {};
         for (const key in this.packageInfos) {

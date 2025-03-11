@@ -47,9 +47,4 @@ export type XrpaNamedDataType<T extends XrpaDataType = XrpaDataType> = T & {
 };
 export declare function isNamedDataType(thing: unknown): thing is XrpaNamedDataType;
 export declare function NameType<T extends XrpaNamedDataType>(name: string | undefined, dataType: Thunk<T>): T;
-export declare function pushContext(ctx: unknown): void;
-export declare function getCurrentContext(): unknown;
-export declare function getContext<T>(filter: (ctx: unknown) => ctx is T, errMessage: string): T;
-export declare function popContext(ctx: unknown): void;
-export declare function runInContext<T, C>(ctx: C, callback: (ctx: C) => T): T;
 

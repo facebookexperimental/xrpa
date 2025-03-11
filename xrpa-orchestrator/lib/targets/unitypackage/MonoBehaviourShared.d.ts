@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "@xrpa/xrpa-utils";
+import { FileWriter } from "@xrpa/xrpa-file-utils";
 import { ClassSpec } from "../../shared/ClassSpec";
 import { InputReconcilerDefinition, OutputReconcilerDefinition } from "../../shared/DataStore";
 import { IncludeAggregator } from "../../shared/Helpers";

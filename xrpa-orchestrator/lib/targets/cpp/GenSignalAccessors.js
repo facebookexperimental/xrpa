@@ -90,8 +90,8 @@ function genSendSignalAccessor(classSpec, params) {
         decorations: params.decorations,
         templateParams: ["SampleType"],
         parameters: [{
-                name: "signal",
-                type: `${CppDatasetLibraryTypes_1.SignalProducerCallback.getLocalType(params.ctx.namespace, classSpec.includes)}<SampleType>`,
+                name: "signalCallback",
+                type: `${CppDatasetLibraryTypes_1.SignalProducerCallback.getLocalType(classSpec.namespace, classSpec.includes)}<SampleType>`,
             }, {
                 name: "numChannels",
                 type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
@@ -99,23 +99,87 @@ function genSendSignalAccessor(classSpec, params) {
                 name: "framesPerSecond",
                 type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
             }, {
-                name: "framesPerCallback",
+                name: "framesPerPacket",
                 type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
             }],
         body: () => {
             return [
-                `local${(0, xrpa_utils_1.upperFirst)(params.fieldName)}_.setSignalSource(signal, numChannels, framesPerSecond, framesPerCallback);`,
+                `local${(0, xrpa_utils_1.upperFirst)(params.fieldName)}_.setSignalSource(signalCallback, numChannels, framesPerSecond, framesPerPacket);`,
+            ];
+        },
+        separateImplementation: params.separateImplementation,
+    });
+    classSpec.methods.push({
+        name: params.name ?? `set${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
+        decorations: params.decorations,
+        templateParams: ["SampleType"],
+        parameters: [{
+                name: "signalRingBuffer",
+                type: `${CppDatasetLibraryTypes_1.SignalRingBuffer.getLocalType(classSpec.namespace, classSpec.includes)}<SampleType>*`,
+            }, {
+                name: "numChannels",
+                type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
+            }, {
+                name: "framesPerSecond",
+                type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
+            }, {
+                name: "framesPerPacket",
+                type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
+            }],
+        body: () => {
+            return [
+                `local${(0, xrpa_utils_1.upperFirst)(params.fieldName)}_.setSignalSource(signalRingBuffer, numChannels, framesPerSecond, framesPerPacket);`,
+            ];
+        },
+        separateImplementation: params.separateImplementation,
+    });
+    classSpec.methods.push({
+        name: params.name ?? `set${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
+        decorations: params.decorations,
+        templateParams: ["SampleType"],
+        parameters: [{
+                name: "signalForwarder",
+                type: `std::shared_ptr<${CppDatasetLibraryTypes_1.InboundSignalForwarder.getLocalType(classSpec.namespace, classSpec.includes)}>`,
+            }],
+        body: () => {
+            return [
+                `local${(0, xrpa_utils_1.upperFirst)(params.fieldName)}_.setRecipient(getXrpaId(), collection_, ${messageType});`,
+                `signalForwarder->addRecipient(&local${(0, xrpa_utils_1.upperFirst)(params.fieldName)}_);`,
+            ];
+        },
+        separateImplementation: params.separateImplementation,
+    });
+    classSpec.methods.push({
+        name: `send${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
+        decorations: params.decorations,
+        templateParams: ["SampleType"],
+        returnType: CppDatasetLibraryTypes_1.SignalPacket.getLocalType(classSpec.namespace, classSpec.includes),
+        parameters: [{
+                name: "frameCount",
+                type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
+            }, {
+                name: "numChannels",
+                type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
+            }, {
+                name: "framesPerSecond",
+                type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
+            }],
+        body: () => {
+            return [
+                `int32_t sampleType = Xrpa::inferSampleType<SampleType>();`,
+                `local${(0, xrpa_utils_1.upperFirst)(params.fieldName)}_.setRecipient(getXrpaId(), collection_, ${messageType});`,
+                `return local${(0, xrpa_utils_1.upperFirst)(params.fieldName)}_.sendSignalPacket(sizeof(SampleType), frameCount, sampleType, numChannels, framesPerSecond);`,
             ];
         },
         separateImplementation: params.separateImplementation,
     });
     classSpec.members.push({
         name: `local${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
-        type: CppDatasetLibraryTypes_1.OutboundSignalData.getLocalType(params.ctx.namespace, classSpec.includes),
+        type: CppDatasetLibraryTypes_1.OutboundSignalData,
         visibility: "private",
     });
     const messageType = params.typeDef.getFieldIndex(params.fieldName);
-    params.tickLines.push(`local${(0, xrpa_utils_1.upperFirst)(params.fieldName)}_.tick(id, ${messageType}, collection_);`);
+    params.tickLines.push(`local${(0, xrpa_utils_1.upperFirst)(params.fieldName)}_.setRecipient(id, collection_, ${messageType});`, `local${(0, xrpa_utils_1.upperFirst)(params.fieldName)}_.tick();`);
 }
 exports.genSendSignalAccessor = genSendSignalAccessor;
 function genSignalFieldAccessors(classSpec, params) {

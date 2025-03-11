@@ -189,7 +189,7 @@ function canSetCoordinateSystem(ctx) {
     return (0, ProgramInterface_1.isProgramInterfaceContext)(ctx) || (0, RuntimeEnvironment_1.isRuntimeEnvironmentContext)(ctx);
 }
 function useCoordinateSystem(coordSystem) {
-    const ctx = (0, XrpaLanguage_1.getContext)(canSetCoordinateSystem, "Call must be made within a program or runtime environment");
+    const ctx = (0, xrpa_utils_1.getContext)(canSetCoordinateSystem, "Call must be made within a program or runtime environment");
     ctx.properties[COORDINATE_SYSTEM] = coordSystem;
 }
 exports.useCoordinateSystem = useCoordinateSystem;

@@ -32,7 +32,7 @@ exports.XredTrackingInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("X
     (0, xrpa_orchestrator_1.ProgramOutput)("TrackedObject", (0, xrpa_orchestrator_1.Collection)({
         maxCount: 128,
         fields: {
-            name: (0, xrpa_orchestrator_1.PrimaryKey)(xrpa_orchestrator_1.IfGameEngine, (0, xrpa_orchestrator_1.FixedString)(64)),
+            name: (0, xrpa_orchestrator_1.PrimaryKey)(xrpa_orchestrator_1.IfGameEngine, xrpa_orchestrator_1.String),
             pose: PoseTransform,
             rootPose: Pose,
             absolutePose: Pose,

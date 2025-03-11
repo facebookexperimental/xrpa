@@ -27,10 +27,10 @@ exports.XredSignalOutputInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface
     const SignalOutputDevice = (0, xrpa_orchestrator_1.ProgramOutput)("SignalOutputDevice", (0, xrpa_orchestrator_1.Augment)((0, xrpa_orchestrator_1.Collection)({
         maxCount: 64,
         fields: {
-            name: (0, xrpa_orchestrator_1.PrimaryKey)(xrpa_orchestrator_1.IfGameEngine, (0, xrpa_orchestrator_1.FixedString)(64)),
-            channelName: (0, xrpa_orchestrator_1.FixedString)(64),
-            driverIdentifier: (0, xrpa_orchestrator_1.FixedString)(64),
-            driverPort: (0, xrpa_orchestrator_1.FixedString)(64),
+            name: (0, xrpa_orchestrator_1.PrimaryKey)(xrpa_orchestrator_1.IfGameEngine, xrpa_orchestrator_1.String),
+            channelName: xrpa_orchestrator_1.String,
+            driverIdentifier: xrpa_orchestrator_1.String,
+            driverPort: xrpa_orchestrator_1.String,
             handedness: DeviceHandedness,
             numChannels: xrpa_orchestrator_1.Count,
             sampleType: SampleType,

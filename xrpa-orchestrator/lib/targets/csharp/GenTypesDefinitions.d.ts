@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "@xrpa/xrpa-utils";
+import { FileWriter } from "@xrpa/xrpa-file-utils";
 import { DataStoreDefinition } from "../../shared/DataStore";
 export declare function genTypesDefinitions(fileWriter: FileWriter, outdir: string, def: DataStoreDefinition): void;
 

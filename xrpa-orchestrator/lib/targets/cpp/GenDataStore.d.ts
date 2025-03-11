@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "@xrpa/xrpa-utils";
+import { FileWriter } from "@xrpa/xrpa-file-utils";
 import { GenDataStoreContext } from "../shared/GenDataStoreShared";
 export declare function genMsgHandler(fieldName: string): string;
 export declare function genDataStore(fileWriter: FileWriter, outdir: string, ctx: GenDataStoreContext): void;

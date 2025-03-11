@@ -17,7 +17,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.chainAsyncThunk = exports.resolveAsyncThunk = exports.chainThunk = exports.resolveThunkWithParam = exports.resolveThunk = exports.isExcluded = exports.filterToNumberArray = exports.filterToNumber = exports.filterToStringPairArray = exports.filterToStringArray = exports.filterToString = exports.assertIsKeyOf = exports.throwBadValue = exports.absurd = void 0;
+exports.isExcluded = exports.filterToNumberArray = exports.filterToNumber = exports.filterToStringPairArray = exports.filterToStringArray = exports.filterToString = exports.assertIsKeyOf = exports.throwBadValue = exports.absurd = void 0;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function absurd(v) {
     // this function intentionally left blank
@@ -105,33 +105,4 @@ function isExcluded(key, includeList, excludeList) {
     return false;
 }
 exports.isExcluded = isExcluded;
-function resolveThunk(value) {
-    if (typeof value === "function") {
-        return value();
-    }
-    return value;
-}
-exports.resolveThunk = resolveThunk;
-function resolveThunkWithParam(value, param) {
-    if (typeof value === "function") {
-        return value(param);
-    }
-    return value;
-}
-exports.resolveThunkWithParam = resolveThunkWithParam;
-function chainThunk(value, next) {
-    return () => next(resolveThunk(value));
-}
-exports.chainThunk = chainThunk;
-async function resolveAsyncThunk(value) {
-    if (typeof value === "function") {
-        return value();
-    }
-    return value;
-}
-exports.resolveAsyncThunk = resolveAsyncThunk;
-function chainAsyncThunk(value, next) {
-    return () => resolveAsyncThunk(value).then(next);
-}
-exports.chainAsyncThunk = chainAsyncThunk;
 //# sourceMappingURL=MiscUtils.js.map

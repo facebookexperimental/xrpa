@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <xrpa-runtime/signals/SignalRingBuffer.h>
 #include <xrpa-runtime/utils/MemoryAccessor.h>
 #include <cstdint>
 #include <type_traits>
@@ -97,6 +98,13 @@ class SignalChannelData {
     }
   }
 
+  void consumeFromRingBuffer(SignalRingBuffer<SampleType>* ringBuffer) {
+    int channelBufferSize = getChannelBufferSize();
+    auto outPtr =
+        static_cast<SampleType*>(memAccessor_.getRawPointer(0, channelBufferSize * numChannels_));
+    ringBuffer->readDeinterleavedData(outPtr, frameCount_, frameCount_);
+  }
+
   void clearUnusedChannels(int32_t startChannelIdx, int32_t usedChannelCount) {
     for (int i = 0; i < startChannelIdx; ++i) {
       auto* dst = accessChannelBuffer(i);
@@ -135,41 +143,53 @@ class SignalPacket {
   explicit SignalPacket(MemoryAccessor memAccessor) : memAccessor_(std::move(memAccessor)) {}
 
   int32_t getFrameCount() {
-    return memAccessor_.readValue<int32_t>(0);
+    auto offset = MemoryOffset(0);
+    return memAccessor_.readValue<int32_t>(offset);
   }
 
   void setFrameCount(int32_t frameCount) {
-    memAccessor_.writeValue<int32_t>(frameCount, 0);
+    auto offset = MemoryOffset(0);
+    memAccessor_.writeValue<int32_t>(frameCount, offset);
   }
 
   int32_t getSampleType() {
-    return memAccessor_.readValue<int32_t>(4);
+    auto offset = MemoryOffset(4);
+    return memAccessor_.readValue<int32_t>(offset);
   }
 
   void setSampleType(int32_t sampleType) {
-    memAccessor_.writeValue<int32_t>(sampleType, 4);
+    auto offset = MemoryOffset(4);
+    memAccessor_.writeValue<int32_t>(sampleType, offset);
   }
 
   int32_t getNumChannels() {
-    return memAccessor_.readValue<int32_t>(8);
+    auto offset = MemoryOffset(8);
+    return memAccessor_.readValue<int32_t>(offset);
   }
 
   void setNumChannels(int32_t numChannels) {
-    memAccessor_.writeValue<int32_t>(numChannels, 8);
+    auto offset = MemoryOffset(8);
+    memAccessor_.writeValue<int32_t>(numChannels, offset);
   }
 
   int32_t getFrameRate() {
-    return memAccessor_.readValue<int32_t>(12);
+    auto offset = MemoryOffset(12);
+    return memAccessor_.readValue<int32_t>(offset);
   }
 
   void setFrameRate(int32_t framesPerSecond) {
-    memAccessor_.writeValue<int32_t>(framesPerSecond, 12);
+    auto offset = MemoryOffset(12);
+    memAccessor_.writeValue<int32_t>(framesPerSecond, offset);
   }
 
   template <typename SampleType>
   SignalChannelData<SampleType> accessChannelData() {
     return SignalChannelData<SampleType>(
         memAccessor_.slice(kHeaderSize), getFrameCount(), getNumChannels());
+  }
+
+  void copyChannelDataFrom(const SignalPacket& src) {
+    memAccessor_.slice(kHeaderSize).copyFrom(src.memAccessor_.slice(kHeaderSize));
   }
 
   static int32_t calcPacketSize(int32_t numChannels, int32_t sampleSize, int32_t frameCount) {

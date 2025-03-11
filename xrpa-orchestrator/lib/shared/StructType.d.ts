@@ -18,9 +18,13 @@
 import { IncludeAggregator } from "./Helpers";
 import { PrimitiveType } from "./PrimitiveType";
 import { TargetCodeGenImpl, TypeSpec } from "./TargetCodeGen";
-import { StructSpec, StructTypeDefinition, TypeDefinition, TypeMetaType, UserDefaultValue } from "./TypeDefinition";
+import { StructSpec, StructTypeDefinition, TypeDefinition, TypeMetaType, TypeSize, UserDefaultValue } from "./TypeDefinition";
 import { TypeValue } from "./TypeValue";
 import { ClassSpec, ClassVisibility } from "./ClassSpec";
+export interface FieldTransforms {
+    fieldsFromLocal: Record<string, TypeValue>;
+    fieldsToLocal: Record<string, TypeValue>;
+}
 export declare class StructType extends PrimitiveType implements StructTypeDefinition {
     readonly apiname: string;
     readonly parentType: StructTypeDefinition | undefined;
@@ -29,23 +33,19 @@ export declare class StructType extends PrimitiveType implements StructTypeDefin
     constructor(codegen: TargetCodeGenImpl, name: string, apiname: string, parentType: StructTypeDefinition | undefined, fields: StructSpec, localTypeOverride?: TypeSpec | undefined);
     getMetaType(): TypeMetaType;
     getHashData(): Record<string, unknown>;
-    getTypeSize(): number;
+    getTypeSize(): TypeSize;
     getApiName(): string;
     getAllFields(): StructSpec;
     getStateFields(): StructSpec;
     getFieldsOfType<T extends TypeDefinition>(typeFilter: (typeDef: TypeDefinition | undefined) => typeDef is T): Record<string, T>;
     getFieldIndex(fieldName: string): number;
     getFieldBitMask(fieldName: string): number;
-    getFieldSize(fieldName: string): number;
-    getFieldOffset(fieldName: string): number;
+    getStateField(fieldName: string): TypeDefinition;
     userDefaultToTypeValue(inNamespace: string, includes: IncludeAggregator | null, userDefault: UserDefaultValue): TypeValue | undefined;
     declareLocalFieldClassMember(classSpec: ClassSpec, fieldName: string, memberName: string, includeComments: boolean, decorations: string[], visibility?: ClassVisibility): void;
     resetLocalFieldVarToDefault(inNamespace: string, includes: IncludeAggregator | null, fieldName: string, varName: string, isSetter?: boolean): string[];
     private getFieldTypes;
-    protected getFieldTransforms(inNamespace: string, includes: IncludeAggregator | null): {
-        fieldsFromLocal: Record<string, TypeValue>;
-        fieldsToLocal: Record<string, TypeValue>;
-    };
+    protected getFieldTransforms(inNamespace: string, includes: IncludeAggregator | null): FieldTransforms;
     protected genReadWriteValueFunctions(classSpec: ClassSpec): void;
     genTypeDefinition(includes: IncludeAggregator | null): string[] | null;
     genLocalTypeDefinition(inNamespace: string, includes: IncludeAggregator | null): string[] | null;

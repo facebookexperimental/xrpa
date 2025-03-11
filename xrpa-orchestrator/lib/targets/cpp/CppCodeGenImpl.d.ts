@@ -19,15 +19,11 @@
 import { ClassSpec } from "../../shared/ClassSpec";
 import { UnitTransformer } from "../../shared/CoordinateTransformer";
 import { IncludeAggregator } from "../../shared/Helpers";
-import { FieldTypeAndAccessor, GuidGenSpec, PrimitiveIntrinsics } from "../../shared/TargetCodeGen";
+import { CoreXrpaTypes, FieldTypeAndAccessor, GuidGenSpec, PrimitiveIntrinsics } from "../../shared/TargetCodeGen";
 import { InterfaceTypeDefinition, TypeDefinition } from "../../shared/TypeDefinition";
 import { TypeValue } from "../../shared/TypeValue";
-interface DependentXrpaTypes {
-    MemoryAccessor: TypeDefinition;
-    ObjectAccessorInterface: TypeDefinition;
-    TransportStreamAccessor: TypeDefinition;
-}
-export declare function registerXrpaTypes(types: DependentXrpaTypes): void;
+export declare function registerXrpaTypes(types: CoreXrpaTypes): void;
+export declare function getXrpaTypes(): CoreXrpaTypes;
 export declare const XRPA_NAMESPACE = "Xrpa";
 export declare const HEADER: string[];
 export declare const BUCK_HEADER: string[];
@@ -76,24 +72,34 @@ export declare function getDataStoreHeaderNamespace(apiname: string): string;
 export declare function getDataStoreClass(apiname: string, inNamespace: string, includes: IncludeAggregator | null): string;
 export declare function getTypesHeaderName(apiname: string): string;
 export declare function getTypesHeaderNamespace(apiname: string): string;
-export declare function makeObjectAccessor(classSpec: ClassSpec, isWriteAccessor: boolean, objectUuidType: string): void;
+export declare function makeObjectAccessor(params: {
+    classSpec: ClassSpec;
+    isWriteAccessor: boolean;
+    isMessageStruct: boolean;
+    objectUuidType: string;
+}): string;
 export declare function genClassDefinition(classSpec: ClassSpec): string[];
 export declare function genClassHeaderDefinition(classSpec: ClassSpec): string[];
 export declare function genClassSourceDefinition(classSpec: ClassSpec, includes: IncludeAggregator | null, forceInline?: boolean): string[];
 export declare function genReadValue(params: {
     accessor: string;
     accessorIsStruct: boolean;
-    accessorMaxBytes: number | null;
-    fieldOffset: string;
+    fieldOffsetVar: string;
     memAccessorVar: string;
 }): string;
 export declare function genWriteValue(params: {
     accessor: string;
     accessorIsStruct: boolean;
-    accessorMaxBytes: number | null;
-    fieldOffset: string;
+    fieldOffsetVar: string;
     memAccessorVar: string;
     value: string | TypeValue;
+}): string;
+export declare function genDynSizeOfValue(params: {
+    accessor: string;
+    accessorIsStruct: boolean;
+    value: string | TypeValue;
+    inNamespace: string;
+    includes: IncludeAggregator | null;
 }): string;
 export declare function genReadWriteValueFunctions(classSpec: ClassSpec, params: {
     localType: TypeDefinition;
@@ -137,11 +143,11 @@ export declare function genRuntimeGuid(params: {
 }): string;
 export declare function genDeref(ptrName: string, memberName: string): string;
 export declare function genDerefMethodCall(ptrName: string, methodName: string, params: string[]): string;
-export declare function genMethodBind(ptrName: string, methodName: string, params: string[], bindParamCount: number): string;
+export declare function genMethodBind(ptrName: string, methodName: string, params: Record<string, string[]>, ignoreParamCount: number): string;
 export declare function genNonNullCheck(ptrName: string): string;
 export declare function genCreateObject(type: string, params: string[]): string;
 export declare function genObjectPtrType(type: string): string;
 export declare function genConvertBoolToInt(value: TypeValue): string;
 export declare function genConvertIntToBool(value: TypeValue): string;
-export {};
+export declare function applyTemplateParams(typename: string, ...templateParams: string[]): string;
 

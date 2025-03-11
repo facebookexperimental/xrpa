@@ -17,7 +17,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.normalizeIdentifier = exports.genCommentLinesWithCommentMarker = exports.removeLastTrailingComma = exports.appendAligned = exports.lowerFirst = exports.upperFirst = exports.removeSuperfluousEmptyLines = exports.trimTrailingEmptyLines = exports.indentMatch = exports.indent = void 0;
+exports.normalizeIdentifier = exports.genCommentLinesWithCommentMarker = exports.removeLastTrailingComma = exports.appendAligned = exports.lowerFirst = exports.upperFirst = exports.deoverlapStringLines = exports.removeSuperfluousEmptyLines = exports.trimTrailingEmptyLines = exports.indentMatch = exports.indent = void 0;
 const ArrayUtils_1 = require("./ArrayUtils");
 function indent(count, lines) {
     const indentStr = " ".repeat(count * 2);
@@ -81,6 +81,30 @@ function removeSuperfluousEmptyLines(lines) {
     return linesOut;
 }
 exports.removeSuperfluousEmptyLines = removeSuperfluousEmptyLines;
+function deoverlapStringLines(str1, str2, maxCompareLines = 10) {
+    const str1Lines = str1.split("\n");
+    const str2Lines = str2.split("\n");
+    if (str1Lines[str1Lines.length - 1] === "") {
+        str1Lines.pop();
+    }
+    const maxOverlap = Math.min(str1Lines.length, str2Lines.length, maxCompareLines);
+    for (let overlapCount = 1; overlapCount <= maxOverlap; ++overlapCount) {
+        let overlap = true;
+        for (let i = 0; i < overlapCount; ++i) {
+            const line1 = str1Lines[str1Lines.length - overlapCount + i];
+            const line2 = str2Lines[i];
+            if (line1 !== line2) {
+                overlap = false;
+                break;
+            }
+        }
+        if (overlap) {
+            return str1Lines.slice(0, -overlapCount).concat(str2Lines).join("\n");
+        }
+    }
+    return str1 + str2;
+}
+exports.deoverlapStringLines = deoverlapStringLines;
 function upperFirst(str) {
     return str.slice(0, 1).toUpperCase() + str.slice(1);
 }

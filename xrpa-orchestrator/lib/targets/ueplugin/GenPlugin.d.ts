@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "@xrpa/xrpa-utils";
+import { FileWriter } from "@xrpa/xrpa-file-utils";
 export declare function genPlugin(fileWriter: FileWriter, pluginRoot: string, pluginName: string, pluginDeps?: Array<[string, string]>): {
     privateSrcDir: string;
     publicSrcDir: string;

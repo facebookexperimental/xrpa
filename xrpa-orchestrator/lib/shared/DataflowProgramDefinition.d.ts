@@ -18,7 +18,7 @@
 import { ModuleDefinition } from "./ModuleDefinition";
 import { StructSpec } from "./TypeDefinition";
 import { ProgramInterface, XrpaProgramParam } from "../ProgramInterface";
-export type XrpaFieldValue = number | string | boolean | undefined | XrpaProgramParam | XrpaDataflowGraphNode;
+export type XrpaFieldValue = number | string | boolean | undefined | XrpaProgramParam | XrpaDataflowGraphNode | XrpaDataflowConnection;
 export interface XrpaDataflowGraphNode {
     __isDataflowGraphNode: true;
 }
@@ -32,21 +32,23 @@ export interface XrpaDataflowForeignObjectInstantiation extends XrpaDataflowGrap
     isBuffered: boolean;
 }
 export declare function isDataflowForeignObjectInstantiation(obj: unknown): obj is XrpaDataflowForeignObjectInstantiation;
-export interface DataflowConnection {
+export interface XrpaDataflowConnection {
+    __isDataflowConnection: true;
     targetNode: XrpaDataflowGraphNode;
     targetPort: string;
 }
+export declare function isDataflowConnection(obj: unknown): obj is XrpaDataflowConnection;
 export interface DataflowProgramDefinition extends ProgramInterface {
     __isDataflowProgramDefinition: true;
-    paramConnections: Array<[string, DataflowConnection]>;
+    paramConnections: Array<[string, XrpaDataflowConnection]>;
     graphNodes: XrpaDataflowGraphNode[];
-    selfTerminateEvents: DataflowConnection[];
+    selfTerminateEvents: XrpaDataflowConnection[];
     programInterfaceNames: string[];
 }
 export declare function isDataflowProgramDefinition(obj: unknown): obj is DataflowProgramDefinition;
 export interface DataflowInput {
     parameter: XrpaProgramParam;
-    connections: DataflowConnection[];
+    connections: XrpaDataflowConnection[];
 }
 export declare function getDataflowInputs(dataflow: DataflowProgramDefinition): DataflowInput[];
 export declare function getDataflowInputStructSpec(inputs: DataflowInput[], moduleDef: ModuleDefinition): StructSpec;

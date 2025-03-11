@@ -46,7 +46,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PythonModuleDefinition = void 0;
 const assert_1 = __importDefault(require("assert"));
 const path_1 = __importDefault(require("path"));
-const xrpa_utils_1 = require("@xrpa/xrpa-utils");
+const xrpa_file_utils_1 = require("@xrpa/xrpa-file-utils");
 const BuiltinTypes_1 = require("../../shared/BuiltinTypes");
 const Helpers_1 = require("../../shared/Helpers");
 const ModuleDefinition_1 = require("../../shared/ModuleDefinition");
@@ -77,7 +77,7 @@ class PythonModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
         return ObjectUuid;
     }
     doCodeGen() {
-        const fileWriter = new xrpa_utils_1.FileWriter();
+        const fileWriter = new xrpa_file_utils_1.FileWriter();
         fileWriter.copyFolderContents((0, Helpers_1.getRuntimeSrcPath)("python"), this.runtimeDir, (srcRelPath, fileExt, fileData) => {
             if (srcRelPath.endsWith("BUCK")) {
                 return null;

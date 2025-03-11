@@ -236,6 +236,7 @@ function genSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderD
             ctx,
             includes,
             reconcilerDef,
+            fieldToMemberVar: fieldName => (0, SceneComponentShared_1.getFieldMemberName)(reconcilerDef, fieldName),
             canCreate: true,
         }),
         separateImplementation: true,

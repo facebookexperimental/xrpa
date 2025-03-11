@@ -25,7 +25,6 @@ export type TypeMap = Record<string, TypeSpec>;
 export interface ArrayTypeSpec {
     typename: string;
     headerFile?: string;
-    getSize: string;
     setSize: string | null;
     removeAll: string;
     addItem: string;
@@ -40,14 +39,18 @@ export declare enum TypeMetaType {
     INTERFACE = 6,
     COLLECTION = 7
 }
+export interface TypeSize {
+    staticSize: number;
+    dynamicSizeEstimate: number;
+}
 export interface TypeDefinition {
     getName(): string;
     getMetaType(): TypeMetaType;
-    getTypeSize(): number;
+    getTypeSize(): TypeSize;
+    getRuntimeByteCount(varName: string, inNamespace: string, includes: IncludeAggregator | null): [number, string | null];
     getHashData(): Record<string, unknown>;
     getInternalType(inNamespace: string, includes: IncludeAggregator | null): string;
     getInternalDefaultValue(inNamespace: string, includes: IncludeAggregator | null, isSetter?: boolean, defaultOverride?: UserDefaultValue | TypeValue): TypeValue;
-    getInternalMaxBytes(): number | null;
     getLocalType(inNamespace: string, includes: IncludeAggregator | null): string;
     getLocalHeaderFile(): string | undefined;
     userDefaultToTypeValue(inNamespace: string, includes: IncludeAggregator | null, userDefault: UserDefaultValue): TypeValue | undefined;
@@ -75,8 +78,7 @@ export interface StructTypeDefinition extends TypeDefinition {
     getFieldsOfType<T extends TypeDefinition>(typeFilter: (typeDef: TypeDefinition | undefined) => typeDef is T): Record<string, T>;
     getFieldBitMask(fieldName: string): number;
     getFieldIndex(fieldName: string): number;
-    getFieldSize(fieldName: string): number;
-    getFieldOffset(fieldName: string): number;
+    getStateField(fieldName: string): TypeDefinition;
     declareLocalFieldClassMember(classSpec: ClassSpec, fieldName: string, memberName: string, includeComments: boolean, decorations: string[], visibility?: ClassVisibility): void;
     resetLocalFieldVarToDefault(inNamespace: string, includes: IncludeAggregator | null, fieldName: string, varName: string, isSetter?: boolean): string[];
 }
@@ -89,9 +91,11 @@ export interface StructWithAccessorTypeDefinition extends StructTypeDefinition {
 export interface MessageDataTypeDefinition extends StructWithAccessorTypeDefinition {
     getMetaType(): TypeMetaType.MESSAGE_DATA;
     hasFields(): boolean;
+    getExpectedRatePerSecond(): number;
 }
 export interface SignalDataTypeDefinition extends TypeDefinition {
     getMetaType(): TypeMetaType.SIGNAL_DATA;
+    getExpectedBytesPerSecond(): number;
 }
 export interface CollectionNameAndType {
     collectionName: string;

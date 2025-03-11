@@ -15,6 +15,7 @@
  */
 
 
+import { XrpaDataflowConnection } from "@xrpa/xrpa-orchestrator";
 import { AcceptsStartEvent, FilterTypeEnum, FiresDoneEvent, FiresEvent, ISignalNodeType, NonSignalNumericValue, NumericValue, SignalCurveType, SignalFeedbackType, SignalOutputDeviceType } from "./SignalProcessingTypes";
 import { StringFilter } from "./StringFilter";
 export declare function OutputToDevice(params: {
@@ -96,6 +97,10 @@ export declare function AdsrEnvelope(params: {
     releaseTime?: NonSignalNumericValue;
     startEvent?: FiresEvent;
 }): SignalCurveType;
+export declare function SignalStream(params: {
+    numChannels: number;
+    signal: XrpaDataflowConnection;
+}): ISignalNodeType;
 export declare function AudioStream(filename: string, params?: {
     autoPlay?: boolean;
     numChannels?: number;

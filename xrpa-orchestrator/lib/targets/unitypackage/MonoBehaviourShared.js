@@ -143,11 +143,11 @@ function genWriteFieldProperty(classSpec, params) {
             ...(params.setterHooks?.[params.fieldName]?.preSet ?? []),
             `${(0, CsharpCodeGenImpl_1.privateMember)(params.memberName)} = value;`,
             ...(params.setterHooks?.[params.fieldName]?.postSet ?? []),
-            ...(params.needsSetDirty ? (0, GenWriteReconcilerDataStore_1.genFieldSetDirty)({ ...params, includes: classSpec.includes, typeDef }) : []),
+            ...(params.needsSetDirty ? (0, GenWriteReconcilerDataStore_1.genFieldSetDirty)({ ...params, includes: classSpec.includes, typeDef, fieldVar: params.memberName }) : []),
         ],
     });
     if (isSerialized && hasSetter && params.needsSetDirty) {
-        params.validateLines.push(...(0, GenWriteReconcilerDataStore_1.genFieldSetDirty)({ ...params, includes: classSpec.includes, typeDef }));
+        params.validateLines.push(...(0, GenWriteReconcilerDataStore_1.genFieldSetDirty)({ ...params, includes: classSpec.includes, typeDef, fieldVar: params.memberName }));
     }
     if (params.reconcilerDef.isIndexedField(params.fieldName)) {
         classSpec.methods.push({
@@ -363,7 +363,7 @@ function genPropertyOutboundUpdate(params) {
             return [
                 `if (${params.targetVar} != transform.${params.fieldBinding}) {`,
                 `  ${params.targetVar} = transform.${params.fieldBinding};`,
-                ...(0, xrpa_utils_1.indent)(1, (0, GenWriteReconcilerDataStore_1.genFieldSetDirty)({ ...params, typeDef: params.reconcilerDef.type })),
+                ...(0, xrpa_utils_1.indent)(1, (0, GenWriteReconcilerDataStore_1.genFieldSetDirty)({ ...params, typeDef: params.reconcilerDef.type, fieldVar: params.targetVar })),
                 `}`,
             ];
         case IntrinsicProperty.Parent: {

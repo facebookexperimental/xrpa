@@ -22,8 +22,9 @@ const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const StructWithAccessorType_1 = require("./StructWithAccessorType");
 const TypeDefinition_1 = require("./TypeDefinition");
 class MessageDataType extends StructWithAccessorType_1.StructWithAccessorType {
-    constructor(codegen, name, apiname, objectUuidType, fields) {
+    constructor(codegen, name, apiname, objectUuidType, fields, expectedRatePerSecond) {
         super(codegen, name, apiname, objectUuidType, undefined, fields);
+        this.expectedRatePerSecond = expectedRatePerSecond;
     }
     getMetaType() {
         return TypeDefinition_1.TypeMetaType.MESSAGE_DATA;
@@ -42,6 +43,9 @@ class MessageDataType extends StructWithAccessorType_1.StructWithAccessorType {
     }
     genLocalTypeDefinition(inNamespace, includes) {
         return this.hasFields() ? super.genLocalTypeDefinition(inNamespace, includes) : null;
+    }
+    getExpectedRatePerSecond() {
+        return this.expectedRatePerSecond;
     }
 }
 exports.MessageDataType = MessageDataType;

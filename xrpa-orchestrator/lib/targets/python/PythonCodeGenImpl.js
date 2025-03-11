@@ -20,16 +20,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genConvertIntToBool = exports.genConvertBoolToInt = exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genMethodBind = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genWriteValue = exports.genReadValue = exports.genClassDefinition = exports.makeObjectAccessor = exports.getTypesHeaderNamespace = exports.getTypesHeaderName = exports.getDataStoreClass = exports.getDataStoreHeaderNamespace = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.identifierName = exports.constRef = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.PythonIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.genGetCurrentClockTime = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.HEADER = exports.XRPA_NAMESPACE = exports.registerXrpaTypes = void 0;
+exports.genConvertBoolToInt = exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genMethodBind = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genDynSizeOfValue = exports.genWriteValue = exports.genReadValue = exports.genClassDefinition = exports.makeObjectAccessor = exports.getTypesHeaderNamespace = exports.getTypesHeaderName = exports.getDataStoreClass = exports.getDataStoreHeaderNamespace = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.identifierName = exports.constRef = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.PythonIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.genGetCurrentClockTime = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.HEADER = exports.XRPA_NAMESPACE = exports.getXrpaTypes = exports.registerXrpaTypes = void 0;
+exports.applyTemplateParams = exports.genConvertIntToBool = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const TypeValue_1 = require("../../shared/TypeValue");
+// NOTE: do not import anything from ./
 let gXrpaTypes = null;
 function registerXrpaTypes(types) {
     gXrpaTypes = types;
 }
 exports.registerXrpaTypes = registerXrpaTypes;
+function getXrpaTypes() {
+    (0, assert_1.default)(gXrpaTypes, "XrpaTypes not registered");
+    return gXrpaTypes;
+}
+exports.getXrpaTypes = getXrpaTypes;
 exports.XRPA_NAMESPACE = "xrpa_runtime";
 const COPYRIGHT_STRING = `# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
@@ -80,6 +87,7 @@ exports.PRIMITIVE_INTRINSICS = {
     float32: { typename: "float" },
     bool: { typename: "bool" },
     arrayFloat3: { typename: "float[]" },
+    bytearray: { typename: "bytearray" },
     TRUE: "True",
     FALSE: "False",
 };
@@ -101,7 +109,9 @@ class PythonIncludeAggregator {
     }
     addFile(params) {
         if (!params.namespace && params.typename) {
-            params.namespace = nsExtract(params.typename);
+            // strip off any template parameters
+            const typename = params.typename.split("[")[0];
+            params.namespace = nsExtract(typename);
         }
         if (params.namespace) {
             this.importNamespaces[params.namespace] = true;
@@ -163,8 +173,11 @@ function methodMember(methodName, visibility = "public") {
     return identifierName(methodName);
 }
 exports.methodMember = methodMember;
-function genInitializer(values) {
-    return `(${values.join(", ")})`;
+function genInitializer(typename, values) {
+    if (typename.startsWith("typing.List")) {
+        return `[${values.join(", ")}]`;
+    }
+    return `${typename}(${values.join(", ")})`;
 }
 function genPrimitiveValue(typename, value) {
     if (value === null) {
@@ -190,14 +203,14 @@ function genPrimitiveValue(typename, value) {
     if (typeof value === "number") {
         return `${value}`;
     }
-    return `${typename}${genInitializer([value])}`;
+    return genInitializer(typename, [value]);
 }
 exports.genPrimitiveValue = genPrimitiveValue;
 function convertFieldValue(kv) {
     return `${kv[1]}`;
 }
 function genMultiValue(typename, _hasInitializerConstructor, valueStrings) {
-    return `${typename}${genInitializer(valueStrings.map(convertFieldValue))}`;
+    return genInitializer(typename, valueStrings.map(convertFieldValue));
 }
 exports.genMultiValue = genMultiValue;
 function genDeclaration(params) {
@@ -249,22 +262,22 @@ function getTypesHeaderNamespace(apiname) {
     return apiname ? `xrpa.${identifierName(apiname)}_types` : "xrpa";
 }
 exports.getTypesHeaderNamespace = getTypesHeaderNamespace;
-function makeObjectAccessor(classSpec, isWriteAccessor, objectUuidType) {
-    (0, assert_1.default)(gXrpaTypes, "Expected Xrpa types to be registered");
+function makeObjectAccessor(params) {
+    const { classSpec, isWriteAccessor, isMessageStruct, objectUuidType, } = params;
     if (!classSpec.superClass) {
-        classSpec.superClass = gXrpaTypes.ObjectAccessorInterface.getLocalType(classSpec.namespace, classSpec.includes);
+        classSpec.superClass = getXrpaTypes().ObjectAccessorInterface.getLocalType(classSpec.namespace, classSpec.includes);
     }
     classSpec.constructors.push({
-        parameters: [{ name: "mem_accessor", type: gXrpaTypes.MemoryAccessor.getLocalType(classSpec.namespace, classSpec.includes) }],
+        parameters: [{ name: "mem_accessor", type: getXrpaTypes().MemoryAccessor.getLocalType(classSpec.namespace, classSpec.includes) }],
         superClassInitializers: ["mem_accessor"],
     });
-    if (isWriteAccessor) {
+    if (isWriteAccessor && !isMessageStruct) {
         classSpec.includes?.addFile({ namespace: "xrpa_runtime.reconciler.collection_change_types" });
         classSpec.methods.push({
             name: "create",
             parameters: [{
                     name: "accessor",
-                    type: gXrpaTypes.TransportStreamAccessor,
+                    type: getXrpaTypes().TransportStreamAccessor,
                 }, {
                     name: "collection_id",
                     type: exports.PRIMITIVE_INTRINSICS.int32.typename,
@@ -292,7 +305,7 @@ function makeObjectAccessor(classSpec, isWriteAccessor, objectUuidType) {
             name: "update",
             parameters: [{
                     name: "accessor",
-                    type: gXrpaTypes.TransportStreamAccessor,
+                    type: getXrpaTypes().TransportStreamAccessor,
                 }, {
                     name: "collection_id",
                     type: exports.PRIMITIVE_INTRINSICS.int32.typename,
@@ -317,6 +330,24 @@ function makeObjectAccessor(classSpec, isWriteAccessor, objectUuidType) {
             isStatic: true,
             visibility: "public",
         });
+    }
+    if (isWriteAccessor) {
+        classSpec.members.push({
+            name: "write_offset",
+            type: getXrpaTypes().MemoryOffset,
+            visibility: "private",
+            initialValue: new TypeValue_1.CodeLiteralValue(module.exports, `${getXrpaTypes().MemoryOffset.getLocalType(classSpec.namespace, classSpec.includes)}()`),
+        });
+        return "self." + privateMember("write_offset");
+    }
+    else {
+        classSpec.members.push({
+            name: "read_offset",
+            type: getXrpaTypes().MemoryOffset,
+            visibility: "private",
+            initialValue: new TypeValue_1.CodeLiteralValue(module.exports, `${getXrpaTypes().MemoryOffset.getLocalType(classSpec.namespace, classSpec.includes)}()`),
+        });
+        return "self." + privateMember("read_offset");
     }
 }
 exports.makeObjectAccessor = makeObjectAccessor;
@@ -488,64 +519,77 @@ function genClassDefinition(classSpec) {
 exports.genClassDefinition = genClassDefinition;
 function genReadValue(params) {
     if (params.accessorIsStruct) {
-        return `${params.accessor}.read_value(${params.memAccessorVar}, ${params.fieldOffset})`;
+        return `${params.accessor}.read_value(${params.memAccessorVar}, ${params.fieldOffsetVar})`;
     }
     else {
-        const maxBytes = params.accessorMaxBytes !== null ? `, ${params.accessorMaxBytes}` : "";
-        return `${params.memAccessorVar}.read_${identifierName(params.accessor)}(${params.fieldOffset}${maxBytes})`;
+        return `${params.memAccessorVar}.read_${identifierName(params.accessor)}(${params.fieldOffsetVar})`;
     }
 }
 exports.genReadValue = genReadValue;
 function genWriteValue(params) {
     if (params.accessorIsStruct) {
-        return `${params.accessor}.write_value(${params.value}, ${params.memAccessorVar}, ${params.fieldOffset})`;
+        return `${params.accessor}.write_value(${params.value}, ${params.memAccessorVar}, ${params.fieldOffsetVar})`;
     }
     else {
-        const maxBytes = params.accessorMaxBytes !== null ? `, ${params.accessorMaxBytes}` : "";
-        return `${params.memAccessorVar}.write_${identifierName(params.accessor)}(${params.value}, ${params.fieldOffset}${maxBytes})`;
+        return `${params.memAccessorVar}.write_${identifierName(params.accessor)}(${params.value}, ${params.fieldOffsetVar})`;
     }
 }
 exports.genWriteValue = genWriteValue;
+function genDynSizeOfValue(params) {
+    if (params.accessorIsStruct) {
+        return `${params.accessor}.dyn_size_of_value(${params.value})`;
+    }
+    else {
+        return `${getXrpaTypes().MemoryAccessor.getLocalType(params.inNamespace, params.includes)}.dyn_size_of_${identifierName(params.accessor)}(${params.value})`;
+    }
+}
+exports.genDynSizeOfValue = genDynSizeOfValue;
 function genReadWriteValueFunctions(classSpec, params) {
     const fieldReads = [];
     const fieldWrites = [];
+    const dynFieldSizes = [];
     for (const name in params.fieldTypes) {
         const field = params.fieldTypes[name];
         const readValue = genReadValue({
             accessor: field.accessor,
             accessorIsStruct: field.accessorIsStruct,
-            accessorMaxBytes: field.accessorMaxBytes,
-            fieldOffset: `offset + ${field.fieldOffset}`,
+            fieldOffsetVar: "offset",
             memAccessorVar: "mem_accessor",
         });
         const writeValue = genWriteValue({
             accessor: field.accessor,
             accessorIsStruct: field.accessorIsStruct,
-            accessorMaxBytes: field.accessorMaxBytes,
-            fieldOffset: `offset + ${field.fieldOffset}`,
+            fieldOffsetVar: "offset",
             memAccessorVar: "mem_accessor",
             value: params.fieldsFromLocal[name],
         });
         fieldReads.push(`${name} = ${readValue}`);
         fieldWrites.push(`${writeValue}`);
+        if (field.typeSize.dynamicSizeEstimate) {
+            dynFieldSizes.push(genDynSizeOfValue({
+                accessor: field.accessor,
+                accessorIsStruct: field.accessorIsStruct,
+                inNamespace: classSpec.namespace,
+                includes: classSpec.includes,
+                value: params.fieldsFromLocal[name],
+            }));
+        }
     }
     const fieldsToLocal = (0, xrpa_utils_1.arrayZip)(Object.keys(params.fieldsToLocal), Object.values(params.fieldsToLocal));
-    const localInitializer = genInitializer(fieldsToLocal.map(convertFieldValue));
     const localTypeStr = params.localType.getLocalType(classSpec.namespace, classSpec.includes);
-    let localReturn = `${localTypeStr}${localInitializer}`;
+    let localReturn = genInitializer(localTypeStr, fieldsToLocal.map(convertFieldValue));
     if (Object.keys(params.fieldsToLocal).length === 1 && localTypeStr === "float") {
         localReturn = `${params.fieldsToLocal[Object.keys(params.fieldsToLocal)[0]]}`;
     }
-    (0, assert_1.default)(gXrpaTypes, "Expected Xrpa types to be registered");
     classSpec.methods.push({
         name: "read_value",
         returnType: localTypeStr,
         parameters: [{
                 name: "mem_accessor",
-                type: gXrpaTypes.MemoryAccessor,
+                type: getXrpaTypes().MemoryAccessor,
             }, {
                 name: "offset",
-                type: "int",
+                type: getXrpaTypes().MemoryOffset,
             }],
         isStatic: true,
         body: [
@@ -560,14 +604,28 @@ function genReadWriteValueFunctions(classSpec, params) {
                 type: params.localType,
             }, {
                 name: "mem_accessor",
-                type: gXrpaTypes.MemoryAccessor,
+                type: getXrpaTypes().MemoryAccessor,
             }, {
                 name: "offset",
-                type: "int",
+                type: getXrpaTypes().MemoryOffset,
             }],
         isStatic: true,
         body: fieldWrites,
     });
+    if (dynFieldSizes.length > 0) {
+        classSpec.methods.push({
+            name: "dyn_size_of_value",
+            returnType: exports.PRIMITIVE_INTRINSICS.int32.typename,
+            parameters: [{
+                    name: params.localValueParamName,
+                    type: params.localType,
+                }],
+            isStatic: true,
+            body: [
+                `return ${dynFieldSizes.join(" + ")}`,
+            ],
+        });
+    }
 }
 exports.genReadWriteValueFunctions = genReadWriteValueFunctions;
 function genEnumDefinition(enumName, enumValues, includes) {
@@ -729,9 +787,9 @@ function genDerefMethodCall(ptrName, methodName, params) {
     return `${ptrName || "self"}.${methodCall}`;
 }
 exports.genDerefMethodCall = genDerefMethodCall;
-function genMethodBind(ptrName, methodName, params, bindParamCount) {
-    const bindParams = new Array(bindParamCount).fill("_");
-    const methodCall = `${methodMember(methodName)}(${params.join(", ")})`;
+function genMethodBind(ptrName, methodName, params, ignoreParamCount) {
+    const bindParams = new Array(ignoreParamCount).fill("_").concat(Object.keys(params).map(p => `${p}`));
+    const methodCall = `${methodMember(methodName)}(${(0, xrpa_utils_1.collapse)(Object.values(params)).join(", ")})`;
     if (!ptrName) {
         return `lambda ${bindParams.join(", ")}: ${methodCall}`;
     }
@@ -758,4 +816,11 @@ function genConvertIntToBool(value) {
     return `(${value} == 1)`;
 }
 exports.genConvertIntToBool = genConvertIntToBool;
+function applyTemplateParams(typename, ...templateParams) {
+    if (!templateParams.length) {
+        return typename;
+    }
+    return `${typename}[${templateParams.join(", ")}]`;
+}
+exports.applyTemplateParams = applyTemplateParams;
 //# sourceMappingURL=PythonCodeGenImpl.js.map

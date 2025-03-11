@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "@xrpa/xrpa-utils";
+import { FileWriter } from "@xrpa/xrpa-file-utils";
 import { CodeGen } from "../../shared/CodeGen";
 import { CppModuleDefinition } from "./CppModuleDefinition";
 export declare class CppStandalone implements CodeGen {

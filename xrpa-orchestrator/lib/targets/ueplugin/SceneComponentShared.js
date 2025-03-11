@@ -177,7 +177,7 @@ function genWriteFieldProperty(classSpec, params) {
                 ...(params.setterHooks?.[params.fieldName]?.preSet ?? []),
                 `${params.memberName} = value;`,
                 ...(params.setterHooks?.[params.fieldName]?.postSet ?? []),
-                ...(params.needsSetDirty ? (0, GenWriteReconcilerDataStore_1.genFieldSetDirty)({ ...params, includes, typeDef }) : []),
+                ...(params.needsSetDirty ? (0, GenWriteReconcilerDataStore_1.genFieldSetDirty)({ ...params, includes, typeDef, fieldVar: params.memberName }) : []),
             ],
             separateImplementation: params.separateImplementation,
         });
@@ -387,7 +387,7 @@ function genPropertyOutboundUpdate(params) {
             return [
                 `if (!${params.targetVar}.Equals(transform${params.fieldBinding}, SMALL_NUMBER)) {`,
                 `  ${params.targetVar} = transform${params.fieldBinding};`,
-                ...(0, xrpa_utils_1.indent)(1, (0, GenWriteReconcilerDataStore_1.genFieldSetDirty)({ ...params, typeDef: params.reconcilerDef.type })),
+                ...(0, xrpa_utils_1.indent)(1, (0, GenWriteReconcilerDataStore_1.genFieldSetDirty)({ ...params, typeDef: params.reconcilerDef.type, fieldVar: params.targetVar })),
                 `}`,
             ];
         case IntrinsicProperty.Parent: {

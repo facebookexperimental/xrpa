@@ -16,6 +16,7 @@
 
 
 import { CoordinateSystemDef, CoordTransformer } from "./CoordinateTransformer";
+import { PrimitiveType } from "./PrimitiveType";
 import { TargetCodeGenImpl } from "./TargetCodeGen";
 import { TypeDefinition, TypeMap } from "./TypeDefinition";
 export declare enum BuiltinType {
@@ -51,6 +52,10 @@ export interface SemanticConversionData {
     fromLocalTransform: CoordTransformer;
 }
 export declare function isBuiltinType(typeName: string): typeName is BuiltinType;
+/*****************************************************/
+export declare class ByteArrayType extends PrimitiveType {
+    constructor(codegen: TargetCodeGenImpl, dynamicSizeEstimate: number);
+}
 /*****************************************************/
 export declare function genPrimitiveTypes(codegen: TargetCodeGenImpl, typeMap: TypeMap): Record<string, TypeDefinition>;
 /*****************************************************/

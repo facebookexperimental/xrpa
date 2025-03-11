@@ -108,15 +108,21 @@ class BaseReconcilerDefinition {
         }
         return bitMask;
     }
-    getOutboundChangeByteCount() {
-        let byteCount = 0;
+    getOutboundChangeByteCount(params) {
+        const dynFieldSizes = [];
+        let staticSize = 0;
         const fields = this.type.getStateFields();
         for (const fieldName in fields) {
             if (this.isOutboundField(fieldName)) {
-                byteCount += fields[fieldName].type.getTypeSize();
+                const byteCount = fields[fieldName].type.getRuntimeByteCount(params.fieldToMemberVar(fieldName), params.inNamespace, params.includes);
+                staticSize += byteCount[0];
+                if (byteCount[1] !== null) {
+                    dynFieldSizes.push(byteCount[1]);
+                }
             }
         }
-        return byteCount;
+        dynFieldSizes.push(staticSize.toString());
+        return dynFieldSizes.join(" + ");
     }
     getIndexedBitMask() {
         const hasIndexedBinding = this.hasIndexedBinding();

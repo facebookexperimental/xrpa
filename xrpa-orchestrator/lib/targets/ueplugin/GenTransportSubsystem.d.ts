@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "@xrpa/xrpa-utils";
+import { FileWriter } from "@xrpa/xrpa-file-utils";
 import { DataStoreDefinition } from "../../shared/DataStore";
 export declare function getTransportSubsystemName(storeDef: DataStoreDefinition): string;
 export declare function genTransportSubsystem(fileWriter: FileWriter, outSrcDir: string, storeDef: DataStoreDefinition, pluginName: string): void;

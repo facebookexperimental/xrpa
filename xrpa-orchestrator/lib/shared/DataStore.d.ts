@@ -16,6 +16,7 @@
 
 
 import { DataModelDefinition } from "./DataModel";
+import { IncludeAggregator } from "./Helpers";
 import { ModuleDefinition } from "./ModuleDefinition";
 import { TypeSpec } from "./TargetCodeGen";
 import { CollectionTypeDefinition, FieldTypeSpec, TypeMap } from "./TypeDefinition";
@@ -55,7 +56,11 @@ declare class BaseReconcilerDefinition {
     isSerializedField(fieldName: string): boolean;
     getInboundChangeBits(): number;
     getOutboundChangeBits(): number;
-    getOutboundChangeByteCount(): number;
+    getOutboundChangeByteCount(params: {
+        inNamespace: string;
+        includes: IncludeAggregator | null;
+        fieldToMemberVar: (fieldName: string) => string;
+    }): string;
     getIndexedBitMask(): number;
     hasIndexedBinding(): boolean;
 }

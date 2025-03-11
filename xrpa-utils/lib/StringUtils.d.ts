@@ -19,6 +19,7 @@ export declare function indent(count: number, lines: string | string[] | string[
 export declare function indentMatch(str1: string, str2: string): boolean;
 export declare function trimTrailingEmptyLines(lines: string[]): string[];
 export declare function removeSuperfluousEmptyLines(lines: string[]): string[];
+export declare function deoverlapStringLines(str1: string, str2: string, maxCompareLines?: number): string;
 export declare function upperFirst(str: string): string;
 export declare function lowerFirst(str: string): string;
 export declare function appendAligned(str: string, suffix: string, alignment: number): string;
