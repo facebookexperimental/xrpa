@@ -43,9 +43,9 @@ namespace Xrpa
     public interface IDataStoreObjectAccessor<ObjectAccessorType> : IDataStoreObject where ObjectAccessorType : ObjectAccessorInterface, new()
     {
         void WriteDSChanges(TransportStreamAccessor accessor);
-        void ProcessDSMessage(int messageType, int timestamp, MemoryAccessor msgAccessor);
+        void ProcessDSMessage(int messageType, ulong timestamp, MemoryAccessor msgAccessor);
         void ProcessDSUpdate(ObjectAccessorType remoteValue, ulong fieldsChanged);
-        void ProcessDSDelete() { }
+        void HandleXrpaDelete() { }
         ulong PrepDSFullUpdate() { return 0; }
         void TickXrpa() { }
     }
@@ -55,6 +55,7 @@ namespace Xrpa
         protected IObjectCollection _collection;
         protected bool _hasNotifiedNeedsWrite = false;
         private ObjectUuid _id;
+        private object _owner;
 
         public DataStoreObject(ObjectUuid id, IObjectCollection collection)
         {
@@ -93,6 +94,16 @@ namespace Xrpa
                 _collection.NotifyObjectNeedsWrite(_id);
                 _hasNotifiedNeedsWrite = true;
             }
+        }
+
+        public void SetXrpaOwner(object owner)
+        {
+            _owner = owner;
+        }
+
+        public T GetXrpaOwner<T>() where T : class
+        {
+            return _owner as T;
         }
     }
 
@@ -144,7 +155,7 @@ namespace Xrpa
         public abstract void ProcessMessage(
             ObjectUuid id,
             int messageType,
-            int timestamp,
+            ulong timestamp,
             MemoryAccessor msgAccessor);
 
         public abstract void ProcessUpsert(ObjectUuid id, MemoryAccessor memAccessor);

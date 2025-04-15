@@ -40,7 +40,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genIndexedBindingCalls = exports.genObjectCollectionClasses = exports.genInboundReconciledTypes = exports.genProcessUpdateFunctionBodyForConcreteReconciledType = void 0;
+exports.genIndexedBindingCalls = exports.genObjectCollectionClasses = exports.genInboundReconciledTypes = exports.genProcessUpdateFunctionBody = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const ClassSpec_1 = require("../../shared/ClassSpec");
 const DataStore_1 = require("../../shared/DataStore");
@@ -52,7 +52,7 @@ const PythonDatasetLibraryTypes_1 = require("./PythonDatasetLibraryTypes");
 const GenDataStore_1 = require("./GenDataStore");
 const GenMessageAccessors_1 = require("./GenMessageAccessors");
 const GenWriteReconcilerDataStore_1 = require("./GenWriteReconcilerDataStore");
-function genProcessUpdateFunctionBodyForConcreteReconciledType(ctx, includes, typeDef, reconcilerDef) {
+function genProcessUpdateFunctionBody(ctx, includes, typeDef, reconcilerDef) {
     const lines = [];
     const typeFields = typeDef.getStateFields();
     for (const fieldName in typeFields) {
@@ -64,9 +64,10 @@ function genProcessUpdateFunctionBodyForConcreteReconciledType(ctx, includes, ty
         const funcName = (0, GenDataStoreShared_1.fieldGetterFuncName)(PythonCodeGenImpl, typeFields, fieldName);
         lines.push(`if value.${checkName}(fields_changed):`, `  ${(0, GenWriteReconcilerDataStore_1.defaultFieldToMemberVar)(fieldName)} = value.${funcName}()`);
     }
+    lines.push(`self.handle_xrpa_fields_changed(fields_changed)`);
     return lines;
 }
-exports.genProcessUpdateFunctionBodyForConcreteReconciledType = genProcessUpdateFunctionBodyForConcreteReconciledType;
+exports.genProcessUpdateFunctionBody = genProcessUpdateFunctionBody;
 function genInboundReconciledTypes(ctx, includesIn) {
     const ret = [];
     const headerFile = (0, PythonCodeGenImpl_1.getDataStoreHeaderName)(ctx.storeDef.apiname);
@@ -79,11 +80,11 @@ function genInboundReconciledTypes(ctx, includesIn) {
         const classSpec = new ClassSpec_1.ClassSpec({
             name: typeDef.getLocalType(ctx.namespace, null),
             superClass: PythonDatasetLibraryTypes_1.DataStoreObject.getLocalType(ctx.namespace, includesIn),
-            interfaceName: typeDef.interfaceType ? typeDef.interfaceType.getLocalType(ctx.namespace, includesIn) : `${PythonDatasetLibraryTypes_1.IDataStoreObjectAccessor.getLocalType(ctx.namespace, includesIn)}<${readAccessor}>`,
-            forceAbstract: !reconcilerDef.shouldGenerateConcreteReconciledType(),
+            interfaceName: typeDef.interfaceType ? typeDef.interfaceType.getLocalType(ctx.namespace, includesIn) : `${PythonDatasetLibraryTypes_1.IDataStoreObjectAccessor.getLocalType(ctx.namespace, includesIn)}[${readAccessor}]`,
             namespace: ctx.namespace,
             includes: includesIn,
         });
+        (0, GenWriteReconcilerDataStore_1.genChangeHandlerMethods)(classSpec, true);
         classSpec.constructors.push({
             parameters: [{
                     name: "id",
@@ -101,7 +102,6 @@ function genInboundReconciledTypes(ctx, includesIn) {
             fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar,
             fieldAccessorNameOverrides: {},
             directionality: "outbound",
-            proxyObj: null,
         });
         (0, GenDataStoreShared_1.genFieldProperties)(classSpec, {
             codegen: PythonCodeGenImpl,
@@ -109,89 +109,66 @@ function genInboundReconciledTypes(ctx, includesIn) {
             fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar,
             canCreate: false,
             canChange: true,
-            canSetDirty: reconcilerDef.shouldGenerateConcreteReconciledType(),
+            canSetDirty: true,
             directionality: "outbound",
             visibility: "private",
         });
-        if (reconcilerDef.shouldGenerateConcreteReconciledType()) {
-            classSpec.methods.push({
-                name: "process_ds_update",
-                parameters: [{
-                        name: "value",
-                        type: readAccessor,
-                    }, {
-                        name: "fields_changed",
-                        type: PythonCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
-                    }],
-                body: includes => genProcessUpdateFunctionBodyForConcreteReconciledType(ctx, includes, typeDef, reconcilerDef),
-                isVirtual: true,
-                isFinal: true,
-            });
-            classSpec.methods.push({
-                name: "create",
-                returnType: classSpec.name,
-                parameters: [{
-                        name: "id",
-                        type: ctx.moduleDef.ObjectUuid,
-                    }, {
-                        name: "obj",
-                        type: readAccessor,
-                    }, {
-                        name: "collection",
-                        type: PythonDatasetLibraryTypes_1.IObjectCollection,
-                    }],
-                body: [
-                    `return ${classSpec.name}(id, collection)`,
-                ],
-                isStatic: true,
-            });
-            (0, GenWriteReconcilerDataStore_1.genWriteFieldAccessors)(classSpec, {
-                ctx,
-                reconcilerDef,
-                fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar,
-                fieldAccessorNameOverrides: {},
-                gettersOnly: true,
-                directionality: "inbound",
-                proxyObj: null,
-            });
-            (0, GenDataStoreShared_1.genFieldProperties)(classSpec, {
-                codegen: PythonCodeGenImpl,
-                reconcilerDef,
-                fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar,
-                canCreate: false,
-                canChange: false,
-                directionality: "inbound",
-                visibility: "private",
-            });
-            const fields = typeDef.getStateFields();
-            for (const name in fields) {
-                (0, PythonCodeGenImpl_1.genFieldChangedCheck)(classSpec, { parentType: typeDef, fieldName: name });
-            }
-        }
-        else {
-            classSpec.methods.push({
-                name: "process_ds_update",
-                parameters: [{
-                        name: "value",
-                        type: readAccessor,
-                    }, {
-                        name: "fields_changed",
-                        type: PythonCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
-                    }],
-                body: [],
-                isAbstract: true,
-            });
-        }
         classSpec.methods.push({
-            name: "process_ds_delete",
-            body: [],
+            name: "process_ds_update",
+            parameters: [{
+                    name: "value",
+                    type: readAccessor,
+                }, {
+                    name: "fields_changed",
+                    type: PythonCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
+                }],
+            body: includes => genProcessUpdateFunctionBody(ctx, includes, typeDef, reconcilerDef),
             isVirtual: true,
+            isFinal: true,
         });
+        classSpec.methods.push({
+            name: "create",
+            returnType: classSpec.name,
+            parameters: [{
+                    name: "id",
+                    type: ctx.moduleDef.ObjectUuid,
+                }, {
+                    name: "obj",
+                    type: readAccessor,
+                }, {
+                    name: "collection",
+                    type: PythonDatasetLibraryTypes_1.IObjectCollection,
+                }],
+            body: [
+                `return ${classSpec.name}(id, collection)`,
+            ],
+            isStatic: true,
+        });
+        (0, GenWriteReconcilerDataStore_1.genWriteFieldAccessors)(classSpec, {
+            ctx,
+            reconcilerDef,
+            fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar,
+            fieldAccessorNameOverrides: {},
+            gettersOnly: true,
+            directionality: "inbound",
+        });
+        (0, GenDataStoreShared_1.genFieldProperties)(classSpec, {
+            codegen: PythonCodeGenImpl,
+            reconcilerDef,
+            fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar,
+            canCreate: false,
+            canChange: false,
+            directionality: "inbound",
+            visibility: "private",
+        });
+        const fields = typeDef.getStateFields();
+        for (const name in fields) {
+            (0, PythonCodeGenImpl_1.genFieldChangedCheck)(classSpec, { parentType: typeDef, fieldName: name });
+        }
         (0, GenMessageAccessors_1.genMessageFieldAccessors)(classSpec, {
             ctx,
             reconcilerDef,
             genMsgHandler: GenDataStore_1.genMsgHandler,
-            proxyObj: null,
         });
         (0, GenMessageAccessors_1.genMessageChannelDispatch)(classSpec, {
             ctx,
@@ -211,7 +188,6 @@ function genInboundReconciledTypes(ctx, includesIn) {
                 reconcilerDef,
                 fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar,
                 canCreate: false,
-                proxyObj: null,
             }),
             isVirtual: true,
         });
@@ -250,22 +226,17 @@ function genObjectCollectionClasses(ctx, includesIn) {
         const constructorBody = [];
         // inbound (remotely created) objects are created by the reconciler, so we need to give it a delegate functions
         if (reconcilerDef instanceof DataStore_1.InputReconcilerDefinition) {
-            if (reconcilerDef.shouldGenerateConcreteReconciledType()) {
-                const reconciledTypeName = typeDef.getLocalType(ctx.namespace, null);
-                constructorBody.push(`self._set_create_delegate_internal(${reconciledTypeName}.create)`);
-            }
-            else {
-                // the class we generate is not concrete, so the user needs to set the delegate
-                classSpec.methods.push({
-                    name: "set_create_delegate",
-                    parameters: [{
-                            name: "create_delegate",
-                            type: `typing.Callable[[ObjectUuid, ${readAccessor}, IObjectCollection], ${localPtr}]`,
-                        }],
-                    body: ["self._set_create_delegate_internal(create_delegate)"],
-                });
-                includesIn.addFile({ namespace: "typing" });
-            }
+            const reconciledTypeName = typeDef.getLocalType(ctx.namespace, null);
+            constructorBody.push(`self._set_create_delegate_internal(${reconciledTypeName}.create)`);
+            classSpec.methods.push({
+                name: "set_create_delegate",
+                parameters: [{
+                        name: "create_delegate",
+                        type: `typing.Callable[[${ctx.moduleDef.ObjectUuid.getLocalType(ctx.namespace, includesIn)}, ${readAccessor}, ${PythonDatasetLibraryTypes_1.IObjectCollection.getLocalType(ctx.namespace, includesIn)}], ${localPtr}]`,
+                    }],
+                body: ["self._set_create_delegate_internal(create_delegate)"],
+            });
+            includesIn.addFile({ namespace: "typing" });
         }
         else {
             // expose addObject and removeObject to the user
@@ -320,9 +291,6 @@ function genIndexedBindingCalls(ctx, reconcilerDef, dataStorePtr, boundObjPtr, g
 }
 exports.genIndexedBindingCalls = genIndexedBindingCalls;
 function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
-    const bindingTickLines = [];
-    const bindingWriteChangesLines = [];
-    const bindingProcessMessageLines = [];
     const indexNotifyCreateLines = [];
     const indexNotifyUpdateLines = [];
     const indexNotifyDeleteLines = [];
@@ -344,7 +312,7 @@ function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
                 name: memberName,
                 type: memberType,
                 visibility: "private",
-                initialValue: new TypeValue_1.CodeLiteralValue(PythonCodeGenImpl, `${memberType}(${reconcilerDef.getInboundChangeBits()})`),
+                initialValue: new TypeValue_1.CodeLiteralValue(PythonCodeGenImpl, `${memberType}()`),
             });
             classSpec.methods.push({
                 name: `Add${(0, xrpa_utils_1.upperFirst)(indexConfig.indexFieldName)}Binding`,
@@ -372,13 +340,9 @@ function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
                     `${memberName}.remove_local_object(index_value, local_obj)`,
                 ],
             });
-            bindingTickLines.push(`${memberName}.tick()`);
-            bindingWriteChangesLines.push(`${memberName}.write_changes(id)`);
-            bindingProcessMessageLines.push(`${memberName}.process_message(id, message_type, timestamp, msg_accessor)`);
-            indexNotifyUpdateLines.push(`${memberName}.process_update(obj.get_xrpa_id(), fields_changed)`);
         }
         else {
-            const memberType = `${PythonDatasetLibraryTypes_1.ObjectCollectionIndex.getLocalType(ctx.namespace, classSpec.includes)}<${readAccessor}, ${localPtr}, ${indexFieldTypeName}>`;
+            const memberType = `${PythonDatasetLibraryTypes_1.ObjectCollectionIndex.getLocalType(ctx.namespace, classSpec.includes)}[${readAccessor}, ${localPtr}, ${indexFieldTypeName}]`;
             classSpec.members.push({
                 name: memberName,
                 type: memberType,
@@ -386,47 +350,6 @@ function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
                 initialValue: new TypeValue_1.CodeLiteralValue(PythonCodeGenImpl, `${memberType}()`),
             });
         }
-    }
-    if (bindingTickLines.length > 0) {
-        classSpec.methods.push({
-            name: "binding_tick",
-            body: bindingTickLines,
-            isOverride: true,
-            visibility: "protected",
-        });
-    }
-    if (bindingWriteChangesLines.length > 0) {
-        classSpec.methods.push({
-            name: "binding_write_changes",
-            parameters: [{
-                    name: "id",
-                    type: ctx.moduleDef.ObjectUuid,
-                }],
-            body: bindingWriteChangesLines,
-            isOverride: true,
-            visibility: "protected",
-        });
-    }
-    if (bindingProcessMessageLines.length > 0) {
-        classSpec.methods.push({
-            name: "binding_process_message",
-            parameters: [{
-                    name: "id",
-                    type: ctx.moduleDef.ObjectUuid,
-                }, {
-                    name: "message_type",
-                    type: PythonCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
-                }, {
-                    name: "timestamp",
-                    type: PythonCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
-                }, {
-                    name: "msg_accessor",
-                    type: PythonDatasetLibraryTypes_1.MemoryAccessor,
-                }],
-            body: bindingProcessMessageLines,
-            isOverride: true,
-            visibility: "protected",
-        });
     }
     if (indexNotifyCreateLines.length > 0) {
         classSpec.methods.push({

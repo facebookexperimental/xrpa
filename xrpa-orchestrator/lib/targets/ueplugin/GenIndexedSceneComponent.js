@@ -26,7 +26,6 @@ const assert_1 = __importDefault(require("assert"));
 const ClassSpec_1 = require("../../shared/ClassSpec");
 const CppCodeGenImpl_1 = require("../cpp/CppCodeGenImpl");
 const GenDataStore_1 = require("../cpp/GenDataStore");
-const GenWriteReconcilerDataStore_1 = require("../cpp/GenWriteReconcilerDataStore");
 const GenDataStoreSubsystem_1 = require("./GenDataStoreSubsystem");
 const SceneComponentShared_1 = require("./SceneComponentShared");
 const GenReadReconcilerDataStore_1 = require("../cpp/GenReadReconcilerDataStore");
@@ -39,7 +38,6 @@ function genComponentInit(ctx, includes, reconcilerDef) {
         `  return;`,
         `}`,
         `dsIsInitialized_ = true;`,
-        `changeBits_ = ${reconcilerDef.getOutboundChangeBits()};`,
         ``,
         ...(0, SceneComponentShared_1.genFieldInitializers)(ctx, includes, reconcilerDef),
         ``,
@@ -97,7 +95,6 @@ function genIndexedSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, out
     ]);
     const reconciledType = reconcilerDef.type.getLocalType(ctx.namespace, cppIncludes);
     const reconciledTypePtr = reconcilerDef.type.getLocalTypePtr(ctx.namespace, cppIncludes);
-    const outboundChangeBits = reconcilerDef.getOutboundChangeBits();
     const setterHooks = getFieldSetterHooks(ctx, reconcilerDef);
     const forwardDeclarations = [
         (0, CppCodeGenImpl_1.forwardDeclareClass)(reconciledType),
@@ -138,6 +135,28 @@ function genIndexedSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, out
         decorations: [`UPROPERTY(BlueprintAssignable, Category = "${reconcilerDef.type.getName()}")`],
     });
     classSpec.methods.push({
+        name: "handleXrpaFieldsChanged",
+        parameters: [{
+                name: "fieldsChanged",
+                type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
+            }],
+        body: includes => (0, SceneComponentShared_1.genProcessUpdateBody)({ ctx, includes, reconcilerDef, proxyObj: PROXY_OBJ }),
+        separateImplementation: true,
+    });
+    const initializerLines = [
+        ...(0, SceneComponentShared_1.genFieldSetterCalls)({ ctx, reconcilerDef, proxyObj: PROXY_OBJ }),
+        `${PROXY_OBJ}->onXrpaFieldsChanged(${(0, CppCodeGenImpl_1.genPassthroughMethodBind)("handleXrpaFieldsChanged", 1)});`,
+        `handleXrpaFieldsChanged(${reconcilerDef.getInboundChangeBits()});`,
+    ];
+    (0, SceneComponentShared_1.genUEMessageFieldAccessors)(classSpec, {
+        ctx,
+        reconcilerDef,
+        genMsgHandler: GenDataStore_1.genMsgHandler,
+        proxyObj: PROXY_OBJ,
+        initializerLines,
+        forwardDeclarations,
+    });
+    classSpec.methods.push({
         name: "addXrpaBinding",
         parameters: [{
                 name: "reconciledObj",
@@ -149,10 +168,7 @@ function genIndexedSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, out
             `  return false;`,
             `}`,
             `${PROXY_OBJ} = reconciledObj;`,
-            ...((outboundChangeBits !== 0 ? [
-                `changeBits_ = ${outboundChangeBits};`,
-                `${PROXY_OBJ}->notifyNeedsWrite();`,
-            ] : [])),
+            ...initializerLines,
             `OnXrpaBindingGained.Broadcast(0);`,
             `return true;`,
         ],
@@ -166,41 +182,13 @@ function genIndexedSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, out
             }],
         body: [
             `if (${PROXY_OBJ} == reconciledObj) {`,
+            `  ${PROXY_OBJ}->onXrpaFieldsChanged(nullptr);`,
             `  ${PROXY_OBJ} = nullptr;`,
             `  OnXrpaBindingLost.Broadcast(0);`,
             `}`,
         ],
         separateImplementation: true,
     });
-    classSpec.methods.push({
-        name: "writeDSChanges",
-        body: includes => (0, GenWriteReconcilerDataStore_1.genWriteFunctionBody)({
-            ctx,
-            includes,
-            reconcilerDef,
-            fieldToMemberVar: fieldName => (0, SceneComponentShared_1.getFieldMemberName)(reconcilerDef, fieldName),
-            canCreate: false,
-            proxyObj: PROXY_OBJ,
-        }),
-        separateImplementation: true,
-    });
-    classSpec.methods.push({
-        name: "processDSUpdate",
-        parameters: [{
-                name: "fieldsChanged",
-                type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
-            }],
-        body: includes => (0, SceneComponentShared_1.genProcessUpdateBody)({ ctx, includes, reconcilerDef, proxyObj: PROXY_OBJ }),
-        isVirtual: true,
-        separateImplementation: true,
-    });
-    (0, SceneComponentShared_1.genUEMessageFieldAccessors)(classSpec, {
-        ctx,
-        reconcilerDef,
-        genMsgHandler: GenDataStore_1.genMsgHandler,
-        proxyObj: PROXY_OBJ,
-    });
-    (0, SceneComponentShared_1.genUEMessageChannelDispatch)(classSpec, { ctx, reconcilerDef });
     classSpec.methods.push({
         name: "initializeDS",
         body: includes => genComponentInit(ctx, includes, reconcilerDef),
@@ -276,12 +264,6 @@ function genIndexedSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, out
     classSpec.members.push({
         name: PROXY_OBJ,
         type: reconciledTypePtr,
-        visibility: "protected",
-    });
-    classSpec.members.push({
-        name: "changeBits",
-        type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
-        initialValue: "0",
         visibility: "protected",
     });
     classSpec.members.push({

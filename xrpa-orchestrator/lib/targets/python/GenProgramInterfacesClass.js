@@ -94,12 +94,15 @@ function genProgramInterfacesClass(fileWriter, libDir, moduleDef) {
     fileWriter.writeFile(path_1.default.join(libDir, filename), lines);
 }
 exports.genProgramInterfacesClass = genProgramInterfacesClass;
-function genApplicationInterfaceClass(fileWriter, libDir, moduleDef) {
+function genApplicationInterfaceClass(fileWriter, libDir, moduleDef, backgroundTick) {
     const namespace = "";
     const className = `${moduleDef.name}ApplicationInterface`;
     const filename = `${(0, PythonCodeGenImpl_1.identifierName)(moduleDef.name)}_application_interface.py`;
     const programInterfacesNamespace = `xrpa.${(0, PythonCodeGenImpl_1.identifierName)(moduleDef.name)}_program_interfaces`;
-    const includes = new PythonCodeGenImpl_1.PythonIncludeAggregator([programInterfacesNamespace, "threading"]);
+    const includes = new PythonCodeGenImpl_1.PythonIncludeAggregator([programInterfacesNamespace]);
+    if (backgroundTick) {
+        includes.addFile({ namespace: "threading" });
+    }
     const classSpec = new ClassSpec_1.ClassSpec({
         name: className,
         namespace: namespace,
@@ -114,19 +117,21 @@ function genApplicationInterfaceClass(fileWriter, libDir, moduleDef) {
     }
     classSpec.constructors.push({
         superClassInitializers: transportInitializers,
-        body: [
+        body: backgroundTick ? [
             "self._thread = threading.Thread(target=self._background_tick_thread)",
             "self._thread.start()",
-        ],
+        ] : [],
     });
-    classSpec.methods.push({
-        name: "shutdown",
-        body: [
-            "self.stop()",
-            "self._thread.join()",
-        ],
-        visibility: "public",
-    });
+    if (backgroundTick) {
+        classSpec.methods.push({
+            name: "shutdown",
+            body: [
+                "self.stop()",
+                "self._thread.join()",
+            ],
+            visibility: "public",
+        });
+    }
     const lines = [
         ...PythonCodeGenImpl_1.HEADER,
         ``,

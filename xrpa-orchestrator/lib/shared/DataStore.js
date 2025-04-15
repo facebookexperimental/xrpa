@@ -22,7 +22,8 @@ const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const DataModel_1 = require("./DataModel");
 const TypeDefinition_1 = require("./TypeDefinition");
 class BaseReconcilerDefinition {
-    constructor(type, inboundFields, outboundFields, fieldAccessorNameOverrides, componentProps, indexConfigs) {
+    constructor(storeDef, type, inboundFields, outboundFields, fieldAccessorNameOverrides, componentProps, indexConfigs) {
+        this.storeDef = storeDef;
         this.type = type;
         this.inboundFields = inboundFields;
         this.outboundFields = outboundFields;
@@ -141,24 +142,16 @@ class BaseReconcilerDefinition {
     }
 }
 class InputReconcilerDefinition extends BaseReconcilerDefinition {
-    constructor(type, outboundFields, fieldAccessorNameOverrides, componentProps, useGenericReconciledType = false, indexConfigs) {
-        super(type, null, outboundFields, fieldAccessorNameOverrides, componentProps, indexConfigs);
-        this.useGenericReconciledType = useGenericReconciledType;
+    constructor(storeDef, type, outboundFields, fieldAccessorNameOverrides, componentProps, indexConfigs) {
+        super(storeDef, type, null, outboundFields, fieldAccessorNameOverrides, componentProps, indexConfigs);
         this.inboundFields = null;
-    }
-    shouldGenerateConcreteReconciledType() {
-        return this.useGenericReconciledType || this.hasIndexedBinding();
     }
 }
 exports.InputReconcilerDefinition = InputReconcilerDefinition;
 class OutputReconcilerDefinition extends BaseReconcilerDefinition {
-    constructor(type, inboundFields, fieldAccessorNameOverrides, componentProps, useGenericReconciledType = false, indexConfigs) {
-        super(type, inboundFields, null, fieldAccessorNameOverrides, componentProps, indexConfigs);
-        this.useGenericReconciledType = useGenericReconciledType;
+    constructor(storeDef, type, inboundFields, fieldAccessorNameOverrides, componentProps, indexConfigs) {
+        super(storeDef, type, inboundFields, null, fieldAccessorNameOverrides, componentProps, indexConfigs);
         this.outboundFields = null;
-    }
-    shouldGenerateConcreteReconciledType() {
-        return this.useGenericReconciledType;
     }
 }
 exports.OutputReconcilerDefinition = OutputReconcilerDefinition;
@@ -181,8 +174,8 @@ class DataStoreDefinition {
         if (!(0, TypeDefinition_1.typeIsCollection)(type)) {
             throw new Error(`Type ${params.type} is not a collection`);
         }
-        const inputDef = new InputReconcilerDefinition(type, params.outboundFields ?? [], params.fieldAccessorNameOverrides ?? {}, params.componentProps ?? {}, params.useGenericReconciledType ?? false, params.indexes ?? []);
-        this.moduleDef.setCollectionAsInbound(type, inputDef.componentProps, params.reconciledTo, inputDef.indexConfigs);
+        const inputDef = new InputReconcilerDefinition(this, type, params.outboundFields ?? [], params.fieldAccessorNameOverrides ?? {}, params.componentProps ?? {}, params.indexes ?? []);
+        this.moduleDef.setCollectionAsInbound(type, inputDef.componentProps, inputDef.indexConfigs);
         this.inputs.push(inputDef);
         return inputDef;
     }
@@ -197,7 +190,7 @@ class DataStoreDefinition {
         if (!(0, TypeDefinition_1.typeIsCollection)(type)) {
             throw new Error(`Type ${params.type} is not a collection`);
         }
-        const outputDef = new OutputReconcilerDefinition(type, params.inboundFields ?? [], params.fieldAccessorNameOverrides ?? {}, params.componentProps ?? {}, params.useGenericReconciledType ?? false, params.indexes ?? []);
+        const outputDef = new OutputReconcilerDefinition(this, type, params.inboundFields ?? [], params.fieldAccessorNameOverrides ?? {}, params.componentProps ?? {}, params.indexes ?? []);
         this.moduleDef.setCollectionAsOutbound(type, outputDef.componentProps);
         this.outputs.push(outputDef);
         return outputDef;

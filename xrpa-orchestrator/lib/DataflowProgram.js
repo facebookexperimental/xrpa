@@ -23,6 +23,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.XrpaDataflowProgram = exports.SelfTerminateOn = exports.ObjectField = exports.ObjectReference = exports.Instantiate = exports.getDataflowProgramContext = exports.isDataflowProgramContext = exports.isDataflowGraphNode = exports.isDataflowForeignObjectInstantiation = exports.isDataflowConnection = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
+const InterfaceTypes_1 = require("./InterfaceTypes");
 const ProgramInterface_1 = require("./ProgramInterface");
 const DataflowProgramDefinition_1 = require("./shared/DataflowProgramDefinition");
 var DataflowProgramDefinition_2 = require("./shared/DataflowProgramDefinition");
@@ -40,12 +41,15 @@ exports.getDataflowProgramContext = getDataflowProgramContext;
 function Instantiate(collection, fieldValues, isBuffered = false) {
     const ctx = getDataflowProgramContext();
     const programInterfaceName = collection[0].programInterface.interfaceName;
-    const collectionType = collection[1];
+    const collectionName = collection[1];
+    const collectionType = collection[0].programInterface.namedTypes[collectionName];
+    (0, assert_1.default)((0, InterfaceTypes_1.isCollectionDataType)(collectionType));
     const ret = {
         __isDataflowGraphNode: true,
         __isDataflowObjectInstantiation: true,
-        name: `${(0, xrpa_utils_1.lowerFirst)(programInterfaceName)}${(0, xrpa_utils_1.upperFirst)(collectionType)}${ctx.idCount++}`,
+        name: `${(0, xrpa_utils_1.lowerFirst)(programInterfaceName)}${(0, xrpa_utils_1.upperFirst)(collectionName)}${ctx.idCount++}`,
         programInterfaceName,
+        collectionName,
         collectionType,
         fieldValues,
         isBuffered,
@@ -141,6 +145,12 @@ function XrpaDataflowProgram(name, callback) {
     }
     for (const connection of ctx.selfTerminateEvents) {
         walkConnections(connection.targetNode, ["selfTerminateEvent"], false);
+    }
+    for (const paramName in ctx.parameters) {
+        const param = ctx.parameters[paramName];
+        if (param.source) {
+            walkConnections(param.source.targetNode, [param.source.targetPort], true);
+        }
     }
     const dataflow = (0, xrpa_utils_1.augment)(programInterface, {
         __isDataflowProgramDefinition: true,

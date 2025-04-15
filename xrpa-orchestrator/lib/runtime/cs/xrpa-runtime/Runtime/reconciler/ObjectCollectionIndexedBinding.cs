@@ -23,16 +23,8 @@ namespace Xrpa
       where ObjectAccessorType : ObjectAccessorInterface, new()
       where ReconciledType : class, IDataStoreObjectAccessor<ObjectAccessorType>
     {
-
         bool AddXrpaBinding(ReconciledType obj);
         void RemoveXrpaBinding(ReconciledType obj);
-
-        void TickXrpa() { }
-
-        void WriteDSChanges();
-        void ProcessDSMessage(int messageType, int timestamp, MemoryAccessor msgAccessor);
-        void ProcessDSUpdate(ulong fieldsChanged);
-        void ProcessDSDelete() { }
     }
 
     public class ObjectCollectionIndexedBinding<ObjectAccessorType, ReconciledType, IndexFieldType, LocalType> : ObjectCollectionIndex<ObjectAccessorType, ReconciledType, IndexFieldType>
@@ -42,9 +34,8 @@ namespace Xrpa
       where LocalType : class, IIndexBoundType<ObjectAccessorType, ReconciledType>
     {
 
-        public ObjectCollectionIndexedBinding(ulong inboundFieldMask) : base()
+        public ObjectCollectionIndexedBinding() : base()
         {
-            _inboundFieldMask = inboundFieldMask;
         }
 
         public void AddLocalObject(IndexFieldType indexValue, LocalType localObj)
@@ -71,7 +62,6 @@ namespace Xrpa
                         _boundLocalObjects[id] = localBoundObjects;
                     }
                     localBoundObjects.Add(localObj);
-                    localObj.ProcessDSUpdate(_inboundFieldMask);
                 }
             }
         }
@@ -124,7 +114,6 @@ namespace Xrpa
                             _boundLocalObjects[id] = localBoundObjects;
                         }
                         localBoundObjects.Add(localObj);
-                        localObj.ProcessDSUpdate(_inboundFieldMask);
                     }
                 }
             }
@@ -133,19 +122,10 @@ namespace Xrpa
         public override void OnDelete(ReconciledType reconciledObj, IndexFieldType indexValue)
         {
             var id = reconciledObj.GetXrpaId();
-
-            if (_boundLocalObjects.TryGetValue(id, out var localBoundObjects))
-            {
-                foreach (var localObj in localBoundObjects)
-                {
-                    localObj.ProcessDSDelete();
-                }
-            }
-
             base.OnDelete(reconciledObj, indexValue);
 
             // unbound local objects from reconciled object
-            if (localBoundObjects != null)
+            if (_boundLocalObjects.TryGetValue(id, out var localBoundObjects))
             {
                 foreach (var localObj in localBoundObjects)
                 {
@@ -155,51 +135,6 @@ namespace Xrpa
             }
         }
 
-        public void Tick()
-        {
-            foreach (var (id, localObjects) in _boundLocalObjects)
-            {
-                foreach (var localObj in localObjects)
-                {
-                    localObj.TickXrpa();
-                }
-            }
-        }
-
-        public void WriteChanges(ObjectUuid id)
-        {
-            if (_boundLocalObjects.TryGetValue(id, out var localBoundObjects))
-            {
-                foreach (var localObj in localBoundObjects)
-                {
-                    localObj.WriteDSChanges();
-                }
-            }
-        }
-
-        public void ProcessUpdate(ObjectUuid id, ulong fieldsChanged)
-        {
-            if (_boundLocalObjects.TryGetValue(id, out var localBoundObjects))
-            {
-                foreach (var localObj in localBoundObjects)
-                {
-                    localObj.ProcessDSUpdate(fieldsChanged);
-                }
-            }
-        }
-
-        public void ProcessMessage(ObjectUuid id, int messageType, int timestamp, MemoryAccessor msgAccessor)
-        {
-            if (_boundLocalObjects.TryGetValue(id, out var localBoundObjects))
-            {
-                foreach (var localObj in localBoundObjects)
-                {
-                    localObj.ProcessDSMessage(messageType, timestamp, msgAccessor);
-                }
-            }
-        }
-
-        private ulong _inboundFieldMask;
         private Dictionary<IndexFieldType, List<LocalType>> _localObjects = new();
         private Dictionary<ObjectUuid, List<LocalType>> _boundLocalObjects = new();
     }

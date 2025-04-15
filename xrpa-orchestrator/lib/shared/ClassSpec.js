@@ -22,6 +22,24 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ClassSpec = void 0;
 const assert_1 = __importDefault(require("assert"));
+function paramsMatch(a, b) {
+    if (a.length !== b.length) {
+        return false;
+    }
+    for (let i = 0; i < a.length; ++i) {
+        const aValue = a[i];
+        const bValue = b[i];
+        if (aValue.name !== b[i].name) {
+            return false;
+        }
+        const aTypeName = typeof aValue.type === "string" ? aValue.type : aValue.type.getName();
+        const bTypeName = typeof bValue.type === "string" ? bValue.type : bValue.type.getName();
+        if (aTypeName !== bTypeName) {
+            return false;
+        }
+    }
+    return true;
+}
 class ClassSpec {
     constructor(params) {
         this.constructors = [];
@@ -40,6 +58,21 @@ class ClassSpec {
         this.decorations = params.decorations ?? [];
         this.classNameDecoration = params.classNameDecoration ?? null;
         this.classEarlyInject = params.classEarlyInject ?? [];
+    }
+    getOrCreateMethod(methodDef) {
+        for (const method of this.methods) {
+            if (method.name !== methodDef.name) {
+                continue;
+            }
+            if (!paramsMatch(method.parameters ?? [], methodDef.parameters ?? [])) {
+                continue;
+            }
+            (0, assert_1.default)(Array.isArray(method.body));
+            return method.body;
+        }
+        const method = { ...methodDef, body: [] };
+        this.methods.push(method);
+        return method.body;
     }
 }
 exports.ClassSpec = ClassSpec;

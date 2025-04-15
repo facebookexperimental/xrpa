@@ -29,7 +29,7 @@ class InboundSignalForwarder : public InboundSignalDataInterface {
     recipients_.push_back(recipient);
   }
 
-  void onSignalData(int32_t /*timestamp*/, MemoryAccessor memAccessor) override {
+  void onSignalData(uint64_t /*timestamp*/, MemoryAccessor memAccessor) override {
     auto inboundPacket = SignalPacket(memAccessor);
     auto frameCount = inboundPacket.getFrameCount();
     auto sampleType = inboundPacket.getSampleType();

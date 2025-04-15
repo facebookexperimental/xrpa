@@ -138,7 +138,7 @@ class IDataStoreObjectAccessor(IDataStoreObject, ABC, Generic[ObjectAccessorType
     ) -> None:
         pass
 
-    def process_ds_delete(self) -> None:
+    def handle_xrpa_delete(self) -> None:
         pass
 
     def prep_ds_full_update(self) -> int:
@@ -153,6 +153,7 @@ class DataStoreObject(IDataStoreObject):
         self._id = id
         self._collection = collection
         self._has_notified_needs_write = False
+        self._owner = None
 
     def get_xrpa_id(self) -> str:
         return self._id
@@ -176,3 +177,9 @@ class DataStoreObject(IDataStoreObject):
             # object added to collection
             self._collection.notify_object_needs_write(self._id)
             self._has_notified_needs_write = True
+
+    def set_xrpa_owner(self, owner):
+        self._owner = owner
+
+    def get_xrpa_owner(self):
+        return self._owner

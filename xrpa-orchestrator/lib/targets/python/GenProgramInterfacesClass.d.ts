@@ -18,5 +18,5 @@
 import { FileWriter } from "@xrpa/xrpa-file-utils";
 import { ModuleDefinition } from "../../shared/ModuleDefinition";
 export declare function genProgramInterfacesClass(fileWriter: FileWriter, libDir: string, moduleDef: ModuleDefinition): void;
-export declare function genApplicationInterfaceClass(fileWriter: FileWriter, libDir: string, moduleDef: ModuleDefinition): void;
+export declare function genApplicationInterfaceClass(fileWriter: FileWriter, libDir: string, moduleDef: ModuleDefinition, backgroundTick: boolean): void;
 

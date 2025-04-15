@@ -146,8 +146,8 @@ class DataModelDefinition {
     addReference(toType) {
         return this.moduleDef.createReference(toType);
     }
-    addStruct(name, fields) {
-        return this.addType(name, this.moduleDef.createStruct(name, this.getApiName(), this.convertUserStructSpec(fields), this.typeMap[name]));
+    addStruct(name, fields, properties) {
+        return this.addType(name, this.moduleDef.createStruct(name, this.getApiName(), this.convertUserStructSpec(fields), this.typeMap[name], properties));
     }
     addMessageStruct(name, fields, expectedRatePerSecond) {
         return this.addType(name, this.moduleDef.createMessageStruct(name, this.getApiName(), this.convertUserStructSpec(fields), expectedRatePerSecond));

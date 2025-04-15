@@ -38,7 +38,7 @@ function calcStructSize(fields) {
     };
 }
 class StructType extends PrimitiveType_1.PrimitiveType {
-    constructor(codegen, name, apiname, parentType, fields, localTypeOverride) {
+    constructor(codegen, name, apiname, parentType, fields, localTypeOverride, properties = {}) {
         // This should be checked for higher up, this is just a last-minute verification.
         for (const key in fields) {
             if ((0, TypeDefinition_1.typeIsInterface)(fields[key].type)) {
@@ -51,6 +51,7 @@ class StructType extends PrimitiveType_1.PrimitiveType {
         this.parentType = parentType;
         this.fields = fields;
         this.localTypeOverride = localTypeOverride;
+        this.properties = properties;
         if (!localTypeOverride && this.getMetaType() !== TypeDefinition_1.TypeMetaType.STRUCT) {
             this.localType = { typename: codegen.nsJoin(codegen.getDataStoreHeaderNamespace(apiname), name), headerFile: codegen.getDataStoreHeaderName(apiname) };
         }

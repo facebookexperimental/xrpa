@@ -33,6 +33,7 @@ function genCollectionEntitySpawner(ctx, fileWriter, reconcilerDef, outDir) {
     const namespace = "";
     const dataStore = `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.Instance.DataStore.${reconcilerDef.type.getName()}`;
     const readAccessor = reconcilerDef.type.getReadAccessorType(namespace, includes);
+    const reconciledType = reconcilerDef.type.getLocalType(ctx.namespace, includes);
     const lines = [
         `public class ${className} : MonoBehaviour {`,
         `  public GameObject entityPrefab;`,
@@ -56,7 +57,7 @@ function genCollectionEntitySpawner(ctx, fileWriter, reconcilerDef, outDir) {
         `    }`,
         `  }`,
         ``,
-        `  private static ${componentClass} Spawn(`,
+        `  private static ${reconciledType} Spawn(`,
         `      ${ctx.moduleDef.ObjectUuid.declareLocalParam(namespace, includes, "id")},`,
         `      ${readAccessor} remoteValue,`,
         `      ${CsharpDatasetLibraryTypes_1.IObjectCollection.declareLocalParam(namespace, includes, "collection")}) {`,
@@ -70,9 +71,9 @@ function genCollectionEntitySpawner(ctx, fileWriter, reconcilerDef, outDir) {
         `    if (comp == null) {`,
         `      comp = go.AddComponent<${componentClass}>();`,
         `    }`,
-        `    comp.SetXrpaId(id);`,
-        `    comp.SetXrpaCollection(collection);`,
-        `    return comp;`,
+        `    var obj = ${reconciledType}.Create(id, remoteValue, collection);`,
+        `    comp.SetXrpaObject(obj);`,
+        `    return obj;`,
         `  }`,
         `}`,
         ``,

@@ -16,36 +16,11 @@
 
 "use strict";
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genMessageFieldAccessors = exports.genOnMessageAccessor = exports.genMessageChannelDispatch = exports.genSendMessageAccessor = void 0;
+exports.genMessageFieldAccessors = exports.genMessageChannelDispatch = exports.genSendMessageAccessor = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
-const TypeValue_1 = require("../../shared/TypeValue");
 const GenMessageAccessorsShared_1 = require("../shared/GenMessageAccessorsShared");
-const PythonCodeGenImpl = __importStar(require("./PythonCodeGenImpl"));
 const PythonCodeGenImpl_1 = require("./PythonCodeGenImpl");
 const PythonDatasetLibraryTypes_1 = require("./PythonDatasetLibraryTypes");
 function genMessageParamInitializer(ctx, includes, msgType) {
@@ -95,12 +70,68 @@ function genSendMessageBody(params) {
     }
     return lines;
 }
+function isImageStruct(type) {
+    if (!(0, TypeDefinition_1.typeIsStruct)(type)) {
+        return false;
+    }
+    return Boolean(type.properties.isImage);
+}
 function genSendMessageAccessor(classSpec, params) {
     classSpec.methods.push({
         name: params.name ?? `send_${params.fieldName}`,
         parameters: (0, GenMessageAccessorsShared_1.genMessageMethodParams)({ ...params, includes: classSpec.includes }),
         body: includes => genSendMessageBody({ ...params, includes }),
     });
+    const messageFields = params.fieldType.getStateFields();
+    const messageFieldNames = Object.keys(messageFields);
+    if (messageFieldNames.length !== 1) {
+        return;
+    }
+    // PsyhcoPy window source helper
+    const messageFieldType = messageFields[messageFieldNames[0]].type;
+    if (isImageStruct(messageFieldType)) {
+        const imageType = messageFieldType.getLocalType(params.ctx.namespace, classSpec.includes);
+        const imageFormat = messageFieldType.getStateField("format").getLocalType(params.ctx.namespace, classSpec.includes);
+        const imageEncoding = messageFieldType.getStateField("encoding").getLocalType(params.ctx.namespace, classSpec.includes);
+        const imageOrientation = messageFieldType.getStateField("orientation").getLocalType(params.ctx.namespace, classSpec.includes);
+        classSpec.includes?.addFile({ namespace: "io" });
+        classSpec.includes?.addFile({ namespace: "typing" });
+        classSpec.methods.push({
+            name: `send_${params.fieldName}_pil_image`,
+            parameters: [{
+                    name: "pil_image",
+                    type: "typing.Any",
+                }],
+            body: [
+                `jpeg_data = io.BytesIO()`,
+                `pil_image.save(jpeg_data, format='JPEG')`,
+                `jpeg_data.seek(0)`,
+                `image_data = ${imageType}(`,
+                `  pil_image.width,`,
+                `  pil_image.height,`,
+                `  ${imageFormat}.RGB8,`,
+                `  ${imageEncoding}.Jpeg,`,
+                `  ${imageOrientation}.Oriented,`,
+                `  1.0,`,
+                `  0,`,
+                `  ${(0, PythonCodeGenImpl_1.genGetCurrentClockTime)(classSpec.includes)},`,
+                `  bytearray(jpeg_data.read())`,
+                `)`,
+                `self.send_${params.fieldName}(image_data)`,
+            ],
+        });
+        classSpec.methods.push({
+            name: `set_${params.fieldName}_source`,
+            parameters: [{
+                    name: "source",
+                    type: "typing.Any",
+                }],
+            body: [
+                `source._startOfFlip = lambda: (self.send_${params.fieldName}_pil_image(source._getFrame(buffer="back")), True)[1]`,
+            ],
+            decorations: (0, PythonCodeGenImpl_1.genCommentLines)("Helper for setting a PsychoPy window as the source of an image message."),
+        });
+    }
 }
 exports.genSendMessageAccessor = genSendMessageAccessor;
 function genMessageDispatchBody(params) {
@@ -112,18 +143,16 @@ function genMessageDispatchBody(params) {
             continue;
         }
         const fieldType = typeFields[fieldName];
-        const msgHandler = params.genMsgHandler(fieldName);
-        const handlerCanBeNull = msgHandler.indexOf(".") < 0;
         const msgType = typeDef.getFieldIndex(fieldName);
-        const validateMsgHandler = handlerCanBeNull ? ` and self.${(0, PythonCodeGenImpl_1.genNonNullCheck)(msgHandler)}` : "";
-        if (!fieldType.hasFields()) {
-            lines.push(`if message_type == ${msgType}${validateMsgHandler}:`, `  self.${msgHandler}(timestamp)`);
-        }
-        else {
-            const prelude = [];
-            const msgParams = ["timestamp"].concat(params.msgDataToParams(params.ctx, fieldType, prelude, params.includes));
-            lines.push(`if message_type == ${msgType}${validateMsgHandler}:`, `  message = ${fieldType.getReadAccessorType(params.ctx.namespace, params.includes)}(message_data)`, ...(0, xrpa_utils_1.indent)(1, prelude), `  self.${msgHandler}(${msgParams.join(", ")})`);
-        }
+        lines.push(`if message_type == ${msgType}:`, ...(0, xrpa_utils_1.indent)(1, (0, PythonCodeGenImpl_1.genMessageDispatch)({
+            namespace: params.ctx.namespace,
+            includes: params.includes,
+            fieldName,
+            fieldType,
+            genMsgHandler: params.genMsgHandler,
+            msgDataToParams: params.msgDataToParams,
+            convertToReadAccessor: true,
+        })));
     }
     return lines;
 }
@@ -135,7 +164,7 @@ function genMessageChannelDispatch(classSpec, params) {
                 type: PythonCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
             }, {
                 name: "timestamp",
-                type: PythonCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
+                type: PythonCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
             }, {
                 name: "message_data",
                 type: PythonDatasetLibraryTypes_1.MemoryAccessor,
@@ -145,42 +174,17 @@ function genMessageChannelDispatch(classSpec, params) {
     });
 }
 exports.genMessageChannelDispatch = genMessageChannelDispatch;
-function genOnMessageAccessor(classSpec, params) {
-    const paramTypes = [PythonCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename];
-    if (params.fieldType.hasFields()) {
-        paramTypes.push(params.fieldType.getReadAccessorType(params.ctx.namespace, classSpec.includes));
-    }
-    const msgHandler = params.genMsgHandler(params.fieldName);
-    classSpec.methods.push({
-        name: `on_${params.fieldName}`,
-        parameters: [{
-                name: "handler",
-                type: `typing.Callable[[${paramTypes.join(", ")}], None]`,
-            }],
-        body: [
-            `self.${msgHandler} = handler`,
-        ],
-    });
-    classSpec.members.push({
-        name: msgHandler,
-        type: `typing.Callable[[${paramTypes.join(", ")}], None]`,
-        initialValue: new TypeValue_1.CodeLiteralValue(PythonCodeGenImpl, "None"),
-        visibility: "private",
-    });
-    classSpec.includes?.addFile({ namespace: "typing" });
-}
-exports.genOnMessageAccessor = genOnMessageAccessor;
 function genMessageFieldAccessors(classSpec, params) {
     const typeDef = params.reconcilerDef.type;
     const typeFields = typeDef.getFieldsOfType(TypeDefinition_1.typeIsMessageData);
     for (const fieldName in typeFields) {
         const fieldType = typeFields[fieldName];
         if (params.reconcilerDef.isInboundField(fieldName)) {
-            genOnMessageAccessor(classSpec, {
-                ...params,
-                typeDef,
+            (0, PythonCodeGenImpl_1.genOnMessageAccessor)(classSpec, {
+                namespace: params.ctx.namespace,
                 fieldName,
                 fieldType,
+                genMsgHandler: params.genMsgHandler,
             });
         }
         if (params.reconcilerDef.isOutboundField(fieldName)) {
@@ -190,6 +194,7 @@ function genMessageFieldAccessors(classSpec, params) {
                 fieldName,
                 fieldType,
                 referencesNeedConversion: true,
+                proxyObj: null,
             });
         }
     }

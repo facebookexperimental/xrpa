@@ -20,7 +20,7 @@ import { ClassSpec } from "../../shared/ClassSpec";
 import { UnitTransformer } from "../../shared/CoordinateTransformer";
 import { IncludeAggregator } from "../../shared/Helpers";
 import { CoreXrpaTypes, FieldTypeAndAccessor, GuidGenSpec, PrimitiveIntrinsics } from "../../shared/TargetCodeGen";
-import { InterfaceTypeDefinition, TypeDefinition } from "../../shared/TypeDefinition";
+import { MessageDataTypeDefinition, StructTypeDefinition, TypeDefinition } from "../../shared/TypeDefinition";
 import { TypeValue } from "../../shared/TypeValue";
 export declare function registerXrpaTypes(types: CoreXrpaTypes): void;
 export declare function getXrpaTypes(): CoreXrpaTypes;
@@ -28,7 +28,7 @@ export declare const XRPA_NAMESPACE = "Xrpa";
 export declare const HEADER: string[];
 export declare const UNIT_TRANSFORMER: UnitTransformer;
 export declare const PRIMITIVE_INTRINSICS: PrimitiveIntrinsics;
-export declare function genGetCurrentClockTime(): string;
+export declare function genGetCurrentClockTime(_includes: IncludeAggregator | null, inNanoseconds?: boolean): string;
 export declare const DEFAULT_INTERFACE_PTR_TYPE = "bare";
 export declare class CsIncludeAggregator implements IncludeAggregator {
     private importNamespaces;
@@ -59,7 +59,7 @@ export declare function genDeclaration(params: {
     isStatic?: boolean;
     isConst?: boolean;
 }): string;
-export declare function genPointer(ptrType: string, localType: string): string;
+export declare function genPointer(localType: string): string;
 export declare function reinterpretValue(_fromType: string, _toType: string, value: TypeValue): string;
 export declare function getDataStoreName(apiname: string): string;
 export declare function getDataStoreHeaderName(apiname: string): string;
@@ -73,6 +73,29 @@ export declare function makeObjectAccessor(params: {
     isMessageStruct: boolean;
     objectUuidType: string;
 }): string;
+export declare function genEventHandlerType(paramTypes: string[]): string;
+export declare function genEventHandlerCall(handler: string, paramValues: string[], handlerCanBeNull: boolean): string;
+export declare function genMessageHandlerType(params: {
+    namespace: string;
+    includes: IncludeAggregator | null;
+    fieldType: MessageDataTypeDefinition;
+}): string;
+export declare function genOnMessageAccessor(classSpec: ClassSpec, params: {
+    namespace: string;
+    fieldName: string;
+    fieldType: MessageDataTypeDefinition;
+    genMsgHandler: (msgName: string) => string;
+}): void;
+export declare function genMessageDispatch(params: {
+    namespace: string;
+    includes: IncludeAggregator | null;
+    fieldName: string;
+    fieldType: MessageDataTypeDefinition;
+    genMsgHandler: (fieldName: string) => string;
+    msgDataToParams: (msgType: MessageDataTypeDefinition, prelude: string[], includes: IncludeAggregator | null) => string[];
+    convertToReadAccessor: boolean;
+    timestampName?: string;
+}): string[];
 export declare function genClassDefinition(classSpec: ClassSpec): string[];
 export declare function genReadValue(params: {
     accessor: string;
@@ -105,7 +128,7 @@ export declare function genReadWriteValueFunctions(classSpec: ClassSpec, params:
 export declare function genEnumDefinition(enumName: string, enumValues: Record<string, number>): string[];
 export declare function genEnumDynamicConversion(targetTypename: string, value: TypeValue): string;
 export declare function getNullValue(): string;
-export declare function genReferencePtrToID(varName: string, _ptrType: string, objectUuidType: string): string;
+export declare function genReferencePtrToID(varName: string, objectUuidType: string): string;
 export declare function genFieldGetter(classSpec: ClassSpec, params: {
     apiname: string;
     fieldName: string;
@@ -123,7 +146,7 @@ export declare function genFieldSetter(classSpec: ClassSpec, params: {
     convertFromLocal: boolean;
 }): void;
 export declare function genFieldChangedCheck(classSpec: ClassSpec, params: {
-    parentType: InterfaceTypeDefinition;
+    parentType: StructTypeDefinition;
     fieldName: string;
     visibility?: "public" | "private";
 }): void;
@@ -136,11 +159,16 @@ export declare function genRuntimeGuid(params: {
 }): string;
 export declare function genDeref(ptrName: string, memberName: string): string;
 export declare function genDerefMethodCall(ptrName: string, methodName: string, params: string[]): string;
+export declare function genMethodCall(varName: string, methodName: string, params: string[]): string;
 export declare function genMethodBind(ptrName: string, methodName: string, params: Record<string, string[]>, ignoreParamCount: number): string;
+export declare function genPassthroughMethodBind(methodName: string): string;
 export declare function genNonNullCheck(ptrName: string): string;
 export declare function genCreateObject(type: string, params: string[]): string;
 export declare function genObjectPtrType(type: string): string;
 export declare function genConvertBoolToInt(value: TypeValue): string;
 export declare function genConvertIntToBool(value: TypeValue): string;
 export declare function applyTemplateParams(typename: string, ...templateParams: string[]): string;
+export declare function ifAnyBitIsSet(value: string, bitsValue: number, code: string[]): string[];
+export declare function ifAllBitsAreSet(value: string, bitsValue: number, code: string[]): string[];
+export declare function declareVar(varName: string, typename: string, initialValue: TypeValue): string;
 

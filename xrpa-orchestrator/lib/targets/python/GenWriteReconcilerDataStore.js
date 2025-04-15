@@ -39,13 +39,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genOutboundReconciledTypes = exports.defaultFieldToMemberVar = exports.genPrepFullUpdateFunctionBody = exports.genWriteFunctionBody = exports.genWriteFieldAccessors = exports.genClearSetClearFunctionBody = exports.genClearSetSetterFunctionBody = exports.genFieldSetDirty = void 0;
+exports.genOutboundReconciledTypes = exports.genChangeHandlerMethods = exports.defaultFieldToMemberVar = exports.genPrepFullUpdateFunctionBody = exports.genWriteFunctionBody = exports.genWriteFieldAccessors = exports.genClearSetClearFunctionBody = exports.genClearSetSetterFunctionBody = exports.genFieldSetDirty = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
-const assert_1 = __importDefault(require("assert"));
 const ClassSpec_1 = require("../../shared/ClassSpec");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const PythonCodeGenImpl_1 = require("./PythonCodeGenImpl");
@@ -55,33 +51,24 @@ const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
 const GenMessageAccessors_1 = require("./GenMessageAccessors");
 const GenDataStore_1 = require("./GenDataStore");
 const GenReadReconcilerDataStore_1 = require("./GenReadReconcilerDataStore");
+const TypeValue_1 = require("../../shared/TypeValue");
 function genFieldSetDirty(params) {
     const changeBit = params.typeDef.getFieldBitMask(params.fieldName);
-    if (params.proxyObj) {
-        return [
-            `if (self._change_bits & ${changeBit}) == 0:`,
-            `  self._change_bits |= ${changeBit}`,
-            `if (${params.proxyObj} is not None:`,
-            `  ${params.proxyObj}.notify_needs_write()`,
-        ];
-    }
-    else {
-        const fieldSize = params.typeDef.getStateField(params.fieldName).getRuntimeByteCount(params.fieldVar, params.ctx.namespace, params.includes);
-        return [
-            `if (self._change_bits & ${changeBit}) == 0:`,
-            `  self._change_bits |= ${changeBit}`,
-            `  self._change_byte_count += ${fieldSize[0]}`,
-            ...(fieldSize[1] === null ? [] : [
-                // TODO if the field is set more than once, we will count the dynamic size multiple times
-                `self._change_byte_count += ${fieldSize[1]}`,
-            ]),
-            `if self._collection is not None:`,
-            `  if not self._has_notified_needs_write:`,
-            `    self._collection.notify_object_needs_write(self.get_xrpa_id())`,
-            `    self._has_notified_needs_write = True`,
-            `  self._collection.set_dirty(self.get_xrpa_id(), ${changeBit})`,
-        ];
-    }
+    const fieldSize = params.typeDef.getStateField(params.fieldName).getRuntimeByteCount(params.fieldVar, params.ctx.namespace, params.includes);
+    return [
+        `if (self._change_bits & ${changeBit}) == 0:`,
+        `  self._change_bits |= ${changeBit}`,
+        `  self._change_byte_count += ${fieldSize[0]}`,
+        ...(fieldSize[1] === null ? [] : [
+            // TODO if the field is set more than once, we will count the dynamic size multiple times
+            `self._change_byte_count += ${fieldSize[1]}`,
+        ]),
+        `if self._collection is not None:`,
+        `  if not self._has_notified_needs_write:`,
+        `    self._collection.notify_object_needs_write(self.get_xrpa_id())`,
+        `    self._has_notified_needs_write = True`,
+        `  self._collection.set_dirty(self.get_xrpa_id(), ${changeBit})`,
+    ];
 }
 exports.genFieldSetDirty = genFieldSetDirty;
 function genClearSetSetterFunctionBody(params) {
@@ -195,60 +182,46 @@ function genWriteFieldAccessors(classSpec, params) {
 }
 exports.genWriteFieldAccessors = genWriteFieldAccessors;
 function genWriteFunctionBody(params) {
-    if (params.proxyObj) {
-        (0, assert_1.default)(!params.canCreate);
-    }
     const fieldUpdateLines = [];
     const writeAccessor = params.reconcilerDef.type.getWriteAccessorType(params.ctx.namespace, params.includes);
-    const accessor = params.proxyObj ?? "obj_accessor";
     const typeFields = params.reconcilerDef.type.getStateFields();
     for (const fieldName in typeFields) {
         if (!params.reconcilerDef.isInboundField(fieldName)) {
             const fieldVar = params.fieldToMemberVar(fieldName);
-            fieldUpdateLines.push(`if (self._change_bits & ${params.reconcilerDef.type.getFieldBitMask(fieldName)}) != 0:`, `  ${accessor}.set_${(0, PythonCodeGenImpl_1.identifierName)(fieldName)}(${fieldVar})`);
+            fieldUpdateLines.push(`if (self._change_bits & ${params.reconcilerDef.type.getFieldBitMask(fieldName)}) != 0:`, `  obj_accessor.set_${(0, PythonCodeGenImpl_1.identifierName)(fieldName)}(${fieldVar})`);
         }
     }
     if (!params.canCreate && !fieldUpdateLines.length) {
         // this is an inbound object (canCreate===false) but no fields are being updated, so there is nothing to do
         return [];
     }
-    if (params.proxyObj) {
-        return [
-            `if self._change_bits == 0 or ${accessor} is None:`,
+    const outboundChangeBytes = params.reconcilerDef.getOutboundChangeByteCount({
+        inNamespace: params.ctx.namespace,
+        includes: params.includes,
+        fieldToMemberVar: params.fieldToMemberVar,
+    });
+    return [
+        ...(params.canCreate ? [
+            `obj_accessor = None`,
+            `if not self._create_written:`,
+            `  self._change_bits = ${params.reconcilerDef.getOutboundChangeBits()}`,
+            `  self._change_byte_count = ${outboundChangeBytes}`,
+            `  obj_accessor = ${writeAccessor}.create(accessor, self.get_collection_id(), self.get_xrpa_id(), self._change_byte_count, self._create_timestamp)`,
+            `  self._create_written = True`,
+            `elif self._change_bits != 0:`,
+            `  obj_accessor = ${writeAccessor}.update(accessor, self.get_collection_id(), self.get_xrpa_id(), self._change_bits, self._change_byte_count)`,
+        ] : [
+            `if self._change_bits == 0:`,
             `  return`,
-            ...fieldUpdateLines,
-            `self._change_bits = 0`,
-        ];
-    }
-    else {
-        const outboundChangeBytes = params.reconcilerDef.getOutboundChangeByteCount({
-            inNamespace: params.ctx.namespace,
-            includes: params.includes,
-            fieldToMemberVar: params.fieldToMemberVar,
-        });
-        return [
-            ...(params.canCreate ? [
-                `obj_accessor = None`,
-                `if not self._create_written:`,
-                `  self._change_bits = ${params.reconcilerDef.getOutboundChangeBits()}`,
-                `  self._change_byte_count = ${outboundChangeBytes}`,
-                `  obj_accessor = ${writeAccessor}.create(accessor, self.get_collection_id(), self.get_xrpa_id(), self._change_byte_count, self._create_timestamp)`,
-                `  self._create_written = True`,
-                `elif self._change_bits != 0:`,
-                `  obj_accessor = ${writeAccessor}.update(accessor, self.get_collection_id(), self.get_xrpa_id(), self._change_bits, self._change_byte_count)`,
-            ] : [
-                `if self._change_bits == 0:`,
-                `  return`,
-                `obj_accessor = ${writeAccessor}.update(accessor, self.get_collection_id(), self.get_xrpa_id(), self._change_bits, self._change_byte_count)`,
-            ]),
-            `if obj_accessor is None or obj_accessor.is_null():`,
-            `  return`,
-            ...fieldUpdateLines,
-            `self._change_bits = 0`,
-            `self._change_byte_count = 0`,
-            `self._has_notified_needs_write = False`,
-        ];
-    }
+            `obj_accessor = ${writeAccessor}.update(accessor, self.get_collection_id(), self.get_xrpa_id(), self._change_bits, self._change_byte_count)`,
+        ]),
+        `if obj_accessor is None or obj_accessor.is_null():`,
+        `  return`,
+        ...fieldUpdateLines,
+        `self._change_bits = 0`,
+        `self._change_byte_count = 0`,
+        `self._has_notified_needs_write = False`,
+    ];
 }
 exports.genWriteFunctionBody = genWriteFunctionBody;
 function genPrepFullUpdateFunctionBody(params) {
@@ -279,6 +252,60 @@ function defaultFieldToMemberVar(fieldName) {
     return "self." + (0, PythonCodeGenImpl_1.privateMember)(`local_${(0, PythonCodeGenImpl_1.identifierName)(fieldName)}`);
 }
 exports.defaultFieldToMemberVar = defaultFieldToMemberVar;
+function genChangeHandlerMethods(classSpec, isInboundType) {
+    const fieldsChangedHandlerType = (0, PythonCodeGenImpl_1.genEventHandlerType)([PythonCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename]);
+    classSpec.methods.push({
+        name: "handle_xrpa_fields_changed",
+        parameters: [{
+                name: "fields_changed",
+                type: PythonCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
+            }],
+        body: [(0, PythonCodeGenImpl_1.genEventHandlerCall)("self._xrpa_fields_changed_handler", ["fields_changed"], true)],
+        isVirtual: true,
+        visibility: "protected",
+    });
+    classSpec.methods.push({
+        name: "on_xrpa_fields_changed",
+        parameters: [{
+                name: "handler",
+                type: fieldsChangedHandlerType,
+            }],
+        body: [
+            `self._xrpa_fields_changed_handler = handler`,
+        ],
+    });
+    classSpec.members.push({
+        name: "xrpa_fields_changed_handler",
+        type: fieldsChangedHandlerType,
+        initialValue: new TypeValue_1.CodeLiteralValue(PythonCodeGenImpl, "None"),
+        visibility: "private",
+    });
+    if (isInboundType) {
+        const deleteHandlerType = (0, PythonCodeGenImpl_1.genEventHandlerType)([]);
+        classSpec.methods.push({
+            name: "handle_xrpa_delete",
+            body: [(0, PythonCodeGenImpl_1.genEventHandlerCall)("self._xrpa_delete_handler", [], true)],
+            isVirtual: true,
+        });
+        classSpec.methods.push({
+            name: "on_xrpa_delete",
+            parameters: [{
+                    name: "handler",
+                    type: deleteHandlerType,
+                }],
+            body: [
+                `self._xrpa_delete_handler = handler`,
+            ],
+        });
+        classSpec.members.push({
+            name: "xrpa_delete_handler",
+            type: deleteHandlerType,
+            initialValue: new TypeValue_1.CodeLiteralValue(PythonCodeGenImpl, "None"),
+            visibility: "private",
+        });
+    }
+}
+exports.genChangeHandlerMethods = genChangeHandlerMethods;
 function genOutboundReconciledTypes(ctx, includesIn) {
     const ret = [];
     const headerFile = (0, PythonCodeGenImpl_1.getDataStoreHeaderName)(ctx.storeDef.apiname);
@@ -295,6 +322,7 @@ function genOutboundReconciledTypes(ctx, includesIn) {
             namespace: ctx.namespace,
             includes: includesIn,
         });
+        genChangeHandlerMethods(classSpec, false);
         classSpec.constructors.push({
             parameters: [{
                     name: "id",
@@ -312,7 +340,6 @@ function genOutboundReconciledTypes(ctx, includesIn) {
             fieldToMemberVar: defaultFieldToMemberVar,
             fieldAccessorNameOverrides: reconcilerDef.fieldAccessorNameOverrides,
             directionality: "outbound",
-            proxyObj: null,
         });
         classSpec.methods.push({
             name: "write_ds_changes",
@@ -326,7 +353,6 @@ function genOutboundReconciledTypes(ctx, includesIn) {
                 reconcilerDef,
                 fieldToMemberVar: defaultFieldToMemberVar,
                 canCreate: true,
-                proxyObj: null,
             }),
         });
         classSpec.methods.push({
@@ -340,56 +366,42 @@ function genOutboundReconciledTypes(ctx, includesIn) {
                 canCreate: true,
             }),
         });
-        if (reconcilerDef.shouldGenerateConcreteReconciledType()) {
-            classSpec.methods.push({
-                name: "process_ds_update",
-                parameters: [{
-                        name: "value",
-                        type: readAccessor,
-                    }, {
-                        name: "fields_changed",
-                        type: PythonCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
-                    }],
-                body: includes => (0, GenReadReconcilerDataStore_1.genProcessUpdateFunctionBodyForConcreteReconciledType)(ctx, includes, typeDef, reconcilerDef),
-            });
-            genWriteFieldAccessors(classSpec, {
-                ctx,
-                reconcilerDef,
-                fieldToMemberVar: defaultFieldToMemberVar,
-                fieldAccessorNameOverrides: {},
-                gettersOnly: true,
-                directionality: "inbound",
-                proxyObj: null,
-            });
-            (0, GenDataStoreShared_1.genFieldProperties)(classSpec, {
-                codegen: PythonCodeGenImpl,
-                reconcilerDef,
-                fieldToMemberVar: defaultFieldToMemberVar,
-                canCreate: false,
-                canChange: false,
-                directionality: "inbound",
-                visibility: "private",
-            });
-        }
-        else {
-            classSpec.methods.push({
-                name: "process_ds_update",
-                parameters: [{
-                        name: "value",
-                        type: readAccessor,
-                    }, {
-                        name: "fields_changed",
-                        type: PythonCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
-                    }],
-                body: [],
-                isAbstract: reconcilerDef.getInboundChangeBits() !== 0,
-            });
+        classSpec.methods.push({
+            name: "process_ds_update",
+            parameters: [{
+                    name: "value",
+                    type: readAccessor,
+                }, {
+                    name: "fields_changed",
+                    type: PythonCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
+                }],
+            body: includes => (0, GenReadReconcilerDataStore_1.genProcessUpdateFunctionBody)(ctx, includes, typeDef, reconcilerDef),
+        });
+        genWriteFieldAccessors(classSpec, {
+            ctx,
+            reconcilerDef,
+            fieldToMemberVar: defaultFieldToMemberVar,
+            fieldAccessorNameOverrides: {},
+            gettersOnly: true,
+            directionality: "inbound",
+        });
+        (0, GenDataStoreShared_1.genFieldProperties)(classSpec, {
+            codegen: PythonCodeGenImpl,
+            reconcilerDef,
+            fieldToMemberVar: defaultFieldToMemberVar,
+            canCreate: false,
+            canChange: false,
+            directionality: "inbound",
+            visibility: "private",
+        });
+        const fields = typeDef.getStateFields();
+        for (const name in fields) {
+            (0, PythonCodeGenImpl_1.genFieldChangedCheck)(classSpec, { parentType: typeDef, fieldName: name });
         }
         (0, GenMessageAccessors_1.genMessageFieldAccessors)(classSpec, {
             ctx,
             reconcilerDef,
             genMsgHandler: GenDataStore_1.genMsgHandler,
-            proxyObj: null,
         });
         (0, GenMessageAccessors_1.genMessageChannelDispatch)(classSpec, {
             ctx,

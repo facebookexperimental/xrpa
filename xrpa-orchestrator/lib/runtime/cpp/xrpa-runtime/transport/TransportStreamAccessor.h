@@ -40,14 +40,15 @@ class ChangeEventAccessor : public ObjectAccessorInterface {
     memAccessor_.writeValue<int32_t>(type, offset);
   }
 
-  int32_t getTimestamp() {
+  uint64_t getTimestamp(uint64_t baseTimestampUs) {
     auto offset = MemoryOffset(4);
-    return memAccessor_.readValue<int32_t>(offset);
+    uint64_t timestampOffsetMs = memAccessor_.readValue<int32_t>(offset);
+    return baseTimestampUs + (timestampOffsetMs * 1000);
   }
 
-  void setTimestamp(int32_t timestamp) {
+  void setTimestamp(uint64_t timestampUs, uint64_t baseTimestampUs) {
     auto offset = MemoryOffset(4);
-    memAccessor_.writeValue<int32_t>(timestamp, offset);
+    memAccessor_.writeValue<int32_t>((timestampUs - baseTimestampUs) / 1000, offset);
   }
 };
 
@@ -62,27 +63,41 @@ class TransportStreamIteratorData {
 class TransportStreamAccessor {
  public:
   TransportStreamAccessor(
-      uint64_t baseTimestamp,
+      uint64_t baseTimestampUs,
       TransportStreamIteratorData* iteratorData,
       std::function<MemoryAccessor(int32_t)> eventAllocator)
-      : baseTimestamp_(baseTimestamp),
+      : baseTimestampUs_(baseTimestampUs),
         iteratorData_(iteratorData),
         eventAllocator_(std::move(eventAllocator)) {}
 
   template <typename EventAccessor = ChangeEventAccessor>
-  EventAccessor writeChangeEvent(int32_t changeType, int32_t numBytes = 0, uint64_t timestamp = 0) {
+  EventAccessor
+  writeChangeEvent(int32_t changeType, int32_t numBytes = 0, uint64_t timestampUs = 0) {
     auto changeEvent = EventAccessor(eventAllocator_(EventAccessor::DS_SIZE + numBytes));
 
     if (!changeEvent.isNull()) {
       changeEvent.setChangeType(changeType);
-      changeEvent.setTimestamp(timestamp ? (timestamp - baseTimestamp_) : getCurrentTimestamp());
+      changeEvent.setTimestamp(
+          timestampUs ? timestampUs : getCurrentClockTimeMicroseconds(), baseTimestampUs_);
     }
 
     return changeEvent;
   }
 
-  int32_t getCurrentTimestamp() {
-    return getCurrentClockTimeMicroseconds() - baseTimestamp_;
+  void writePrefilledChangeEvent(const MemoryAccessor& memAccessor, uint64_t timestampUs = 0) {
+    auto transportMem = eventAllocator_(memAccessor.getSize());
+    if (transportMem.isNull()) {
+      return;
+    }
+    transportMem.copyFrom(memAccessor);
+
+    auto changeEvent = ChangeEventAccessor(transportMem);
+    changeEvent.setTimestamp(
+        timestampUs ? timestampUs : getCurrentClockTimeMicroseconds(), baseTimestampUs_);
+  }
+
+  uint64_t getBaseTimestamp() {
+    return baseTimestampUs_;
   }
 
   template <typename T>
@@ -95,7 +110,7 @@ class TransportStreamAccessor {
   }
 
  private:
-  uint64_t baseTimestamp_;
+  uint64_t baseTimestampUs_;
   TransportStreamIteratorData* iteratorData_;
   std::function<MemoryAccessor(int32_t)> eventAllocator_;
 };

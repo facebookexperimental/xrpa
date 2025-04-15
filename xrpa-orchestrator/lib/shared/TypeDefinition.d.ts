@@ -105,9 +105,6 @@ export interface InterfaceTypeDefinition extends StructWithAccessorTypeDefinitio
     getLocalTypePtr(inNamespace: string, includes: IncludeAggregator | null): string;
     getCompatibleTypeList(inNamespace: string, includes: IncludeAggregator | null): CollectionNameAndType[];
     registerCollection(collection: CollectionTypeDefinition): void;
-    isBarePtr(): boolean;
-    setToBarePtr(localType?: TypeSpec): void;
-    getPtrType(): string;
 }
 export interface CollectionTypeDefinition extends InterfaceTypeDefinition {
     readonly maxCount: number;

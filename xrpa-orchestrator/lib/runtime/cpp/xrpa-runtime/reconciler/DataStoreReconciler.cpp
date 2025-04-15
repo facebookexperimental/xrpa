@@ -32,12 +32,28 @@ DataStoreReconciler::DataStoreReconciler(
     : inboundTransport_(inboundTransport), outboundTransport_(outboundTransport) {
   setMessageLifetime(5s);
 
-  messageDataPoolSize_ = messageDataPoolSize;
   if (messageDataPoolSize > 0) {
-    messageDataPool_ = static_cast<uint8_t*>(malloc(messageDataPoolSize));
+    outboundMessages_ =
+        static_cast<PlacedRingBuffer*>(malloc(PlacedRingBuffer::getMemSize(messageDataPoolSize)));
+    outboundMessages_->init(messageDataPoolSize);
+    outboundMessagesIterator_.setToEnd(outboundMessages_);
   }
 
   inboundTransportIterator_ = inboundTransport_.lock()->createIterator();
+}
+
+MemoryAccessor DataStoreReconciler::sendMessage(
+    const ObjectUuid& objectId,
+    int32_t collectionId,
+    int32_t fieldId,
+    int32_t numBytes) {
+  auto message = CollectionMessageChangeEventAccessor(
+      outboundMessages_->push(CollectionMessageChangeEventAccessor::DS_SIZE + numBytes, nullptr));
+  message.setChangeType(CollectionChangeType::Message);
+  message.setObjectId(objectId);
+  message.setCollectionId(collectionId);
+  message.setFieldId(fieldId);
+  return message.accessChangeData();
 }
 
 void DataStoreReconciler::registerCollection(std::shared_ptr<IObjectCollection> collection) {
@@ -76,7 +92,8 @@ void DataStoreReconciler::tickOutbound() {
     iter.second->tick();
   }
 
-  bool bHasOutboundMessages = !outboundMessages_.empty();
+  bool bHasOutboundMessages =
+      outboundMessages_ != nullptr && outboundMessagesIterator_.hasNext(outboundMessages_);
   bool bHasOutboundChanges =
       requestInboundFullUpdate_ || pendingOutboundFullUpdate_ || !pendingWrites_.empty();
 
@@ -129,16 +146,10 @@ void DataStoreReconciler::reconcileOutboundChanges(TransportStreamAccessor* acce
   pendingWrites_.clear();
 
   // write messages
-  for (auto& message : outboundMessages_) {
-    auto data = accessor->writeChangeEvent<CollectionMessageChangeEventAccessor>(
-        CollectionChangeType::Message, message.messageData_.getSize());
-    data.setCollectionId(message.collectionId_);
-    data.setObjectId(message.objectId_);
-    data.setFieldId(message.fieldId_);
-    data.accessChangeData().copyFrom(message.messageData_);
+  while (outboundMessagesIterator_.hasNext(outboundMessages_)) {
+    auto message = outboundMessagesIterator_.next(outboundMessages_);
+    accessor->writePrefilledChangeEvent(message);
   }
-  outboundMessages_.clear();
-  messageDataPoolPos_ = 0;
 }
 
 void DataStoreReconciler::sendFullUpdate() {
@@ -168,7 +179,8 @@ void DataStoreReconciler::reconcileInboundChanges(TransportStreamAccessor* acces
     return;
   }
 
-  int32_t oldestMessageTimestamp = accessor->getCurrentTimestamp() - messageLifetime_;
+  uint64_t oldestMessageTimestamp = getCurrentClockTimeMicroseconds() - messageLifetimeUs_;
+  uint64_t baseTimestamp = accessor->getBaseTimestamp();
   bool inFullUpdate = false;
   std::unordered_set<ObjectUuid> reconciledIds;
 
@@ -243,7 +255,7 @@ void DataStoreReconciler::reconcileInboundChanges(TransportStreamAccessor* acces
 
       case CollectionChangeType::Message: {
         auto entry = CollectionMessageChangeEventAccessor(entryMem);
-        auto timestamp = entry.getTimestamp();
+        uint64_t timestamp = entry.getTimestamp(baseTimestamp);
         if (timestamp >= oldestMessageTimestamp) {
           auto collectionId = entry.getCollectionId();
           if (auto iter = collections_.find(collectionId); iter != collections_.end()) {

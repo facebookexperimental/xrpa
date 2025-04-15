@@ -21,12 +21,11 @@ exports.genSceneComponent = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const ClassSpec_1 = require("../../shared/ClassSpec");
 const CppCodeGenImpl_1 = require("../cpp/CppCodeGenImpl");
-const CppDatasetLibraryTypes_1 = require("../cpp/CppDatasetLibraryTypes");
 const GenDataStore_1 = require("../cpp/GenDataStore");
-const GenWriteReconcilerDataStore_1 = require("../cpp/GenWriteReconcilerDataStore");
 const GenDataStoreSubsystem_1 = require("./GenDataStoreSubsystem");
 const SceneComponentShared_1 = require("./SceneComponentShared");
-function genComponentInit(ctx, includes, reconcilerDef) {
+const PROXY_OBJ = "xrpaObject_";
+function genComponentInit(ctx, includes, reconcilerDef, initializerLines) {
     const id = (0, CppCodeGenImpl_1.genRuntimeGuid)({
         objectUuidType: ctx.moduleDef.ObjectUuid.getLocalType(ctx.namespace, includes),
         guidGen: ctx.moduleDef.guidGen,
@@ -39,15 +38,15 @@ function genComponentInit(ctx, includes, reconcilerDef) {
         `}`,
         `dsIsInitialized_ = true;`,
         `id_ = ${id};`,
-        `hasNotifiedNeedsWrite_ = false;`,
-        `createWritten_ = false;`,
         ``,
         ...(0, SceneComponentShared_1.genFieldInitializers)(ctx, includes, reconcilerDef),
         ``,
         ...(0, SceneComponentShared_1.genTransformInitializers)(ctx, includes, reconcilerDef),
         ``,
-        `createTimestamp_ = ${(0, CppCodeGenImpl_1.genGetCurrentClockTime)()};`,
-        `GetDataStoreSubsystem()->DataStore->${reconcilerDef.type.getName()}->addObject(this);`,
+        `${PROXY_OBJ} = std::make_shared<${reconcilerDef.type.getLocalType(ctx.namespace, includes)}>(id_);`,
+        `${PROXY_OBJ}->setXrpaOwner(this);`,
+        `GetDataStoreSubsystem()->DataStore->${reconcilerDef.type.getName()}->addObject(${PROXY_OBJ});`,
+        ...initializerLines,
     ];
 }
 function genComponentDeinit(ctx, reconcilerDef) {
@@ -55,7 +54,9 @@ function genComponentDeinit(ctx, reconcilerDef) {
         `if (!dsIsInitialized_) {`,
         `  return;`,
         `}`,
+        `${PROXY_OBJ}->onXrpaFieldsChanged(nullptr);`,
         `GetDataStoreSubsystem()->DataStore->${reconcilerDef.type.getName()}->removeObject(id_);`,
+        `${PROXY_OBJ}.reset();`,
         `dsIsInitialized_ = false;`,
     ];
 }
@@ -71,47 +72,6 @@ function genDataStoreObjectAccessors(ctx, classSpec) {
     classSpec.members.push({
         name: "id",
         type: ctx.moduleDef.ObjectUuid,
-        visibility: "protected",
-    });
-    classSpec.members.push({
-        name: "hasNotifiedNeedsWrite",
-        type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.bool.typename,
-        initialValue: "false",
-        visibility: "protected",
-    });
-    classSpec.methods.push({
-        name: "setXrpaCollection",
-        parameters: [{
-                name: "collection",
-                type: CppDatasetLibraryTypes_1.IObjectCollection.getLocalType(ctx.namespace, classSpec.includes) + "*",
-            }],
-        body: [
-            `if (collection == nullptr && collection_ != nullptr && !hasNotifiedNeedsWrite_) {`,
-            `  // object removed from collection`,
-            `  collection_->notifyObjectNeedsWrite(id_);`,
-            `  hasNotifiedNeedsWrite_ = true;`,
-            `}`,
-            ``,
-            `collection_ = collection;`,
-            ``,
-            `if (collection_ != nullptr && !hasNotifiedNeedsWrite_) {`,
-            `  // object added to collection`,
-            `  collection_->notifyObjectNeedsWrite(id_);`,
-            `  hasNotifiedNeedsWrite_ = true;`,
-            `}`,
-        ],
-    });
-    classSpec.methods.push({
-        name: "getCollectionId",
-        returnType: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
-        body: [
-            `return collection_ == nullptr ? -1 : collection_->getId();`,
-        ],
-    });
-    classSpec.members.push({
-        name: "collection",
-        type: CppDatasetLibraryTypes_1.IObjectCollection.getLocalType(ctx.namespace, classSpec.includes) + "*",
-        initialValue: "nullptr",
         visibility: "protected",
     });
 }
@@ -181,9 +141,10 @@ function genSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderD
         (0, CppCodeGenImpl_1.getDataStoreHeaderName)(ctx.storeDef.apiname),
         `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}.h`,
     ]);
-    const readAccessorType = reconcilerDef.type.getReadAccessorType(ctx.namespace, cppIncludes);
+    const reconciledType = reconcilerDef.type.getLocalType(ctx.namespace, cppIncludes);
+    const reconciledTypePtr = reconcilerDef.type.getLocalTypePtr(ctx.namespace, cppIncludes);
     const forwardDeclarations = [
-        (0, CppCodeGenImpl_1.forwardDeclareClass)(readAccessorType),
+        (0, CppCodeGenImpl_1.forwardDeclareClass)(reconciledType),
         (0, CppCodeGenImpl_1.forwardDeclareClass)(`U${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(ctx.storeDef)}`),
     ];
     const classMeta = reconcilerDef.componentProps.internalOnly ? "" : ", meta = (BlueprintSpawnableComponent)";
@@ -209,64 +170,39 @@ function genSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderD
         },
         separateImplementation: true,
     });
-    (0, SceneComponentShared_1.genFieldProperties)(classSpec, { ctx, reconcilerDef, setterHooks: {}, proxyObj: null, separateImplementation: true });
+    (0, SceneComponentShared_1.genFieldProperties)(classSpec, { ctx, reconcilerDef, proxyObj: PROXY_OBJ, separateImplementation: true });
     if (!reconcilerDef.type.interfaceType) {
         genDataStoreObjectAccessors(ctx, classSpec);
     }
-    classSpec.methods.push({
-        name: "writeDSChanges",
-        parameters: [{
-                name: "accessor",
-                type: CppDatasetLibraryTypes_1.TransportStreamAccessor.getLocalType(ctx.namespace, classSpec.includes) + "*",
-            }],
-        body: includes => (0, GenWriteReconcilerDataStore_1.genWriteFunctionBody)({
-            ctx,
-            includes,
-            reconcilerDef,
-            fieldToMemberVar: fieldName => (0, SceneComponentShared_1.getFieldMemberName)(reconcilerDef, fieldName),
-            canCreate: true,
-            proxyObj: null,
-        }),
-        separateImplementation: true,
+    classSpec.members.push({
+        name: PROXY_OBJ,
+        type: reconciledTypePtr,
+        visibility: "protected",
     });
     classSpec.methods.push({
-        name: "prepDSFullUpdate",
-        returnType: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
-        body: includes => (0, GenWriteReconcilerDataStore_1.genPrepFullUpdateFunctionBody)({
-            ctx,
-            includes,
-            reconcilerDef,
-            fieldToMemberVar: fieldName => (0, SceneComponentShared_1.getFieldMemberName)(reconcilerDef, fieldName),
-            canCreate: true,
-        }),
-        separateImplementation: true,
-    });
-    classSpec.methods.push({
-        name: "processDSUpdate",
+        name: "handleXrpaFieldsChanged",
         parameters: [{
-                name: "value",
-                type: readAccessorType,
-            }, {
                 name: "fieldsChanged",
                 type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
             }],
-        body: includes => (0, SceneComponentShared_1.genProcessUpdateBody)({ ctx, includes, reconcilerDef, proxyObj: null }),
-        isVirtual: true,
+        body: includes => (0, SceneComponentShared_1.genProcessUpdateBody)({ ctx, includes, reconcilerDef, proxyObj: PROXY_OBJ }),
         separateImplementation: true,
     });
+    const initializerLines = [
+        ...(0, SceneComponentShared_1.genFieldSetterCalls)({ ctx, reconcilerDef, proxyObj: PROXY_OBJ }),
+        `${PROXY_OBJ}->onXrpaFieldsChanged(${(0, CppCodeGenImpl_1.genPassthroughMethodBind)("handleXrpaFieldsChanged", 1)});`,
+    ];
     (0, SceneComponentShared_1.genUEMessageFieldAccessors)(classSpec, {
         ctx,
         reconcilerDef,
         genMsgHandler: GenDataStore_1.genMsgHandler,
-        proxyObj: null,
-    });
-    (0, SceneComponentShared_1.genUEMessageChannelDispatch)(classSpec, {
-        ctx,
-        reconcilerDef,
+        proxyObj: PROXY_OBJ,
+        initializerLines,
+        forwardDeclarations,
     });
     classSpec.methods.push({
         name: "initializeDS",
-        body: includes => genComponentInit(ctx, includes, reconcilerDef),
+        body: includes => genComponentInit(ctx, includes, reconcilerDef, initializerLines),
         isVirtual: Boolean(reconcilerDef.type.interfaceType),
         isOverride: Boolean(reconcilerDef.type.interfaceType),
         separateImplementation: true,
@@ -318,7 +254,7 @@ function genSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderD
                 return [
                     `Super::OnUpdateTransform(UpdateTransformFlags, Teleport);`,
                     ``,
-                    ...(0, SceneComponentShared_1.genTransformUpdates)({ ctx, includes, reconcilerDef, proxyObj: null }),
+                    ...(0, SceneComponentShared_1.genTransformUpdates)({ ctx, includes, reconcilerDef, proxyObj: PROXY_OBJ }),
                 ];
             },
             visibility: "protected",
@@ -335,30 +271,6 @@ function genSceneComponent(ctx, fileWriter, reconcilerDef, outSrcDir, outHeaderD
         ],
         visibility: "protected",
         separateImplementation: true,
-    });
-    classSpec.members.push({
-        name: "createTimestamp",
-        type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
-        initialValue: "0",
-        visibility: "protected",
-    });
-    classSpec.members.push({
-        name: "changeBits",
-        type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
-        initialValue: "0",
-        visibility: "protected",
-    });
-    classSpec.members.push({
-        name: "changeByteCount",
-        type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
-        initialValue: "0",
-        visibility: "protected",
-    });
-    classSpec.members.push({
-        name: "createWritten",
-        type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.bool.typename,
-        initialValue: "false",
-        visibility: "protected",
     });
     classSpec.members.push({
         name: "dsIsInitialized",

@@ -119,9 +119,6 @@ function getFieldBindings(config, fieldToPropertyBindings, fieldPath, dataType) 
     return fieldToPropertyBindings;
 }
 function generateComponentProperties(ctx, collection) {
-    if ((0, InterfaceTypes_1.getUseGenericImplementation)(collection)) {
-        return undefined;
-    }
     const config = getGameEngineConfig(ctx);
     if (!config) {
         return undefined;

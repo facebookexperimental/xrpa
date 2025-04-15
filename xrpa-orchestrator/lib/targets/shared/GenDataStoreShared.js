@@ -48,7 +48,6 @@ function genFieldProperties(classSpec, params) {
         }
         params.reconcilerDef.type.declareLocalFieldClassMember(classSpec, fieldName, params.fieldToMemberVar(fieldName), true, [], params.visibility);
     }
-    let hasChangeBits = false;
     if (params.canCreate) {
         classSpec.members.push({
             name: "createTimestamp",
@@ -73,7 +72,6 @@ function genFieldProperties(classSpec, params) {
             initialValue: new TypeValue_1.CodeLiteralValue(params.codegen, params.codegen.PRIMITIVE_INTRINSICS.FALSE),
             visibility: params.visibility,
         });
-        hasChangeBits = true;
     }
     else if (params.canChange && params.reconcilerDef.getOutboundChangeBits() !== 0) {
         classSpec.members.push({
@@ -87,19 +85,6 @@ function genFieldProperties(classSpec, params) {
             type: params.codegen.PRIMITIVE_INTRINSICS.int32.typename,
             initialValue: new TypeValue_1.CodeLiteralValue(params.codegen, "0"),
             visibility: params.visibility,
-        });
-        hasChangeBits = true;
-    }
-    if (params.canSetDirty && hasChangeBits) {
-        const collectionVar = params.codegen.privateMember("collection");
-        classSpec.methods.push({
-            name: "notifyNeedsWrite",
-            body: [
-                `if (${params.codegen.genNonNullCheck(collectionVar)} && !${params.codegen.privateMember("hasNotifiedNeedsWrite")}) {`,
-                `  ${params.codegen.genDerefMethodCall(collectionVar, "notifyObjectNeedsWrite", [params.codegen.genDerefMethodCall("", "getXrpaId", [])])};`,
-                `  ${params.codegen.privateMember("hasNotifiedNeedsWrite")} = true;`,
-                `}`,
-            ],
         });
     }
 }

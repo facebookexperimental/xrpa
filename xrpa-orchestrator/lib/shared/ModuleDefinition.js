@@ -161,8 +161,8 @@ class ModuleDefinition {
     createReference(toType) {
         return new ReferenceType_1.ReferenceType(this.codegen, toType, this.ObjectUuid);
     }
-    createStruct(name, apiname, fields, localTypeOverride) {
-        return new StructType_1.StructType(this.codegen, name, apiname, undefined, fields, localTypeOverride);
+    createStruct(name, apiname, fields, localTypeOverride, properties) {
+        return new StructType_1.StructType(this.codegen, name, apiname, undefined, fields, localTypeOverride, properties);
     }
     createMessageStruct(name, apiname, fields, expectedRatePerSecond) {
         return new MessageDataType_1.MessageDataType(this.codegen, name, apiname, this.ObjectUuid, fields, expectedRatePerSecond);
@@ -180,9 +180,9 @@ class ModuleDefinition {
         return new BuiltinTypes_1.ByteArrayType(this.codegen, expectedSize);
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    setCollectionAsInbound(type, _componentProps, reconciledTo, _indexes) {
+    setCollectionAsInbound(type, _componentProps, _indexes) {
         const collection = type;
-        collection.localType = reconciledTo ?? {
+        collection.localType = {
             typename: this.codegen.nsJoin(this.codegen.getDataStoreHeaderNamespace(collection.apiname), `Reconciled${type.getName()}`),
             headerFile: this.codegen.getDataStoreHeaderName(collection.apiname),
         };

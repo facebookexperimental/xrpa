@@ -70,7 +70,7 @@ function genOnSignalAccessor(classSpec, params) {
         name: `on${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
         parameters: [{
                 name: "handler",
-                type: `std::shared_ptr<${CppDatasetLibraryTypes_1.InboundSignalDataInterface.getLocalType(params.ctx.namespace, classSpec.includes)}>`,
+                type: `std::shared_ptr<${CppDatasetLibraryTypes_1.InboundSignalDataInterface.getLocalType(params.namespace, classSpec.includes)}>`,
             }],
         body: [
             `${signalHandler} = handler;`,
@@ -78,7 +78,7 @@ function genOnSignalAccessor(classSpec, params) {
     });
     classSpec.members.push({
         name: signalHandler,
-        type: `std::shared_ptr<${CppDatasetLibraryTypes_1.InboundSignalDataInterface.getLocalType(params.ctx.namespace, classSpec.includes)}>`,
+        type: `std::shared_ptr<${CppDatasetLibraryTypes_1.InboundSignalDataInterface.getLocalType(params.namespace, classSpec.includes)}>`,
         initialValue: new TypeValue_1.CodeLiteralValue(CppCodeGenImpl, "nullptr"),
         visibility: "private",
     });
@@ -191,6 +191,7 @@ function genSignalFieldAccessors(classSpec, params) {
         if (params.reconcilerDef.isInboundField(fieldName)) {
             genOnSignalAccessor(classSpec, {
                 ...params,
+                namespace: params.ctx.namespace,
                 typeDef,
                 fieldName,
                 fieldType,

@@ -27,15 +27,12 @@ from xrpa_runtime.transport.transport_stream_accessor import (
 )
 from xrpa_runtime.utils.allocated_memory import AllocatedMemory
 from xrpa_runtime.utils.memory_accessor import MemoryAccessor
+from xrpa_runtime.utils.placed_ring_buffer import (
+    PlacedRingBuffer,
+    PlacedRingBufferIterator,
+)
+from xrpa_runtime.utils.time_utils import TimeUtils
 from xrpa_runtime.utils.xrpa_types import ObjectUuid
-
-
-@dataclass
-class OutboundMessage:
-    object_id: ObjectUuid
-    collection_id: int
-    field_id: int
-    message_data: MemoryAccessor
 
 
 @dataclass
@@ -54,13 +51,17 @@ class DataStoreReconciler:
         self._inbound_transport = inbound_transport
         self._outbound_transport = outbound_transport
 
-        self._outbound_messages = []
-        self._message_data_pool = (
-            AllocatedMemory(message_data_pool_size)
-            if message_data_pool_size > 0
-            else None
-        )
-        self._message_data_pool_pos = 0
+        if message_data_pool_size > 0:
+            self._outbound_messages_memory = AllocatedMemory(
+                PlacedRingBuffer.get_mem_size(message_data_pool_size)
+            )
+            self._outbound_messages = PlacedRingBuffer(
+                self._outbound_messages_memory.accessor, 0
+            )
+            self._outbound_messages.init(message_data_pool_size)
+            self._outbound_messages_iterator = PlacedRingBufferIterator()
+            self._outbound_messages_iterator.set_to_end(self._outbound_messages)
+
         self._message_lifetime_us = 5000000
 
         self._collections = {}
@@ -81,8 +82,9 @@ class DataStoreReconciler:
             ),
         )
 
-        del self._message_data_pool
-        self._message_data_pool = None
+        del self._outbound_messages_memory
+        self._outbound_messages_memory = None
+        self._outbound_messages = None
 
         self._inbound_transport = None
         self._outbound_transport = None
@@ -107,7 +109,9 @@ class DataStoreReconciler:
         for collection in self._collections.values():
             collection.tick()
 
-        has_outbound_messages = len(self._outbound_messages) > 0
+        has_outbound_messages = (
+            self._outbound_messages is not None
+        ) and self._outbound_messages_iterator.has_next(self._outbound_messages)
         has_outbound_changes = (
             self._request_inbound_full_update
             or self._pending_outbound_full_update
@@ -132,14 +136,15 @@ class DataStoreReconciler:
     def send_message(
         self, object_id: ObjectUuid, collection_id: int, field_id: int, num_bytes: int
     ) -> MemoryAccessor:
-        message_data = self._message_data_pool.accessor.slice(
-            self._message_data_pool_pos, num_bytes
+        (message_mem, rbid) = self._outbound_messages.push(
+            CollectionMessageChangeEventAccessor.DS_SIZE + num_bytes
         )
-        self._message_data_pool_pos += num_bytes
-        self._outbound_messages.append(
-            OutboundMessage(object_id, collection_id, field_id, message_data)
-        )
-        return message_data
+        message = CollectionMessageChangeEventAccessor(message_mem)
+        message.set_change_type(CollectionChangeType.Message.value)
+        message.set_object_id(object_id)
+        message.set_collection_id(collection_id)
+        message.set_field_id(field_id)
+        return message.access_change_data()
 
     def notify_object_needs_write(self, object_id: ObjectUuid, collection_id: int):
         cur_size = len(self._pending_writes)
@@ -181,8 +186,9 @@ class DataStoreReconciler:
             return
 
         oldest_message_timestamp = (
-            accessor.get_current_timestamp() - self._message_lifetime_us
+            TimeUtils.get_current_clock_time_microseconds() - self._message_lifetime_us
         )
+        base_timestamp = accessor.get_base_timestamp()
         in_full_update = False
         reconciled_ids = set()
 
@@ -247,7 +253,7 @@ class DataStoreReconciler:
 
             elif change_type == CollectionChangeType.Message:
                 entry = CollectionMessageChangeEventAccessor(entry_mem)
-                timestamp = entry.get_timestamp()
+                timestamp = entry.get_timestamp(base_timestamp)
                 if timestamp < oldest_message_timestamp:
                     continue
                 collection = self._collections.get(entry.get_collection_id(), None)
@@ -287,16 +293,6 @@ class DataStoreReconciler:
         self._pending_writes.clear()
 
         # write messages
-        for message in self._outbound_messages:
-            data = accessor.write_change_event(
-                CollectionMessageChangeEventAccessor,
-                CollectionChangeType.Message.value,
-                message.message_data.size,
-            )
-            data.set_collection_id(message.collection_id)
-            data.set_object_id(message.object_id)
-            data.set_field_id(message.field_id)
-            data.access_change_data().copy_from(message.message_data)
-
-        self._outbound_messages.clear()
-        self._message_data_pool_pos = 0
+        while self._outbound_messages_iterator.has_next(self._outbound_messages):
+            message = self._outbound_messages_iterator.next(self._outbound_messages)
+            accessor.write_prefilled_change_event(message)

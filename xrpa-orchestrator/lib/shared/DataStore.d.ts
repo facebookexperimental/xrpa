@@ -18,7 +18,6 @@
 import { DataModelDefinition } from "./DataModel";
 import { IncludeAggregator } from "./Helpers";
 import { ModuleDefinition } from "./ModuleDefinition";
-import { TypeSpec } from "./TargetCodeGen";
 import { CollectionTypeDefinition, FieldTypeSpec, TypeMap } from "./TypeDefinition";
 export type FieldAccessorNameOverride = string | [string, string];
 export type FieldAccessorNames = Record<string, FieldAccessorNameOverride>;
@@ -37,13 +36,14 @@ export interface IndexConfiguration {
     boundClassName?: string;
 }
 declare class BaseReconcilerDefinition {
+    readonly storeDef: DataStoreDefinition;
     readonly type: CollectionTypeDefinition;
     readonly inboundFields: Array<string> | null;
     readonly outboundFields: Array<string> | null;
     readonly fieldAccessorNameOverrides: FieldAccessorNames;
     readonly componentProps: ComponentProperties;
     readonly indexConfigs: Array<IndexConfiguration>;
-    constructor(type: CollectionTypeDefinition, inboundFields: Array<string> | null, outboundFields: Array<string> | null, fieldAccessorNameOverrides: FieldAccessorNames, componentProps: ComponentProperties, indexConfigs: Array<IndexConfiguration>);
+    constructor(storeDef: DataStoreDefinition, type: CollectionTypeDefinition, inboundFields: Array<string> | null, outboundFields: Array<string> | null, fieldAccessorNameOverrides: FieldAccessorNames, componentProps: ComponentProperties, indexConfigs: Array<IndexConfiguration>);
     isInboundField(fieldName: string): boolean;
     isOutboundField(fieldName: string): boolean;
     getFieldSpec(fieldName: string): FieldTypeSpec;
@@ -65,16 +65,12 @@ declare class BaseReconcilerDefinition {
     hasIndexedBinding(): boolean;
 }
 export declare class InputReconcilerDefinition extends BaseReconcilerDefinition {
-    private useGenericReconciledType;
     readonly inboundFields: null;
-    constructor(type: CollectionTypeDefinition, outboundFields: Array<string>, fieldAccessorNameOverrides: FieldAccessorNames, componentProps: ComponentProperties, useGenericReconciledType: boolean, indexConfigs: Array<IndexConfiguration>);
-    shouldGenerateConcreteReconciledType(): boolean;
+    constructor(storeDef: DataStoreDefinition, type: CollectionTypeDefinition, outboundFields: Array<string>, fieldAccessorNameOverrides: FieldAccessorNames, componentProps: ComponentProperties, indexConfigs: Array<IndexConfiguration>);
 }
 export declare class OutputReconcilerDefinition extends BaseReconcilerDefinition {
-    private useGenericReconciledType;
     readonly outboundFields: null;
-    constructor(type: CollectionTypeDefinition, inboundFields: Array<string>, fieldAccessorNameOverrides: FieldAccessorNames, componentProps: ComponentProperties, useGenericReconciledType: boolean, indexConfigs: Array<IndexConfiguration>);
-    shouldGenerateConcreteReconciledType(): boolean;
+    constructor(storeDef: DataStoreDefinition, type: CollectionTypeDefinition, inboundFields: Array<string>, fieldAccessorNameOverrides: FieldAccessorNames, componentProps: ComponentProperties, indexConfigs: Array<IndexConfiguration>);
 }
 export declare class DataStoreDefinition {
     readonly moduleDef: ModuleDefinition;
@@ -89,11 +85,9 @@ export declare class DataStoreDefinition {
     addInputReconciler(params: {
         type: CollectionTypeDefinition | string;
         outboundFields?: Array<string>;
-        reconciledTo?: TypeSpec;
         indexes?: Array<IndexConfiguration>;
         fieldAccessorNameOverrides?: FieldAccessorNames;
         componentProps?: ComponentProperties;
-        useGenericReconciledType?: boolean;
     }): InputReconcilerDefinition;
     getInputReconcilers(): ReadonlyArray<InputReconcilerDefinition>;
     addOutputReconciler(params: {
@@ -102,7 +96,6 @@ export declare class DataStoreDefinition {
         indexes?: Array<IndexConfiguration>;
         fieldAccessorNameOverrides?: FieldAccessorNames;
         componentProps?: ComponentProperties;
-        useGenericReconciledType?: boolean;
     }): OutputReconcilerDefinition;
     getOutputReconcilers(): ReadonlyArray<OutputReconcilerDefinition>;
     getAllReconcilers(): ReadonlyArray<InputReconcilerDefinition | OutputReconcilerDefinition>;

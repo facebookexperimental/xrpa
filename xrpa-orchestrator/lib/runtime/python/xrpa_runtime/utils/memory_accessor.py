@@ -143,7 +143,7 @@ class MemoryAccessor:
         self._data_source[start : start + 8] = struct.pack("<Q", val)
 
     def read_str(self, offset: MemoryOffset) -> str:
-        self.read_bytearray(offset).decode("utf-8")
+        return self.read_bytearray(offset).decode("utf-8")
 
     def write_str(self, val: str, offset: MemoryOffset):
         self.write_bytearray(val.encode("utf-8"), offset)

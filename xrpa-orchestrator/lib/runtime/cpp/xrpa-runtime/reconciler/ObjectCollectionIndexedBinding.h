@@ -28,9 +28,7 @@ template <typename ReconciledTypePtr, typename IndexFieldType, typename LocalTyp
 class ObjectCollectionIndexedBinding
     : public ObjectCollectionIndex<ReconciledTypePtr, IndexFieldType> {
  public:
-  explicit ObjectCollectionIndexedBinding(uint64_t inboundFieldMask)
-      : inboundFieldMask_(inboundFieldMask) {}
-
+  ObjectCollectionIndexedBinding() = default;
   ~ObjectCollectionIndexedBinding() override = default;
 
   void addLocalObject(IndexFieldType indexValue, LocalTypePtr localObj) {
@@ -44,7 +42,6 @@ class ObjectCollectionIndexedBinding
       if (localObj->addXrpaBinding(reconciledObj)) {
         auto id = reconciledObj->getXrpaId();
         boundLocalObjects_[id].emplace_back(localObj);
-        localObj->processDSUpdate(inboundFieldMask_);
       }
       break;
     }
@@ -82,24 +79,12 @@ class ObjectCollectionIndexedBinding
     for (auto& localObj : localObjects) {
       if (localObj->addXrpaBinding(reconciledObj)) {
         boundLocalObjects_[id].emplace_back(localObj);
-        localObj->processDSUpdate(inboundFieldMask_);
       }
     }
   }
 
   void onDelete(ReconciledTypePtr reconciledObj, IndexFieldType indexValue) override {
     auto id = reconciledObj->getXrpaId();
-
-    if constexpr (has_processDSDelete<LocalTypePtr>::value) {
-      auto vecIter = boundLocalObjects_.find(id);
-      if (vecIter == boundLocalObjects_.end()) {
-        return;
-      }
-      for (auto& localObj : vecIter->second) {
-        localObj->processDSDelete();
-      }
-    }
-
     ObjectCollectionIndex<ReconciledTypePtr, IndexFieldType>::onDelete(reconciledObj, indexValue);
 
     // unbind local objects from reconciled object
@@ -113,53 +98,7 @@ class ObjectCollectionIndexedBinding
     boundLocalObjects_.erase(id);
   }
 
-  void tick() {
-    // tick only the bound local objects
-    if constexpr (has_tickXrpa<LocalTypePtr>::value) {
-      for (auto& iter : boundLocalObjects_) {
-        for (auto& localObj : iter.second) {
-          localObj->tickXrpa();
-        }
-      }
-    }
-  }
-
-  void writeChanges(const ObjectUuid& id) {
-    auto vecIter = boundLocalObjects_.find(id);
-    if (vecIter == boundLocalObjects_.end()) {
-      return;
-    }
-    for (auto& localObj : vecIter->second) {
-      localObj->writeDSChanges();
-    }
-  }
-
-  void processUpdate(const ObjectUuid& id, uint64_t fieldsChanged) {
-    auto vecIter = boundLocalObjects_.find(id);
-    if (vecIter == boundLocalObjects_.end()) {
-      return;
-    }
-    for (auto& localObj : vecIter->second) {
-      localObj->processDSUpdate(fieldsChanged);
-    }
-  }
-
-  void processMessage(
-      const ObjectUuid& id,
-      int32_t messageType,
-      int32_t timestamp,
-      MemoryAccessor messageData) {
-    auto vecIter = boundLocalObjects_.find(id);
-    if (vecIter == boundLocalObjects_.end()) {
-      return;
-    }
-    for (auto& localObj : vecIter->second) {
-      localObj->processDSMessage(messageType, timestamp, messageData);
-    }
-  }
-
  private:
-  uint64_t inboundFieldMask_;
   std::unordered_map<IndexFieldType, std::vector<LocalTypePtr>> localObjects_;
   std::unordered_map<ObjectUuid, std::vector<LocalTypePtr>> boundLocalObjects_;
 };

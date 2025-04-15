@@ -15,8 +15,10 @@
  */
 
 
+import { OutputReconcilerDefinition } from "./DataStore";
 import { ModuleDefinition } from "./ModuleDefinition";
 import { StructSpec } from "./TypeDefinition";
+import { XrpaCollectionType } from "../InterfaceTypes";
 import { ProgramInterface, XrpaProgramParam } from "../ProgramInterface";
 export type XrpaFieldValue = number | string | boolean | undefined | XrpaProgramParam | XrpaDataflowGraphNode | XrpaDataflowConnection;
 export interface XrpaDataflowGraphNode {
@@ -27,7 +29,8 @@ export interface XrpaDataflowForeignObjectInstantiation extends XrpaDataflowGrap
     __isDataflowObjectInstantiation: true;
     name: string;
     programInterfaceName: string;
-    collectionType: string;
+    collectionName: string;
+    collectionType: XrpaCollectionType;
     fieldValues: Record<string, XrpaFieldValue>;
     isBuffered: boolean;
 }
@@ -51,5 +54,7 @@ export interface DataflowInput {
     connections: XrpaDataflowConnection[];
 }
 export declare function getDataflowInputs(dataflow: DataflowProgramDefinition): DataflowInput[];
-export declare function getDataflowInputStructSpec(inputs: DataflowInput[], moduleDef: ModuleDefinition): StructSpec;
+export declare function getDataflowOutputs(dataflow: DataflowProgramDefinition): XrpaProgramParam[];
+export declare function getReconcilerDefForNode(moduleDef: ModuleDefinition, graphNode: XrpaDataflowGraphNode): OutputReconcilerDefinition;
+export declare function getDataflowParamsStructSpec(params: XrpaProgramParam[], moduleDef: ModuleDefinition): StructSpec;
 

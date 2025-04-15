@@ -31,6 +31,7 @@ var BuiltinType;
     BuiltinType["BitField"] = "BitField";
     BuiltinType["Scalar"] = "Scalar";
     BuiltinType["Timestamp"] = "Timestamp";
+    BuiltinType["HiResTimestamp"] = "HiResTimestamp";
     BuiltinType["String"] = "String";
     BuiltinType["Float3"] = "Float3";
     BuiltinType["Angle"] = "Angle";
@@ -58,8 +59,8 @@ function isBuiltinType(typeName) {
 exports.isBuiltinType = isBuiltinType;
 /*****************************************************/
 class TimestampType extends PrimitiveType_1.PrimitiveType {
-    constructor(codegen, localType) {
-        super(codegen, "Timestamp", codegen.PRIMITIVE_INTRINSICS.uint64, localType, 8, false, new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.uint64.typename, 0), new TypeValue_1.CodeLiteralValue(codegen, codegen.genGetCurrentClockTime(null)));
+    constructor(codegen, name, localType) {
+        super(codegen, name, codegen.PRIMITIVE_INTRINSICS.uint64, localType, 8, false, new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.uint64.typename, 0), new TypeValue_1.CodeLiteralValue(codegen, codegen.genGetCurrentClockTime(null, name === BuiltinType.HiResTimestamp)));
     }
     getMetaType() {
         return TypeDefinition_1.TypeMetaType.CLEAR_SET;
@@ -162,7 +163,8 @@ function genPrimitiveTypes(codegen, typeMap) {
         // TODO maybe rename Count -> WholeNumber, and then add Count back as a semantic type instead? (constrained to >= 0)
         [BuiltinType.Count]: new PrimitiveType_1.PrimitiveType(codegen, BuiltinType.Count, codegen.PRIMITIVE_INTRINSICS.int32, typeMap[BuiltinType.Count] ?? codegen.PRIMITIVE_INTRINSICS.int, 4, true, new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.int32.typename, 0)),
         [BuiltinType.BitField]: new PrimitiveType_1.PrimitiveType(codegen, BuiltinType.BitField, codegen.PRIMITIVE_INTRINSICS.uint64, codegen.PRIMITIVE_INTRINSICS.uint64, 8, true, new TypeValue_1.PrimitiveValue(codegen, codegen.PRIMITIVE_INTRINSICS.uint64.typename, 0)),
-        [BuiltinType.Timestamp]: new TimestampType(codegen, typeMap[BuiltinType.Timestamp] ?? codegen.PRIMITIVE_INTRINSICS.microseconds),
+        [BuiltinType.Timestamp]: new TimestampType(codegen, BuiltinType.Timestamp, typeMap[BuiltinType.Timestamp] ?? codegen.PRIMITIVE_INTRINSICS.microseconds),
+        [BuiltinType.HiResTimestamp]: new TimestampType(codegen, BuiltinType.HiResTimestamp, typeMap[BuiltinType.HiResTimestamp] ?? codegen.PRIMITIVE_INTRINSICS.nanoseconds),
         [BuiltinType.String]: new PrimitiveType_1.PrimitiveType(codegen, BuiltinType.String, codegen.PRIMITIVE_INTRINSICS.string, typeMap[BuiltinType.String] ?? codegen.PRIMITIVE_INTRINSICS.string, {
             staticSize: 4,
             dynamicSizeEstimate: 252,

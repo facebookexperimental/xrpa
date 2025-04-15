@@ -16,11 +16,13 @@
 
 
 import { Thunk } from "@xrpa/xrpa-utils";
+import { XrpaDataflowConnection } from "./DataflowProgram";
 import { BindingProperties, PropertyCondition, WithBindingProperties, XrpaDataType, XrpaNamedDataType } from "./XrpaLanguage";
 export interface XrpaProgramParam<T extends XrpaDataType = XrpaDataType> {
     __isXrpaProgramParam: true;
     name: string;
     dataType: T;
+    source?: XrpaDataflowConnection;
 }
 export declare function isXrpaProgramParam(param: unknown): param is XrpaProgramParam;
 export interface ProgramInterfaceContext extends WithBindingProperties {
@@ -41,6 +43,7 @@ export declare const IfOutput: PropertyCondition;
 export declare function getDirectionality(dataType: XrpaDataType): "inbound" | "outbound" | undefined;
 export declare function ProgramInput<T extends XrpaDataType = XrpaDataType>(name: string, dataType: T): XrpaProgramParam<T>;
 export declare function ProgramOutput<T extends XrpaDataType = XrpaDataType>(name: string, dataType: T): XrpaProgramParam<T>;
+export declare function ProgramOutput(name: string, source: XrpaDataflowConnection): XrpaProgramParam;
 export declare function UppercaseCompanyName(programInterface: ProgramInterface): ProgramInterface;
 export declare function XrpaProgramInterface(name: string, callback: (ctx: ProgramInterfaceContext) => void): ProgramInterface;
 export declare function propagatePropertiesToInterface(programInterface: ProgramInterface, properties: BindingProperties): ProgramInterface;

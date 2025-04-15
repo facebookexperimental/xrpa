@@ -21,38 +21,32 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AriaGlasses = exports.XredSensorInputInterface = void 0;
+const xred_perception_services_1 = require("@xrpa/xred-perception-services");
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const assert_1 = __importDefault(require("assert"));
 exports.XredSensorInputInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.SensorInput", () => {
-    const slamImage = (0, xrpa_orchestrator_1.Image)("SlamImage", {
-        expectedWidth: 480,
-        expectedHeight: 640,
-        expectedBytesPerPixel: 0.5, // jpeg compression
-    });
-    const rgbImage = (0, xrpa_orchestrator_1.Image)("RgbImage", {
-        expectedWidth: 1408,
-        expectedHeight: 1408,
-        expectedBytesPerPixel: 1.5, // jpeg compression
-    });
-    (0, xrpa_orchestrator_1.ProgramInput)("AriaGlasses", (0, xrpa_orchestrator_1.GenericImpl)(xrpa_orchestrator_1.IfOutput, (0, xrpa_orchestrator_1.Collection)({
+    const { pose, poseDynamicsMessage, rgbMessage, slamMessage, } = (0, xred_perception_services_1.getPerceptionTypes)();
+    const PoseTransform = (0, xrpa_orchestrator_1.ObjectTransform)({
+        position: "position",
+        rotation: "orientation",
+    }, pose);
+    (0, xrpa_orchestrator_1.ProgramInput)("AriaGlasses", (0, xrpa_orchestrator_1.Collection)({
         maxCount: 4,
         fields: {
             name: xrpa_orchestrator_1.String,
             ipAddress: xrpa_orchestrator_1.String,
+            calibrationJson: (0, xrpa_orchestrator_1.Output)(xrpa_orchestrator_1.String),
             isStreaming: (0, xrpa_orchestrator_1.Output)(xrpa_orchestrator_1.Boolean),
             lastUpdate: (0, xrpa_orchestrator_1.Output)(xrpa_orchestrator_1.Timestamp),
             audio: (0, xrpa_orchestrator_1.Output)(xrpa_orchestrator_1.Signal),
-            rgbCamera: (0, xrpa_orchestrator_1.Output)((0, xrpa_orchestrator_1.MessageRate)(10, (0, xrpa_orchestrator_1.Message)({
-                image: rgbImage,
-            }))),
-            slamCamera1: (0, xrpa_orchestrator_1.Output)((0, xrpa_orchestrator_1.MessageRate)(10, (0, xrpa_orchestrator_1.Message)({
-                image: slamImage,
-            }))),
-            slamCamera2: (0, xrpa_orchestrator_1.Output)((0, xrpa_orchestrator_1.MessageRate)(10, (0, xrpa_orchestrator_1.Message)({
-                image: slamImage,
-            }))),
+            rgbCamera: (0, xrpa_orchestrator_1.Output)(rgbMessage),
+            slamCamera1: (0, xrpa_orchestrator_1.Output)(slamMessage),
+            slamCamera2: (0, xrpa_orchestrator_1.Output)(slamMessage),
+            poseDynamics: (0, xrpa_orchestrator_1.Output)(poseDynamicsMessage),
+            pose: (0, xrpa_orchestrator_1.Output)(PoseTransform),
+            coordinateFrameId: (0, xrpa_orchestrator_1.Output)(xrpa_orchestrator_1.Count),
         },
-    })));
+    }));
 });
 function AriaGlasses(ipAddress) {
     const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredSensorInputInterface), "AriaGlasses"], {});
@@ -60,10 +54,16 @@ function AriaGlasses(ipAddress) {
     dataflowNode.fieldValues.name = "AriaGlasses";
     dataflowNode.fieldValues.ipAddress = ipAddress;
     return {
+        calibrationJson: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "calibrationJson"),
+        isStreaming: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "isStreaming"),
+        lastUpdate: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "lastUpdate"),
         audio: { numChannels: 2, signal: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "audio") },
         rgbCamera: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "rgbCamera"),
         slamCamera1: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "slamCamera1"),
         slamCamera2: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "slamCamera2"),
+        poseDynamics: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "poseDynamics"),
+        pose: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "pose"),
+        coordinateFrameId: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "coordinateFrameId"),
     };
 }
 exports.AriaGlasses = AriaGlasses;

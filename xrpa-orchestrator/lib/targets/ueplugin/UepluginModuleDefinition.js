@@ -58,30 +58,13 @@ class UepluginModuleDefinition extends CppModuleDefinition_1.CppModuleDefinition
     createStruct(name, apiname, fields, localTypeOverride) {
         return new UeTypeDefinitions_1.StructTypeUe(this.codegen, name, apiname, undefined, fields, localTypeOverride);
     }
-    setCollectionAsInbound(type, componentProps, reconciledTo, indexes) {
+    setCollectionAsInbound(type, componentProps, indexes) {
         for (const index of (indexes ?? [])) {
             if (index.boundClassName === "") {
                 index.boundClassName = (0, SceneComponentShared_1.getComponentClassName)(null, type);
             }
         }
-        super.setCollectionAsInbound(type, componentProps, reconciledTo, indexes);
-    }
-    setCollectionAsOutbound(type, componentProps) {
-        if ((0, xrpa_utils_1.filterToString)(componentProps.basetype)?.endsWith("Component")) {
-            type.setToBarePtr({
-                typename: (0, SceneComponentShared_1.getComponentClassName)(null, type, componentProps.idName),
-                headerFile: (0, SceneComponentShared_1.getComponentHeader)(type, componentProps.idName),
-            });
-            if (type.interfaceType) {
-                type.interfaceType.setToBarePtr({
-                    typename: (0, SceneComponentShared_1.getComponentClassName)(null, type.interfaceType),
-                    headerFile: (0, SceneComponentShared_1.getComponentHeader)(type.interfaceType, undefined),
-                });
-            }
-        }
-        else {
-            super.setCollectionAsOutbound(type, componentProps);
-        }
+        super.setCollectionAsInbound(type, componentProps, indexes);
     }
     doCodeGen() {
         const fileWriter = new xrpa_file_utils_1.FileWriter();

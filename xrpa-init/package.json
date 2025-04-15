@@ -25,11 +25,11 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "@xrpa/xred-sensor-input": "^1.7.0",
-    "@xrpa/xred-signal-output": "^1.7.0",
-    "@xrpa/xred-signal-processing": "^1.7.0",
-    "@xrpa/xred-tactile-pressure": "^1.7.0",
-    "@xrpa/xred-tracking": "^1.7.0",
-    "@xrpa/xrpa-orchestrator": "^1.7.0"
+    "@xrpa/xred-sensor-input": "^1.8.0",
+    "@xrpa/xred-signal-output": "^1.8.0",
+    "@xrpa/xred-signal-processing": "^1.8.0",
+    "@xrpa/xred-tactile-pressure": "^1.8.0",
+    "@xrpa/xred-tracking": "^1.8.0",
+    "@xrpa/xrpa-orchestrator": "^1.8.0"
   }
 }

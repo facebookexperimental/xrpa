@@ -16,9 +16,15 @@
 
 "use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.XrpaPythonApplication = exports.XrpaNativePythonProgram = exports.XrpaNativeCppProgram = exports.addBuckDependency = exports.useBuck = exports.PythonListType = exports.StdVectorArrayType = exports.OvrCoordinateSystem = exports.withHeader = void 0;
+exports.runInCondaEnvironment = exports.XrpaPythonStandalone = exports.XrpaPythonApplication = exports.XrpaNativePythonProgram = exports.XrpaNativeCppProgram = exports.addBuckDependency = exports.useBuck = exports.PythonListType = exports.StdVectorArrayType = exports.OvrCoordinateSystem = exports.withHeader = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
+const xrpa_file_utils_1 = require("@xrpa/xrpa-file-utils");
+const promises_1 = __importDefault(require("fs/promises"));
+const path_1 = __importDefault(require("path"));
 const InterfaceTypes_1 = require("./InterfaceTypes");
 const NativeProgram_1 = require("./NativeProgram");
 const RuntimeEnvironment_1 = require("./RuntimeEnvironment");
@@ -26,6 +32,7 @@ const CoordinateTransformer_1 = require("./shared/CoordinateTransformer");
 const CppModuleDefinition_1 = require("./targets/cpp/CppModuleDefinition");
 const PythonApplication_1 = require("./targets/python/PythonApplication");
 const PythonModuleDefinition_1 = require("./targets/python/PythonModuleDefinition");
+const PythonStandalone_1 = require("./targets/python/PythonStandalone");
 function withHeader(headerFile, types) {
     const ret = {};
     for (const key in types) {
@@ -162,4 +169,36 @@ function XrpaPythonApplication(name, outputDir, callback) {
     return new PythonApplication_1.PythonApplication(XrpaNativePythonProgram(name, outputDir, callback));
 }
 exports.XrpaPythonApplication = XrpaPythonApplication;
+function XrpaPythonStandalone(name, outputDir, callback) {
+    return new PythonStandalone_1.PythonStandalone(XrpaNativePythonProgram(name, outputDir, callback));
+}
+exports.XrpaPythonStandalone = XrpaPythonStandalone;
+async function runInCondaEnvironment(yamlPath, filename) {
+    const yamlLines = await promises_1.default.readFile(yamlPath, "utf8");
+    const envName = yamlLines.split("\n")[0].split(" ")[1];
+    const envList = JSON.parse(await (0, xrpa_file_utils_1.runProcess)({
+        filename: "conda",
+        args: ["env", "list", "--json"],
+    }));
+    const found = envList.envs.some((env) => env.endsWith(envName) || path_1.default.basename(env) === envName);
+    if (!found) {
+        console.log(`Creating conda environment from ${yamlPath}...`);
+        await (0, xrpa_file_utils_1.runProcess)({
+            filename: "conda",
+            args: ["env", "create", "-f", yamlPath],
+            onLineReceived: line => {
+                console.log(line);
+            },
+        });
+    }
+    await (0, xrpa_file_utils_1.runProcess)({
+        filename: "conda",
+        args: ["run", "--live-stream", "-n", envName, "python", filename],
+        cwd: path_1.default.dirname(filename),
+        onLineReceived: line => {
+            console.log(line);
+        },
+    });
+}
+exports.runInCondaEnvironment = runInCondaEnvironment;
 //# sourceMappingURL=ConvenienceWrappers.js.map

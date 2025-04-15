@@ -18,7 +18,7 @@
 import { ClassSpec, ClassVisibility } from "./ClassSpec";
 import { UnitTransformer } from "./CoordinateTransformer";
 import { IncludeAggregator } from "./Helpers";
-import { InterfaceTypeDefinition, TypeDefinition, TypeSize } from "./TypeDefinition";
+import { MessageDataTypeDefinition, StructTypeDefinition, TypeDefinition, TypeSize } from "./TypeDefinition";
 import { TypeValue } from "./TypeValue";
 export interface TypeSpec {
     typename: string;
@@ -36,6 +36,7 @@ export interface FieldTypeAndAccessor {
 export interface PrimitiveIntrinsics {
     string: TypeSpec;
     microseconds: TypeSpec;
+    nanoseconds: TypeSpec;
     uint8: TypeSpec;
     uint64: TypeSpec;
     int: TypeSpec;
@@ -66,7 +67,6 @@ export interface TargetCodeGenImpl {
     HEADER: string[];
     UNIT_TRANSFORMER: UnitTransformer;
     PRIMITIVE_INTRINSICS: PrimitiveIntrinsics;
-    DEFAULT_INTERFACE_PTR_TYPE: string;
     XRPA_NAMESPACE: string;
     getXrpaTypes(): CoreXrpaTypes;
     nsQualify(qualifiedName: string, inNamespace: string): string;
@@ -75,7 +75,7 @@ export interface TargetCodeGenImpl {
     privateMember(memberVarName: string): string;
     methodMember(methodName: string): string;
     genCommentLines(str?: string): string[];
-    genGetCurrentClockTime(includes: IncludeAggregator | null): string;
+    genGetCurrentClockTime(includes: IncludeAggregator | null, inNanoseconds?: boolean): string;
     genPrimitiveValue(typename: string, value: string | boolean | number | null): string;
     genMultiValue(typename: string, hasInitializerConstructor: boolean, valueStrings: [string, string][]): string;
     genDeclaration(params: {
@@ -87,7 +87,7 @@ export interface TargetCodeGenImpl {
         isStatic?: boolean;
         isConst?: boolean;
     }): string;
-    genPointer(ptrType: string, localType: string, includes: IncludeAggregator | null): string;
+    genPointer(localType: string, includes: IncludeAggregator | null): string;
     genReadValue(params: {
         accessor: string;
         accessorIsStruct: boolean;
@@ -114,6 +114,29 @@ export interface TargetCodeGenImpl {
         isMessageStruct: boolean;
         objectUuidType: string;
     }): string;
+    genEventHandlerType(paramTypes: string[]): string;
+    genEventHandlerCall(handler: string, paramValues: string[], handlerCanBeNull: boolean): string;
+    genMessageHandlerType(params: {
+        namespace: string;
+        includes: IncludeAggregator | null;
+        fieldType: MessageDataTypeDefinition;
+    }): string;
+    genOnMessageAccessor(classSpec: ClassSpec, params: {
+        namespace: string;
+        fieldName: string;
+        fieldType: MessageDataTypeDefinition;
+        genMsgHandler: (msgName: string) => string;
+    }): void;
+    genMessageDispatch(params: {
+        namespace: string;
+        includes: IncludeAggregator | null;
+        fieldName: string;
+        fieldType: MessageDataTypeDefinition;
+        genMsgHandler: (fieldName: string) => string;
+        msgDataToParams: (msgType: MessageDataTypeDefinition, prelude: string[], includes: IncludeAggregator | null) => string[];
+        convertToReadAccessor: boolean;
+        timestampName?: string;
+    }): string[];
     genClassDefinition(classSpec: ClassSpec): string[];
     genReadWriteValueFunctions(classSpec: ClassSpec, params: {
         localType: TypeDefinition | string;
@@ -140,13 +163,13 @@ export interface TargetCodeGenImpl {
         convertFromLocal: boolean;
     }): void;
     genFieldChangedCheck(classSpec: ClassSpec, params: {
-        parentType: InterfaceTypeDefinition;
+        parentType: StructTypeDefinition;
         fieldName: string;
         visibility?: ClassVisibility;
     }): void;
     genEnumDefinition(enumName: string, enumValues: Record<string, number>, includes: IncludeAggregator | null): string[];
     genEnumDynamicConversion(targetTypename: string, value: TypeValue): string;
-    genReferencePtrToID(varName: string, ptrType: string, objectUuidType: string): string;
+    genReferencePtrToID(varName: string, objectUuidType: string): string;
     constRef(type: string, byteSize: number): string;
     reinterpretValue(fromType: string, toType: string, value: TypeValue): string;
     getDataStoreName(apiname: string): string;
@@ -163,7 +186,9 @@ export interface TargetCodeGenImpl {
     }): string;
     genDeref(ptrName: string, memberName: string): string;
     genDerefMethodCall(ptrName: string, methodName: string, params: string[]): string;
+    genMethodCall(varName: string, methodName: string, params: string[]): string;
     genMethodBind(ptrName: string, methodName: string, params: Record<string, string[]>, ignoreParamCount: number): string;
+    genPassthroughMethodBind(methodName: string, paramCount: number): string;
     getNullValue(): string;
     genNonNullCheck(ptrName: string): string;
     genCreateObject(type: string, params: string[]): string;
@@ -171,5 +196,8 @@ export interface TargetCodeGenImpl {
     genConvertBoolToInt(value: TypeValue): string;
     genConvertIntToBool(value: TypeValue): string;
     applyTemplateParams(typename: string, ...templateParams: string[]): string;
+    ifAnyBitIsSet(value: string, bitsValue: number, code: string[]): string[];
+    ifAllBitsAreSet(value: string, bitsValue: number, code: string[]): string[];
+    declareVar(varName: string, typename: string, initialValue: TypeValue): string;
 }
 

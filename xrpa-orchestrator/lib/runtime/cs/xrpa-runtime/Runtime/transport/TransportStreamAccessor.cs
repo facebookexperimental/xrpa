@@ -43,14 +43,15 @@ namespace Xrpa
             _memAccessor.WriteInt(type, new MemoryOffset(0));
         }
 
-        public int GetTimestamp()
+        public ulong GetTimestamp(ulong baseTimestampUs)
         {
-            return _memAccessor.ReadInt(new MemoryOffset(4));
+            ulong timestampOffsetMs = (ulong)(_memAccessor.ReadInt(new MemoryOffset(4)));
+            return baseTimestampUs + (timestampOffsetMs * 1000);
         }
 
-        public void SetTimestamp(int timestamp)
+        public void SetTimestamp(ulong timestampUs, ulong baseTimestampUs)
         {
-            _memAccessor.WriteInt(timestamp, new MemoryOffset(4));
+            _memAccessor.WriteInt((int)((timestampUs - baseTimestampUs) / 1000), new MemoryOffset(4));
         }
     }
 
@@ -60,14 +61,14 @@ namespace Xrpa
 
     public class TransportStreamAccessor
     {
-        public TransportStreamAccessor(ulong baseTimestamp, TransportStreamIteratorData iteratorData, System.Func<int, MemoryAccessor> eventAllocator)
+        public TransportStreamAccessor(ulong baseTimestampUs, TransportStreamIteratorData iteratorData, System.Func<int, MemoryAccessor> eventAllocator)
         {
-            _baseTimestamp = baseTimestamp;
+            _baseTimestampUs = baseTimestampUs;
             _iteratorData = iteratorData;
             _eventAllocator = eventAllocator;
         }
 
-        public EventAccessor WriteChangeEvent<EventAccessor>(int changeType, int numBytes = 0, ulong timestamp = 0) where EventAccessor : ChangeEventAccessor, new()
+        public EventAccessor WriteChangeEvent<EventAccessor>(int changeType, int numBytes = 0, ulong timestampUs = 0) where EventAccessor : ChangeEventAccessor, new()
         {
             EventAccessor changeEvent = new();
             changeEvent.SetAccessor(_eventAllocator(changeEvent.GetByteCount() + numBytes));
@@ -75,15 +76,28 @@ namespace Xrpa
             if (!changeEvent.IsNull())
             {
                 changeEvent.SetChangeType(changeType);
-                changeEvent.SetTimestamp((timestamp != 0) ? (int)(timestamp - _baseTimestamp) : GetCurrentTimestamp());
+                changeEvent.SetTimestamp((timestampUs != 0) ? timestampUs : TimeUtils.GetCurrentClockTimeMicroseconds(), _baseTimestampUs);
             }
 
             return changeEvent;
         }
 
-        public int GetCurrentTimestamp()
+        public void WritePrefilledChangeEvent(MemoryAccessor memAccessor, ulong timestampUs = 0)
         {
-            return (int)(TimeUtils.GetCurrentClockTimeMicroseconds() - _baseTimestamp);
+            var transportMem = _eventAllocator(memAccessor.Size);
+            if (transportMem.IsNull())
+            {
+                return;
+            }
+            transportMem.CopyFrom(memAccessor);
+
+            var changeEvent = new ChangeEventAccessor(transportMem);
+            changeEvent.SetTimestamp((timestampUs != 0) ? timestampUs : TimeUtils.GetCurrentClockTimeMicroseconds(), _baseTimestampUs);
+        }
+
+        public ulong GetBaseTimestamp()
+        {
+            return _baseTimestampUs;
         }
 
         public IteratorData GetIteratorData<IteratorData>() where IteratorData : TransportStreamIteratorData
@@ -91,7 +105,7 @@ namespace Xrpa
             return _iteratorData as IteratorData;
         }
 
-        private ulong _baseTimestamp;
+        private ulong _baseTimestampUs;
         private TransportStreamIteratorData _iteratorData;
         private System.Func<int, MemoryAccessor> _eventAllocator;
     }

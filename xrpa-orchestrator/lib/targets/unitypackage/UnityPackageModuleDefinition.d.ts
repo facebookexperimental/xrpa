@@ -18,7 +18,6 @@
 import { FileWriter } from "@xrpa/xrpa-file-utils";
 import { DataMapDefinition } from "../../shared/DataMap";
 import { ComponentProperties, IndexConfiguration } from "../../shared/DataStore";
-import { TypeSpec } from "../../shared/TargetCodeGen";
 import { CollectionTypeDefinition } from "../../shared/TypeDefinition";
 import { CsharpModuleDefinition } from "../csharp/CsharpModuleDefinition";
 import { PackageInfo } from "./GenPackage";
@@ -26,8 +25,7 @@ export declare class UnityPackageModuleDefinition extends CsharpModuleDefinition
     readonly projectRoot: string;
     readonly packageInfos: Record<string, PackageInfo>;
     constructor(name: string, datamap: DataMapDefinition, projectRoot: string, packageInfos: Record<string, PackageInfo>);
-    setCollectionAsInbound(type: CollectionTypeDefinition, componentProps: ComponentProperties, reconciledTo: TypeSpec | undefined, indexes: Array<IndexConfiguration> | undefined): void;
-    setCollectionAsOutbound(type: CollectionTypeDefinition, componentProps: ComponentProperties): void;
+    setCollectionAsInbound(type: CollectionTypeDefinition, componentProps: ComponentProperties, indexes: Array<IndexConfiguration> | undefined): void;
     doCodeGen(): FileWriter;
 }
 

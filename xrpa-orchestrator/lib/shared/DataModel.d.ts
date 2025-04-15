@@ -47,7 +47,7 @@ export declare class DataModelDefinition {
     SignalField(description?: string): FieldTypeSpec;
     addEnum(name: string, enumValues: string[]): TypeDefinition;
     addReference(toType: InterfaceTypeDefinition): TypeDefinition;
-    addStruct(name: string, fields: UserStructSpec): StructTypeDefinition;
+    addStruct(name: string, fields: UserStructSpec, properties?: Record<string, unknown>): StructTypeDefinition;
     addMessageStruct(name: string, fields: UserStructSpec, expectedRatePerSecond: number): MessageDataTypeDefinition;
     addInterface(params: {
         name: string;

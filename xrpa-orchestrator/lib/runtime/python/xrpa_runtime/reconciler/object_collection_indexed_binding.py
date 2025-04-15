@@ -16,8 +16,7 @@ from typing import Generic, TypeVar
 
 from xrpa_runtime.reconciler.data_store_interfaces import IDataStoreObjectAccessor
 from xrpa_runtime.reconciler.object_collection_index import ObjectCollectionIndex
-from xrpa_runtime.utils.memory_accessor import MemoryAccessor
-from xrpa_runtime.utils.xrpa_types import ObjectAccessorInterface, ObjectUuid
+from xrpa_runtime.utils.xrpa_types import ObjectAccessorInterface
 
 ObjectAccessorType = TypeVar("ObjectAccessorType", bound=ObjectAccessorInterface)
 ReconciledType = TypeVar(
@@ -31,9 +30,8 @@ class ObjectCollectionIndexedBinding(
     ObjectCollectionIndex[ObjectAccessorType, ReconciledType, IndexFieldType],
     Generic[ObjectAccessorType, ReconciledType, IndexFieldType, LocalType],
 ):
-    def __init__(self, inbound_field_mask: int):
+    def __init__(self):
         ObjectCollectionIndex.__init__(self)
-        self._inbound_field_mask = inbound_field_mask
         self._local_objects = {}
         self._bound_local_objects = {}
 
@@ -55,7 +53,6 @@ class ObjectCollectionIndexedBinding(
                     local_bound_objects = []
                     self._bound_local_objects[id] = local_bound_objects
                 local_bound_objects.append(local_obj)
-                local_obj.process_ds_update(self._inbound_field_mask)
 
     def remove_local_object(self, index_value: IndexFieldType, local_obj: LocalType):
         # remove local object from lookup
@@ -93,47 +90,14 @@ class ObjectCollectionIndexedBinding(
                     local_bound_objects = []
                     self._bound_local_objects[id] = local_bound_objects
                 local_bound_objects.append(local_obj)
-                local_obj.process_ds_update(self._inbound_field_mask)
 
     def on_delete(self, reconciled_obj: ReconciledType, index_value: IndexFieldType):
         id = reconciled_obj.get_xrpa_id()
-        local_bound_objects = self._bound_local_objects.get(id, None)
-        if local_bound_objects is not None:
-            for local_obj in local_bound_objects:
-                if hasattr(local_obj, "process_ds_delete"):
-                    local_obj.process_ds_delete()
-
         ObjectCollectionIndex.on_delete(self, reconciled_obj, index_value)
 
         # unbind local objects from reconciled object
+        local_bound_objects = self._bound_local_objects.get(id, None)
         if local_bound_objects is not None:
             for local_obj in local_bound_objects:
                 local_obj.remove_xrpa_binding(reconciled_obj)
             del self._bound_local_objects[id]
-
-    def tick(self):
-        for local_objects in self._bound_local_objects.values():
-            for local_obj in local_objects:
-                if hasattr(local_obj, "tick_xrpa"):
-                    local_obj.tick_xrpa()
-
-    def write_changes(self, id: ObjectUuid):
-        local_bound_objects = self._bound_local_objects.get(id, [])
-        for local_obj in local_bound_objects:
-            local_obj.write_ds_changes()
-
-    def process_update(self, id: ObjectUuid, fields_changed: int):
-        local_bound_objects = self._bound_local_objects.get(id, [])
-        for local_obj in local_bound_objects:
-            local_obj.process_ds_update(fields_changed)
-
-    def process_message(
-        self,
-        id: ObjectUuid,
-        message_type: int,
-        timestamp: int,
-        msg_accessor: MemoryAccessor,
-    ):
-        local_bound_objects = self._bound_local_objects.get(id, [])
-        for local_obj in local_bound_objects:
-            local_obj.process_ds_message(message_type, timestamp, msg_accessor)

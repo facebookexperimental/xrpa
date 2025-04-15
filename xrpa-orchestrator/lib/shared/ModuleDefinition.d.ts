@@ -70,13 +70,13 @@ export declare abstract class ModuleDefinition implements CodeGen {
     getBuiltinTypeDefinition(typeName: BuiltinType, apiname?: string, datamodel?: DataModelDefinition): TypeDefinition;
     createEnum(name: string, apiname: string, enumValues: Record<string, number>, localTypeOverride: TypeSpec | undefined): TypeDefinition;
     createReference(toType: InterfaceTypeDefinition): TypeDefinition;
-    createStruct(name: string, apiname: string, fields: StructSpec, localTypeOverride: TypeSpec | undefined): StructTypeDefinition;
+    createStruct(name: string, apiname: string, fields: StructSpec, localTypeOverride: TypeSpec | undefined, properties?: Record<string, unknown>): StructTypeDefinition;
     createMessageStruct(name: string, apiname: string, fields: StructSpec, expectedRatePerSecond: number): MessageDataTypeDefinition;
     createInterface(name: string, apiname: string, fields: StructSpec): InterfaceTypeDefinition;
     createCollection(name: string, apiname: string, fields: StructSpec, interfaceType: InterfaceTypeDefinition | undefined, maxCount: number, collectionId: number): CollectionTypeDefinition;
     createFixedArray(name: string, apiname: string, innerType: TypeDefinition, arraySize: number): TypeDefinition;
     createByteArray(expectedSize: number): TypeDefinition;
-    setCollectionAsInbound(type: CollectionTypeDefinition, _componentProps: ComponentProperties, reconciledTo: TypeSpec | undefined, _indexes: Array<IndexConfiguration> | undefined): void;
+    setCollectionAsInbound(type: CollectionTypeDefinition, _componentProps: ComponentProperties, _indexes: Array<IndexConfiguration> | undefined): void;
     setCollectionAsOutbound(type: CollectionTypeDefinition, _componentProps: ComponentProperties): void;
     addDataflowProgram(programDef: DataflowProgramDefinition): void;
     getDataflowPrograms(): Array<DataflowProgramDefinition>;

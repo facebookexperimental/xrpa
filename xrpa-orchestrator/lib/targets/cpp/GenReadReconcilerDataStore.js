@@ -40,11 +40,10 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genIndexedBindingCalls = exports.genObjectCollectionClasses = exports.genInboundReconciledTypes = exports.genProcessUpdateFunctionBodyForConcreteReconciledType = void 0;
+exports.genIndexedBindingCalls = exports.genObjectCollectionClasses = exports.genInboundReconciledTypes = exports.genProcessUpdateFunctionBody = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const ClassSpec_1 = require("../../shared/ClassSpec");
 const DataStore_1 = require("../../shared/DataStore");
-const TypeValue_1 = require("../../shared/TypeValue");
 const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
 const CppCodeGenImpl = __importStar(require("./CppCodeGenImpl"));
@@ -53,7 +52,7 @@ const GenDataStore_1 = require("./GenDataStore");
 const GenMessageAccessors_1 = require("./GenMessageAccessors");
 const GenSignalAccessors_1 = require("./GenSignalAccessors");
 const GenWriteReconcilerDataStore_1 = require("./GenWriteReconcilerDataStore");
-function genProcessUpdateFunctionBodyForConcreteReconciledType(ctx, includes, typeDef, reconcilerDef) {
+function genProcessUpdateFunctionBody(ctx, includes, typeDef, reconcilerDef) {
     const lines = [];
     const typeFields = typeDef.getStateFields();
     for (const fieldName in typeFields) {
@@ -65,9 +64,10 @@ function genProcessUpdateFunctionBodyForConcreteReconciledType(ctx, includes, ty
         const funcName = (0, GenDataStoreShared_1.fieldGetterFuncName)(CppCodeGenImpl, typeFields, fieldName);
         lines.push(`if (value.${checkName}(fieldsChanged)) {`, `  ${(0, GenWriteReconcilerDataStore_1.defaultFieldToMemberVar)(fieldName)} = value.${funcName}();`, `}`);
     }
+    lines.push(`handleXrpaFieldsChanged(fieldsChanged);`);
     return lines;
 }
-exports.genProcessUpdateFunctionBodyForConcreteReconciledType = genProcessUpdateFunctionBodyForConcreteReconciledType;
+exports.genProcessUpdateFunctionBody = genProcessUpdateFunctionBody;
 function genInboundReconciledTypes(ctx, includesIn) {
     const ret = [];
     const headerFile = (0, CppCodeGenImpl_1.getDataStoreHeaderName)(ctx.storeDef.apiname);
@@ -83,6 +83,7 @@ function genInboundReconciledTypes(ctx, includesIn) {
             namespace: ctx.namespace,
             includes: includesIn,
         });
+        (0, GenWriteReconcilerDataStore_1.genChangeHandlerMethods)(classSpec, true);
         classSpec.constructors.push({
             parameters: [{
                     name: "id",
@@ -100,7 +101,6 @@ function genInboundReconciledTypes(ctx, includesIn) {
             fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar,
             fieldAccessorNameOverrides: {},
             directionality: "outbound",
-            proxyObj: null,
         });
         (0, GenDataStoreShared_1.genFieldProperties)(classSpec, {
             codegen: CppCodeGenImpl,
@@ -108,91 +108,65 @@ function genInboundReconciledTypes(ctx, includesIn) {
             fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar,
             canCreate: false,
             canChange: true,
-            canSetDirty: reconcilerDef.shouldGenerateConcreteReconciledType(),
+            canSetDirty: true,
             directionality: "outbound",
             visibility: "private",
         });
         const localPtr = typeDef.getLocalTypePtr(ctx.namespace, classSpec.includes);
-        if (reconcilerDef.shouldGenerateConcreteReconciledType()) {
-            classSpec.methods.push({
-                name: "processDSUpdate",
-                parameters: [{
-                        name: "value",
-                        type: readAccessor,
-                    }, {
-                        name: "fieldsChanged",
-                        type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
-                    }],
-                body: includes => genProcessUpdateFunctionBodyForConcreteReconciledType(ctx, includes, typeDef, reconcilerDef),
-                isVirtual: true,
-                isFinal: true,
-            });
-            classSpec.methods.push({
-                name: "create",
-                returnType: localPtr,
-                parameters: [{
-                        name: "id",
-                        type: ctx.moduleDef.ObjectUuid,
-                    }, {
-                        name: "obj",
-                        type: readAccessor,
-                    }, {
-                        name: "collection",
-                        type: CppDatasetLibraryTypes_1.IObjectCollection.getLocalType(ctx.namespace, classSpec.includes) + "*",
-                    }],
-                body: [
-                    `return std::make_shared<${classSpec.name}>(id, collection);`,
-                ],
-                isStatic: true,
-            });
-            (0, GenWriteReconcilerDataStore_1.genWriteFieldAccessors)(classSpec, {
-                ctx,
-                reconcilerDef,
-                fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar,
-                fieldAccessorNameOverrides: {},
-                gettersOnly: true,
-                directionality: "inbound",
-                proxyObj: null,
-            });
-            (0, GenDataStoreShared_1.genFieldProperties)(classSpec, {
-                codegen: CppCodeGenImpl,
-                reconcilerDef,
-                fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar,
-                canCreate: false,
-                canChange: false,
-                directionality: "inbound",
-                visibility: "private",
-            });
-            // the "check<FieldName>Changed" functions are here for index binding
-            const fields = typeDef.getStateFields();
-            for (const name in fields) {
-                (0, CppCodeGenImpl_1.genFieldChangedCheck)(classSpec, { parentType: typeDef, fieldName: name });
-            }
-        }
-        else {
-            classSpec.methods.push({
-                name: "processDSUpdate",
-                parameters: [{
-                        name: "value",
-                        type: readAccessor,
-                    }, {
-                        name: "fieldsChanged",
-                        type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
-                    }],
-                body: [],
-                isAbstract: true,
-            });
-        }
         classSpec.methods.push({
-            name: "processDSDelete",
-            body: [],
-            isVirtual: true,
+            name: "processDSUpdate",
+            parameters: [{
+                    name: "value",
+                    type: readAccessor,
+                }, {
+                    name: "fieldsChanged",
+                    type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
+                }],
+            body: includes => genProcessUpdateFunctionBody(ctx, includes, typeDef, reconcilerDef),
         });
+        classSpec.methods.push({
+            name: "create",
+            returnType: localPtr,
+            parameters: [{
+                    name: "id",
+                    type: ctx.moduleDef.ObjectUuid,
+                }, {
+                    name: "obj",
+                    type: readAccessor,
+                }, {
+                    name: "collection",
+                    type: CppDatasetLibraryTypes_1.IObjectCollection.getLocalType(ctx.namespace, classSpec.includes) + "*",
+                }],
+            body: [
+                `return std::make_shared<${classSpec.name}>(id, collection);`,
+            ],
+            isStatic: true,
+        });
+        (0, GenWriteReconcilerDataStore_1.genWriteFieldAccessors)(classSpec, {
+            ctx,
+            reconcilerDef,
+            fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar,
+            fieldAccessorNameOverrides: {},
+            gettersOnly: true,
+            directionality: "inbound",
+        });
+        (0, GenDataStoreShared_1.genFieldProperties)(classSpec, {
+            codegen: CppCodeGenImpl,
+            reconcilerDef,
+            fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar,
+            canCreate: false,
+            canChange: false,
+            directionality: "inbound",
+            visibility: "private",
+        });
+        const fields = typeDef.getStateFields();
+        for (const name in fields) {
+            (0, CppCodeGenImpl_1.genFieldChangedCheck)(classSpec, { parentType: typeDef, fieldName: name });
+        }
         (0, GenMessageAccessors_1.genMessageFieldAccessors)(classSpec, {
             ctx,
             reconcilerDef,
             genMsgHandler: GenDataStore_1.genMsgHandler,
-            proxyObj: null,
         });
         (0, GenSignalAccessors_1.genSignalFieldAccessors)(classSpec, {
             ctx,
@@ -217,7 +191,6 @@ function genInboundReconciledTypes(ctx, includesIn) {
                 reconcilerDef,
                 fieldToMemberVar: GenWriteReconcilerDataStore_1.defaultFieldToMemberVar,
                 canCreate: false,
-                proxyObj: null,
             }),
         });
         classSpec.methods.push({
@@ -255,21 +228,16 @@ function genObjectCollectionClasses(ctx, includesIn) {
         const constructorBody = [];
         // inbound (remotely created) objects are created by the reconciler, so we need to give it a delegate functions
         if (reconcilerDef instanceof DataStore_1.InputReconcilerDefinition) {
-            if (reconcilerDef.shouldGenerateConcreteReconciledType()) {
-                const reconciledTypeName = typeDef.getLocalType(ctx.namespace, null);
-                constructorBody.push(`setCreateDelegateInternal(${reconciledTypeName}::create);`);
-            }
-            else {
-                // the class we generate is not concrete, so the user needs to set the delegate
-                classSpec.methods.push({
-                    name: "setCreateDelegate",
-                    parameters: [{
-                            name: "createDelegate",
-                            type: `${superClass}::CreateDelegateFunction`,
-                        }],
-                    body: ["setCreateDelegateInternal(std::move(createDelegate));"],
-                });
-            }
+            const reconciledTypeName = typeDef.getLocalType(ctx.namespace, null);
+            constructorBody.push(`setCreateDelegateInternal(${reconciledTypeName}::create);`);
+            classSpec.methods.push({
+                name: "setCreateDelegate",
+                parameters: [{
+                        name: "createDelegate",
+                        type: `${superClass}::CreateDelegateFunction`,
+                    }],
+                body: ["setCreateDelegateInternal(std::move(createDelegate));"],
+            });
         }
         else {
             // expose addObject and removeObject to the user
@@ -323,9 +291,6 @@ function genIndexedBindingCalls(ctx, reconcilerDef, dataStorePtr, boundObjPtr, g
 }
 exports.genIndexedBindingCalls = genIndexedBindingCalls;
 function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
-    const bindingTickLines = [];
-    const bindingWriteChangesLines = [];
-    const bindingProcessMessageLines = [];
     const indexNotifyCreateLines = [];
     const indexNotifyUpdateLines = [];
     const indexNotifyDeleteLines = [];
@@ -346,7 +311,6 @@ function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
                 name: memberName,
                 type: indexBindingType,
                 visibility: "private",
-                initialValue: new TypeValue_1.CodeLiteralValue(CppCodeGenImpl, `${indexBindingType}{${reconcilerDef.getInboundChangeBits()}}`),
             });
             classSpec.methods.push({
                 name: `add${(0, xrpa_utils_1.upperFirst)(indexConfig.indexFieldName)}Binding`,
@@ -374,10 +338,6 @@ function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
                     `${memberName}.removeLocalObject(indexValue, localObj);`,
                 ],
             });
-            bindingTickLines.push(`${memberName}.tick();`);
-            bindingWriteChangesLines.push(`${memberName}.writeChanges(id);`);
-            bindingProcessMessageLines.push(`${memberName}.processMessage(id, messageType, timestamp, msgAccessor);`);
-            indexNotifyUpdateLines.push(`${memberName}.processUpdate(obj->getXrpaId(), fieldsChanged);`);
         }
         else {
             classSpec.members.push({
@@ -386,47 +346,6 @@ function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
                 visibility: "public",
             });
         }
-    }
-    if (bindingTickLines.length > 0) {
-        classSpec.methods.push({
-            name: "bindingTick",
-            body: bindingTickLines,
-            isOverride: true,
-            visibility: "protected",
-        });
-    }
-    if (bindingWriteChangesLines.length > 0) {
-        classSpec.methods.push({
-            name: "bindingWriteChanges",
-            parameters: [{
-                    name: "id",
-                    type: ctx.moduleDef.ObjectUuid,
-                }],
-            body: bindingWriteChangesLines,
-            isOverride: true,
-            visibility: "protected",
-        });
-    }
-    if (bindingProcessMessageLines.length > 0) {
-        classSpec.methods.push({
-            name: "bindingProcessMessage",
-            parameters: [{
-                    name: "id",
-                    type: ctx.moduleDef.ObjectUuid,
-                }, {
-                    name: "messageType",
-                    type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
-                }, {
-                    name: "timestamp",
-                    type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
-                }, {
-                    name: "msgAccessor",
-                    type: CppDatasetLibraryTypes_1.MemoryAccessor,
-                }],
-            body: bindingProcessMessageLines,
-            isOverride: true,
-            visibility: "protected",
-        });
     }
     if (indexNotifyCreateLines.length > 0) {
         classSpec.methods.push({

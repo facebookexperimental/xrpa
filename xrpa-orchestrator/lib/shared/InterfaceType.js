@@ -24,7 +24,6 @@ class InterfaceType extends StructWithAccessorType_1.StructWithAccessorType {
     constructor(codegen, interfaceName, apiname, objectUuidType, fields, parentType = undefined) {
         super(codegen, interfaceName, apiname, objectUuidType, parentType, fields);
         this.collections = [];
-        this.ptrType = codegen.DEFAULT_INTERFACE_PTR_TYPE;
         if (this.getMetaType() === TypeDefinition_1.TypeMetaType.INTERFACE) {
             this.localType.headerFile = codegen.getDataStoreHeaderName(apiname);
         }
@@ -37,7 +36,7 @@ class InterfaceType extends StructWithAccessorType_1.StructWithAccessorType {
     }
     getLocalTypePtr(inNamespace, includes) {
         const localType = this.getLocalType(inNamespace, includes);
-        return this.codegen.genPointer(this.ptrType, localType, includes);
+        return this.codegen.genPointer(localType, includes);
     }
     registerCollection(collection) {
         this.collections.push(collection);
@@ -49,16 +48,6 @@ class InterfaceType extends StructWithAccessorType_1.StructWithAccessorType {
                 typeName: typeDef.getLocalType(inNamespace, includes),
             };
         }).sort((a, b) => a.collectionName.localeCompare(b.collectionName));
-    }
-    isBarePtr() {
-        return this.ptrType === "bare";
-    }
-    setToBarePtr(localType) {
-        this.ptrType = "bare";
-        this.localType = localType ?? this.localType;
-    }
-    getPtrType() {
-        return this.ptrType;
     }
     genStaticAccessorFields(classSpec) {
         const lines = super.genStaticAccessorFields(classSpec);

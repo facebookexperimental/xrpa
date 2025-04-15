@@ -23,22 +23,6 @@ namespace Xrpa
 
     public class DataStoreReconciler
     {
-        private class OutboundMessage
-        {
-            public OutboundMessage(ObjectUuid objectId, int collectionId, int fieldId, MemoryAccessor messageData)
-            {
-                ObjectId = objectId;
-                CollectionId = collectionId;
-                FieldId = fieldId;
-                MessageData = messageData;
-            }
-
-            public ObjectUuid ObjectId;
-            public int CollectionId;
-            public int FieldId;
-            public MemoryAccessor MessageData;
-        };
-
         private class PendingWrite
         {
             public PendingWrite(ObjectUuid objectId, int collectionId)
@@ -55,10 +39,10 @@ namespace Xrpa
         private TransportStream _outboundTransport;
 
         // message stuff
-        private readonly List<OutboundMessage> _outboundMessages;
-        private AllocatedMemory _messageDataPool;
-        private int _messageDataPoolPos = 0;
-        private int _messageLifetimeUS = 5000000;
+        private AllocatedMemory _outboundMessagesMemory;
+        private PlacedRingBuffer _outboundMessages;
+        private PlacedRingBufferIterator _outboundMessagesIterator;
+        private ulong _messageLifetimeUs = 5000000; // 5 seconds
 
         // collections
         private readonly Dictionary<int, IObjectCollection> _collections;
@@ -72,14 +56,17 @@ namespace Xrpa
         {
             _inboundTransport = inboundTransport;
             _outboundTransport = outboundTransport;
-            _outboundMessages = new();
             _collections = new();
             _pendingWrites = new();
             _inboundTransportIter = _inboundTransport.CreateIterator();
 
             if (messageDataPoolSize > 0)
             {
-                _messageDataPool = new AllocatedMemory(messageDataPoolSize);
+                _outboundMessagesMemory = new(PlacedRingBuffer.GetMemSize(messageDataPoolSize));
+                _outboundMessages = new(_outboundMessagesMemory.Accessor, 0);
+                _outboundMessages.Init(messageDataPoolSize);
+                _outboundMessagesIterator = new();
+                _outboundMessagesIterator.SetToEnd(_outboundMessages);
             }
         }
 
@@ -116,7 +103,7 @@ namespace Xrpa
                 collectionKV.Value.Tick();
             }
 
-            bool bHasOutboundMessages = _outboundMessages.Count > 0;
+            bool bHasOutboundMessages = _outboundMessages != null && _outboundMessagesIterator.HasNext(_outboundMessages);
             bool bHasOutboundChanges =
                 _requestInboundFullUpdate || _pendingOutboundFullUpdate || _pendingWrites.Count > 0;
             if (!bHasOutboundChanges && !bHasOutboundMessages)
@@ -154,8 +141,9 @@ namespace Xrpa
                 accessor.WriteChangeEvent<ChangeEventAccessor>((int)CollectionChangeType.Shutdown);
             });
 
-            _messageDataPool?.Dispose();
-            _messageDataPool = null;
+            _outboundMessagesMemory?.Dispose();
+            _outboundMessagesMemory = null;
+            _outboundMessages = null;
 
             _inboundTransport = null;
             _outboundTransport = null;
@@ -163,15 +151,19 @@ namespace Xrpa
 
         public void SetMessageLifetime(uint messageLifetimeMS)
         {
-            _messageLifetimeUS = (int)messageLifetimeMS * 1000;
+            _messageLifetimeUs = (ulong)(messageLifetimeMS * 1000);
         }
 
         public MemoryAccessor SendMessage(ObjectUuid objectId, int collectionId, int fieldId, int numBytes)
         {
-            MemoryAccessor messageData = _messageDataPool.Accessor.Slice(_messageDataPoolPos, numBytes);
-            _messageDataPoolPos += numBytes;
-            _outboundMessages.Add(new OutboundMessage(objectId, collectionId, fieldId, messageData));
-            return messageData;
+            int id = 0;
+            var message = new CollectionMessageChangeEventAccessor();
+            message.SetAccessor(_outboundMessages.Push(message.GetByteCount() + numBytes, ref id));
+            message.SetChangeType((int)CollectionChangeType.Message);
+            message.SetObjectId(objectId);
+            message.SetCollectionId(collectionId);
+            message.SetFieldId(fieldId);
+            return message.AccessChangeData();
         }
 
         public void NotifyObjectNeedsWrite(ObjectUuid objectId, int collectionId)
@@ -240,7 +232,8 @@ namespace Xrpa
                 return;
             }
 
-            int oldestMessageTimestamp = accessor.GetCurrentTimestamp() - _messageLifetimeUS;
+            ulong oldestMessageTimestamp = TimeUtils.GetCurrentClockTimeMicroseconds() - _messageLifetimeUs;
+            ulong baseTimestamp = accessor.GetBaseTimestamp();
             bool inFullUpdate = false;
             var reconciledIds = new HashSet<ObjectUuid>();
 
@@ -333,7 +326,7 @@ namespace Xrpa
                     case CollectionChangeType.Message:
                     {
                         var entry = new CollectionMessageChangeEventAccessor(entryMem);
-                        var timestamp = entry.GetTimestamp();
+                        ulong timestamp = entry.GetTimestamp(baseTimestamp);
                         if (timestamp >= oldestMessageTimestamp)
                         {
                             var collectionId = entry.GetCollectionId();
@@ -382,17 +375,11 @@ namespace Xrpa
             _pendingWrites.Clear();
 
             // write messages
-            foreach (var message in _outboundMessages)
+            while (_outboundMessagesIterator.HasNext(_outboundMessages))
             {
-                var data = accessor.WriteChangeEvent<CollectionMessageChangeEventAccessor>(
-                    (int)CollectionChangeType.Message, message.MessageData.Size);
-                data.SetCollectionId(message.CollectionId);
-                data.SetObjectId(message.ObjectId);
-                data.SetFieldId(message.FieldId);
-                data.AccessChangeData().CopyFrom(message.MessageData);
+                var message = _outboundMessagesIterator.Next(_outboundMessages);
+                accessor.WritePrefilledChangeEvent(message);
             }
-            _outboundMessages.Clear();
-            _messageDataPoolPos = 0;
         }
     }
 

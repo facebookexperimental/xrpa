@@ -20,8 +20,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genConvertIntToBool = exports.genConvertBoolToInt = exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genMethodBind = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genDynSizeOfValue = exports.genWriteValue = exports.genReadValue = exports.genClassDefinition = exports.makeObjectAccessor = exports.getTypesHeaderNamespace = exports.getTypesHeaderName = exports.getDataStoreClass = exports.getDataStoreHeaderNamespace = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.constRef = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.CsIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.genGetCurrentClockTime = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.HEADER = exports.XRPA_NAMESPACE = exports.getXrpaTypes = exports.registerXrpaTypes = void 0;
-exports.applyTemplateParams = void 0;
+exports.genMethodCall = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genDynSizeOfValue = exports.genWriteValue = exports.genReadValue = exports.genClassDefinition = exports.genMessageDispatch = exports.genOnMessageAccessor = exports.genMessageHandlerType = exports.genEventHandlerCall = exports.genEventHandlerType = exports.makeObjectAccessor = exports.getTypesHeaderNamespace = exports.getTypesHeaderName = exports.getDataStoreClass = exports.getDataStoreHeaderNamespace = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.constRef = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.CsIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.genGetCurrentClockTime = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.HEADER = exports.XRPA_NAMESPACE = exports.getXrpaTypes = exports.registerXrpaTypes = void 0;
+exports.declareVar = exports.ifAllBitsAreSet = exports.ifAnyBitIsSet = exports.applyTemplateParams = exports.genConvertIntToBool = exports.genConvertBoolToInt = exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genPassthroughMethodBind = exports.genMethodBind = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
@@ -81,6 +81,7 @@ exports.UNIT_TRANSFORMER = {
 exports.PRIMITIVE_INTRINSICS = {
     string: { typename: "string" },
     microseconds: { typename: "ulong" },
+    nanoseconds: { typename: "ulong" },
     uint8: { typename: "byte" },
     uint64: { typename: "ulong" },
     int: { typename: "int" },
@@ -93,7 +94,10 @@ exports.PRIMITIVE_INTRINSICS = {
     TRUE: "true",
     FALSE: "false",
 };
-function genGetCurrentClockTime() {
+function genGetCurrentClockTime(_includes, inNanoseconds = false) {
+    if (inNanoseconds) {
+        return `${exports.XRPA_NAMESPACE}.TimeUtils.GetCurrentClockTimeNanoseconds()`;
+    }
     return `${exports.XRPA_NAMESPACE}.TimeUtils.GetCurrentClockTimeMicroseconds()`;
 }
 exports.genGetCurrentClockTime = genGetCurrentClockTime;
@@ -227,12 +231,8 @@ function genDeclaration(params) {
     return `${prefix}${typename} ${params.varName}${initializer}` + (params.includeTerminator ? ";" : "");
 }
 exports.genDeclaration = genDeclaration;
-function genPointer(ptrType, localType) {
-    switch (ptrType) {
-        case "bare":
-            return `${localType}`;
-    }
-    throw new Error(`Invalid ptrType: ${ptrType}`);
+function genPointer(localType) {
+    return `${localType}`;
 }
 exports.genPointer = genPointer;
 function reinterpretValue(_fromType, _toType, value) {
@@ -357,6 +357,70 @@ function makeObjectAccessor(params) {
     }
 }
 exports.makeObjectAccessor = makeObjectAccessor;
+function genEventHandlerType(paramTypes) {
+    if (paramTypes.length === 0) {
+        return "System.Action";
+    }
+    return `System.Action<${paramTypes.join(", ")}>`;
+}
+exports.genEventHandlerType = genEventHandlerType;
+function genEventHandlerCall(handler, paramValues, handlerCanBeNull) {
+    if (handlerCanBeNull) {
+        return `${handler}?.Invoke(${paramValues.join(", ")});`;
+    }
+    return `${handler}(${paramValues.join(", ")});`;
+}
+exports.genEventHandlerCall = genEventHandlerCall;
+function genMessageHandlerType(params) {
+    const paramTypes = [exports.PRIMITIVE_INTRINSICS.uint64.typename];
+    if (params.fieldType.hasFields()) {
+        paramTypes.push(params.fieldType.getReadAccessorType(params.namespace, params.includes));
+    }
+    return genEventHandlerType(paramTypes);
+}
+exports.genMessageHandlerType = genMessageHandlerType;
+function genOnMessageAccessor(classSpec, params) {
+    const handlerType = genMessageHandlerType({
+        ...params,
+        includes: classSpec.includes,
+    });
+    const msgHandler = params.genMsgHandler(params.fieldName);
+    classSpec.methods.push({
+        name: `On${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
+        parameters: [{
+                name: "handler",
+                type: handlerType,
+            }],
+        body: [
+            `${msgHandler} = handler;`,
+        ],
+    });
+    classSpec.members.push({
+        name: msgHandler,
+        type: handlerType,
+        initialValue: new TypeValue_1.CodeLiteralValue(module.exports, "null"),
+        visibility: "private",
+    });
+}
+exports.genOnMessageAccessor = genOnMessageAccessor;
+function genMessageDispatch(params) {
+    const msgHandler = params.genMsgHandler(params.fieldName);
+    const handlerCanBeNull = msgHandler.indexOf(".") < 0;
+    const timestamp = params.timestampName ?? "timestamp";
+    const lines = [];
+    if (!params.fieldType.hasFields()) {
+        lines.push(genEventHandlerCall(msgHandler, [timestamp], handlerCanBeNull));
+    }
+    else {
+        const prelude = [];
+        const msgParams = [timestamp].concat(params.msgDataToParams(params.fieldType, prelude, params.includes));
+        lines.push(...(params.convertToReadAccessor ? [
+            `${params.fieldType.getReadAccessorType(params.namespace, params.includes)} message = new(messageData);`,
+        ] : []), ...prelude, genEventHandlerCall(msgHandler, msgParams, handlerCanBeNull));
+    }
+    return lines;
+}
+exports.genMessageDispatch = genMessageDispatch;
 function paramsToString(classSpec, parameters) {
     return parameters.map((p) => {
         const suffix = p.defaultValue ? ` = ${p.defaultValue}` : "";
@@ -641,7 +705,7 @@ function getNullValue() {
     return "null";
 }
 exports.getNullValue = getNullValue;
-function genReferencePtrToID(varName, _ptrType, objectUuidType) {
+function genReferencePtrToID(varName, objectUuidType) {
     return `${varName}?.GetXrpaId() ?? new ${objectUuidType}()`;
 }
 exports.genReferencePtrToID = genReferencePtrToID;
@@ -783,8 +847,16 @@ function genDerefMethodCall(ptrName, methodName, params) {
     return `${ptrName}.${methodCall}`;
 }
 exports.genDerefMethodCall = genDerefMethodCall;
+function genMethodCall(varName, methodName, params) {
+    const methodCall = `${methodMember(methodName)}(${params.join(", ")})`;
+    if (!varName) {
+        return methodCall;
+    }
+    return `${varName}.${methodCall}`;
+}
+exports.genMethodCall = genMethodCall;
 function genMethodBind(ptrName, methodName, params, ignoreParamCount) {
-    const bindParams = new Array(ignoreParamCount).fill("_").concat(Object.keys(params).map(p => `${p}`));
+    const bindParams = (new Array(ignoreParamCount)).fill("_").concat(Object.keys(params).map(p => `${p}`));
     const methodCall = `${methodMember(methodName)}(${(0, xrpa_utils_1.collapse)(Object.values(params)).join(", ")})`;
     if (!ptrName) {
         return `(${bindParams.join(", ")}) => ${methodCall}`;
@@ -792,6 +864,10 @@ function genMethodBind(ptrName, methodName, params, ignoreParamCount) {
     return `(${bindParams.join(", ")}) => ${ptrName}.${methodCall}`;
 }
 exports.genMethodBind = genMethodBind;
+function genPassthroughMethodBind(methodName) {
+    return methodMember(methodName);
+}
+exports.genPassthroughMethodBind = genPassthroughMethodBind;
 function genNonNullCheck(ptrName) {
     return `${ptrName} != null`;
 }
@@ -819,4 +895,25 @@ function applyTemplateParams(typename, ...templateParams) {
     return `${typename}<${templateParams.join(", ")}>`;
 }
 exports.applyTemplateParams = applyTemplateParams;
+function ifAnyBitIsSet(value, bitsValue, code) {
+    return [
+        `if ((${value} & ${bitsValue}) != 0) {`,
+        ...(0, xrpa_utils_1.indent)(1, code),
+        `}`,
+    ];
+}
+exports.ifAnyBitIsSet = ifAnyBitIsSet;
+function ifAllBitsAreSet(value, bitsValue, code) {
+    return [
+        `if ((${value} & ${bitsValue}) == ${bitsValue}) {`,
+        ...(0, xrpa_utils_1.indent)(1, code),
+        `}`,
+    ];
+}
+exports.ifAllBitsAreSet = ifAllBitsAreSet;
+function declareVar(varName, typename, initialValue) {
+    typename = typename || "var";
+    return `${typename} ${varName} = ${initialValue};`;
+}
+exports.declareVar = declareVar;
 //# sourceMappingURL=CsharpCodeGenImpl.js.map

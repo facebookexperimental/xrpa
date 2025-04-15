@@ -30,7 +30,8 @@ export declare class StructType extends PrimitiveType implements StructTypeDefin
     readonly parentType: StructTypeDefinition | undefined;
     readonly fields: StructSpec;
     readonly localTypeOverride?: TypeSpec | undefined;
-    constructor(codegen: TargetCodeGenImpl, name: string, apiname: string, parentType: StructTypeDefinition | undefined, fields: StructSpec, localTypeOverride?: TypeSpec | undefined);
+    readonly properties: Record<string, unknown>;
+    constructor(codegen: TargetCodeGenImpl, name: string, apiname: string, parentType: StructTypeDefinition | undefined, fields: StructSpec, localTypeOverride?: TypeSpec | undefined, properties?: Record<string, unknown>);
     getMetaType(): TypeMetaType;
     getHashData(): Record<string, unknown>;
     getTypeSize(): TypeSize;

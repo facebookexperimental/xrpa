@@ -38,112 +38,344 @@ function objToMemberName(codegen, objName) {
 function storeToVarName(storeName) {
     return `datastore${(0, xrpa_utils_1.upperFirst)(storeName)}`;
 }
-function getDataStoreForObj(ctx, graphNode) {
-    (0, assert_1.default)((0, DataflowProgramDefinition_1.isDataflowForeignObjectInstantiation)(graphNode));
-    const storeDef = ctx.moduleDef.getDataStore(graphNode.programInterfaceName);
-    (0, assert_1.default)(storeDef, `Data store ${graphNode.programInterfaceName} not found for ${graphNode.name}`);
-    return storeDef;
-}
 function getInfoForObj(ctx, codegen, graphNode, includes) {
     (0, assert_1.default)((0, DataflowProgramDefinition_1.isDataflowForeignObjectInstantiation)(graphNode));
-    const objName = graphNode.name;
-    const storeDef = getDataStoreForObj(ctx, graphNode);
-    const reconcilerDef = storeDef.getOutputReconcilers().find(reconcilerDef => reconcilerDef.type.getName() === graphNode.collectionType);
-    (0, assert_1.default)(reconcilerDef, `Output reconciler for ${graphNode.collectionType} not found for ${objName}`);
+    const reconcilerDef = (0, DataflowProgramDefinition_1.getReconcilerDefForNode)(ctx.moduleDef, graphNode);
     return {
-        objName,
+        objName: graphNode.name,
         objType: reconcilerDef.type.getLocalType(ctx.namespace, includes),
         reconcilerName: reconcilerDef.type.getName(),
-        objVarName: objToMemberName(codegen, objName),
+        objVarName: objToMemberName(codegen, graphNode.name),
         reconcilerDef,
-        storeDef,
+        storeDef: reconcilerDef.storeDef,
     };
 }
-function genBindMessageFieldValues(codegen, params) {
-    const ret = [];
-    if (!(0, TypeDefinition_1.typeIsMessageData)(params.srcFieldType)) {
+function getMessageValues(fieldType) {
+    return Object.keys(fieldType.getAllFields()).map(msgField => {
+        return `msg${(0, xrpa_utils_1.upperFirst)(msgField)}`;
+    });
+}
+function onMessage(codegen, classSpec, params) {
+    const dispatcherName = `dispatch${(0, xrpa_utils_1.upperFirst)(params.objVar)}${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`;
+    const dispatcherBody = classSpec.getOrCreateMethod({
+        name: dispatcherName,
+        parameters: [{
+                name: "timestamp",
+                type: codegen.PRIMITIVE_INTRINSICS.uint64.typename,
+            }, {
+                name: "msg",
+                type: params.fieldType.getReadAccessorType(classSpec.namespace, classSpec.includes),
+            }],
+        visibility: "private",
+    });
+    if (dispatcherBody.length === 0) {
+        params.initializersOut.push(`${codegen.genDerefMethodCall(params.objVar, `on${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`, [
+            codegen.genPassthroughMethodBind(dispatcherName, 2),
+        ])};`);
+    }
+    if (params.needsMsgValues) {
+        // fetch all message fields and store them in local variables
+        const varInitializers = getMessageValues(params.fieldType).map(varName => {
+            return codegen.declareVar(`${varName}`, "", codegen.genMethodCall("msg", `get${varName.slice(3)}`, []));
+        });
+        // check if the dispatcherBody already starts with the varInitializers and add them if not
+        if (dispatcherBody.length === 0 || dispatcherBody[0] !== varInitializers[0]) {
+            dispatcherBody.unshift(...varInitializers);
+        }
+    }
+    dispatcherBody.push(...params.code);
+}
+function onSignal(codegen, classSpec, params) {
+    const signalForwarder = codegen.privateMember(params.objVar + (0, xrpa_utils_1.upperFirst)(params.fieldName) + "Forwarder");
+    if (classSpec.members.find(m => m.name === signalForwarder) === undefined) {
+        classSpec.members.push({
+            name: signalForwarder,
+            type: codegen.genObjectPtrType(codegen.getXrpaTypes().InboundSignalForwarder.getLocalType(classSpec.namespace, classSpec.includes)),
+            visibility: "private",
+        });
+        params.initializersOut.push(`${signalForwarder} = ${codegen.genCreateObject(codegen.getXrpaTypes().InboundSignalForwarder.getLocalType(classSpec.namespace, classSpec.includes), [])};`, `${codegen.genDerefMethodCall(params.objVar, `on${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`, [signalForwarder])};`);
+    }
+    return signalForwarder;
+}
+function onFieldChanged(codegen, classSpec, params) {
+    const dispatcherName = `dispatch${(0, xrpa_utils_1.upperFirst)(params.objVar)}FieldsChanged`;
+    const dispatcherBody = classSpec.getOrCreateMethod({
+        name: dispatcherName,
+        parameters: [{
+                name: "fieldsChanged",
+                type: codegen.PRIMITIVE_INTRINSICS.uint64.typename,
+            }],
+        visibility: "private",
+    });
+    if (dispatcherBody.length === 0) {
+        params.initializersOut.push(`${codegen.genDerefMethodCall(params.objVar, `onXrpaFieldsChanged`, [
+            codegen.genPassthroughMethodBind(dispatcherName, 1),
+        ])};`);
+    }
+    dispatcherBody.push(...codegen.ifAnyBitIsSet("fieldsChanged", params.bitMask, params.code));
+}
+function genBindMessageFieldValues(codegen, classSpec, params) {
+    const srcFieldType = params.srcFieldType;
+    if (!(0, TypeDefinition_1.typeIsMessageData)(srcFieldType)) {
         console.error("Attempted to bind non-message field as an input to a message field", {
             srcObjVar: params.srcObjVar,
             srcFieldName: params.srcFieldName,
-            srcFieldType: params.srcFieldType.getName(),
+            srcFieldType: srcFieldType.getName(),
         });
-        throw new Error(`Only message types are supported cross-object field binding, currently`);
+        throw new Error(`Attempted to bind non-message field as an input to a message field`);
     }
     // TODO verify that the field types are compatible
-    // pass the actual message data to the send method
-    const sendMethod = codegen.genMethodBind("", codegen.genDeref(params.dstObjVar, `send${(0, xrpa_utils_1.upperFirst)(params.dstFieldName)}`), {
-        msg: Object.keys(params.dstFieldType.getAllFields()).map(msgField => {
-            return `msg.get${(0, xrpa_utils_1.upperFirst)(msgField)}()`;
-        }),
-    }, 1);
-    ret.push(`${codegen.genDerefMethodCall(params.srcObjVar, `on${(0, xrpa_utils_1.upperFirst)(params.srcFieldName)}`, [sendMethod])};`);
-    return ret;
+    onMessage(codegen, classSpec, {
+        objVar: params.srcObjVar,
+        fieldName: params.srcFieldName,
+        fieldType: srcFieldType,
+        code: [
+            `${codegen.genDerefMethodCall(params.dstObjVar, codegen.methodMember(`send${(0, xrpa_utils_1.upperFirst)(params.dstFieldName)}`), getMessageValues(srcFieldType))};`,
+        ],
+        initializersOut: params.initializersOut,
+        needsMsgValues: true,
+    });
+}
+function genMessageOutputParameter(codegen, classSpec, params) {
+    const srcFieldType = params.srcFieldType;
+    if (!(0, TypeDefinition_1.typeIsMessageData)(srcFieldType)) {
+        console.error("Attempted to bind non-message field as an input to a message output parameter", {
+            srcObjVar: params.srcObjVar,
+            srcFieldName: params.srcFieldName,
+            srcFieldType: srcFieldType.getName(),
+            paramName: params.paramName,
+        });
+        throw new Error(`Attempted to bind non-message field as an input to a message output parameter`);
+    }
+    // TODO verify that the field types are compatible
+    const memberName = paramToMemberName(codegen, params.paramName);
+    codegen.genOnMessageAccessor(classSpec, {
+        namespace: classSpec.namespace,
+        fieldName: params.paramName,
+        fieldType: params.paramType,
+        genMsgHandler: () => memberName,
+    });
+    const dispatchCode = codegen.genMessageDispatch({
+        namespace: classSpec.namespace,
+        includes: classSpec.includes,
+        fieldName: params.paramName,
+        fieldType: params.paramType,
+        genMsgHandler: () => memberName,
+        msgDataToParams: () => ["msg"],
+        convertToReadAccessor: false,
+    });
+    onMessage(codegen, classSpec, {
+        objVar: params.srcObjVar,
+        fieldName: params.srcFieldName,
+        fieldType: srcFieldType,
+        code: dispatchCode,
+        initializersOut: params.initializersOut,
+        needsMsgValues: false,
+    });
 }
 function genBindSignalFieldValues(codegen, classSpec, params) {
-    const ret = [];
     if (!(0, TypeDefinition_1.typeIsSignalData)(params.srcFieldType)) {
         console.error("Attempted to bind non-signal field as an input to a signal field", {
             srcObjVar: params.srcObjVar,
             srcFieldName: params.srcFieldName,
             srcFieldType: params.srcFieldType.getName(),
         });
-        throw new Error(`Only signal types are supported cross-object field binding, currently`);
+        throw new Error(`Attempted to bind non-signal field as an input to a signal field`);
     }
-    const signalForwarder = codegen.privateMember(params.srcObjVar + (0, xrpa_utils_1.upperFirst)(params.srcFieldName) + "Forwarder");
-    if (classSpec.members.find(m => m.name === signalForwarder) === undefined) {
+    const signalForwarder = onSignal(codegen, classSpec, {
+        objVar: params.srcObjVar,
+        fieldName: params.srcFieldName,
+        initializersOut: params.initializersOut,
+    });
+    params.initializersOut.push(`${codegen.genDerefMethodCall(params.dstObjVar, codegen.applyTemplateParams(`set${(0, xrpa_utils_1.upperFirst)(params.dstFieldName)}`, codegen.PRIMITIVE_INTRINSICS.float32.typename), [signalForwarder])};`);
+}
+function verifyStateFieldTypesMatch(params) {
+    if ((0, TypeDefinition_1.typeIsStateData)(params.srcFieldType)) {
+        if (!(0, TypeDefinition_1.typeIsStateData)(params.dstFieldType)) {
+            console.error("Incompatible field binding types", {
+                srcObjVar: params.srcObjVar,
+                srcFieldName: params.srcFieldName,
+                srcFieldType: params.srcFieldType.getName(),
+                dstObjVar: params.dstObjVar,
+                dstFieldName: params.dstFieldName,
+                dstFieldType: params.dstFieldType.getName(),
+            });
+            throw new Error(`Incompatible field binding types`);
+        }
+        // TODO verify that the field types are compatible
+    }
+    else {
+        console.error("Invalid field binding type", {
+            srcObjVar: params.srcObjVar,
+            srcFieldName: params.srcFieldName,
+            srcFieldType: params.srcFieldType.getName(),
+        });
+        throw new Error(`Invalid field binding type`);
+    }
+}
+function genBindStateFieldValues(codegen, classSpec, params) {
+    verifyStateFieldTypesMatch(params);
+    const sourceValues = [
+        codegen.genDerefMethodCall(params.srcObjVar, `get${(0, xrpa_utils_1.upperFirst)(params.srcFieldName)}`, []),
+    ];
+    onFieldChanged(codegen, classSpec, {
+        objVar: params.srcObjVar,
+        bitMask: params.srcBitMask,
+        code: [
+            `${codegen.genDerefMethodCall(params.dstObjVar, codegen.methodMember(`set${(0, xrpa_utils_1.upperFirst)(params.dstFieldName)}`), sourceValues)};`,
+        ],
+        initializersOut: params.initializersOut,
+    });
+}
+function genStateInputParameter(codegen, classSpec, params) {
+    const memberName = paramToMemberName(codegen, params.paramName);
+    params.inputParamsStruct.declareLocalFieldClassMember(classSpec, params.paramName, memberName, true, [], "private");
+    codegen.genFieldGetter(classSpec, {
+        apiname: codegen.XRPA_NAMESPACE,
+        fieldName: params.paramName,
+        fieldType: params.paramType,
+        fieldToMemberVar: () => memberName,
+        convertToLocal: false,
+        description: params.inputParamsStruct.getAllFields()[params.paramName].description,
+        visibility: "public",
+        isConst: true,
+    });
+    classSpec.methods.push({
+        name: `set${(0, xrpa_utils_1.upperFirst)(params.paramName)}`,
+        parameters: [{
+                name: params.paramName,
+                type: params.paramType,
+            }],
+        body: () => [
+            // set the local member value
+            `${memberName} = ${params.paramName};`,
+            // set the field value on connected datastore objects
+            ...(0, xrpa_utils_1.mapAndCollapse)(params.inputDef.connections, connection => {
+                (0, assert_1.default)((0, DataflowProgramDefinition_1.isDataflowForeignObjectInstantiation)(connection.targetNode));
+                const objMemberName = objToMemberName(codegen, connection.targetNode.name);
+                return [
+                    `if (${codegen.genNonNullCheck(objMemberName)}) {`,
+                    `  ${codegen.genDerefMethodCall(objMemberName, `set${(0, xrpa_utils_1.upperFirst)(connection.targetPort)}`, [params.paramName])};`,
+                    `}`,
+                ];
+            }),
+        ],
+    });
+}
+function genStateOutputParameter(codegen, classSpec, params) {
+    verifyStateFieldTypesMatch({
+        srcObjVar: params.srcObjVar,
+        srcFieldName: params.srcFieldName,
+        srcFieldType: params.srcFieldType,
+        dstObjVar: "program",
+        dstFieldName: params.paramName,
+        dstFieldType: params.paramType,
+    });
+    const paramBitMask = params.outputParamsStruct.getFieldBitMask(params.paramName);
+    const memberName = paramToMemberName(codegen, params.paramName);
+    params.outputParamsStruct.declareLocalFieldClassMember(classSpec, params.paramName, memberName, true, [], "private");
+    codegen.genFieldGetter(classSpec, {
+        apiname: codegen.XRPA_NAMESPACE,
+        fieldName: params.paramName,
+        fieldType: params.paramType,
+        fieldToMemberVar: () => memberName,
+        convertToLocal: false,
+        description: params.outputParamsStruct.getAllFields()[params.paramName].description,
+        visibility: "public",
+        isConst: true,
+    });
+    const handlerName = codegen.privateMember("xrpaFieldsChangedHandler");
+    const handlerType = codegen.genEventHandlerType([codegen.PRIMITIVE_INTRINSICS.uint64.typename]);
+    const body = classSpec.getOrCreateMethod({
+        name: "onXrpaFieldsChanged",
+        parameters: [{
+                name: "handler",
+                type: handlerType,
+            }],
+    });
+    if (body.length === 0) {
+        body.push(`${handlerName} = handler;`);
         classSpec.members.push({
-            name: signalForwarder,
-            type: `std::shared_ptr<${codegen.getXrpaTypes().InboundSignalForwarder.getLocalType(classSpec.namespace, classSpec.includes)}>`,
+            name: handlerName,
+            type: handlerType,
+            initialValue: new TypeValue_1.CodeLiteralValue(codegen, codegen.getNullValue()),
             visibility: "private",
         });
-        ret.push(`${signalForwarder} = std::make_shared<${codegen.getXrpaTypes().InboundSignalForwarder.getLocalType(classSpec.namespace, classSpec.includes)}>();`, `${codegen.genDerefMethodCall(params.srcObjVar, `on${(0, xrpa_utils_1.upperFirst)(params.srcFieldName)}`, [signalForwarder])};`);
     }
-    ret.push(`${codegen.genDerefMethodCall(params.dstObjVar, codegen.applyTemplateParams(`set${(0, xrpa_utils_1.upperFirst)(params.dstFieldName)}`, codegen.PRIMITIVE_INTRINSICS.float32.typename), [signalForwarder])};`);
-    return ret;
+    onFieldChanged(codegen, classSpec, {
+        objVar: params.srcObjVar,
+        bitMask: params.srcBitMask,
+        initializersOut: params.initializersOut,
+        code: [
+            `${memberName} = ${codegen.genDerefMethodCall(params.srcObjVar, `get${(0, xrpa_utils_1.upperFirst)(params.srcFieldName)}`, [])};`,
+            codegen.genEventHandlerCall(handlerName, [`${paramBitMask}`], true),
+        ],
+    });
 }
-function genParameterAccessors(ctx, codegen, classSpec, programDef) {
+function genInputParameterAccessors(ctx, codegen, classSpec, programDef) {
     const inputs = (0, DataflowProgramDefinition_1.getDataflowInputs)(programDef);
-    const paramsStruct = new StructType_1.StructType(codegen, "DataflowProgramParams", codegen.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowInputStructSpec)(inputs, ctx.moduleDef));
-    const fields = paramsStruct.getAllFields();
+    const inputParamsStruct = new StructType_1.StructType(codegen, "DataflowProgramInputParams", codegen.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowParamsStructSpec)(inputs.map(inp => inp.parameter), ctx.moduleDef));
+    const fields = inputParamsStruct.getAllFields();
     for (const inputDef of inputs) {
         const paramName = inputDef.parameter.name;
-        const memberName = paramToMemberName(codegen, paramName);
         const fieldType = fields[paramName].type;
-        paramsStruct.declareLocalFieldClassMember(classSpec, paramName, memberName, true, [], "private");
-        codegen.genFieldGetter(classSpec, {
-            apiname: codegen.XRPA_NAMESPACE,
-            fieldName: paramName,
-            fieldType,
-            fieldToMemberVar: fieldName => paramToMemberName(codegen, fieldName),
-            convertToLocal: false,
-            description: fields[paramName].description,
-            visibility: "public",
-            isConst: true,
-        });
-        classSpec.methods.push({
-            name: `set${(0, xrpa_utils_1.upperFirst)(paramName)}`,
-            parameters: [{
-                    name: paramName,
-                    type: fieldType,
-                }],
-            body: () => [
-                // set the local member value
-                `${memberName} = ${paramName};`,
-                // set the field value on connected datastore objects
-                ...(0, xrpa_utils_1.mapAndCollapse)(inputDef.connections, connection => {
-                    (0, assert_1.default)((0, DataflowProgramDefinition_1.isDataflowForeignObjectInstantiation)(connection.targetNode));
-                    const objMemberName = objToMemberName(codegen, connection.targetNode.name);
-                    return [
-                        `if (${codegen.genNonNullCheck(objMemberName)}) {`,
-                        `  ${codegen.genDerefMethodCall(objMemberName, `set${(0, xrpa_utils_1.upperFirst)(connection.targetPort)}`, [paramName])};`,
-                        `}`,
-                    ];
-                }),
-            ],
-        });
+        if ((0, TypeDefinition_1.typeIsMessageData)(fieldType)) {
+            (0, assert_1.default)(false, "Message types are not yet supported as input parameters");
+        }
+        else if ((0, TypeDefinition_1.typeIsStateData)(fieldType)) {
+            genStateInputParameter(codegen, classSpec, {
+                inputParamsStruct,
+                paramName,
+                paramType: fieldType,
+                inputDef,
+            });
+        }
+        else {
+            (0, assert_1.default)(false, `Unsupported input parameter type for ${paramName}`);
+        }
     }
 }
-function genCreateObjectsBody(ctx, codegen, programDef, classSpec) {
+function genOutputParameterAccessors(ctx, codegen, classSpec, programDef, initializersOut) {
+    const outputs = (0, DataflowProgramDefinition_1.getDataflowOutputs)(programDef);
+    const outputParamsStruct = new StructType_1.StructType(codegen, "DataflowProgramOutputParams", codegen.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowParamsStructSpec)(outputs, ctx.moduleDef));
+    const outputFields = outputParamsStruct.getAllFields();
+    for (const parameter of outputs) {
+        if (!parameter.source) {
+            continue;
+        }
+        const paramName = parameter.name;
+        const fieldType = outputFields[paramName].type;
+        const targetInfo = getInfoForObj(ctx, codegen, parameter.source.targetNode, classSpec.includes);
+        const srcFieldType = targetInfo.reconcilerDef.type.getAllFields()[parameter.source.targetPort].type;
+        if ((0, TypeDefinition_1.typeIsMessageData)(fieldType)) {
+            genMessageOutputParameter(codegen, classSpec, {
+                srcObjVar: targetInfo.objVarName,
+                srcFieldName: parameter.source.targetPort,
+                srcFieldType,
+                paramName,
+                paramType: fieldType,
+                initializersOut,
+            });
+        }
+        else if ((0, TypeDefinition_1.typeIsStateData)(fieldType)) {
+            genStateOutputParameter(codegen, classSpec, {
+                outputParamsStruct,
+                srcObjVar: targetInfo.objVarName,
+                srcFieldName: parameter.source.targetPort,
+                srcFieldType,
+                srcBitMask: targetInfo.reconcilerDef.type.getFieldBitMask(parameter.source.targetPort),
+                paramName,
+                paramType: fieldType,
+                initializersOut,
+            });
+            codegen.genFieldChangedCheck(classSpec, { parentType: outputParamsStruct, fieldName: paramName });
+        }
+        else {
+            (0, assert_1.default)(false, `Unsupported output parameter type for ${paramName}`);
+        }
+    }
+}
+function genCreateObjectsBody(ctx, codegen, programDef, classSpec, initializerLines) {
     const createLines = [];
     const updateLines = [];
     const idCall = codegen.genRuntimeGuid({
@@ -174,27 +406,38 @@ function genCreateObjectsBody(ctx, codegen, programDef, classSpec) {
                     (0, assert_1.default)(targetField, `Field ${fieldValue.targetPort} not found on ${targetInfo.reconcilerDef.type.getName()}`);
                     const dstFieldType = fields[fieldName].type;
                     if ((0, TypeDefinition_1.typeIsMessageData)(dstFieldType)) {
-                        updateLines.push(...genBindMessageFieldValues(codegen, {
+                        genBindMessageFieldValues(codegen, classSpec, {
                             srcObjVar: targetInfo.objVarName,
                             srcFieldName: fieldValue.targetPort,
                             srcFieldType: targetField.type,
                             dstObjVar: objVarName,
                             dstFieldName: fieldName,
                             dstFieldType,
-                        }));
+                            initializersOut: updateLines,
+                        });
                     }
                     else if ((0, TypeDefinition_1.typeIsSignalData)(dstFieldType)) {
-                        updateLines.push(...genBindSignalFieldValues(codegen, classSpec, {
+                        genBindSignalFieldValues(codegen, classSpec, {
                             srcObjVar: targetInfo.objVarName,
                             srcFieldName: fieldValue.targetPort,
                             srcFieldType: targetField.type,
                             dstObjVar: objVarName,
                             dstFieldName: fieldName,
                             dstFieldType,
-                        }));
+                            initializersOut: updateLines,
+                        });
                     }
                     else {
-                        throw new Error(`Unsupported field type for cross-object field binding: ${dstFieldType.getName()}`);
+                        genBindStateFieldValues(codegen, classSpec, {
+                            srcObjVar: targetInfo.objVarName,
+                            srcFieldName: fieldValue.targetPort,
+                            srcFieldType: targetField.type,
+                            srcBitMask: targetInfo.reconcilerDef.type.getFieldBitMask(fieldValue.targetPort),
+                            dstObjVar: objVarName,
+                            dstFieldName: fieldName,
+                            dstFieldType,
+                            initializersOut: updateLines,
+                        });
                     }
                     continue;
                 }
@@ -229,7 +472,7 @@ function genCreateObjectsBody(ctx, codegen, programDef, classSpec) {
         (0, assert_1.default)((0, TypeDefinition_1.typeIsMessageData)(targetField.type), "Self-terminate events can only be bound to message fields");
         updateLines.push(`if (${codegen.genNonNullCheck(targetInfo.objVarName)}) {`, `  ${codegen.genDerefMethodCall(targetInfo.objVarName, `on${(0, xrpa_utils_1.upperFirst)(connection.targetPort)}`, [codegen.genMethodBind("", "terminate", {}, 2)])};`, `}`);
     }
-    return createLines.concat(updateLines);
+    return createLines.concat(updateLines).concat(initializerLines);
 }
 function genDestroyObjectsBody(ctx, codegen, programDef, includes) {
     const lines = [];
@@ -241,8 +484,9 @@ function genDestroyObjectsBody(ctx, codegen, programDef, includes) {
     }
     return lines;
 }
-// TODO add support for inbound and outbound message params
-// TODO add support for inbound fields
+// TODO add support for inbound message params
+// TODO add support for outbound field params
+// TODO add support for inbound and outbound signal params
 function genDataflowProgramClassSpec(ctx, codegen, programDef, includes) {
     const classSpec = new ClassSpec_1.ClassSpec({
         name: programDef.interfaceName,
@@ -279,7 +523,9 @@ function genDataflowProgramClassSpec(ctx, codegen, programDef, includes) {
         `${codegen.genDerefMethodCall("", "destroyObjects", [])};`,
     ];
     // parameter accessors
-    genParameterAccessors(ctx, codegen, classSpec, programDef);
+    const initializerLines = [];
+    genInputParameterAccessors(ctx, codegen, classSpec, programDef);
+    genOutputParameterAccessors(ctx, codegen, classSpec, programDef, initializerLines);
     // declare member variables for each object
     for (const graphNode of programDef.graphNodes) {
         const { objName, objType } = getInfoForObj(ctx, codegen, graphNode, classSpec.includes);
@@ -291,7 +537,7 @@ function genDataflowProgramClassSpec(ctx, codegen, programDef, includes) {
     }
     classSpec.methods.push({
         name: "createObjects",
-        body: genCreateObjectsBody(ctx, codegen, programDef, classSpec),
+        body: genCreateObjectsBody(ctx, codegen, programDef, classSpec, initializerLines),
         visibility: "private",
     });
     classSpec.methods.push({

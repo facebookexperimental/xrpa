@@ -30,7 +30,6 @@ export declare function genFieldSetDirty(params: {
     typeDef: CollectionTypeDefinition;
     fieldName: string;
     fieldVar: string;
-    proxyObj: string | null;
 }): string[];
 export declare function genClearSetSetterFunctionBody(params: {
     ctx: GenDataStoreContext;
@@ -41,7 +40,6 @@ export declare function genClearSetSetterFunctionBody(params: {
     typeDef: CollectionTypeDefinition;
     setterHooks: FieldSetterHooks;
     needsSetDirty: boolean;
-    proxyObj: string | null;
 }): string[];
 export declare function genClearSetClearFunctionBody(params: {
     ctx: GenDataStoreContext;
@@ -52,7 +50,6 @@ export declare function genClearSetClearFunctionBody(params: {
     typeDef: CollectionTypeDefinition;
     setterHooks: FieldSetterHooks;
     needsSetDirty: boolean;
-    proxyObj: string | null;
 }): string[];
 export declare function genWriteFieldAccessors(classSpec: ClassSpec, params: {
     ctx: GenDataStoreContext;
@@ -62,7 +59,6 @@ export declare function genWriteFieldAccessors(classSpec: ClassSpec, params: {
     directionality: "inbound" | "outbound";
     gettersOnly?: boolean;
     setterHooks?: FieldSetterHooks;
-    proxyObj: string | null;
 }): void;
 export declare function genWriteFunctionBody(params: {
     ctx: GenDataStoreContext;
@@ -70,7 +66,6 @@ export declare function genWriteFunctionBody(params: {
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
     fieldToMemberVar: (fieldName: string) => string;
     canCreate?: boolean;
-    proxyObj: string | null;
 }): string[];
 export declare function genPrepFullUpdateFunctionBody(params: {
     ctx: GenDataStoreContext;
@@ -80,5 +75,6 @@ export declare function genPrepFullUpdateFunctionBody(params: {
     canCreate?: boolean;
 }): string[];
 export declare function defaultFieldToMemberVar(fieldName: string): string;
+export declare function genChangeHandlerMethods(classSpec: ClassSpec, isInboundType: boolean): void;
 export declare function genOutboundReconciledTypes(ctx: GenDataStoreContext, includesIn: IncludeAggregator | null): ClassSpec[];
 

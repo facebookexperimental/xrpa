@@ -39,12 +39,17 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genDataflowProgramSpawner = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
+const assert_1 = __importDefault(require("assert"));
 const ClassSpec_1 = require("../../shared/ClassSpec");
 const DataflowProgramDefinition_1 = require("../../shared/DataflowProgramDefinition");
 const StructType_1 = require("../../shared/StructType");
+const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const CppCodeGenImpl_1 = require("../cpp/CppCodeGenImpl");
 const CppCodeGenImpl = __importStar(require("../cpp/CppCodeGenImpl"));
 const GenDataStoreSubsystem_1 = require("./GenDataStoreSubsystem");
@@ -54,8 +59,8 @@ function genParameterAccessors(ctx, classSpec, programDef, cppIncludes) {
     const spawnInitializerLines = [];
     const runInitializerLines = [];
     const currentObj = (0, CppCodeGenImpl_1.privateMember)("currentObj");
-    const paramsStruct = new StructType_1.StructType(CppCodeGenImpl, "DataflowProgramParams", CppCodeGenImpl_1.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowInputStructSpec)((0, DataflowProgramDefinition_1.getDataflowInputs)(programDef), ctx.moduleDef));
-    const fields = paramsStruct.getAllFields();
+    const inputParamsStruct = new StructType_1.StructType(CppCodeGenImpl, "DataflowProgramInputParams", CppCodeGenImpl_1.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowParamsStructSpec)((0, DataflowProgramDefinition_1.getDataflowInputs)(programDef).map(inp => inp.parameter), ctx.moduleDef));
+    const fields = inputParamsStruct.getAllFields();
     for (const paramName in fields) {
         const memberName = (0, xrpa_utils_1.upperFirst)(paramName);
         const fieldType = fields[paramName].type;
@@ -64,8 +69,8 @@ function genParameterAccessors(ctx, classSpec, programDef, cppIncludes) {
         const decorations = [
             `UPROPERTY(EditAnywhere, BlueprintReadWrite, BlueprintSetter = ${setterName})`
         ];
-        paramsStruct.declareLocalFieldClassMember(classSpec, paramName, memberName, true, decorations, "public");
-        initializerLines.push(...paramsStruct.resetLocalFieldVarToDefault(ctx.namespace, cppIncludes, paramName, memberName));
+        inputParamsStruct.declareLocalFieldClassMember(classSpec, paramName, memberName, true, decorations, "public");
+        initializerLines.push(...inputParamsStruct.resetLocalFieldVarToDefault(ctx.namespace, cppIncludes, paramName, memberName));
         spawnInitializerLines.push(`${(0, CppCodeGenImpl_1.genDerefMethodCall)("ret", objSetterName, [memberName])};`);
         runInitializerLines.push(`${(0, CppCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, [memberName])};`);
         classSpec.methods.push({
@@ -90,6 +95,38 @@ function genParameterAccessors(ctx, classSpec, programDef, cppIncludes) {
         runInitializerLines,
     };
 }
+function genOutputParameterAccessors(ctx, classSpec, programDef, runInitializerLines, forwardDeclarations) {
+    const outputs = (0, DataflowProgramDefinition_1.getDataflowOutputs)(programDef);
+    const outputParamsStruct = new StructType_1.StructType(CppCodeGenImpl, "DataflowProgramOutputParams", CppCodeGenImpl_1.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowParamsStructSpec)(outputs, ctx.moduleDef));
+    const outputFields = outputParamsStruct.getAllFields();
+    for (const parameter of outputs) {
+        if (!parameter.source) {
+            continue;
+        }
+        const fieldName = parameter.name;
+        const fieldType = outputFields[fieldName].type;
+        const reconcilerDef = (0, DataflowProgramDefinition_1.getReconcilerDefForNode)(ctx.moduleDef, parameter.source.targetNode);
+        if ((0, TypeDefinition_1.typeIsMessageData)(fieldType)) {
+            (0, SceneComponentShared_1.genUEMessageProxyDispatch)(classSpec, {
+                storeDef: reconcilerDef.storeDef,
+                categoryName: reconcilerDef.type.getName(),
+                fieldName,
+                fieldType,
+                proxyObj: (0, CppCodeGenImpl_1.privateMember)("currentObj"),
+                proxyIsXrpaObj: false,
+                initializerLines: runInitializerLines,
+                forwardDeclarations,
+            });
+        }
+        else if ((0, TypeDefinition_1.typeIsStateData)(fieldType)) {
+            // TODO: implement
+            (0, assert_1.default)(false, "Primitive output parameters are not yet implemented");
+        }
+        else {
+            (0, assert_1.default)(false, "Only message types are currently supported as output parameters");
+        }
+    }
+}
 function genDataflowProgramSpawner(ctx, fileWriter, outSrcDir, outHeaderDir, programDef, pluginName) {
     const storeDefs = programDef.programInterfaceNames.map(storeName => ctx.moduleDef.getDataStore(storeName));
     const dataStoreSubsystemTypes = storeDefs.map(storeDef => `U${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(storeDef)}`);
@@ -98,7 +135,7 @@ function genDataflowProgramSpawner(ctx, fileWriter, outSrcDir, outHeaderDir, pro
         `Components/SceneComponent.h`,
         `CoreMinimal.h`,
         `<memory>`,
-    ], undefined, programDef.programInterfaceNames.map(CppCodeGenImpl_1.getDataStoreHeaderName));
+    ]);
     const componentClassName = (0, SceneComponentShared_1.getComponentClassName)(null, programDef.interfaceName);
     const componentName = componentClassName.slice(1);
     const headerName = (0, SceneComponentShared_1.getComponentHeader)(programDef.interfaceName);
@@ -130,6 +167,7 @@ function genDataflowProgramSpawner(ctx, fileWriter, outSrcDir, outHeaderDir, pro
         decorations: ["UPROPERTY(EditAnywhere, BlueprintReadWrite)"]
     });
     const { initializerLines, spawnInitializerLines, runInitializerLines } = genParameterAccessors(ctx, classSpec, programDef, cppIncludes);
+    genOutputParameterAccessors(ctx, classSpec, programDef, runInitializerLines, forwardDeclarations);
     classSpec.constructors.push({
         body: initializerLines,
         separateImplementation: true,

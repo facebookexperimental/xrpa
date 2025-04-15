@@ -76,7 +76,7 @@ class IObjectCollection {
   virtual void processMessage(
       const ObjectUuid& id,
       int32_t messageType,
-      int32_t timestamp,
+      uint64_t timestamp,
       MemoryAccessor msgAccessor) = 0;
 
   virtual void processUpsert(const ObjectUuid& id, MemoryAccessor objAccessor) = 0;
@@ -119,12 +119,22 @@ class DataStoreObject : public std::enable_shared_from_this<DataStoreObject> {
     return collection_ == nullptr ? -1 : collection_->getId();
   }
 
+  void setXrpaOwner(void* owner) {
+    owner_ = owner;
+  }
+
+  template <typename T>
+  T* getXrpaOwner() {
+    return static_cast<T*>(owner_);
+  }
+
  protected:
   IObjectCollection* collection_ = nullptr;
   bool hasNotifiedNeedsWrite_ = false;
 
  private:
   ObjectUuid id_;
+  void* owner_ = nullptr;
 };
 
 // tickXrpa traits
@@ -138,17 +148,17 @@ template <typename T>
 struct has_tickXrpa<std::shared_ptr<T>, std::void_t<decltype(std::declval<T>().tickXrpa())>>
     : std::true_type {};
 
-// processDSDelete traits
+// handleXrpaDelete traits
 template <typename T, typename = std::void_t<>>
-struct has_processDSDelete : std::false_type {};
+struct has_handleXrpaDelete : std::false_type {};
 
 template <typename T>
-struct has_processDSDelete<T*, std::void_t<decltype(std::declval<T>().processDSDelete())>>
+struct has_handleXrpaDelete<T*, std::void_t<decltype(std::declval<T>().handleXrpaDelete())>>
     : std::true_type {};
 
 template <typename T>
-struct has_processDSDelete<
+struct has_handleXrpaDelete<
     std::shared_ptr<T>,
-    std::void_t<decltype(std::declval<T>().processDSDelete())>> : std::true_type {};
+    std::void_t<decltype(std::declval<T>().handleXrpaDelete())>> : std::true_type {};
 
 } // namespace Xrpa

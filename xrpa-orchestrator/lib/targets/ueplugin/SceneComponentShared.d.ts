@@ -17,9 +17,9 @@
 
 import { FileWriter } from "@xrpa/xrpa-file-utils";
 import { ClassSpec } from "../../shared/ClassSpec";
-import { InputReconcilerDefinition, OutputReconcilerDefinition } from "../../shared/DataStore";
+import { DataStoreDefinition, InputReconcilerDefinition, OutputReconcilerDefinition } from "../../shared/DataStore";
 import { IncludeAggregator } from "../../shared/Helpers";
-import { InterfaceTypeDefinition } from "../../shared/TypeDefinition";
+import { InterfaceTypeDefinition, MessageDataTypeDefinition } from "../../shared/TypeDefinition";
 import { FieldSetterHooks } from "../cpp/GenWriteReconcilerDataStore";
 import { GenDataStoreContext } from "../shared/GenDataStoreShared";
 export declare enum IntrinsicProperty {
@@ -35,19 +35,32 @@ export declare function getFieldMemberName(reconcilerDef: InputReconcilerDefinit
 export declare function genFieldProperties(classSpec: ClassSpec, params: {
     ctx: GenDataStoreContext;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
-    setterHooks: FieldSetterHooks;
-    proxyObj: string | null;
+    proxyObj: string;
+    setterHooks?: FieldSetterHooks;
     separateImplementation?: boolean;
 }): void;
-export declare function genUEMessageChannelDispatch(classSpec: ClassSpec, params: {
+export declare function genFieldSetterCalls(params: {
     ctx: GenDataStoreContext;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
+    proxyObj: string;
+}): string[];
+export declare function genUEMessageProxyDispatch(classSpec: ClassSpec, params: {
+    storeDef: DataStoreDefinition;
+    categoryName: string;
+    fieldName: string;
+    fieldType: MessageDataTypeDefinition;
+    proxyObj: string;
+    proxyIsXrpaObj: boolean;
+    initializerLines: string[];
+    forwardDeclarations: string[];
 }): void;
 export declare function genUEMessageFieldAccessors(classSpec: ClassSpec, params: {
     ctx: GenDataStoreContext;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
     genMsgHandler: (msgName: string) => string;
-    proxyObj: string | null;
+    proxyObj: string;
+    initializerLines: string[];
+    forwardDeclarations: string[];
 }): void;
 /********************************************************/
 export declare function genFieldDefaultInitializers(ctx: GenDataStoreContext, includes: IncludeAggregator | null, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition): string[];
@@ -57,13 +70,13 @@ export declare function genTransformUpdates(params: {
     ctx: GenDataStoreContext;
     includes: IncludeAggregator | null;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
-    proxyObj: string | null;
+    proxyObj: string;
 }): string[];
 export declare function genProcessUpdateBody(params: {
     ctx: GenDataStoreContext;
     includes: IncludeAggregator | null;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
-    proxyObj: string | null;
+    proxyObj: string;
 }): string[];
 export declare function writeSceneComponent(classSpec: ClassSpec, params: {
     fileWriter: FileWriter;

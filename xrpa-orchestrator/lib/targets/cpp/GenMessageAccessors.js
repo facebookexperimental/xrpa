@@ -16,37 +16,12 @@
 
 "use strict";
 
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genMessageChannelDispatch = exports.genMessageFieldAccessors = exports.genOnMessageAccessor = exports.genSendMessageAccessor = void 0;
+exports.genMessageChannelDispatch = exports.genMessageFieldAccessors = exports.genSendMessageAccessor = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
-const TypeValue_1 = require("../../shared/TypeValue");
 const GenMessageAccessorsShared_1 = require("../shared/GenMessageAccessorsShared");
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
-const CppCodeGenImpl = __importStar(require("./CppCodeGenImpl"));
 const CppDatasetLibraryTypes_1 = require("./CppDatasetLibraryTypes");
 const GenSignalAccessors_1 = require("./GenSignalAccessors");
 function genMessageParamInitializer(ctx, includes, msgType) {
@@ -115,56 +90,30 @@ function genMessageDispatchBody(params) {
             continue;
         }
         const fieldType = typeFields[fieldName];
-        const msgHandler = params.genMsgHandler(fieldName);
-        const handlerCanBeNull = msgHandler.indexOf(".") < 0;
         const msgType = typeDef.getFieldIndex(fieldName);
-        const validateMsgHandler = handlerCanBeNull ? ` && ${msgHandler}` : "";
-        if (!fieldType.hasFields()) {
-            lines.push(`if (messageType == ${msgType}${validateMsgHandler}) {`, `  ${msgHandler}(timestamp);`, `}`);
-        }
-        else {
-            const prelude = [];
-            const msgParams = ["timestamp"].concat(params.msgDataToParams(fieldType, prelude, params.includes));
-            lines.push(`if (messageType == ${msgType}${validateMsgHandler}) {`, `  auto message = ${fieldType.getReadAccessorType(params.ctx.namespace, params.includes)}(messageData);`, ...(0, xrpa_utils_1.indent)(1, prelude), `  ${msgHandler}(${msgParams.join(", ")});`, `}`);
-        }
+        lines.push(`if (messageType == ${msgType}) {`, ...(0, xrpa_utils_1.indent)(1, (0, CppCodeGenImpl_1.genMessageDispatch)({
+            namespace: params.ctx.namespace,
+            includes: params.includes,
+            fieldName,
+            fieldType,
+            genMsgHandler: params.genMsgHandler,
+            msgDataToParams: params.msgDataToParams,
+            convertToReadAccessor: true,
+        })), `}`);
     }
     return lines;
 }
-function genOnMessageAccessor(classSpec, params) {
-    const paramTypes = [CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename];
-    if (params.fieldType.hasFields()) {
-        paramTypes.push(params.fieldType.getReadAccessorType(params.ctx.namespace, classSpec.includes));
-    }
-    const msgHandler = params.genMsgHandler(params.fieldName);
-    classSpec.methods.push({
-        name: `on${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
-        parameters: [{
-                name: "handler",
-                type: `std::function<void(${paramTypes.join(", ")})>`,
-            }],
-        body: [
-            `${msgHandler} = handler;`,
-        ],
-    });
-    classSpec.members.push({
-        name: msgHandler,
-        type: `std::function<void(${paramTypes.join(", ")})>`,
-        initialValue: new TypeValue_1.CodeLiteralValue(CppCodeGenImpl, "nullptr"),
-        visibility: "private",
-    });
-}
-exports.genOnMessageAccessor = genOnMessageAccessor;
 function genMessageFieldAccessors(classSpec, params) {
     const typeDef = params.reconcilerDef.type;
     const typeFields = typeDef.getFieldsOfType(TypeDefinition_1.typeIsMessageData);
     for (const fieldName in typeFields) {
         const fieldType = typeFields[fieldName];
         if (params.reconcilerDef.isInboundField(fieldName)) {
-            genOnMessageAccessor(classSpec, {
-                ...params,
-                typeDef,
+            (0, CppCodeGenImpl_1.genOnMessageAccessor)(classSpec, {
+                namespace: params.ctx.namespace,
                 fieldName,
                 fieldType,
+                genMsgHandler: params.genMsgHandler,
             });
         }
         if (params.reconcilerDef.isOutboundField(fieldName)) {
@@ -175,6 +124,7 @@ function genMessageFieldAccessors(classSpec, params) {
                 fieldType,
                 referencesNeedConversion: true,
                 separateImplementation: true,
+                proxyObj: null,
             });
         }
     }
@@ -189,7 +139,7 @@ function genMessageChannelDispatch(classSpec, params) {
                 type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
             }, {
                 name: "timestamp",
-                type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
+                type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
             }, {
                 name: "messageData",
                 type: CppDatasetLibraryTypes_1.MemoryAccessor,

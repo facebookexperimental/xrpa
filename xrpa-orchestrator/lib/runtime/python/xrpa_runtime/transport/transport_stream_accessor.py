@@ -32,11 +32,14 @@ class ChangeEventAccessor(ObjectAccessorInterface):
     def set_change_type(self, change_type: int):
         self._mem_accessor.write_int(change_type, MemoryOffset(0))
 
-    def get_timestamp(self) -> int:
-        return self._mem_accessor.read_int(MemoryOffset(4))
+    def get_timestamp(self, base_timestamp_us: int) -> int:
+        timestamp_offset_ms = self._mem_accessor.read_int(MemoryOffset(4))
+        return base_timestamp_us + (timestamp_offset_ms * 1000)
 
-    def set_timestamp(self, timestamp: int):
-        self._mem_accessor.write_int(timestamp, MemoryOffset(4))
+    def set_timestamp(self, timestamp_us: int, base_timestamp_us: int):
+        self._mem_accessor.write_int(
+            (timestamp_us - base_timestamp_us) // 1000, MemoryOffset(4)
+        )
 
 
 class TransportStreamIteratorData(ABC):
@@ -46,11 +49,11 @@ class TransportStreamIteratorData(ABC):
 class TransportStreamAccessor:
     def __init__(
         self,
-        base_timestamp: int,
+        base_timestamp_us: int,
         iterator_data: TransportStreamIteratorData,
         event_allocator: Callable[[int], MemoryAccessor],
     ):
-        self._base_timestamp = base_timestamp
+        self._base_timestamp_us = base_timestamp_us
         self._iterator_data = iterator_data
         self._event_allocator = event_allocator
 
@@ -59,22 +62,37 @@ class TransportStreamAccessor:
         T: Type[ChangeEventAccessor],
         change_type: int,
         num_bytes: int = 0,
-        timestamp: int = 0,
+        timestamp_us: int = 0,
     ):
         change_event = T(self._event_allocator(T.DS_SIZE + num_bytes))
         if not change_event.is_null():
             change_event.set_change_type(change_type)
             change_event.set_timestamp(
-                (timestamp - self._base_timestamp)
-                if (timestamp != 0)
-                else self.get_current_timestamp()
+                timestamp_us
+                if (timestamp_us != 0)
+                else TimeUtils.get_current_clock_time_microseconds(),
+                self._base_timestamp_us,
             )
         return change_event
 
-    def get_current_timestamp(self) -> int:
-        return int(
-            TimeUtils.get_current_clock_time_microseconds() - self._base_timestamp
+    def write_prefilled_change_event(
+        self, mem_accessor: MemoryAccessor, timestamp_us: int = 0
+    ):
+        transport_mem = self._event_allocator(mem_accessor.size)
+        if transport_mem.is_null():
+            return
+        transport_mem.copy_from(mem_accessor)
+
+        change_event = ChangeEventAccessor(transport_mem)
+        change_event.set_timestamp(
+            timestamp_us
+            if (timestamp_us != 0)
+            else TimeUtils.get_current_clock_time_microseconds(),
+            self._base_timestamp_us,
         )
+
+    def get_base_timestamp(self) -> int:
+        return self._base_timestamp_us
 
     def get_iterator_data(self):
         return self._iterator_data

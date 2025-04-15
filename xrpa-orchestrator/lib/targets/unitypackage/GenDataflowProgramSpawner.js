@@ -39,23 +39,28 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genDataflowProgramSpawner = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
+const assert_1 = __importDefault(require("assert"));
 const ClassSpec_1 = require("../../shared/ClassSpec");
 const StructType_1 = require("../../shared/StructType");
 const DataflowProgramDefinition_1 = require("../../shared/DataflowProgramDefinition");
+const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const CsharpCodeGenImpl_1 = require("../csharp/CsharpCodeGenImpl");
 const CsharpCodeGenImpl = __importStar(require("../csharp/CsharpCodeGenImpl"));
 const GenDataStoreSubsystem_1 = require("./GenDataStoreSubsystem");
 const MonoBehaviourShared_1 = require("./MonoBehaviourShared");
-function genParameterAccessors(ctx, classSpec, programDef) {
+function genInputParameterAccessors(ctx, classSpec, programDef) {
     const spawnInitializerLines = [];
     const runInitializerLines = [];
     const validateLines = [];
     const currentObj = (0, CsharpCodeGenImpl_1.privateMember)("currentObj");
-    const paramsStruct = new StructType_1.StructType(CsharpCodeGenImpl, "DataflowProgramParams", CsharpCodeGenImpl_1.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowInputStructSpec)((0, DataflowProgramDefinition_1.getDataflowInputs)(programDef), ctx.moduleDef));
-    const fields = paramsStruct.getAllFields();
+    const inputParamsStruct = new StructType_1.StructType(CsharpCodeGenImpl, "DataflowProgramInputParams", CsharpCodeGenImpl_1.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowParamsStructSpec)((0, DataflowProgramDefinition_1.getDataflowInputs)(programDef).map(inp => inp.parameter), ctx.moduleDef));
+    const fields = inputParamsStruct.getAllFields();
     for (const paramName in fields) {
         const memberName = (0, xrpa_utils_1.upperFirst)(paramName);
         const memberFieldName = (0, CsharpCodeGenImpl_1.privateMember)(memberName);
@@ -65,7 +70,7 @@ function genParameterAccessors(ctx, classSpec, programDef) {
         const decorations = [
             "[SerializeField]"
         ];
-        paramsStruct.declareLocalFieldClassMember(classSpec, paramName, memberFieldName, true, decorations, "private");
+        inputParamsStruct.declareLocalFieldClassMember(classSpec, paramName, memberFieldName, true, decorations, "private");
         spawnInitializerLines.push(`${(0, CsharpCodeGenImpl_1.genDerefMethodCall)("ret", objSetterName, [memberName])};`);
         runInitializerLines.push(`${(0, CsharpCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, [memberName])};`);
         classSpec.members.push({
@@ -96,6 +101,35 @@ function genParameterAccessors(ctx, classSpec, programDef) {
         runInitializerLines,
     };
 }
+function genOutputParameterAccessors(ctx, classSpec, programDef, runInitializerLines) {
+    const outputs = (0, DataflowProgramDefinition_1.getDataflowOutputs)(programDef);
+    const outputParamsStruct = new StructType_1.StructType(CsharpCodeGenImpl, "DataflowProgramOutputParams", CsharpCodeGenImpl_1.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowParamsStructSpec)(outputs, ctx.moduleDef));
+    const outputFields = outputParamsStruct.getAllFields();
+    for (const parameter of outputs) {
+        if (!parameter.source) {
+            continue;
+        }
+        const fieldName = parameter.name;
+        const fieldType = outputFields[fieldName].type;
+        const reconcilerDef = (0, DataflowProgramDefinition_1.getReconcilerDefForNode)(ctx.moduleDef, parameter.source.targetNode);
+        if ((0, TypeDefinition_1.typeIsMessageData)(fieldType)) {
+            (0, MonoBehaviourShared_1.genUnityMessageProxyDispatch)(classSpec, {
+                storeDef: reconcilerDef.storeDef,
+                fieldName,
+                fieldType,
+                proxyObj: (0, CsharpCodeGenImpl_1.privateMember)("currentObj"),
+                initializerLines: runInitializerLines,
+            });
+        }
+        else if ((0, TypeDefinition_1.typeIsStateData)(fieldType)) {
+            // TODO: implement
+            (0, assert_1.default)(false, "Primitive output parameters are not yet implemented");
+        }
+        else {
+            (0, assert_1.default)(false, "Only message types are currently supported as output parameters");
+        }
+    }
+}
 function genDataflowProgramSpawner(ctx, fileWriter, outDir, programDef) {
     const storeDefs = programDef.programInterfaceNames.map(storeName => ctx.moduleDef.getDataStore(storeName));
     const storeAccessors = storeDefs.map(storeDef => `${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(storeDef)}.Instance.DataStore`);
@@ -113,7 +147,8 @@ function genDataflowProgramSpawner(ctx, fileWriter, outDir, programDef) {
         visibility: "public",
         decorations: ["[SerializeField]"]
     });
-    const { spawnInitializerLines, runInitializerLines } = genParameterAccessors(ctx, classSpec, programDef);
+    const { spawnInitializerLines, runInitializerLines } = genInputParameterAccessors(ctx, classSpec, programDef);
+    genOutputParameterAccessors(ctx, classSpec, programDef, runInitializerLines);
     classSpec.members.push({
         name: "currentObj",
         type: (0, CsharpCodeGenImpl_1.genObjectPtrType)(programClass),

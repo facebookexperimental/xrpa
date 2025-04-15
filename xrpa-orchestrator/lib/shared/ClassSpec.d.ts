@@ -26,6 +26,44 @@ export interface MethodParam {
 }
 export type ClassVisibility = "public" | "private" | "protected";
 export type ClassBodyThunk = ThunkWithParam<Array<string>, IncludeAggregator | null>;
+interface ClassConstructorDefinition {
+    parameters?: Array<MethodParam>;
+    superClassInitializers?: Array<string>;
+    memberInitializers?: Array<[string, string]>;
+    body?: ClassBodyThunk;
+    visibility?: ClassVisibility;
+    decorations?: Array<string>;
+    separateImplementation?: boolean;
+}
+interface ClassMethodDefinition {
+    name: string;
+    returnType?: string;
+    noDiscard?: boolean;
+    parameters?: Array<MethodParam>;
+    body: ClassBodyThunk;
+    templateParams?: Array<string>;
+    isStatic?: boolean;
+    isOverride?: boolean;
+    isConst?: boolean;
+    isInline?: boolean;
+    isVirtual?: boolean;
+    isAbstract?: boolean;
+    isFinal?: boolean;
+    visibility?: ClassVisibility;
+    decorations?: Array<string>;
+    separateImplementation?: boolean;
+}
+interface ClassMemberDefinition {
+    name: string;
+    type: TypeDefinition | string;
+    initialValue?: TypeValue;
+    isStatic?: boolean;
+    isConst?: boolean;
+    visibility?: ClassVisibility;
+    decorations?: Array<string>;
+    getter?: string;
+    setter?: Array<string>;
+}
 export declare class ClassSpec {
     constructor(params: {
         name: string;
@@ -49,45 +87,12 @@ export declare class ClassSpec {
     decorations: Array<string>;
     classNameDecoration: string | null;
     classEarlyInject: Array<string>;
-    constructors: Array<{
-        parameters?: Array<MethodParam>;
-        superClassInitializers?: Array<string>;
-        memberInitializers?: Array<[string, string]>;
-        body?: ClassBodyThunk;
-        visibility?: ClassVisibility;
-        decorations?: Array<string>;
-        separateImplementation?: boolean;
-    }>;
+    constructors: Array<ClassConstructorDefinition>;
     virtualDestructor: boolean;
     destructorBody?: ClassBodyThunk;
-    methods: Array<{
-        name: string;
-        returnType?: string;
-        noDiscard?: boolean;
-        parameters?: Array<MethodParam>;
-        body: ClassBodyThunk;
-        templateParams?: Array<string>;
-        isStatic?: boolean;
-        isOverride?: boolean;
-        isConst?: boolean;
-        isInline?: boolean;
-        isVirtual?: boolean;
-        isAbstract?: boolean;
-        isFinal?: boolean;
-        visibility?: ClassVisibility;
-        decorations?: Array<string>;
-        separateImplementation?: boolean;
-    }>;
-    members: Array<{
-        name: string;
-        type: TypeDefinition | string;
-        initialValue?: TypeValue;
-        isStatic?: boolean;
-        isConst?: boolean;
-        visibility?: ClassVisibility;
-        decorations?: Array<string>;
-        getter?: string;
-        setter?: Array<string>;
-    }>;
+    methods: Array<ClassMethodDefinition>;
+    members: Array<ClassMemberDefinition>;
+    getOrCreateMethod(methodDef: Omit<ClassMethodDefinition, "body">): Array<string>;
 }
+export {};
 

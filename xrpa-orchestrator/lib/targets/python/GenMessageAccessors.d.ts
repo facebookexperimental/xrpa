@@ -33,20 +33,12 @@ export declare function genMessageChannelDispatch(classSpec: ClassSpec, params: 
     ctx: GenDataStoreContext;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
     genMsgHandler: (msgName: string) => string;
-    msgDataToParams: (ctx: GenDataStoreContext, msgType: MessageDataTypeDefinition, prelude: string[], includes: IncludeAggregator | null) => string[];
+    msgDataToParams: (msgType: MessageDataTypeDefinition, prelude: string[], includes: IncludeAggregator | null) => string[];
     isOverride?: boolean;
-}): void;
-export declare function genOnMessageAccessor(classSpec: ClassSpec, params: {
-    ctx: GenDataStoreContext;
-    typeDef: CollectionTypeDefinition;
-    fieldName: string;
-    fieldType: MessageDataTypeDefinition;
-    genMsgHandler: (msgName: string) => string;
 }): void;
 export declare function genMessageFieldAccessors(classSpec: ClassSpec, params: {
     ctx: GenDataStoreContext;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
     genMsgHandler: (msgName: string) => string;
-    proxyObj: string | null;
 }): void;
 

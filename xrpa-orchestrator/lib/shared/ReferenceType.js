@@ -42,7 +42,7 @@ class ReferenceType extends PrimitiveType_1.PrimitiveType {
     }
     convertValueFromLocal(inNamespace, includes, value) {
         if (typeof value === "string") {
-            value = new TypeValue_1.CodeLiteralValue(this.codegen, this.codegen.genReferencePtrToID(value, this.toType.getPtrType(), this.objectUuidType.getLocalType(inNamespace, includes)));
+            value = new TypeValue_1.CodeLiteralValue(this.codegen, this.codegen.genReferencePtrToID(value, this.objectUuidType.getLocalType(inNamespace, includes)));
         }
         return value;
     }

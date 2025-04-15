@@ -24,6 +24,7 @@ exports.genTypesDefinitions = exports.getDataStoreConfigName = void 0;
 const path_1 = __importDefault(require("path"));
 const PythonCodeGenImpl_1 = require("./PythonCodeGenImpl");
 const PythonDatasetLibraryTypes_1 = require("./PythonDatasetLibraryTypes");
+const TypeDefinition_1 = require("../../shared/TypeDefinition");
 function getDataStoreConfigName(apiname, inNamespace, includes) {
     const fullName = (0, PythonCodeGenImpl_1.nsJoin)((0, PythonCodeGenImpl_1.getTypesHeaderNamespace)(apiname), (0, PythonCodeGenImpl_1.getDataStoreName)(apiname) + "_config", "transport_config");
     includes?.addFile({ filename: (0, PythonCodeGenImpl_1.getTypesHeaderName)(apiname), namespace: (0, PythonCodeGenImpl_1.getTypesHeaderNamespace)(apiname) });
@@ -32,15 +33,29 @@ function getDataStoreConfigName(apiname, inNamespace, includes) {
 exports.getDataStoreConfigName = getDataStoreConfigName;
 function genTypeDefinitions(namespace, datamodel, includes) {
     const ret = [];
+    const typeDefs = datamodel.getAllTypeDefinitions();
+    // define enums first
+    for (const typeDef of typeDefs) {
+        if (!(0, TypeDefinition_1.typeIsEnum)(typeDef)) {
+            continue;
+        }
+        const lines = typeDef.genTypeDefinition(includes);
+        if (lines) {
+            ret.push(...lines, "");
+        }
+    }
     // define the local types first, so that the to/fromLocal functions can use them
-    for (const typeDef of datamodel.getAllTypeDefinitions()) {
+    for (const typeDef of typeDefs) {
         const lines = typeDef.genLocalTypeDefinition(namespace, includes);
         if (lines) {
             ret.push(...lines, "");
         }
     }
     // define the dataset types last
-    for (const typeDef of datamodel.getAllTypeDefinitions()) {
+    for (const typeDef of typeDefs) {
+        if ((0, TypeDefinition_1.typeIsEnum)(typeDef)) {
+            continue;
+        }
         const lines = typeDef.genTypeDefinition(includes);
         if (lines) {
             ret.push(...lines, "");

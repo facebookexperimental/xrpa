@@ -16,8 +16,12 @@
 
 "use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDataflowInputStructSpec = exports.getDataflowInputs = exports.isDataflowProgramDefinition = exports.isDataflowConnection = exports.isDataflowForeignObjectInstantiation = exports.isDataflowGraphNode = void 0;
+exports.getDataflowParamsStructSpec = exports.getReconcilerDefForNode = exports.getDataflowOutputs = exports.getDataflowInputs = exports.isDataflowProgramDefinition = exports.isDataflowConnection = exports.isDataflowForeignObjectInstantiation = exports.isDataflowGraphNode = void 0;
+const assert_1 = __importDefault(require("assert"));
 const InterfaceTypes_1 = require("../InterfaceTypes");
 const ProgramInterface_1 = require("../ProgramInterface");
 const ProgramInterfaceConverter_1 = require("../ProgramInterfaceConverter");
@@ -48,17 +52,42 @@ function getDataflowInputs(dataflow) {
     });
 }
 exports.getDataflowInputs = getDataflowInputs;
-function getDataflowInputStructSpec(inputs, moduleDef) {
+function getDataflowOutputs(dataflow) {
+    return Object.values(dataflow.parameters).filter(paramDef => (0, ProgramInterface_1.getDirectionality)(paramDef.dataType) === "outbound").sort((a, b) => {
+        return a.name.localeCompare(b.name);
+    });
+}
+exports.getDataflowOutputs = getDataflowOutputs;
+function getReconcilerDefForNode(moduleDef, graphNode) {
+    (0, assert_1.default)(isDataflowForeignObjectInstantiation(graphNode));
+    const storeDef = moduleDef.getDataStore(graphNode.programInterfaceName);
+    (0, assert_1.default)(storeDef, `Data store ${graphNode.programInterfaceName} not found for ${graphNode.name}`);
+    const reconcilerDef = storeDef.getOutputReconcilers().find(reconcilerDef => reconcilerDef.type.getName() === graphNode.collectionName);
+    (0, assert_1.default)(reconcilerDef, `Output reconciler for ${graphNode.collectionName} not found for ${graphNode.name}`);
+    return reconcilerDef;
+}
+exports.getReconcilerDefForNode = getReconcilerDefForNode;
+function getDataflowParamsStructSpec(params, moduleDef) {
     const paramsStructSpec = {};
-    for (const input of inputs) {
-        const dataType = input.parameter.dataType;
-        paramsStructSpec[input.parameter.name] = moduleDef.convertUserTypeSpec({
-            type: (0, ProgramInterfaceConverter_1.getTypeName)(dataType),
-            description: (0, InterfaceTypes_1.getFieldDescription)(dataType),
-            defaultValue: (0, InterfaceTypes_1.getFieldDefaultValue)(dataType),
-        });
+    for (const param of params) {
+        if (param.source) {
+            const reconcilerDef = getReconcilerDefForNode(moduleDef, param.source.targetNode);
+            const fieldDef = reconcilerDef.type.getAllFields()[param.source.targetPort];
+            paramsStructSpec[param.name] = moduleDef.convertUserTypeSpec({
+                type: fieldDef.type,
+                description: (0, InterfaceTypes_1.getFieldDescription)(param.dataType),
+                defaultValue: (0, InterfaceTypes_1.getFieldDefaultValue)(param.dataType),
+            });
+        }
+        else {
+            paramsStructSpec[param.name] = moduleDef.convertUserTypeSpec({
+                type: (0, ProgramInterfaceConverter_1.getTypeName)(param.dataType),
+                description: (0, InterfaceTypes_1.getFieldDescription)(param.dataType),
+                defaultValue: (0, InterfaceTypes_1.getFieldDefaultValue)(param.dataType),
+            });
+        }
     }
     return paramsStructSpec;
 }
-exports.getDataflowInputStructSpec = getDataflowInputStructSpec;
+exports.getDataflowParamsStructSpec = getDataflowParamsStructSpec;
 //# sourceMappingURL=DataflowProgramDefinition.js.map

@@ -18,10 +18,9 @@
 
 #include <xrpa-runtime/transport/TransportStream.h>
 #include <xrpa-runtime/transport/TransportStreamAccessor.h>
-#include <cassert>
+#include <xrpa-runtime/utils/PlacedRingBuffer.h>
 #include <chrono>
 #include <memory>
-#include <utility>
 #include <vector>
 
 namespace Xrpa {
@@ -36,7 +35,7 @@ class DataStoreReconciler {
       int messageDataPoolSize);
 
   virtual ~DataStoreReconciler() {
-    free(messageDataPool_);
+    free(outboundMessages_);
   }
 
   void tickInbound();
@@ -45,20 +44,12 @@ class DataStoreReconciler {
 
   template <typename R>
   void setMessageLifetime(std::chrono::duration<int64_t, R> messageLifetime) {
-    messageLifetime_ =
+    messageLifetimeUs_ =
         std::chrono::duration_cast<std::chrono::microseconds>(messageLifetime).count();
   }
 
   MemoryAccessor
-  sendMessage(const ObjectUuid& objectId, int32_t collectionId, int32_t fieldId, int32_t numBytes) {
-    assert(messageDataPoolPos_ + numBytes < messageDataPoolSize_);
-    uint8_t* rawMessageData = numBytes > 0 ? messageDataPool_ + messageDataPoolPos_ : nullptr;
-    messageDataPoolPos_ += numBytes;
-
-    auto messageData = MemoryAccessor(rawMessageData, 0, numBytes);
-    outboundMessages_.emplace_back(objectId, collectionId, fieldId, messageData);
-    return messageData;
-  }
+  sendMessage(const ObjectUuid& objectId, int32_t collectionId, int32_t fieldId, int32_t numBytes);
 
   void notifyObjectNeedsWrite(const ObjectUuid& objectId, int32_t collectionId) {
     auto curSize = pendingWrites_.size();
@@ -75,23 +66,6 @@ class DataStoreReconciler {
   void registerCollection(std::shared_ptr<IObjectCollection> collection);
 
  private:
-  struct OutboundMessage {
-    OutboundMessage(
-        const ObjectUuid& objectId,
-        int32_t collectionId,
-        int32_t fieldId,
-        MemoryAccessor messageData)
-        : objectId_(objectId),
-          collectionId_(collectionId),
-          fieldId_(fieldId),
-          messageData_(std::move(messageData)) {}
-
-    ObjectUuid objectId_;
-    int32_t collectionId_;
-    int32_t fieldId_;
-    MemoryAccessor messageData_;
-  };
-
   struct PendingWrite {
     PendingWrite(const ObjectUuid& objectId, int32_t collectionId)
         : objectId_(objectId), collectionId_(collectionId) {}
@@ -104,11 +78,9 @@ class DataStoreReconciler {
   std::weak_ptr<TransportStream> outboundTransport_;
 
   // message stuff
-  std::vector<OutboundMessage> outboundMessages_;
-  uint8_t* messageDataPool_ = nullptr;
-  int32_t messageDataPoolSize_ = 0;
-  int32_t messageDataPoolPos_ = 0;
-  int32_t messageLifetime_{};
+  PlacedRingBuffer* outboundMessages_ = nullptr;
+  PlacedRingBufferIterator outboundMessagesIterator_;
+  uint64_t messageLifetimeUs_{};
 
   // collections
   std::unordered_map<int32_t, std::shared_ptr<IObjectCollection>> collections_;

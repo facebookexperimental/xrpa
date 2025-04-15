@@ -74,21 +74,6 @@ class ObjectCollection(IObjectCollection, Generic[ObjectAccessorType, Reconciled
     def _index_notify_delete(self, obj: ReconciledType) -> None:
         pass
 
-    def _binding_tick(self) -> None:
-        pass
-
-    def _binding_write_changes(self, id: ObjectUuid) -> None:
-        pass
-
-    def _binding_process_message(
-        self,
-        id: ObjectUuid,
-        message_type: int,
-        timestamp: int,
-        msg_accessor: MemoryAccessor,
-    ) -> None:
-        pass
-
     # these functions are for isLocalOwned=true derived classes; they typically will be exposed with public wrapper functions
     def _add_object_internal(self, obj: ReconciledType):
         if not self._is_local_owned:
@@ -131,17 +116,12 @@ class ObjectCollection(IObjectCollection, Generic[ObjectAccessorType, Reconciled
                 self._index_notify_update(obj, fields_changed)
 
     def tick(self):
-        if self._indexed_field_mask != 0:
-            self._binding_tick()
-
         for obj in self._objects.values():
             obj.tick_xrpa()
 
     def write_changes(self, accessor: TransportStreamAccessor, id: ObjectUuid):
         obj = self._objects.get(id, None)
         if obj is not None:
-            if self._indexed_field_mask != 0:
-                self._binding_write_changes(id)
             obj.write_ds_changes(accessor)
         elif self._is_local_owned:
             change_event = accessor.write_change_event(
@@ -218,7 +198,7 @@ class ObjectCollection(IObjectCollection, Generic[ObjectAccessorType, Reconciled
         if self._indexed_field_mask != 0:
             self._index_notify_delete(obj)
 
-        obj.process_ds_delete()
+        obj.handle_xrpa_delete()
         del self._objects[id]
 
     def process_message(
@@ -233,9 +213,6 @@ class ObjectCollection(IObjectCollection, Generic[ObjectAccessorType, Reconciled
             return
 
         obj.process_ds_message(message_type, timestamp, msg_accessor)
-
-        if self._indexed_field_mask != 0:
-            self._binding_process_message(id, message_type, timestamp, msg_accessor)
 
     def process_upsert(self, id: ObjectUuid, mem_accessor: MemoryAccessor):
         if not self._process_update_internal(

@@ -244,7 +244,7 @@ exports.XredSignalProcessingInterface = (0, xrpa_orchestrator_1.XrpaProgramInter
         },
     }));
     const SampleType = (0, xrpa_orchestrator_1.Enum)("SampleType", ["Float", "SignedInt32", "UnsignedInt32"]);
-    (0, xrpa_orchestrator_1.ProgramInput)("SignalOutputData", (0, xrpa_orchestrator_1.Augment)((0, xrpa_orchestrator_1.Collection)({
+    (0, xrpa_orchestrator_1.ProgramInput)("SignalOutputData", (0, xrpa_orchestrator_1.Collection)({
         maxCount: 64,
         fields: {
             srcNode: (0, xrpa_orchestrator_1.ReferenceTo)(ISignalNode),
@@ -253,8 +253,8 @@ exports.XredSignalProcessingInterface = (0, xrpa_orchestrator_1.XrpaProgramInter
             samplesPerChannelPerSec: xrpa_orchestrator_1.Count,
             data: (0, xrpa_orchestrator_1.Output)(xrpa_orchestrator_1.Signal),
         },
-    }), (0, xrpa_orchestrator_1.GenericImpl)(xrpa_orchestrator_1.IfOutput)));
-    (0, xrpa_orchestrator_1.ProgramInput)("SignalOutputDevice", (0, xrpa_orchestrator_1.Augment)((0, xrpa_orchestrator_1.Collection)({
+    }));
+    (0, xrpa_orchestrator_1.ProgramInput)("SignalOutputDevice", (0, xrpa_orchestrator_1.Collection)({
         maxCount: 64,
         fields: {
             srcNode: (0, xrpa_orchestrator_1.ReferenceTo)(ISignalNode),
@@ -264,6 +264,6 @@ exports.XredSignalProcessingInterface = (0, xrpa_orchestrator_1.XrpaProgramInter
             // TODO channelName, driverIdentifier, driverPort filters?
             foundMatch: (0, xrpa_orchestrator_1.Output)((0, xrpa_orchestrator_1.Boolean)(false, "Set to true if a matching device was found")),
         },
-    }), (0, xrpa_orchestrator_1.GenericImpl)(xrpa_orchestrator_1.IfOutput)));
+    }));
 });
 //# sourceMappingURL=SignalProcessingInterface.js.map

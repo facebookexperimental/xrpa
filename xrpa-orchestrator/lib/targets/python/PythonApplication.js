@@ -25,7 +25,7 @@ class PythonApplication {
     }
     doCodeGen() {
         const fileWriter = this.moduleDef.doCodeGen();
-        (0, GenProgramInterfacesClass_1.genApplicationInterfaceClass)(fileWriter, this.moduleDef.libDir, this.moduleDef);
+        (0, GenProgramInterfacesClass_1.genApplicationInterfaceClass)(fileWriter, this.moduleDef.libDir, this.moduleDef, true);
         return fileWriter;
     }
 }

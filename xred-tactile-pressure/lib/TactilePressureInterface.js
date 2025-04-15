@@ -67,7 +67,7 @@ exports.XredTactilePressureInterface = (0, xrpa_orchestrator_1.XrpaProgramInterf
             pose: (0, xrpa_orchestrator_1.Input)(PoseTransform),
         },
     }));
-    (0, xrpa_orchestrator_1.ProgramOutput)("TactilePoint", (0, xrpa_orchestrator_1.Augment)((0, xrpa_orchestrator_1.Collection)({
+    (0, xrpa_orchestrator_1.ProgramOutput)("TactilePoint", (0, xrpa_orchestrator_1.GameComponentBindingsDisabled)((0, xrpa_orchestrator_1.Collection)({
         maxCount: 1024,
         fields: {
             // constant:
@@ -82,6 +82,6 @@ exports.XredTactilePressureInterface = (0, xrpa_orchestrator_1.XrpaProgramInterf
             // caller-specified:
             pressureOffset: (0, xrpa_orchestrator_1.Input)((0, xrpa_orchestrator_1.Scalar)(0, "Custom offset to apply to the surface pressure")),
         },
-    }), (0, xrpa_orchestrator_1.GenericImpl)(xrpa_orchestrator_1.IfInput)));
+    })));
 });
 //# sourceMappingURL=TactilePressureInterface.js.map

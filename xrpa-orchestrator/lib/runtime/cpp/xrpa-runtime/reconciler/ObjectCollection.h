@@ -102,14 +102,6 @@ class ObjectCollection : public IObjectCollection {
   virtual void indexNotifyUpdate(ReconciledTypePtr /*obj*/, uint64_t /*fieldsChanged*/) {}
   virtual void indexNotifyDelete(ReconciledTypePtr /*obj*/) {}
 
-  virtual void bindingTick() {}
-  virtual void bindingWriteChanges(const ObjectUuid& /*id*/) {}
-  virtual void bindingProcessMessage(
-      const ObjectUuid& /*id*/,
-      int32_t /*messageType*/,
-      int32_t /*timestamp*/,
-      MemoryAccessor /*msgAccessor*/) {}
-
   // these functions are for isLocalOwned=true derived classes; they typically will be exposed with
   // public wrapper functions
   void addObjectInternal(ReconciledTypePtr obj) {
@@ -157,10 +149,6 @@ class ObjectCollection : public IObjectCollection {
   }
 
   void tick() final {
-    if (indexedFieldMask_ != 0) {
-      bindingTick();
-    }
-
     if constexpr (has_tickXrpa<ReconciledTypePtr>::value) {
       for (auto iter = objects_.begin(), last = objects_.end(); iter != last; ++iter) {
         iter->second->tickXrpa();
@@ -211,15 +199,15 @@ class ObjectCollection : public IObjectCollection {
       indexNotifyDelete(iter->second);
     }
 
-    if constexpr (has_processDSDelete<ReconciledTypePtr>::value) {
+    if constexpr (has_handleXrpaDelete<ReconciledTypePtr>::value) {
       try {
-        iter->second->processDSDelete();
+        iter->second->handleXrpaDelete();
       } catch (std::exception& e) {
         // log the exception e.what()
-        std::cout << "Caught exception in processDSDelete/destructor: " << e.what() << std::endl;
+        std::cout << "Caught exception in handleXrpaDelete/destructor: " << e.what() << std::endl;
       } catch (...) {
         // log an error
-        std::cout << "Caught unknown error in processDSDelete/destructor" << std::endl;
+        std::cout << "Caught unknown error in handleXrpaDelete/destructor" << std::endl;
       }
     }
     return objects_.erase(iter);
@@ -267,9 +255,6 @@ class ObjectCollection : public IObjectCollection {
   void writeChanges(TransportStreamAccessor* accessor, const ObjectUuid& id) final {
     auto iter = objects_.find(id);
     if (iter != objects_.end()) {
-      if (indexedFieldMask_ != 0) {
-        bindingWriteChanges(id);
-      }
       iter->second->writeDSChanges(accessor);
     } else if (isLocalOwned_) {
       auto changeEvent = accessor->writeChangeEvent<CollectionChangeEventAccessor>(
@@ -330,7 +315,7 @@ class ObjectCollection : public IObjectCollection {
   void processMessage(
       const ObjectUuid& id,
       int32_t messageType,
-      int32_t timestamp,
+      uint64_t timestamp,
       MemoryAccessor msgAccessor) final {
     auto iter = objects_.find(id);
     if (iter == objects_.end()) {
@@ -344,10 +329,6 @@ class ObjectCollection : public IObjectCollection {
     } catch (...) {
       // log an error
       std::cout << "Caught unknown error in processDSMessage" << std::endl;
-    }
-
-    if (indexedFieldMask_ != 0) {
-      bindingProcessMessage(id, messageType, timestamp, msgAccessor);
     }
   }
 };

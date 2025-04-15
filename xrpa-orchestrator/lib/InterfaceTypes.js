@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.propagateInheritableProperties = exports.walkTypeTree = exports.ReferenceTo = exports.isReferenceDataType = exports.hasFieldsStruct = exports.Collection = exports.isCollectionDataType = exports.Interface = exports.isInterfaceDataType = exports.MessageRate = exports.Message = exports.isMessageDataType = exports.Image = exports.Struct = exports.isStructDataType = exports.ByteArray = exports.isByteArrayDataType = exports.FixedArray = exports.isFixedArrayDataType = exports.Enum = exports.isEnumDataType = exports.isBuiltinDataType = exports.Signal = exports.ColorLinear = exports.ColorSRGBA = exports.Float3 = exports.String = exports.Timestamp = exports.Scalar = exports.BitField = exports.Count = exports.Boolean = exports.getUseGenericImplementation = exports.GenericImpl = exports.isFieldIndexKey = exports.IndexKey = exports.isFieldPrimaryKey = exports.PrimaryKey = exports.getFieldDefaultValue = exports.getFieldDescription = exports.Description = exports.IS_IMAGE_TYPE = exports.MESSAGE_RATE = exports.FIELD_DEFAULT = exports.FIELD_DESCRIPTION = void 0;
+exports.propagateInheritableProperties = exports.walkTypeTree = exports.ReferenceTo = exports.isReferenceDataType = exports.hasFieldsStruct = exports.Collection = exports.isCollectionDataType = exports.Interface = exports.isInterfaceDataType = exports.MessageRate = exports.Message = exports.isMessageDataType = exports.Image = exports.Struct = exports.isStructDataType = exports.ByteArray = exports.isByteArrayDataType = exports.FixedArray = exports.isFixedArrayDataType = exports.Enum = exports.isEnumDataType = exports.isBuiltinDataType = exports.Signal = exports.ColorLinear = exports.ColorSRGBA = exports.Float3 = exports.String = exports.HiResTimestamp = exports.Timestamp = exports.Scalar = exports.BitField = exports.Count = exports.Boolean = exports.isFieldIndexKey = exports.IndexKey = exports.isFieldPrimaryKey = exports.PrimaryKey = exports.getFieldDefaultValue = exports.getFieldDescription = exports.Description = exports.IS_IMAGE_TYPE = exports.MESSAGE_RATE = exports.FIELD_DEFAULT = exports.FIELD_DESCRIPTION = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const simply_immutable_1 = require("simply-immutable");
@@ -31,7 +31,6 @@ exports.FIELD_DESCRIPTION = "xrpa.description";
 exports.FIELD_DEFAULT = "xrpa.defaultValue";
 const PRIMARY_KEY = "xrpa.primaryKey";
 const INDEX_KEY = "xrpa.indexKey";
-const USE_GENERIC_IMPL = "xrpa.useGenericImpl";
 exports.MESSAGE_RATE = "xrpa.messageRate";
 exports.IS_IMAGE_TYPE = "xrpa.isImageType";
 function Description(description, dataType) {
@@ -69,14 +68,6 @@ function isFieldIndexKey(dataType) {
     return (0, XrpaLanguage_1.evalProperty)(dataType.properties, INDEX_KEY) === true;
 }
 exports.isFieldIndexKey = isFieldIndexKey;
-function GenericImpl(arg0, arg1) {
-    return (0, XrpaLanguage_1.setPropertiesOrCurry)({ [USE_GENERIC_IMPL]: true }, arg0, arg1);
-}
-exports.GenericImpl = GenericImpl;
-function getUseGenericImplementation(dataType) {
-    return (0, XrpaLanguage_1.evalProperty)(dataType.properties, USE_GENERIC_IMPL) === true;
-}
-exports.getUseGenericImplementation = getUseGenericImplementation;
 ////////////////////////////////////////////////////////////////////////////////
 // Primitive data types
 function Boolean(defaultValue, description) {
@@ -132,6 +123,16 @@ function Timestamp(description) {
     });
 }
 exports.Timestamp = Timestamp;
+function HiResTimestamp(description) {
+    return (0, xrpa_utils_1.safeDeepFreeze)({
+        __XrpaDataType: true,
+        typename: BuiltinTypes_1.BuiltinType.HiResTimestamp,
+        properties: {
+            [exports.FIELD_DESCRIPTION]: description,
+        },
+    });
+}
+exports.HiResTimestamp = HiResTimestamp;
 function String(defaultValue, description) {
     return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,
@@ -280,8 +281,11 @@ function Image(arg0, arg1) {
         width: Count(params.expectedWidth, "Image width"),
         height: Count(params.expectedHeight, "Image height"),
         format: Enum("ImageFormat", ["RGB8", "BGR8", "RGBA8", "Y8"]),
-        encoding: Enum("ImageEncoding", ["None", "Jpeg"]),
+        encoding: Enum("ImageEncoding", ["Raw", "Jpeg"]),
         orientation: Enum("ImageOrientation", ["Oriented", "RotatedCW", "RotatedCCW", "Rotated180"]),
+        gain: Scalar(1.0, "Image gain"),
+        exposureDuration: HiResTimestamp("Image exposure duration, if available"),
+        timestamp: HiResTimestamp("Capture timestamp, if available"),
         data: ByteArray(Math.ceil(params.expectedWidth * params.expectedHeight * params.expectedBytesPerPixel), "Image data"),
     }), exports.IS_IMAGE_TYPE, true);
     if (params.description) {

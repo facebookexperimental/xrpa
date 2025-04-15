@@ -62,11 +62,25 @@ function getInterfaceType(datamodel, dataType) {
     (0, assert_1.default)((0, TypeDefinition_1.typeIsInterface)(targetType), `Target type ${dataType.name} is not an interface`);
     return targetType;
 }
+function convertStructProperties(type) {
+    return {
+        isImage: (0, XrpaLanguage_1.evalProperty)(type.properties, InterfaceTypes_1.IS_IMAGE_TYPE) ?? false,
+    };
+}
 function convertDataTypeToUserTypeSpec(dataType, datamodel) {
     if (datamodel) {
         if ((0, InterfaceTypes_1.isFixedArrayDataType)(dataType)) {
+            const innerTypeName = getTypeName(dataType.innerType);
+            if (!datamodel.getType(innerTypeName)) {
+                if ((0, InterfaceTypes_1.isEnumDataType)(dataType.innerType)) {
+                    datamodel.addEnum(innerTypeName, dataType.innerType.enumValues);
+                }
+                else if ((0, InterfaceTypes_1.isStructDataType)(dataType.innerType)) {
+                    datamodel.addStruct(innerTypeName, convertStructFieldsToUserSpec(dataType.innerType.fields, datamodel), convertStructProperties(dataType.innerType));
+                }
+            }
             return {
-                type: datamodel.addFixedArray(getTypeName(dataType.innerType), dataType.arraySize),
+                type: datamodel.addFixedArray(innerTypeName, dataType.arraySize),
                 description: (0, InterfaceTypes_1.getFieldDescription)(dataType),
                 defaultValue: (0, InterfaceTypes_1.getFieldDefaultValue)(dataType),
             };
@@ -110,7 +124,7 @@ function convertProgramInterfaceToDataModel(programInterface, datamodel) {
             datamodel.addEnum(name, type.enumValues);
         }
         else if ((0, InterfaceTypes_1.isStructDataType)(type)) {
-            datamodel.addStruct(name, convertStructFieldsToUserSpec(type.fields, datamodel));
+            datamodel.addStruct(name, convertStructFieldsToUserSpec(type.fields, datamodel), convertStructProperties(type));
         }
         else if ((0, InterfaceTypes_1.isMessageDataType)(type)) {
             datamodel.addMessageStruct(name, convertStructFieldsToUserSpec(type.fieldsStruct.fields, datamodel), (0, XrpaLanguage_1.evalProperty)(type.properties, InterfaceTypes_1.MESSAGE_RATE) ?? 30);
@@ -172,16 +186,13 @@ function bindProgramInterfaceToModule(ctx, moduleDef, programInterface, isExtern
         (0, assert_1.default)(directionality !== undefined, `Parameter "${key}" is missing directionality`);
         const collection = param.dataType;
         (0, assert_1.default)((0, InterfaceTypes_1.isCollectionDataType)(collection), `Native program parameter "${key}" is not a collection`);
-        const useGenericReconciledType = (0, InterfaceTypes_1.getUseGenericImplementation)(collection);
         if (directionality === "inbound") {
             dataStore.addInputReconciler({
                 type: collection.name,
                 outboundFields: getInverseDirectionFields(collection, directionality),
-                reconciledTo: undefined,
                 indexes: getIndexConfigs(ctx, collection, directionality),
                 fieldAccessorNameOverrides: undefined,
                 componentProps: (0, GameEngine_1.generateComponentProperties)(ctx, collection),
-                useGenericReconciledType,
             });
         }
         else {
@@ -191,7 +202,6 @@ function bindProgramInterfaceToModule(ctx, moduleDef, programInterface, isExtern
                 indexes: getIndexConfigs(ctx, collection, directionality),
                 fieldAccessorNameOverrides: undefined,
                 componentProps: (0, GameEngine_1.generateComponentProperties)(ctx, collection),
-                useGenericReconciledType,
             });
         }
     }

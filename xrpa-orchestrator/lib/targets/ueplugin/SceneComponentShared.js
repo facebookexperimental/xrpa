@@ -43,14 +43,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.writeSceneComponent = exports.genProcessUpdateBody = exports.genTransformUpdates = exports.genTransformInitializers = exports.genFieldInitializers = exports.genFieldDefaultInitializers = exports.genUEMessageFieldAccessors = exports.genUEMessageChannelDispatch = exports.genFieldProperties = exports.getFieldMemberName = exports.getComponentHeader = exports.getComponentClassName = exports.checkForTransformMapping = exports.IntrinsicProperty = void 0;
+exports.writeSceneComponent = exports.genProcessUpdateBody = exports.genTransformUpdates = exports.genTransformInitializers = exports.genFieldInitializers = exports.genFieldDefaultInitializers = exports.genUEMessageFieldAccessors = exports.genUEMessageProxyDispatch = exports.genFieldSetterCalls = exports.genFieldProperties = exports.getFieldMemberName = exports.getComponentHeader = exports.getComponentClassName = exports.checkForTransformMapping = exports.IntrinsicProperty = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const CppCodeGenImpl_1 = require("../cpp/CppCodeGenImpl");
 const CppCodeGenImpl = __importStar(require("../cpp/CppCodeGenImpl"));
 const GenMessageAccessors_1 = require("../cpp/GenMessageAccessors");
-const GenWriteReconcilerDataStore_1 = require("../cpp/GenWriteReconcilerDataStore");
 const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
 const GenBlueprintTypes_1 = require("./GenBlueprintTypes");
 var IntrinsicProperty;
@@ -150,7 +149,9 @@ function genWriteFieldProperty(classSpec, params) {
                 ...(0, CppCodeGenImpl_1.genCommentLines)(fieldSpec.description),
                 `UFUNCTION(BlueprintCallable, Category = "${params.categoryName}")`,
             ],
-            body: includes => (0, GenWriteReconcilerDataStore_1.genClearSetSetterFunctionBody)({ ...params, includes, fieldType, fieldVar: params.memberName, typeDef }),
+            body: [
+                `if (${params.proxyObj}) { ${params.proxyObj}->set${pascalFieldName}(); }`,
+            ],
             separateImplementation: params.separateImplementation,
         });
         classSpec.methods.push({
@@ -159,7 +160,9 @@ function genWriteFieldProperty(classSpec, params) {
                 ...(0, CppCodeGenImpl_1.genCommentLines)(fieldSpec.description),
                 `UFUNCTION(BlueprintCallable, Category = "${params.categoryName}")`,
             ],
-            body: includes => (0, GenWriteReconcilerDataStore_1.genClearSetClearFunctionBody)({ ...params, includes, fieldType, fieldVar: params.memberName, typeDef }),
+            body: [
+                `if (${params.proxyObj}) { ${params.proxyObj}->clear${pascalFieldName}(); }`,
+            ],
             separateImplementation: params.separateImplementation,
         });
     }
@@ -173,11 +176,13 @@ function genWriteFieldProperty(classSpec, params) {
                     name: "value",
                     type: fieldType,
                 }],
-            body: includes => [
+            body: [
                 ...(params.setterHooks?.[params.fieldName]?.preSet ?? []),
                 `${params.memberName} = value;`,
                 ...(params.setterHooks?.[params.fieldName]?.postSet ?? []),
-                ...(params.needsSetDirty ? (0, GenWriteReconcilerDataStore_1.genFieldSetDirty)({ ...params, includes, typeDef, fieldVar: params.memberName }) : []),
+                ...(params.isOutboundField ? [
+                    `if (${params.proxyObj}) { ${params.proxyObj}->set${pascalFieldName}(value); }`,
+                ] : []),
             ],
             separateImplementation: params.separateImplementation,
         });
@@ -209,9 +214,10 @@ function genFieldProperties(classSpec, params) {
     const fields = params.reconcilerDef.type.getStateFields();
     for (const fieldName in fields) {
         const memberName = getFieldMemberName(params.reconcilerDef, fieldName);
+        const isIndexBoundField = params.reconcilerDef.isIndexBoundField(fieldName);
         const isOutboundField = params.reconcilerDef.isOutboundField(fieldName);
-        if (params.reconcilerDef.isIndexBoundField(fieldName) || isOutboundField) {
-            genWriteFieldProperty(classSpec, { ...params, categoryName, fieldName, memberName, needsSetDirty: isOutboundField });
+        if (isIndexBoundField || isOutboundField) {
+            genWriteFieldProperty(classSpec, { ...params, categoryName, fieldName, memberName, isOutboundField });
         }
         else {
             genReadFieldProperty(classSpec, { ...params, categoryName, fieldName, memberName });
@@ -219,6 +225,24 @@ function genFieldProperties(classSpec, params) {
     }
 }
 exports.genFieldProperties = genFieldProperties;
+function genFieldSetterCalls(params) {
+    const lines = [];
+    const fields = params.reconcilerDef.type.getStateFields();
+    for (const fieldName in fields) {
+        const memberName = getFieldMemberName(params.reconcilerDef, fieldName);
+        if (params.reconcilerDef.isOutboundField(fieldName)) {
+            const fieldType = fields[fieldName].type;
+            if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
+                lines.push(`${params.proxyObj}->set${(0, xrpa_utils_1.upperFirst)(fieldName)}Id(${memberName});`);
+            }
+            else {
+                lines.push(`${params.proxyObj}->set${(0, xrpa_utils_1.upperFirst)(fieldName)}(${memberName});`);
+            }
+        }
+    }
+    return lines;
+}
+exports.genFieldSetterCalls = genFieldSetterCalls;
 /********************************************************/
 function genUESendMessageAccessor(classSpec, params) {
     (0, GenMessageAccessors_1.genSendMessageAccessor)(classSpec, {
@@ -231,15 +255,45 @@ function genUESendMessageAccessor(classSpec, params) {
         separateImplementation: true,
     });
 }
-function genUEOnMessageAccessor(classSpec, params) {
-    const msgEventType = (0, GenBlueprintTypes_1.getMessageDelegateName)(params.fieldType, params.ctx.storeDef.apiname);
-    classSpec.includes?.addFile({ filename: (0, GenBlueprintTypes_1.getBlueprintTypesHeaderName)(params.ctx.storeDef.apiname) });
+function genUEMessageProxyDispatch(classSpec, params) {
+    const msgEventType = (0, GenBlueprintTypes_1.getMessageDelegateName)(params.fieldType, params.storeDef.apiname);
+    const ueHandlerName = `On${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`;
+    const ueDispatchName = `dispatch${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`;
+    const proxyHandlerName = `on${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`;
+    classSpec.includes?.addFile({ filename: (0, GenBlueprintTypes_1.getBlueprintTypesHeaderName)(params.storeDef.apiname) });
     classSpec.members.push({
-        name: `On${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
+        name: ueHandlerName,
         type: msgEventType,
-        decorations: [`UPROPERTY(BlueprintAssignable, Category = "${params.typeDef.getName()}")`],
+        decorations: [`UPROPERTY(BlueprintAssignable, Category = "${params.categoryName}")`],
     });
+    const messageReadAccessor = params.fieldType.getReadAccessorType(classSpec.namespace, null);
+    (0, xrpa_utils_1.pushUnique)(params.forwardDeclarations, (0, CppCodeGenImpl_1.forwardDeclareClass)(messageReadAccessor));
+    classSpec.methods.push({
+        name: ueDispatchName,
+        parameters: [{
+                name: "timestamp",
+                type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
+            }, {
+                name: "message",
+                type: messageReadAccessor,
+            }],
+        body: includes => (0, CppCodeGenImpl_1.genMessageDispatch)({
+            namespace: classSpec.namespace,
+            includes,
+            fieldName: params.fieldName,
+            fieldType: params.fieldType,
+            genMsgHandler: msg => `On${(0, xrpa_utils_1.upperFirst)(msg)}.Broadcast`,
+            msgDataToParams: convertMessageTypeToParams,
+            convertToReadAccessor: false,
+            timestampName: "FDateTime(timestamp)",
+        }),
+        visibility: "private",
+        separateImplementation: true,
+    });
+    const dispatchBind = (0, CppCodeGenImpl_1.genPassthroughMethodBind)(ueDispatchName, 2);
+    params.initializerLines.push(`${(0, CppCodeGenImpl_1.genDerefMethodCall)(params.proxyObj, params.proxyIsXrpaObj ? proxyHandlerName : (0, xrpa_utils_1.upperFirst)(proxyHandlerName), [dispatchBind])};`);
 }
+exports.genUEMessageProxyDispatch = genUEMessageProxyDispatch;
 function convertMessageTypeToParams(msgType, prelude) {
     const params = [];
     const fields = msgType.getStateFields();
@@ -247,7 +301,7 @@ function convertMessageTypeToParams(msgType, prelude) {
         const fieldType = fields[key].type;
         if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
             (0, xrpa_utils_1.pushUnique)(prelude, `auto datastore = GetDataStoreSubsystem()->DataStore.get();`);
-            params.push(`message.get${(0, xrpa_utils_1.upperFirst)(key)}(datastore)`);
+            params.push(`message.get${(0, xrpa_utils_1.upperFirst)(key)}(datastore)->getXrpaOwner<${getComponentClassName(null, fieldType.toType)}>()`);
         }
         else {
             params.push(`message.get${(0, xrpa_utils_1.upperFirst)(key)}()`);
@@ -255,26 +309,21 @@ function convertMessageTypeToParams(msgType, prelude) {
     }
     return params;
 }
-function genUEMessageChannelDispatch(classSpec, params) {
-    (0, GenMessageAccessors_1.genMessageChannelDispatch)(classSpec, {
-        ...params,
-        genMsgHandler: msg => `On${msg}.Broadcast`,
-        msgDataToParams: convertMessageTypeToParams,
-        separateImplementation: true,
-    });
-}
-exports.genUEMessageChannelDispatch = genUEMessageChannelDispatch;
 function genUEMessageFieldAccessors(classSpec, params) {
     const typeDef = params.reconcilerDef.type;
     const typeFields = typeDef.getFieldsOfType(TypeDefinition_1.typeIsMessageData);
     for (const fieldName in typeFields) {
         const fieldType = typeFields[fieldName];
         if (params.reconcilerDef.isInboundField(fieldName)) {
-            genUEOnMessageAccessor(classSpec, {
-                ...params,
-                typeDef,
+            genUEMessageProxyDispatch(classSpec, {
+                storeDef: params.ctx.storeDef,
+                categoryName: typeDef.getName(),
                 fieldName,
                 fieldType,
+                proxyObj: params.proxyObj,
+                proxyIsXrpaObj: true,
+                initializerLines: params.initializerLines,
+                forwardDeclarations: params.forwardDeclarations,
             });
         }
         if (params.reconcilerDef.isOutboundField(fieldName)) {
@@ -334,13 +383,14 @@ function genPropertyAssignment(ctx, includes, targetVar, property, fieldType, pr
             }
             (0, xrpa_utils_1.pushUnique)(prelude, `TArray<USceneComponent*> componentParents;`);
             (0, xrpa_utils_1.pushUnique)(prelude, `GetParentComponents(componentParents);`);
+            const parentComponentClassName = getComponentClassName(includes, fieldType.toType);
             return [
                 ...fieldType.resetLocalVarToDefault(ctx.namespace, includes, targetVar),
                 `for (auto parent : componentParents) {`,
-                `  auto componentPtr = Cast<${fieldType.toType.getLocalType(ctx.namespace, includes)}>(parent);`,
+                `  auto componentPtr = Cast<${parentComponentClassName}>(parent);`,
                 `  if (componentPtr != nullptr) {`,
                 `    componentPtr->initializeDS();`,
-                `    ${targetVar} = ${fieldType.convertValueFromLocal(ctx.namespace, includes, "componentPtr")};`,
+                `    ${targetVar} = componentPtr->getXrpaId();`,
                 `    break;`,
                 `  }`,
                 `}`,
@@ -382,12 +432,14 @@ function genPropertyOutboundUpdate(params) {
         case IntrinsicProperty.Location:
         case IntrinsicProperty.Rotation:
         case IntrinsicProperty.Scale3D:
+            (0, xrpa_utils_1.pushUnique)(params.prelude, `bool ${params.fieldName}Changed = false;`);
             (0, xrpa_utils_1.pushUnique)(params.prelude, `auto& transform = GetComponentTransform();`);
             (0, xrpa_utils_1.pushUnique)(params.prelude, `auto transform${params.fieldBinding} = transform.Get${params.fieldBinding}();`);
+            (0, xrpa_utils_1.pushUnique)(params.changes, `if (${params.fieldName}Changed && ${params.proxyObj}) { ${params.proxyObj}->set${(0, xrpa_utils_1.upperFirst)(params.fieldName)}(${params.memberName}); }`);
             return [
                 `if (!${params.targetVar}.Equals(transform${params.fieldBinding}, SMALL_NUMBER)) {`,
                 `  ${params.targetVar} = transform${params.fieldBinding};`,
-                ...(0, xrpa_utils_1.indent)(1, (0, GenWriteReconcilerDataStore_1.genFieldSetDirty)({ ...params, typeDef: params.reconcilerDef.type, fieldVar: params.targetVar })),
+                `  ${params.fieldName}Changed = true;`,
                 `}`,
             ];
         case IntrinsicProperty.Parent: {
@@ -413,6 +465,7 @@ function genPropertyInboundUpdate(params) {
 function genTransformUpdates(params) {
     const prelude = [];
     const lines = [];
+    const changes = [];
     const fields = params.reconcilerDef.type.getStateFields();
     for (const fieldName in fields) {
         // outbound fields only
@@ -424,37 +477,44 @@ function genTransformUpdates(params) {
         if (typeof fieldBinding === "string") {
             lines.push(...genPropertyOutboundUpdate({
                 ...params,
+                memberName,
                 targetVar: memberName,
                 fieldBinding,
                 fieldName,
                 prelude,
+                changes,
             }));
         }
         else if (fieldBinding) {
             for (const subfieldName in fieldBinding) {
                 lines.push(...genPropertyOutboundUpdate({
                     ...params,
+                    memberName,
                     targetVar: `${memberName}.${subfieldName}`,
                     fieldBinding: fieldBinding[subfieldName],
                     fieldName,
                     prelude,
+                    changes,
                 }));
             }
         }
     }
-    return prelude.concat(lines);
+    return prelude.concat(lines).concat(changes);
 }
 exports.genTransformUpdates = genTransformUpdates;
 function genProcessUpdateBody(params) {
     const lines = [];
-    const accessor = params.proxyObj ? `${params.proxyObj}->` : "value.";
     const fields = params.reconcilerDef.type.getStateFields();
     for (const fieldName in fields) {
         if (!params.reconcilerDef.isInboundField(fieldName) || params.reconcilerDef.isIndexBoundField(fieldName)) {
             continue;
         }
         const memberName = getFieldMemberName(params.reconcilerDef, fieldName);
-        lines.push(`if (${accessor}check${(0, xrpa_utils_1.upperFirst)(fieldName)}Changed(fieldsChanged)) {`, `  ${memberName} = ${accessor}get${(0, xrpa_utils_1.upperFirst)(fieldName)}();`);
+        let funcName = `get${(0, xrpa_utils_1.upperFirst)(fieldName)}`;
+        if ((0, TypeDefinition_1.typeIsReference)(fields[fieldName].type)) {
+            funcName += "Id";
+        }
+        lines.push(`if (${params.proxyObj}->check${(0, xrpa_utils_1.upperFirst)(fieldName)}Changed(fieldsChanged)) {`, `  ${memberName} = ${params.proxyObj}->${funcName}();`);
         // handle property binding
         const fieldBinding = params.reconcilerDef.getFieldPropertyBinding(fieldName);
         if (typeof fieldBinding === "string") {

@@ -43,40 +43,13 @@ class UnityPackageModuleDefinition extends CsharpModuleDefinition_1.CsharpModule
         this.projectRoot = projectRoot;
         this.packageInfos = packageInfos;
     }
-    setCollectionAsInbound(type, componentProps, reconciledTo, indexes) {
-        if (componentProps.generateSpawner && (0, xrpa_utils_1.filterToString)(componentProps.basetype)) {
-            type.setToBarePtr({
-                typename: (0, MonoBehaviourShared_1.getComponentClassName)(type),
-            });
-            if (type.interfaceType) {
-                type.interfaceType.setToBarePtr({
-                    typename: (0, MonoBehaviourShared_1.getComponentClassName)(type.interfaceType),
-                });
+    setCollectionAsInbound(type, componentProps, indexes) {
+        for (const index of (indexes ?? [])) {
+            if (index.boundClassName === "") {
+                index.boundClassName = (0, MonoBehaviourShared_1.getComponentClassName)(type);
             }
         }
-        else {
-            for (const index of (indexes ?? [])) {
-                if (index.boundClassName === "") {
-                    index.boundClassName = (0, MonoBehaviourShared_1.getComponentClassName)(type);
-                }
-            }
-            super.setCollectionAsInbound(type, componentProps, reconciledTo, indexes);
-        }
-    }
-    setCollectionAsOutbound(type, componentProps) {
-        if ((0, xrpa_utils_1.filterToString)(componentProps.basetype)) {
-            type.setToBarePtr({
-                typename: (0, MonoBehaviourShared_1.getComponentClassName)(type, componentProps.idName),
-            });
-            if (type.interfaceType) {
-                type.interfaceType.setToBarePtr({
-                    typename: (0, MonoBehaviourShared_1.getComponentClassName)(type.interfaceType),
-                });
-            }
-        }
-        else {
-            super.setCollectionAsOutbound(type, componentProps);
-        }
+        super.setCollectionAsInbound(type, componentProps, indexes);
     }
     doCodeGen() {
         const fileWriter = new xrpa_file_utils_1.FileWriter();

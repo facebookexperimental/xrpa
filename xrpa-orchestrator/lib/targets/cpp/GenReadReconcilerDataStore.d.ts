@@ -20,7 +20,7 @@ import { InputReconcilerDefinition, OutputReconcilerDefinition } from "../../sha
 import { IncludeAggregator } from "../../shared/Helpers";
 import { CollectionTypeDefinition } from "../../shared/TypeDefinition";
 import { GenDataStoreContext } from "../shared/GenDataStoreShared";
-export declare function genProcessUpdateFunctionBodyForConcreteReconciledType(ctx: GenDataStoreContext, includes: IncludeAggregator | null, typeDef: CollectionTypeDefinition, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition): string[];
+export declare function genProcessUpdateFunctionBody(ctx: GenDataStoreContext, includes: IncludeAggregator | null, typeDef: CollectionTypeDefinition, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition): string[];
 export declare function genInboundReconciledTypes(ctx: GenDataStoreContext, includesIn: IncludeAggregator): ClassSpec[];
 export declare function genObjectCollectionClasses(ctx: GenDataStoreContext, includesIn: IncludeAggregator): ClassSpec[];
 export declare function genIndexedBindingCalls<T extends InputReconcilerDefinition | OutputReconcilerDefinition>(ctx: GenDataStoreContext, reconcilerDef: T, dataStorePtr: string, boundObjPtr: string, getFieldMemberName: (reconcilerDef: T, fieldName: string) => string): Record<string, {

@@ -1,0 +1,14 @@
+{
+  "name": "@xrpa/xred-perception-services",
+  "version": "1.8.0",
+  "description": "Machine-perception service modules",
+  "main": "lib/index.js",
+  "files": [
+    "bin/**/*",
+    "lib/**/*"
+  ],
+  "license": "Apache-2.0",
+  "peerDependencies": {
+    "@xrpa/xrpa-orchestrator": "1.8.0"
+  }
+}

@@ -24,6 +24,7 @@ exports.reverseProgramDirectionality = exports.reverseDirectionality = exports.p
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const simply_immutable_1 = require("simply-immutable");
+const DataflowProgram_1 = require("./DataflowProgram");
 const InterfaceTypes_1 = require("./InterfaceTypes");
 const XrpaLanguage_1 = require("./XrpaLanguage");
 const DIRECTIONALITY = (0, XrpaLanguage_1.InheritedProperty)("xrpa.directionality");
@@ -74,9 +75,24 @@ function ProgramInput(name, dataType) {
     return ret;
 }
 exports.ProgramInput = ProgramInput;
-function ProgramOutput(name, dataType) {
+function ProgramOutput(name, val) {
     const ctx = getProgramInterfaceContext();
     (0, assert_1.default)(!ctx.parameters[name], `Program already has a parameter with the name "${name}"`);
+    let dataType;
+    let source;
+    if ((0, DataflowProgram_1.isDataflowConnection)(val)) {
+        source = val;
+        (0, assert_1.default)((0, DataflowProgram_1.isDataflowProgramContext)(ctx), "A dataflow connection can only be used as a ProgramOutput in a dataflow program");
+        (0, assert_1.default)((0, DataflowProgram_1.isDataflowForeignObjectInstantiation)(source.targetNode));
+        dataType = source.targetNode.collectionType.fieldsStruct.fields[source.targetPort] ??
+            source.targetNode.collectionType.interfaceType?.fieldsStruct.fields[source.targetPort];
+        (0, assert_1.default)(dataType, `Dataflow connection "${source.targetNode.collectionName}.${source.targetPort}" does not exist`);
+        (0, assert_1.default)(getDirectionality(dataType) === "outbound", `Dataflow connection "${source.targetNode.name}.${source.targetPort}" is not an output`);
+    }
+    else {
+        dataType = val;
+    }
+    (0, assert_1.default)(dataType);
     if ((0, XrpaLanguage_1.isNamedDataType)(dataType)) {
         dataType = (0, XrpaLanguage_1.NameType)(name, dataType);
     }
@@ -84,6 +100,7 @@ function ProgramOutput(name, dataType) {
         __isXrpaProgramParam: true,
         name,
         dataType: Output(dataType),
+        source,
     };
     ctx.parameters[name] = ret;
     return ret;

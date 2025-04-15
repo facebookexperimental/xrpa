@@ -26,7 +26,7 @@ export declare function genSignalDispatchBody(params: {
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
 }): string[];
 export declare function genOnSignalAccessor(classSpec: ClassSpec, params: {
-    ctx: GenDataStoreContext;
+    namespace: string;
     typeDef: CollectionTypeDefinition;
     fieldName: string;
     fieldType: SignalDataTypeDefinition;
