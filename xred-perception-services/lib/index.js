@@ -32,6 +32,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./ImageSelectorInterface"), exports);
+__exportStar(require("./MetaGenInterface"), exports);
 __exportStar(require("./ObjectRecognitionInterface"), exports);
 __exportStar(require("./Shared"), exports);
 //# sourceMappingURL=index.js.map

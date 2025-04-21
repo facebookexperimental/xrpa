@@ -22,3 +22,4 @@ export declare function ImageSelector(params: {
     rgbCamera: XrpaDataflowConnection;
     poseDynamics: XrpaDataflowConnection;
 }): XrpaDataflowConnection;
+

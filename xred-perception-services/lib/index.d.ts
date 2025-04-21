@@ -16,5 +16,7 @@
 
 
 export * from "./ImageSelectorInterface";
+export * from "./MetaGenInterface";
 export * from "./ObjectRecognitionInterface";
 export * from "./Shared";
+
