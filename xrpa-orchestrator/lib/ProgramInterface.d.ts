@@ -42,6 +42,7 @@ export declare const IfInput: PropertyCondition;
 export declare const IfOutput: PropertyCondition;
 export declare function getDirectionality(dataType: XrpaDataType): "inbound" | "outbound" | undefined;
 export declare function ProgramInput<T extends XrpaDataType = XrpaDataType>(name: string, dataType: T): XrpaProgramParam<T>;
+export declare function ProgramInput(name: string): XrpaProgramParam;
 export declare function ProgramOutput<T extends XrpaDataType = XrpaDataType>(name: string, dataType: T): XrpaProgramParam<T>;
 export declare function ProgramOutput(name: string, source: XrpaDataflowConnection): XrpaProgramParam;
 export declare function UppercaseCompanyName(programInterface: ProgramInterface): ProgramInterface;

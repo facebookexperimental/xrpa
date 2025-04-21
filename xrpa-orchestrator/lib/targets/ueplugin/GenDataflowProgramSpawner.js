@@ -54,40 +54,67 @@ const CppCodeGenImpl_1 = require("../cpp/CppCodeGenImpl");
 const CppCodeGenImpl = __importStar(require("../cpp/CppCodeGenImpl"));
 const GenDataStoreSubsystem_1 = require("./GenDataStoreSubsystem");
 const SceneComponentShared_1 = require("./SceneComponentShared");
+function genStateInputParameterAccessors(params) {
+    const memberName = (0, xrpa_utils_1.upperFirst)(params.paramName);
+    const setterName = `Set${memberName}`;
+    const objSetterName = `set${(0, xrpa_utils_1.upperFirst)(params.paramName)}`;
+    const currentObj = (0, CppCodeGenImpl_1.privateMember)("currentObj");
+    const decorations = [
+        `UPROPERTY(EditAnywhere, BlueprintReadWrite, BlueprintSetter = ${setterName})`
+    ];
+    params.inputParamsStruct.declareLocalFieldClassMember(params.classSpec, params.paramName, memberName, true, decorations, "public");
+    params.initializerLines.push(...params.inputParamsStruct.resetLocalFieldVarToDefault(params.classSpec.namespace, params.cppIncludes, params.paramName, memberName));
+    params.spawnInitializerLines.push(`${(0, CppCodeGenImpl_1.genDerefMethodCall)("ret", objSetterName, [memberName])};`);
+    params.runInitializerLines.push(`${(0, CppCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, [memberName])};`);
+    params.classSpec.methods.push({
+        name: setterName,
+        parameters: [{
+                name: params.paramName,
+                type: params.fieldType,
+            }],
+        body: () => [
+            // set the local member value
+            `${memberName} = ${params.paramName};`,
+            `if (${(0, CppCodeGenImpl_1.genNonNullCheck)(currentObj)}) {`,
+            `  ${(0, CppCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, [params.paramName])};`,
+            `}`,
+        ],
+        separateImplementation: true,
+    });
+}
 function genParameterAccessors(ctx, classSpec, programDef, cppIncludes) {
     const initializerLines = [];
     const spawnInitializerLines = [];
     const runInitializerLines = [];
-    const currentObj = (0, CppCodeGenImpl_1.privateMember)("currentObj");
-    const inputParamsStruct = new StructType_1.StructType(CppCodeGenImpl, "DataflowProgramInputParams", CppCodeGenImpl_1.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowParamsStructSpec)((0, DataflowProgramDefinition_1.getDataflowInputs)(programDef).map(inp => inp.parameter), ctx.moduleDef));
+    const inputParamsStruct = new StructType_1.StructType(CppCodeGenImpl, "DataflowProgramInputParams", CppCodeGenImpl_1.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowInputParamsStructSpec)((0, DataflowProgramDefinition_1.getDataflowInputs)(programDef), ctx.moduleDef));
     const fields = inputParamsStruct.getAllFields();
     for (const paramName in fields) {
-        const memberName = (0, xrpa_utils_1.upperFirst)(paramName);
         const fieldType = fields[paramName].type;
-        const setterName = `Set${memberName}`;
-        const objSetterName = `set${(0, xrpa_utils_1.upperFirst)(paramName)}`;
-        const decorations = [
-            `UPROPERTY(EditAnywhere, BlueprintReadWrite, BlueprintSetter = ${setterName})`
-        ];
-        inputParamsStruct.declareLocalFieldClassMember(classSpec, paramName, memberName, true, decorations, "public");
-        initializerLines.push(...inputParamsStruct.resetLocalFieldVarToDefault(ctx.namespace, cppIncludes, paramName, memberName));
-        spawnInitializerLines.push(`${(0, CppCodeGenImpl_1.genDerefMethodCall)("ret", objSetterName, [memberName])};`);
-        runInitializerLines.push(`${(0, CppCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, [memberName])};`);
-        classSpec.methods.push({
-            name: setterName,
-            parameters: [{
-                    name: paramName,
-                    type: fieldType,
-                }],
-            body: () => [
-                // set the local member value
-                `${memberName} = ${paramName};`,
-                `if (${(0, CppCodeGenImpl_1.genNonNullCheck)(currentObj)}) {`,
-                `  ${(0, CppCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, [paramName])};`,
-                `}`,
-            ],
-            separateImplementation: true,
-        });
+        if ((0, TypeDefinition_1.typeIsMessageData)(fieldType)) {
+            (0, SceneComponentShared_1.genUESendMessageAccessor)(classSpec, {
+                namespace: ctx.namespace,
+                categoryName: "",
+                typeDef: inputParamsStruct,
+                fieldName: paramName,
+                fieldType,
+                proxyObj: (0, CppCodeGenImpl_1.privateMember)("currentObj"),
+            });
+        }
+        else if ((0, TypeDefinition_1.typeIsStateData)(fieldType)) {
+            genStateInputParameterAccessors({
+                classSpec,
+                inputParamsStruct,
+                paramName,
+                fieldType,
+                cppIncludes,
+                initializerLines,
+                spawnInitializerLines,
+                runInitializerLines,
+            });
+        }
+        else {
+            (0, assert_1.default)(false, `Unsupported input parameter type for ${paramName}`);
+        }
     }
     return {
         initializerLines,
@@ -97,7 +124,7 @@ function genParameterAccessors(ctx, classSpec, programDef, cppIncludes) {
 }
 function genOutputParameterAccessors(ctx, classSpec, programDef, runInitializerLines, forwardDeclarations) {
     const outputs = (0, DataflowProgramDefinition_1.getDataflowOutputs)(programDef);
-    const outputParamsStruct = new StructType_1.StructType(CppCodeGenImpl, "DataflowProgramOutputParams", CppCodeGenImpl_1.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowParamsStructSpec)(outputs, ctx.moduleDef));
+    const outputParamsStruct = new StructType_1.StructType(CppCodeGenImpl, "DataflowProgramOutputParams", CppCodeGenImpl_1.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowOutputParamsStructSpec)(outputs, ctx.moduleDef));
     const outputFields = outputParamsStruct.getAllFields();
     for (const parameter of outputs) {
         if (!parameter.source) {
@@ -109,7 +136,7 @@ function genOutputParameterAccessors(ctx, classSpec, programDef, runInitializerL
         if ((0, TypeDefinition_1.typeIsMessageData)(fieldType)) {
             (0, SceneComponentShared_1.genUEMessageProxyDispatch)(classSpec, {
                 storeDef: reconcilerDef.storeDef,
-                categoryName: reconcilerDef.type.getName(),
+                categoryName: "",
                 fieldName,
                 fieldType,
                 proxyObj: (0, CppCodeGenImpl_1.privateMember)("currentObj"),

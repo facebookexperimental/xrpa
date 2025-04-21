@@ -61,6 +61,10 @@ class DataStoreReconciler:
             self._outbound_messages.init(message_data_pool_size)
             self._outbound_messages_iterator = PlacedRingBufferIterator()
             self._outbound_messages_iterator.set_to_end(self._outbound_messages)
+        else:
+            self._outbound_messages = None
+            self._outbound_messages_memory = None
+            self._outbound_messages_iterator = None
 
         self._message_lifetime_us = 5000000
 
@@ -293,6 +297,7 @@ class DataStoreReconciler:
         self._pending_writes.clear()
 
         # write messages
-        while self._outbound_messages_iterator.has_next(self._outbound_messages):
-            message = self._outbound_messages_iterator.next(self._outbound_messages)
-            accessor.write_prefilled_change_event(message)
+        if self._outbound_messages is not None:
+            while self._outbound_messages_iterator.has_next(self._outbound_messages):
+                message = self._outbound_messages_iterator.next(self._outbound_messages)
+                accessor.write_prefilled_change_event(message)

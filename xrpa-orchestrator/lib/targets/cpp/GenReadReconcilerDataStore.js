@@ -164,7 +164,7 @@ function genInboundReconciledTypes(ctx, includesIn) {
             (0, CppCodeGenImpl_1.genFieldChangedCheck)(classSpec, { parentType: typeDef, fieldName: name });
         }
         (0, GenMessageAccessors_1.genMessageFieldAccessors)(classSpec, {
-            ctx,
+            namespace: ctx.namespace,
             reconcilerDef,
             genMsgHandler: GenDataStore_1.genMsgHandler,
         });

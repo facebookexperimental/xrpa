@@ -29,6 +29,7 @@ const DataflowProgramDefinition_1 = require("../../shared/DataflowProgramDefinit
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const TypeValue_1 = require("../../shared/TypeValue");
 const ProgramInterface_1 = require("../../ProgramInterface");
+const GenMessageAccessorsShared_1 = require("./GenMessageAccessorsShared");
 function paramToMemberName(codegen, paramName) {
     return codegen.privateMember(`param${(0, xrpa_utils_1.upperFirst)(paramName)}`);
 }
@@ -227,6 +228,32 @@ function genBindStateFieldValues(codegen, classSpec, params) {
         initializersOut: params.initializersOut,
     });
 }
+function genMessageInputParameter(codegen, classSpec, params) {
+    const msgParams = (0, GenMessageAccessorsShared_1.genMessageMethodParams)({
+        namespace: classSpec.namespace,
+        includes: classSpec.includes,
+        fieldType: params.paramType,
+        referencesNeedConversion: false,
+    });
+    const msgParamNames = msgParams.map(p => p.name);
+    classSpec.methods.push({
+        name: `send${(0, xrpa_utils_1.upperFirst)(params.paramName)}`,
+        parameters: msgParams,
+        body: () => [
+            // send the message on all connected datastore objects
+            ...(0, xrpa_utils_1.mapAndCollapse)(params.inputDef.connections, connection => {
+                (0, assert_1.default)((0, DataflowProgramDefinition_1.isDataflowForeignObjectInstantiation)(connection.targetNode));
+                const objMemberName = objToMemberName(codegen, connection.targetNode.name);
+                return [
+                    `if (${codegen.genNonNullCheck(objMemberName)}) {`,
+                    `  ${codegen.genDerefMethodCall(objMemberName, `send${(0, xrpa_utils_1.upperFirst)(connection.targetPort)}`, msgParamNames)};`,
+                    `}`,
+                ];
+            }),
+        ],
+        visibility: "public",
+    });
+}
 function genStateInputParameter(codegen, classSpec, params) {
     const memberName = paramToMemberName(codegen, params.paramName);
     params.inputParamsStruct.declareLocalFieldClassMember(classSpec, params.paramName, memberName, true, [], "private");
@@ -314,13 +341,18 @@ function genStateOutputParameter(codegen, classSpec, params) {
 }
 function genInputParameterAccessors(ctx, codegen, classSpec, programDef) {
     const inputs = (0, DataflowProgramDefinition_1.getDataflowInputs)(programDef);
-    const inputParamsStruct = new StructType_1.StructType(codegen, "DataflowProgramInputParams", codegen.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowParamsStructSpec)(inputs.map(inp => inp.parameter), ctx.moduleDef));
+    const inputParamsStruct = new StructType_1.StructType(codegen, "DataflowProgramInputParams", codegen.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowInputParamsStructSpec)(inputs, ctx.moduleDef));
     const fields = inputParamsStruct.getAllFields();
     for (const inputDef of inputs) {
         const paramName = inputDef.parameter.name;
         const fieldType = fields[paramName].type;
         if ((0, TypeDefinition_1.typeIsMessageData)(fieldType)) {
-            (0, assert_1.default)(false, "Message types are not yet supported as input parameters");
+            genMessageInputParameter(codegen, classSpec, {
+                inputParamsStruct,
+                paramName,
+                paramType: fieldType,
+                inputDef,
+            });
         }
         else if ((0, TypeDefinition_1.typeIsStateData)(fieldType)) {
             genStateInputParameter(codegen, classSpec, {
@@ -337,7 +369,7 @@ function genInputParameterAccessors(ctx, codegen, classSpec, programDef) {
 }
 function genOutputParameterAccessors(ctx, codegen, classSpec, programDef, initializersOut) {
     const outputs = (0, DataflowProgramDefinition_1.getDataflowOutputs)(programDef);
-    const outputParamsStruct = new StructType_1.StructType(codegen, "DataflowProgramOutputParams", codegen.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowParamsStructSpec)(outputs, ctx.moduleDef));
+    const outputParamsStruct = new StructType_1.StructType(codegen, "DataflowProgramOutputParams", codegen.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowOutputParamsStructSpec)(outputs, ctx.moduleDef));
     const outputFields = outputParamsStruct.getAllFields();
     for (const parameter of outputs) {
         if (!parameter.source) {
@@ -462,7 +494,9 @@ function genCreateObjectsBody(ctx, codegen, programDef, classSpec, initializerLi
             else {
                 continue;
             }
-            updateLines.push(`${codegen.genDerefMethodCall(objVarName, `set${(0, xrpa_utils_1.upperFirst)(fieldName)}`, [value.toString()])};`);
+            if ((0, TypeDefinition_1.typeIsStateData)(fields[fieldName].type)) {
+                updateLines.push(`${codegen.genDerefMethodCall(objVarName, `set${(0, xrpa_utils_1.upperFirst)(fieldName)}`, [value.toString()])};`);
+            }
         }
     }
     for (const connection of programDef.selfTerminateEvents) {

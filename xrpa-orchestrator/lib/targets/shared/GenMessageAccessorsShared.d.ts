@@ -18,9 +18,8 @@
 import { MethodParam } from "../../shared/ClassSpec";
 import { IncludeAggregator } from "../../shared/Helpers";
 import { MessageDataTypeDefinition } from "../../shared/TypeDefinition";
-import { GenDataStoreContext } from "./GenDataStoreShared";
 export declare function genMessageMethodParams(params: {
-    ctx: GenDataStoreContext;
+    namespace: string;
     includes: IncludeAggregator | null;
     fieldType: MessageDataTypeDefinition;
     referencesNeedConversion: boolean;

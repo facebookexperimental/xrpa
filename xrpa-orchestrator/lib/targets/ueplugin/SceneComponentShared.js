@@ -43,7 +43,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.writeSceneComponent = exports.genProcessUpdateBody = exports.genTransformUpdates = exports.genTransformInitializers = exports.genFieldInitializers = exports.genFieldDefaultInitializers = exports.genUEMessageFieldAccessors = exports.genUEMessageProxyDispatch = exports.genFieldSetterCalls = exports.genFieldProperties = exports.getFieldMemberName = exports.getComponentHeader = exports.getComponentClassName = exports.checkForTransformMapping = exports.IntrinsicProperty = void 0;
+exports.writeSceneComponent = exports.genProcessUpdateBody = exports.genTransformUpdates = exports.genTransformInitializers = exports.genFieldInitializers = exports.genFieldDefaultInitializers = exports.genUEMessageFieldAccessors = exports.genUEMessageProxyDispatch = exports.genUESendMessageAccessor = exports.genFieldSetterCalls = exports.genFieldProperties = exports.getFieldMemberName = exports.getComponentHeader = exports.getComponentClassName = exports.checkForTransformMapping = exports.IntrinsicProperty = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
@@ -249,12 +249,15 @@ function genUESendMessageAccessor(classSpec, params) {
         ...params,
         name: `Send${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
         decorations: [
-            `UFUNCTION(BlueprintCallable, Category = "${params.typeDef.getName()}")`,
+            params.categoryName ?
+                `UFUNCTION(BlueprintCallable, Category = "${params.categoryName}")` :
+                `UFUNCTION(BlueprintCallable)`,
         ],
         referencesNeedConversion: false,
         separateImplementation: true,
     });
 }
+exports.genUESendMessageAccessor = genUESendMessageAccessor;
 function genUEMessageProxyDispatch(classSpec, params) {
     const msgEventType = (0, GenBlueprintTypes_1.getMessageDelegateName)(params.fieldType, params.storeDef.apiname);
     const ueHandlerName = `On${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`;
@@ -264,7 +267,11 @@ function genUEMessageProxyDispatch(classSpec, params) {
     classSpec.members.push({
         name: ueHandlerName,
         type: msgEventType,
-        decorations: [`UPROPERTY(BlueprintAssignable, Category = "${params.categoryName}")`],
+        decorations: [
+            params.categoryName ?
+                `UPROPERTY(BlueprintAssignable, Category = "${params.categoryName}")` :
+                `UPROPERTY(BlueprintAssignable)`,
+        ],
     });
     const messageReadAccessor = params.fieldType.getReadAccessorType(classSpec.namespace, null);
     (0, xrpa_utils_1.pushUnique)(params.forwardDeclarations, (0, CppCodeGenImpl_1.forwardDeclareClass)(messageReadAccessor));
@@ -311,13 +318,14 @@ function convertMessageTypeToParams(msgType, prelude) {
 }
 function genUEMessageFieldAccessors(classSpec, params) {
     const typeDef = params.reconcilerDef.type;
+    const categoryName = typeDef.getName();
     const typeFields = typeDef.getFieldsOfType(TypeDefinition_1.typeIsMessageData);
     for (const fieldName in typeFields) {
         const fieldType = typeFields[fieldName];
         if (params.reconcilerDef.isInboundField(fieldName)) {
             genUEMessageProxyDispatch(classSpec, {
                 storeDef: params.ctx.storeDef,
-                categoryName: typeDef.getName(),
+                categoryName,
                 fieldName,
                 fieldType,
                 proxyObj: params.proxyObj,
@@ -329,6 +337,8 @@ function genUEMessageFieldAccessors(classSpec, params) {
         if (params.reconcilerDef.isOutboundField(fieldName)) {
             genUESendMessageAccessor(classSpec, {
                 ...params,
+                namespace: params.ctx.namespace,
+                categoryName,
                 typeDef,
                 fieldName,
                 fieldType,

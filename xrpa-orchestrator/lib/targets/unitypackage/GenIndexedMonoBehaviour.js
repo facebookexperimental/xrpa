@@ -42,9 +42,9 @@ function genComponentInit(ctx, includes, reconcilerDef, proxyObj) {
             `_hasNotifiedNeedsWrite = false;`,
         ]),
         ``,
-        ...(0, MonoBehaviourShared_1.genFieldInitializers)(ctx, includes, reconcilerDef),
+        ...(0, MonoBehaviourShared_1.genFieldInitializers)(ctx.namespace, includes, reconcilerDef),
         ``,
-        ...(0, MonoBehaviourShared_1.genTransformInitializers)(ctx, includes, reconcilerDef),
+        ...(0, MonoBehaviourShared_1.genTransformInitializers)(ctx.namespace, includes, reconcilerDef),
         ``,
         ...Object.values(bindingCalls).map(bindings => bindings.addBinding),
     ];
@@ -126,7 +126,7 @@ function genInboundMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir, proxyOb
         `HandleXrpaFieldsChanged(${reconcilerDef.getInboundChangeBits()});`,
     ];
     (0, MonoBehaviourShared_1.genUnityMessageFieldAccessors)(classSpec, {
-        ctx,
+        namespace: ctx.namespace,
         reconcilerDef,
         genMsgHandler: GenDataStore_1.genMsgHandler,
         proxyObj,

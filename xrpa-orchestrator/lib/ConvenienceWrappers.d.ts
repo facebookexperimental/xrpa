@@ -36,5 +36,6 @@ export declare function XrpaNativePythonProgram(name: string, outputDir: string,
 export declare function XrpaPythonApplication(name: string, outputDir: string, callback: (ctx: NativeProgramContext) => void): PythonApplication;
 export declare function XrpaPythonStandalone(name: string, outputDir: string, callback: (ctx: NativeProgramContext) => void): PythonStandalone;
 export declare function runInCondaEnvironment(yamlPath: string, filename: string): Promise<void>;
+export declare function buildCondaApplication(yamlPath: string, filename: string, outname: string): Promise<void>;
 export {};
 

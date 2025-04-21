@@ -146,9 +146,11 @@ void DataStoreReconciler::reconcileOutboundChanges(TransportStreamAccessor* acce
   pendingWrites_.clear();
 
   // write messages
-  while (outboundMessagesIterator_.hasNext(outboundMessages_)) {
-    auto message = outboundMessagesIterator_.next(outboundMessages_);
-    accessor->writePrefilledChangeEvent(message);
+  if (outboundMessages_ != nullptr) {
+    while (outboundMessagesIterator_.hasNext(outboundMessages_)) {
+      auto message = outboundMessagesIterator_.next(outboundMessages_);
+      accessor->writePrefilledChangeEvent(message);
+    }
   }
 }
 

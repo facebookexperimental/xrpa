@@ -1,6 +1,6 @@
 {
   "name": "@xrpa/xrpa-file-utils",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "Xrpa File Utils",
   "main": "lib/index.js",
   "license": "Apache-2.0",
@@ -11,7 +11,7 @@
     "repo_path": "arvr/libraries/xrpa/xrpa-file-utils"
   },
   "dependencies": {
-    "@xrpa/xrpa-utils": "1.8.0",
+    "@xrpa/xrpa-utils": "1.9.0",
     "fs-extra": "^11.1.0"
   }
 }

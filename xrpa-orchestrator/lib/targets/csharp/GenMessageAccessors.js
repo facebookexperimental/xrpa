@@ -23,13 +23,13 @@ const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const GenMessageAccessorsShared_1 = require("../shared/GenMessageAccessorsShared");
 const CsharpCodeGenImpl_1 = require("./CsharpCodeGenImpl");
 const CsharpDatasetLibraryTypes_1 = require("./CsharpDatasetLibraryTypes");
-function genMessageParamInitializer(ctx, includes, msgType) {
+function genMessageParamInitializer(namespace, includes, msgType) {
     const lines = [];
     const msgFields = msgType.getStateFields();
     for (const key in msgFields) {
         const fieldType = msgFields[key].type;
         if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-            lines.push(`message.Set${(0, xrpa_utils_1.upperFirst)(key)}(${fieldType.convertValueFromLocal(ctx.namespace, includes, key)});`);
+            lines.push(`message.Set${(0, xrpa_utils_1.upperFirst)(key)}(${fieldType.convertValueFromLocal(namespace, includes, key)});`);
         }
         else {
             lines.push(`message.Set${(0, xrpa_utils_1.upperFirst)(key)}(${key});`);
@@ -37,13 +37,13 @@ function genMessageParamInitializer(ctx, includes, msgType) {
     }
     return lines;
 }
-function genMessageSize(ctx, includes, msgType) {
+function genMessageSize(namespace, includes, msgType) {
     const dynFieldSizes = [];
     let staticSize = 0;
     const msgFields = msgType.getStateFields();
     for (const key in msgFields) {
         const fieldType = msgFields[key].type;
-        const byteCount = fieldType.getRuntimeByteCount(key, ctx.namespace, includes);
+        const byteCount = fieldType.getRuntimeByteCount(key, namespace, includes);
         staticSize += byteCount[0];
         if (byteCount[1] !== null) {
             dynFieldSizes.push(byteCount[1]);
@@ -56,13 +56,13 @@ function genSendMessageBody(params) {
     const lines = [];
     if (params.proxyObj) {
         const msgParams = Object.keys(params.fieldType.getStateFields());
-        lines.push(`${params.proxyObj}.Send${params.fieldName}(${msgParams.join(", ")});`);
+        lines.push(`${params.proxyObj}?.Send${params.fieldName}(${msgParams.join(", ")});`);
     }
     else {
         const messageType = params.typeDef.getFieldIndex(params.fieldName);
         if (params.fieldType.hasFields()) {
-            const msgWriteAccessor = params.fieldType.getWriteAccessorType(params.ctx.namespace, params.includes);
-            lines.push(`${msgWriteAccessor} message = new(_collection.SendMessage(`, `    GetXrpaId(),`, `    ${messageType},`, `    ${genMessageSize(params.ctx, params.includes, params.fieldType)}));`, ...genMessageParamInitializer(params.ctx, params.includes, params.fieldType));
+            const msgWriteAccessor = params.fieldType.getWriteAccessorType(params.namespace, params.includes);
+            lines.push(`${msgWriteAccessor} message = new(_collection.SendMessage(`, `    GetXrpaId(),`, `    ${messageType},`, `    ${genMessageSize(params.namespace, params.includes, params.fieldType)}));`, ...genMessageParamInitializer(params.namespace, params.includes, params.fieldType));
         }
         else {
             lines.push(`_collection.SendMessage(`, `    GetXrpaId(),`, `    ${messageType},`, `    0);`);
@@ -89,12 +89,9 @@ function genMessageDispatchBody(params) {
         const fieldType = typeFields[fieldName];
         const msgType = typeDef.getFieldIndex(fieldName);
         lines.push(`if (messageType == ${msgType}) {`, ...(0, xrpa_utils_1.indent)(1, (0, CsharpCodeGenImpl_1.genMessageDispatch)({
-            namespace: params.ctx.namespace,
-            includes: params.includes,
+            ...params,
             fieldName,
             fieldType,
-            genMsgHandler: params.genMsgHandler,
-            msgDataToParams: params.msgDataToParams,
             convertToReadAccessor: true,
         })), `}`);
     }
@@ -125,7 +122,7 @@ function genMessageFieldAccessors(classSpec, params) {
         const fieldType = typeFields[fieldName];
         if (params.reconcilerDef.isInboundField(fieldName)) {
             (0, CsharpCodeGenImpl_1.genOnMessageAccessor)(classSpec, {
-                namespace: params.ctx.namespace,
+                namespace: params.namespace,
                 fieldName,
                 fieldType,
                 genMsgHandler: params.genMsgHandler,

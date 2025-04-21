@@ -179,7 +179,7 @@ function genPrimitiveValue(typename, value) {
     }
     if (typeof value === "string") {
         // escape string
-        value = value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+        value = value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
         return `"${value}"`;
     }
     if (typeof value === "boolean") {

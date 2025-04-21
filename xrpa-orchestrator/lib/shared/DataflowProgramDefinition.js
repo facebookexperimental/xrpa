@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDataflowParamsStructSpec = exports.getReconcilerDefForNode = exports.getDataflowOutputs = exports.getDataflowInputs = exports.isDataflowProgramDefinition = exports.isDataflowConnection = exports.isDataflowForeignObjectInstantiation = exports.isDataflowGraphNode = void 0;
+exports.getDataflowOutputParamsStructSpec = exports.getDataflowInputParamsStructSpec = exports.getReconcilerDefForNode = exports.getDataflowOutputs = exports.getDataflowInputs = exports.isDataflowProgramDefinition = exports.isDataflowConnection = exports.isDataflowForeignObjectInstantiation = exports.isDataflowGraphNode = void 0;
 const assert_1 = __importDefault(require("assert"));
 const InterfaceTypes_1 = require("../InterfaceTypes");
 const ProgramInterface_1 = require("../ProgramInterface");
@@ -67,9 +67,35 @@ function getReconcilerDefForNode(moduleDef, graphNode) {
     return reconcilerDef;
 }
 exports.getReconcilerDefForNode = getReconcilerDefForNode;
-function getDataflowParamsStructSpec(params, moduleDef) {
+function getDataflowInputParamsStructSpec(inputs, moduleDef) {
     const paramsStructSpec = {};
-    for (const param of params) {
+    for (const inp of inputs) {
+        const param = inp.parameter;
+        if (param.dataType.typename === "LateBindingType") {
+            const source = inp.connections[0];
+            (0, assert_1.default)(source, `Late binding type ${param.name} must have a connection`);
+            const reconcilerDef = getReconcilerDefForNode(moduleDef, source.targetNode);
+            const fieldDef = reconcilerDef.type.getAllFields()[source.targetPort];
+            paramsStructSpec[param.name] = moduleDef.convertUserTypeSpec({
+                type: fieldDef.type,
+                description: undefined,
+                defaultValue: undefined,
+            });
+        }
+        else {
+            paramsStructSpec[param.name] = moduleDef.convertUserTypeSpec({
+                type: (0, ProgramInterfaceConverter_1.getTypeName)(param.dataType),
+                description: (0, InterfaceTypes_1.getFieldDescription)(param.dataType),
+                defaultValue: (0, InterfaceTypes_1.getFieldDefaultValue)(param.dataType),
+            });
+        }
+    }
+    return paramsStructSpec;
+}
+exports.getDataflowInputParamsStructSpec = getDataflowInputParamsStructSpec;
+function getDataflowOutputParamsStructSpec(outputs, moduleDef) {
+    const paramsStructSpec = {};
+    for (const param of outputs) {
         if (param.source) {
             const reconcilerDef = getReconcilerDefForNode(moduleDef, param.source.targetNode);
             const fieldDef = reconcilerDef.type.getAllFields()[param.source.targetPort];
@@ -89,5 +115,5 @@ function getDataflowParamsStructSpec(params, moduleDef) {
     }
     return paramsStructSpec;
 }
-exports.getDataflowParamsStructSpec = getDataflowParamsStructSpec;
+exports.getDataflowOutputParamsStructSpec = getDataflowOutputParamsStructSpec;
 //# sourceMappingURL=DataflowProgramDefinition.js.map

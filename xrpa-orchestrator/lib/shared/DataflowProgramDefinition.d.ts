@@ -56,5 +56,6 @@ export interface DataflowInput {
 export declare function getDataflowInputs(dataflow: DataflowProgramDefinition): DataflowInput[];
 export declare function getDataflowOutputs(dataflow: DataflowProgramDefinition): XrpaProgramParam[];
 export declare function getReconcilerDefForNode(moduleDef: ModuleDefinition, graphNode: XrpaDataflowGraphNode): OutputReconcilerDefinition;
-export declare function getDataflowParamsStructSpec(params: XrpaProgramParam[], moduleDef: ModuleDefinition): StructSpec;
+export declare function getDataflowInputParamsStructSpec(inputs: DataflowInput[], moduleDef: ModuleDefinition): StructSpec;
+export declare function getDataflowOutputParamsStructSpec(outputs: XrpaProgramParam[], moduleDef: ModuleDefinition): StructSpec;
 

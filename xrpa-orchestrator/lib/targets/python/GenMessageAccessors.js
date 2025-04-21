@@ -79,7 +79,7 @@ function isImageStruct(type) {
 function genSendMessageAccessor(classSpec, params) {
     classSpec.methods.push({
         name: params.name ?? `send_${params.fieldName}`,
-        parameters: (0, GenMessageAccessorsShared_1.genMessageMethodParams)({ ...params, includes: classSpec.includes }),
+        parameters: (0, GenMessageAccessorsShared_1.genMessageMethodParams)({ ...params, namespace: params.ctx.namespace, includes: classSpec.includes }),
         body: includes => genSendMessageBody({ ...params, includes }),
     });
     const messageFields = params.fieldType.getStateFields();

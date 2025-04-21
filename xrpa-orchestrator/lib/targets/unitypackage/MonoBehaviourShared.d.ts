@@ -19,7 +19,7 @@ import { FileWriter } from "@xrpa/xrpa-file-utils";
 import { ClassSpec } from "../../shared/ClassSpec";
 import { DataStoreDefinition, InputReconcilerDefinition, OutputReconcilerDefinition } from "../../shared/DataStore";
 import { IncludeAggregator } from "../../shared/Helpers";
-import { InterfaceTypeDefinition, MessageDataTypeDefinition } from "../../shared/TypeDefinition";
+import { InterfaceTypeDefinition, MessageDataTypeDefinition, StructTypeDefinition } from "../../shared/TypeDefinition";
 import { FieldSetterHooks } from "../csharp/GenWriteReconcilerDataStore";
 import { GenDataStoreContext } from "../shared/GenDataStoreShared";
 export declare enum IntrinsicProperty {
@@ -44,6 +44,14 @@ export declare function genFieldSetterCalls(params: {
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
     proxyObj: string;
 }): string[];
+/********************************************************/
+export declare function genUnitySendMessageAccessor(classSpec: ClassSpec, params: {
+    namespace: string;
+    typeDef: StructTypeDefinition;
+    fieldName: string;
+    fieldType: MessageDataTypeDefinition;
+    proxyObj: string;
+}): void;
 export declare function genUnityMessageProxyDispatch(classSpec: ClassSpec, params: {
     storeDef: DataStoreDefinition;
     fieldName: string;
@@ -52,16 +60,16 @@ export declare function genUnityMessageProxyDispatch(classSpec: ClassSpec, param
     initializerLines: string[];
 }): void;
 export declare function genUnityMessageFieldAccessors(classSpec: ClassSpec, params: {
-    ctx: GenDataStoreContext;
+    namespace: string;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
     genMsgHandler: (msgName: string) => string;
     proxyObj: string;
     initializerLines: string[];
 }): void;
 /********************************************************/
-export declare function genFieldDefaultInitializers(ctx: GenDataStoreContext, includes: IncludeAggregator | null, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition): string[];
-export declare function genFieldInitializers(ctx: GenDataStoreContext, includes: IncludeAggregator | null, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition): string[];
-export declare function genTransformInitializers(ctx: GenDataStoreContext, includes: IncludeAggregator | null, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition): string[];
+export declare function genFieldDefaultInitializers(namespace: string, includes: IncludeAggregator | null, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition): string[];
+export declare function genFieldInitializers(namespace: string, includes: IncludeAggregator | null, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition): string[];
+export declare function genTransformInitializers(namespace: string, includes: IncludeAggregator | null, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition): string[];
 export declare function genTransformUpdates(params: {
     ctx: GenDataStoreContext;
     includes: IncludeAggregator | null;

@@ -63,6 +63,11 @@ exports.getDirectionality = getDirectionality;
 function ProgramInput(name, dataType) {
     const ctx = getProgramInterfaceContext();
     (0, assert_1.default)(!ctx.parameters[name], `Program already has a parameter with the name "${name}"`);
+    if (!dataType) {
+        // call getDataflowProgramContext() to assert this is in a dataflow program
+        (0, DataflowProgram_1.getDataflowProgramContext)();
+        dataType = (0, InterfaceTypes_1.LateBindingType)();
+    }
     if ((0, XrpaLanguage_1.isNamedDataType)(dataType)) {
         dataType = (0, XrpaLanguage_1.NameType)(name, dataType);
     }

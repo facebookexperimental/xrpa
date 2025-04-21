@@ -35,6 +35,7 @@ export declare function IndexKey<T extends XrpaDataType>(dataType: Thunk<T>): T;
 export declare function IndexKey<T extends XrpaDataType>(condition: PropertyCondition): XrpaTypeAugmenter<T>;
 export declare function IndexKey<T extends XrpaDataType>(condition: PropertyCondition, dataType: Thunk<T>): T;
 export declare function isFieldIndexKey(dataType: XrpaDataType): boolean;
+export declare function LateBindingType(defaultValue?: boolean, description?: string): XrpaDataType<"LateBindingType">;
 export declare function Boolean(defaultValue?: boolean, description?: string): XrpaDataType<BuiltinType.Boolean>;
 export declare function Count(defaultValue?: number, description?: string): XrpaDataType<BuiltinType.Count>;
 export declare function BitField(description?: string): XrpaDataType<BuiltinType.BitField>;

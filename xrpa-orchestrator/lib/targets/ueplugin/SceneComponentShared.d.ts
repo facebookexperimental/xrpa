@@ -19,7 +19,7 @@ import { FileWriter } from "@xrpa/xrpa-file-utils";
 import { ClassSpec } from "../../shared/ClassSpec";
 import { DataStoreDefinition, InputReconcilerDefinition, OutputReconcilerDefinition } from "../../shared/DataStore";
 import { IncludeAggregator } from "../../shared/Helpers";
-import { InterfaceTypeDefinition, MessageDataTypeDefinition } from "../../shared/TypeDefinition";
+import { InterfaceTypeDefinition, MessageDataTypeDefinition, StructTypeDefinition } from "../../shared/TypeDefinition";
 import { FieldSetterHooks } from "../cpp/GenWriteReconcilerDataStore";
 import { GenDataStoreContext } from "../shared/GenDataStoreShared";
 export declare enum IntrinsicProperty {
@@ -44,6 +44,15 @@ export declare function genFieldSetterCalls(params: {
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
     proxyObj: string;
 }): string[];
+/********************************************************/
+export declare function genUESendMessageAccessor(classSpec: ClassSpec, params: {
+    namespace: string;
+    categoryName: string;
+    typeDef: StructTypeDefinition;
+    fieldName: string;
+    fieldType: MessageDataTypeDefinition;
+    proxyObj: string;
+}): void;
 export declare function genUEMessageProxyDispatch(classSpec: ClassSpec, params: {
     storeDef: DataStoreDefinition;
     categoryName: string;

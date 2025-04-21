@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.propagateInheritableProperties = exports.walkTypeTree = exports.ReferenceTo = exports.isReferenceDataType = exports.hasFieldsStruct = exports.Collection = exports.isCollectionDataType = exports.Interface = exports.isInterfaceDataType = exports.MessageRate = exports.Message = exports.isMessageDataType = exports.Image = exports.Struct = exports.isStructDataType = exports.ByteArray = exports.isByteArrayDataType = exports.FixedArray = exports.isFixedArrayDataType = exports.Enum = exports.isEnumDataType = exports.isBuiltinDataType = exports.Signal = exports.ColorLinear = exports.ColorSRGBA = exports.Float3 = exports.String = exports.HiResTimestamp = exports.Timestamp = exports.Scalar = exports.BitField = exports.Count = exports.Boolean = exports.isFieldIndexKey = exports.IndexKey = exports.isFieldPrimaryKey = exports.PrimaryKey = exports.getFieldDefaultValue = exports.getFieldDescription = exports.Description = exports.IS_IMAGE_TYPE = exports.MESSAGE_RATE = exports.FIELD_DEFAULT = exports.FIELD_DESCRIPTION = void 0;
+exports.propagateInheritableProperties = exports.walkTypeTree = exports.ReferenceTo = exports.isReferenceDataType = exports.hasFieldsStruct = exports.Collection = exports.isCollectionDataType = exports.Interface = exports.isInterfaceDataType = exports.MessageRate = exports.Message = exports.isMessageDataType = exports.Image = exports.Struct = exports.isStructDataType = exports.ByteArray = exports.isByteArrayDataType = exports.FixedArray = exports.isFixedArrayDataType = exports.Enum = exports.isEnumDataType = exports.isBuiltinDataType = exports.Signal = exports.ColorLinear = exports.ColorSRGBA = exports.Float3 = exports.String = exports.HiResTimestamp = exports.Timestamp = exports.Scalar = exports.BitField = exports.Count = exports.Boolean = exports.LateBindingType = exports.isFieldIndexKey = exports.IndexKey = exports.isFieldPrimaryKey = exports.PrimaryKey = exports.getFieldDefaultValue = exports.getFieldDescription = exports.Description = exports.IS_IMAGE_TYPE = exports.MESSAGE_RATE = exports.FIELD_DEFAULT = exports.FIELD_DESCRIPTION = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const simply_immutable_1 = require("simply-immutable");
@@ -70,6 +70,16 @@ function isFieldIndexKey(dataType) {
 exports.isFieldIndexKey = isFieldIndexKey;
 ////////////////////////////////////////////////////////////////////////////////
 // Primitive data types
+function LateBindingType(defaultValue, description) {
+    return (0, xrpa_utils_1.safeDeepFreeze)({
+        __XrpaDataType: true,
+        typename: "LateBindingType",
+        properties: {
+            [exports.FIELD_DESCRIPTION]: description,
+        },
+    });
+}
+exports.LateBindingType = LateBindingType;
 function Boolean(defaultValue, description) {
     return (0, xrpa_utils_1.safeDeepFreeze)({
         __XrpaDataType: true,

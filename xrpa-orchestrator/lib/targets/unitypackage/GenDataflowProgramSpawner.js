@@ -54,38 +54,64 @@ const CsharpCodeGenImpl_1 = require("../csharp/CsharpCodeGenImpl");
 const CsharpCodeGenImpl = __importStar(require("../csharp/CsharpCodeGenImpl"));
 const GenDataStoreSubsystem_1 = require("./GenDataStoreSubsystem");
 const MonoBehaviourShared_1 = require("./MonoBehaviourShared");
+function genStateInputParameterAccessors(params) {
+    const memberName = (0, xrpa_utils_1.upperFirst)(params.paramName);
+    const memberFieldName = (0, CsharpCodeGenImpl_1.privateMember)(memberName);
+    const objGetterName = `Get${(0, xrpa_utils_1.upperFirst)(params.paramName)}`;
+    const objSetterName = `Set${(0, xrpa_utils_1.upperFirst)(params.paramName)}`;
+    const currentObj = (0, CsharpCodeGenImpl_1.privateMember)("currentObj");
+    const decorations = [
+        "[SerializeField]"
+    ];
+    params.inputParamsStruct.declareLocalFieldClassMember(params.classSpec, params.paramName, memberFieldName, true, decorations, "private");
+    params.spawnInitializerLines.push(`${(0, CsharpCodeGenImpl_1.genDerefMethodCall)("ret", objSetterName, [memberName])};`);
+    params.runInitializerLines.push(`${(0, CsharpCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, [memberName])};`);
+    params.classSpec.members.push({
+        name: memberName,
+        type: params.fieldType,
+        getter: memberFieldName,
+        setter: [
+            // set the local member value
+            `${memberFieldName} = value;`,
+            `if (${(0, CsharpCodeGenImpl_1.genNonNullCheck)(currentObj)}) {`,
+            `  ${(0, CsharpCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, ["value"])};`,
+            `}`,
+        ],
+    });
+    params.validateLines.push(`if (!${(0, CsharpCodeGenImpl_1.genDerefMethodCall)(currentObj, objGetterName, [])}.Equals(${memberFieldName})) {`, `  ${(0, CsharpCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, [memberFieldName])};`, `}`);
+}
 function genInputParameterAccessors(ctx, classSpec, programDef) {
     const spawnInitializerLines = [];
     const runInitializerLines = [];
     const validateLines = [];
     const currentObj = (0, CsharpCodeGenImpl_1.privateMember)("currentObj");
-    const inputParamsStruct = new StructType_1.StructType(CsharpCodeGenImpl, "DataflowProgramInputParams", CsharpCodeGenImpl_1.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowParamsStructSpec)((0, DataflowProgramDefinition_1.getDataflowInputs)(programDef).map(inp => inp.parameter), ctx.moduleDef));
+    const inputParamsStruct = new StructType_1.StructType(CsharpCodeGenImpl, "DataflowProgramInputParams", CsharpCodeGenImpl_1.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowInputParamsStructSpec)((0, DataflowProgramDefinition_1.getDataflowInputs)(programDef), ctx.moduleDef));
     const fields = inputParamsStruct.getAllFields();
     for (const paramName in fields) {
-        const memberName = (0, xrpa_utils_1.upperFirst)(paramName);
-        const memberFieldName = (0, CsharpCodeGenImpl_1.privateMember)(memberName);
         const fieldType = fields[paramName].type;
-        const objGetterName = `Get${(0, xrpa_utils_1.upperFirst)(paramName)}`;
-        const objSetterName = `Set${(0, xrpa_utils_1.upperFirst)(paramName)}`;
-        const decorations = [
-            "[SerializeField]"
-        ];
-        inputParamsStruct.declareLocalFieldClassMember(classSpec, paramName, memberFieldName, true, decorations, "private");
-        spawnInitializerLines.push(`${(0, CsharpCodeGenImpl_1.genDerefMethodCall)("ret", objSetterName, [memberName])};`);
-        runInitializerLines.push(`${(0, CsharpCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, [memberName])};`);
-        classSpec.members.push({
-            name: memberName,
-            type: fieldType,
-            getter: memberFieldName,
-            setter: [
-                // set the local member value
-                `${memberFieldName} = value;`,
-                `if (${(0, CsharpCodeGenImpl_1.genNonNullCheck)(currentObj)}) {`,
-                `  ${(0, CsharpCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, ["value"])};`,
-                `}`,
-            ],
-        });
-        validateLines.push(`if (!${(0, CsharpCodeGenImpl_1.genDerefMethodCall)(currentObj, objGetterName, [])}.Equals(${memberFieldName})) {`, `  ${(0, CsharpCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, [memberFieldName])};`, `}`);
+        if ((0, TypeDefinition_1.typeIsMessageData)(fieldType)) {
+            (0, MonoBehaviourShared_1.genUnitySendMessageAccessor)(classSpec, {
+                namespace: ctx.namespace,
+                typeDef: inputParamsStruct,
+                fieldName: paramName,
+                fieldType,
+                proxyObj: currentObj,
+            });
+        }
+        else if ((0, TypeDefinition_1.typeIsStateData)(fieldType)) {
+            genStateInputParameterAccessors({
+                classSpec,
+                inputParamsStruct,
+                paramName,
+                fieldType,
+                validateLines,
+                spawnInitializerLines,
+                runInitializerLines,
+            });
+        }
+        else {
+            (0, assert_1.default)(false, `Unsupported input parameter type for ${paramName}`);
+        }
     }
     classSpec.methods.push({
         name: "OnValidate",
@@ -103,7 +129,7 @@ function genInputParameterAccessors(ctx, classSpec, programDef) {
 }
 function genOutputParameterAccessors(ctx, classSpec, programDef, runInitializerLines) {
     const outputs = (0, DataflowProgramDefinition_1.getDataflowOutputs)(programDef);
-    const outputParamsStruct = new StructType_1.StructType(CsharpCodeGenImpl, "DataflowProgramOutputParams", CsharpCodeGenImpl_1.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowParamsStructSpec)(outputs, ctx.moduleDef));
+    const outputParamsStruct = new StructType_1.StructType(CsharpCodeGenImpl, "DataflowProgramOutputParams", CsharpCodeGenImpl_1.XRPA_NAMESPACE, undefined, (0, DataflowProgramDefinition_1.getDataflowOutputParamsStructSpec)(outputs, ctx.moduleDef));
     const outputFields = outputParamsStruct.getAllFields();
     for (const parameter of outputs) {
         if (!parameter.source) {

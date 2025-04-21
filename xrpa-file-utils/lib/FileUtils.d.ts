@@ -26,6 +26,7 @@ export declare function runProcess(params: {
     args?: string[];
     cwd?: string;
     onLineReceived?: (line: string) => void;
+    pipeStdout?: boolean;
 }): Promise<string>;
 export declare function isDirectory(pathname: string): Promise<boolean>;
 export declare function recursiveDirScan(fullpath: string, filenames: string[]): Promise<void>;

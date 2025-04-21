@@ -88,6 +88,10 @@ async function runProcess(params) {
             }
         });
         process.stdin.pipe(child.stdin);
+        if (params.pipeStdout) {
+            child.stdout.pipe(process.stdout);
+            child.stderr.pipe(process.stderr);
+        }
     });
     return p;
 }

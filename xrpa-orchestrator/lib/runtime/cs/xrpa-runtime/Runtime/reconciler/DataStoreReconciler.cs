@@ -375,10 +375,13 @@ namespace Xrpa
             _pendingWrites.Clear();
 
             // write messages
-            while (_outboundMessagesIterator.HasNext(_outboundMessages))
+            if (_outboundMessages != null)
             {
-                var message = _outboundMessagesIterator.Next(_outboundMessages);
-                accessor.WritePrefilledChangeEvent(message);
+                while (_outboundMessagesIterator.HasNext(_outboundMessages))
+                {
+                    var message = _outboundMessagesIterator.Next(_outboundMessages);
+                    accessor.WritePrefilledChangeEvent(message);
+                }
             }
         }
     }

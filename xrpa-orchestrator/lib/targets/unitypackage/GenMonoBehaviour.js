@@ -39,9 +39,9 @@ function genComponentInit(ctx, includes, reconcilerDef, initializerLines) {
         `_dsIsInitialized = true;`,
         `_id = ${id};`,
         ``,
-        ...(0, MonoBehaviourShared_1.genFieldInitializers)(ctx, includes, reconcilerDef),
+        ...(0, MonoBehaviourShared_1.genFieldInitializers)(ctx.namespace, includes, reconcilerDef),
         ``,
-        ...(0, MonoBehaviourShared_1.genTransformInitializers)(ctx, includes, reconcilerDef),
+        ...(0, MonoBehaviourShared_1.genTransformInitializers)(ctx.namespace, includes, reconcilerDef),
         ``,
         `${proxyObj} = new ${reconcilerDef.type.getLocalType(ctx.namespace, includes)}(_id);`,
         `${proxyObj}.SetXrpaOwner(this);`,
@@ -147,7 +147,7 @@ function genMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
         `${proxyObj}.OnXrpaFieldsChanged(HandleXrpaFieldsChanged);`,
     ];
     (0, MonoBehaviourShared_1.genUnityMessageFieldAccessors)(classSpec, {
-        ctx,
+        namespace: ctx.namespace,
         reconcilerDef,
         genMsgHandler: GenDataStore_1.genMsgHandler,
         proxyObj,

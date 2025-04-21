@@ -64,7 +64,7 @@ function genProcessUpdateFunctionBody(ctx, includes, typeDef, reconcilerDef) {
         const funcName = (0, GenDataStoreShared_1.fieldGetterFuncName)(PythonCodeGenImpl, typeFields, fieldName);
         lines.push(`if value.${checkName}(fields_changed):`, `  ${(0, GenWriteReconcilerDataStore_1.defaultFieldToMemberVar)(fieldName)} = value.${funcName}()`);
     }
-    lines.push(`self.handle_xrpa_fields_changed(fields_changed)`);
+    lines.push(`self._handle_xrpa_fields_changed(fields_changed)`);
     return lines;
 }
 exports.genProcessUpdateFunctionBody = genProcessUpdateFunctionBody;

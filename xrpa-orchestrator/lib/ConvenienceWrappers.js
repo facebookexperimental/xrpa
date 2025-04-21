@@ -20,10 +20,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runInCondaEnvironment = exports.XrpaPythonStandalone = exports.XrpaPythonApplication = exports.XrpaNativePythonProgram = exports.XrpaNativeCppProgram = exports.addBuckDependency = exports.useBuck = exports.PythonListType = exports.StdVectorArrayType = exports.OvrCoordinateSystem = exports.withHeader = void 0;
+exports.buildCondaApplication = exports.runInCondaEnvironment = exports.XrpaPythonStandalone = exports.XrpaPythonApplication = exports.XrpaNativePythonProgram = exports.XrpaNativeCppProgram = exports.addBuckDependency = exports.useBuck = exports.PythonListType = exports.StdVectorArrayType = exports.OvrCoordinateSystem = exports.withHeader = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const xrpa_file_utils_1 = require("@xrpa/xrpa-file-utils");
 const promises_1 = __importDefault(require("fs/promises"));
+const os_1 = __importDefault(require("os"));
 const path_1 = __importDefault(require("path"));
 const InterfaceTypes_1 = require("./InterfaceTypes");
 const NativeProgram_1 = require("./NativeProgram");
@@ -173,7 +174,7 @@ function XrpaPythonStandalone(name, outputDir, callback) {
     return new PythonStandalone_1.PythonStandalone(XrpaNativePythonProgram(name, outputDir, callback));
 }
 exports.XrpaPythonStandalone = XrpaPythonStandalone;
-async function runInCondaEnvironment(yamlPath, filename) {
+async function runInCondaEnvironmentInternal(yamlPath, cwd, args) {
     const yamlLines = await promises_1.default.readFile(yamlPath, "utf8");
     const envName = yamlLines.split("\n")[0].split(" ")[1];
     const envList = JSON.parse(await (0, xrpa_file_utils_1.runProcess)({
@@ -186,19 +187,29 @@ async function runInCondaEnvironment(yamlPath, filename) {
         await (0, xrpa_file_utils_1.runProcess)({
             filename: "conda",
             args: ["env", "create", "-f", yamlPath],
-            onLineReceived: line => {
-                console.log(line);
-            },
         });
     }
     await (0, xrpa_file_utils_1.runProcess)({
         filename: "conda",
-        args: ["run", "--live-stream", "-n", envName, "python", filename],
-        cwd: path_1.default.dirname(filename),
-        onLineReceived: line => {
-            console.log(line);
-        },
+        args: ["run", "--live-stream", "-n", envName, ...args],
+        cwd,
+        pipeStdout: true,
     });
 }
+async function runInCondaEnvironment(yamlPath, filename) {
+    await runInCondaEnvironmentInternal(yamlPath, path_1.default.dirname(filename), ["python", "-u", filename]);
+}
 exports.runInCondaEnvironment = runInCondaEnvironment;
+async function buildCondaApplication(yamlPath, filename, outname) {
+    await runInCondaEnvironmentInternal(yamlPath, path_1.default.dirname(filename), ["pip", "install", "pyinstaller"]);
+    await runInCondaEnvironmentInternal(yamlPath, path_1.default.dirname(filename), [
+        "pyinstaller",
+        "--onefile", filename,
+        "--name", path_1.default.basename(outname),
+        "--distpath", path_1.default.dirname(outname),
+        "--specpath", path_1.default.join(os_1.default.tmpdir(), path_1.default.basename(outname)),
+        "--workpath", path_1.default.join(os_1.default.tmpdir(), path_1.default.basename(outname), "build"),
+    ]);
+}
+exports.buildCondaApplication = buildCondaApplication;
 //# sourceMappingURL=ConvenienceWrappers.js.map

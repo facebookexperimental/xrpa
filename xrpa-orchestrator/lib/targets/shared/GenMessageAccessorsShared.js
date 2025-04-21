@@ -27,7 +27,7 @@ function genMessageMethodParams(params) {
         if (params.referencesNeedConversion && (0, TypeDefinition_1.typeIsReference)(fieldType)) {
             methodParams.push({
                 name: key,
-                type: fieldType.getReferencedSuperType(params.ctx.namespace, params.includes),
+                type: fieldType.getReferencedSuperType(params.namespace, params.includes),
             });
         }
         else {

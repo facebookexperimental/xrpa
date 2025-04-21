@@ -43,7 +43,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.writeMonoBehaviour = exports.genDataStoreObjectAccessors = exports.genProcessUpdateBody = exports.genTransformUpdates = exports.genTransformInitializers = exports.genFieldInitializers = exports.genFieldDefaultInitializers = exports.genUnityMessageFieldAccessors = exports.genUnityMessageProxyDispatch = exports.genFieldSetterCalls = exports.genFieldProperties = exports.getFieldMemberName = exports.getMessageDelegateName = exports.getComponentClassName = exports.checkForTransformMapping = exports.IntrinsicProperty = void 0;
+exports.writeMonoBehaviour = exports.genDataStoreObjectAccessors = exports.genProcessUpdateBody = exports.genTransformUpdates = exports.genTransformInitializers = exports.genFieldInitializers = exports.genFieldDefaultInitializers = exports.genUnityMessageFieldAccessors = exports.genUnityMessageProxyDispatch = exports.genUnitySendMessageAccessor = exports.genFieldSetterCalls = exports.genFieldProperties = exports.getFieldMemberName = exports.getMessageDelegateName = exports.getComponentClassName = exports.checkForTransformMapping = exports.IntrinsicProperty = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
@@ -224,6 +224,7 @@ function genUnitySendMessageAccessor(classSpec, params) {
         referencesNeedConversion: false,
     });
 }
+exports.genUnitySendMessageAccessor = genUnitySendMessageAccessor;
 function genUnityMessageProxyDispatch(classSpec, params) {
     const msgEventType = getMessageDelegateName(classSpec.namespace, classSpec.includes, params.fieldType);
     const unityHandlerName = `On${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`;
@@ -301,7 +302,7 @@ function genUnityMessageFieldAccessors(classSpec, params) {
 }
 exports.genUnityMessageFieldAccessors = genUnityMessageFieldAccessors;
 /********************************************************/
-function genFieldDefaultInitializers(ctx, includes, reconcilerDef) {
+function genFieldDefaultInitializers(namespace, includes, reconcilerDef) {
     const lines = [];
     const fields = reconcilerDef.type.getStateFields();
     for (const fieldName in fields) {
@@ -309,12 +310,12 @@ function genFieldDefaultInitializers(ctx, includes, reconcilerDef) {
             continue;
         }
         const memberName = "_" + getFieldMemberName(reconcilerDef, fieldName);
-        lines.push(...reconcilerDef.type.resetLocalFieldVarToDefault(ctx.namespace, includes, fieldName, memberName));
+        lines.push(...reconcilerDef.type.resetLocalFieldVarToDefault(namespace, includes, fieldName, memberName));
     }
     return lines;
 }
 exports.genFieldDefaultInitializers = genFieldDefaultInitializers;
-function genFieldInitializers(ctx, includes, reconcilerDef) {
+function genFieldInitializers(namespace, includes, reconcilerDef) {
     const lines = [];
     const fields = reconcilerDef.type.getStateFields();
     for (const fieldName in fields) {
@@ -327,13 +328,13 @@ function genFieldInitializers(ctx, includes, reconcilerDef) {
         const isEphemeral = reconcilerDef.isEphemeralField(fieldName);
         if (isClearSetType || isInboundField || isEphemeral) {
             const memberName = "_" + getFieldMemberName(reconcilerDef, fieldName);
-            lines.push(...reconcilerDef.type.resetLocalFieldVarToDefault(ctx.namespace, includes, fieldName, memberName));
+            lines.push(...reconcilerDef.type.resetLocalFieldVarToDefault(namespace, includes, fieldName, memberName));
         }
     }
     return lines;
 }
 exports.genFieldInitializers = genFieldInitializers;
-function genPropertyAssignment(ctx, includes, targetVar, property, fieldType) {
+function genPropertyAssignment(namespace, includes, targetVar, property, fieldType) {
     switch (property) {
         case IntrinsicProperty.position:
         case IntrinsicProperty.rotation:
@@ -345,7 +346,7 @@ function genPropertyAssignment(ctx, includes, targetVar, property, fieldType) {
             }
             const targetComponentClassName = getComponentClassName(fieldType.toType);
             return [
-                ...fieldType.resetLocalVarToDefault(ctx.namespace, includes, targetVar),
+                ...fieldType.resetLocalVarToDefault(namespace, includes, targetVar),
                 `for (var parentObj = transform.parent; parentObj != null; parentObj = parentObj.transform.parent) {`,
                 `  var componentObj = parentObj.GetComponent<${targetComponentClassName}>();`,
                 `  if (componentObj != null) {`,
@@ -362,7 +363,7 @@ function genPropertyAssignment(ctx, includes, targetVar, property, fieldType) {
             }
             const targetComponentClassName = getComponentClassName(fieldType.toType);
             return [
-                ...fieldType.resetLocalVarToDefault(ctx.namespace, includes, targetVar),
+                ...fieldType.resetLocalVarToDefault(namespace, includes, targetVar),
                 `{`,
                 `  var componentObj = gameObject.GetComponent<${targetComponentClassName}>();`,
                 `  if (componentObj != null) {`,
@@ -375,7 +376,7 @@ function genPropertyAssignment(ctx, includes, targetVar, property, fieldType) {
     }
     throw new Error(`Unsupported property ${property} for property mapping`);
 }
-function genTransformInitializers(ctx, includes, reconcilerDef) {
+function genTransformInitializers(namespace, includes, reconcilerDef) {
     const lines = [];
     const fields = reconcilerDef.type.getStateFields();
     for (const fieldName in fields) {
@@ -386,7 +387,7 @@ function genTransformInitializers(ctx, includes, reconcilerDef) {
         const fieldType = fields[fieldName].type;
         const fieldBinding = reconcilerDef.getFieldPropertyBinding(fieldName);
         if (typeof fieldBinding === "string") {
-            lines.push(...genPropertyAssignment(ctx, includes, "_" + getFieldMemberName(reconcilerDef, fieldName), fieldBinding, fieldType));
+            lines.push(...genPropertyAssignment(namespace, includes, "_" + getFieldMemberName(reconcilerDef, fieldName), fieldBinding, fieldType));
         }
         else if (fieldBinding && (0, TypeDefinition_1.typeIsStruct)(fieldType)) {
             const subfields = fieldType.getStateFields();
@@ -395,7 +396,7 @@ function genTransformInitializers(ctx, includes, reconcilerDef) {
                 if (!subfieldType) {
                     continue;
                 }
-                lines.push(...genPropertyAssignment(ctx, includes, `_${getFieldMemberName(reconcilerDef, fieldName)}.${subfieldName}`, fieldBinding[subfieldName], subfieldType));
+                lines.push(...genPropertyAssignment(namespace, includes, `_${getFieldMemberName(reconcilerDef, fieldName)}.${subfieldName}`, fieldBinding[subfieldName], subfieldType));
             }
         }
     }
