@@ -82,6 +82,25 @@ function genStateInputParameterAccessors(params) {
         separateImplementation: true,
     });
 }
+function genStateOutputParameterAccessors(params) {
+    const memberName = (0, xrpa_utils_1.upperFirst)(params.fieldName);
+    const currentObj = (0, CppCodeGenImpl_1.privateMember)("currentObj");
+    const decorations = ["UPROPERTY(EditAnywhere, BlueprintReadOnly)"];
+    params.outputParamsStruct.declareLocalFieldClassMember(params.classSpec, params.fieldName, memberName, true, decorations, "public");
+    params.classSpec.methods.push({
+        name: `dispatch${memberName}Changed`,
+        parameters: [{
+                name: "value",
+                type: params.fieldType,
+            }],
+        body: [
+            `${memberName} = value;`,
+        ],
+        visibility: "private",
+        separateImplementation: true,
+    });
+    params.runInitializerLines.push(`${currentObj}->on${memberName}Changed = ${(0, CppCodeGenImpl_1.genPassthroughMethodBind)(`dispatch${memberName}Changed`, 1)};`);
+}
 function genParameterAccessors(ctx, classSpec, programDef, cppIncludes) {
     const initializerLines = [];
     const spawnInitializerLines = [];
@@ -132,8 +151,8 @@ function genOutputParameterAccessors(ctx, classSpec, programDef, runInitializerL
         }
         const fieldName = parameter.name;
         const fieldType = outputFields[fieldName].type;
-        const reconcilerDef = (0, DataflowProgramDefinition_1.getReconcilerDefForNode)(ctx.moduleDef, parameter.source.targetNode);
         if ((0, TypeDefinition_1.typeIsMessageData)(fieldType)) {
+            const reconcilerDef = (0, DataflowProgramDefinition_1.getReconcilerDefForNode)(ctx.moduleDef, parameter.source.targetNode);
             (0, SceneComponentShared_1.genUEMessageProxyDispatch)(classSpec, {
                 storeDef: reconcilerDef.storeDef,
                 categoryName: "",
@@ -146,8 +165,13 @@ function genOutputParameterAccessors(ctx, classSpec, programDef, runInitializerL
             });
         }
         else if ((0, TypeDefinition_1.typeIsStateData)(fieldType)) {
-            // TODO: implement
-            (0, assert_1.default)(false, "Primitive output parameters are not yet implemented");
+            genStateOutputParameterAccessors({
+                classSpec,
+                outputParamsStruct,
+                fieldName,
+                fieldType,
+                runInitializerLines,
+            });
         }
         else {
             (0, assert_1.default)(false, "Only message types are currently supported as output parameters");

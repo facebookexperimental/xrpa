@@ -1,6 +1,6 @@
 {
   "name": "@xrpa/xred-signal-output",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "Signal output device interface",
   "main": "lib/index.js",
   "license": "Apache-2.0",
@@ -9,6 +9,6 @@
     "lib/**/*"
   ],
   "peerDependencies": {
-    "@xrpa/xrpa-orchestrator": "1.9.0"
+    "@xrpa/xrpa-orchestrator": "1.10.0"
   }
 }

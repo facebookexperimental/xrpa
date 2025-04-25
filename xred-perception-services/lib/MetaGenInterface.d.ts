@@ -33,8 +33,10 @@ export declare function LlmQuery(params: LlmSharedParams & {
     jsonSchema?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"String">> | string | ZodSchema;
     jpegImageData?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"ByteArray">>;
 }): {
+    isProcessing: XrpaDataflowConnection;
     response: XrpaDataflowConnection;
     ResponseStream: XrpaDataflowConnection;
+    QueryComplete: XrpaDataflowConnection;
 };
 export declare function LlmTriggeredQuery(params: LlmSharedParams & {
     userPrompt: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"String">> | string;
@@ -42,13 +44,15 @@ export declare function LlmTriggeredQuery(params: LlmSharedParams & {
     RgbImageFeed?: XrpaDataflowConnection | XrpaProgramParam;
     triggerId?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"Count">>;
 }): {
+    isProcessing: XrpaDataflowConnection;
     Response: XrpaDataflowConnection;
     ResponseStream: XrpaDataflowConnection;
 };
 export declare function LlmConversation(params: LlmSharedParams & {
-    conversationStarter: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"String">> | string;
+    conversationStarter?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"String">> | string;
     ChatMessage: XrpaDataflowConnection | XrpaProgramParam<typeof LlmChatMessage>;
 }): {
+    isProcessing: XrpaDataflowConnection;
     ChatResponse: XrpaDataflowConnection;
     ChatResponseStream: XrpaDataflowConnection;
 };

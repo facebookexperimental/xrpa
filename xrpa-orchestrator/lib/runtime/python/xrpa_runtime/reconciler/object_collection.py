@@ -233,5 +233,5 @@ class ObjectCollection(IObjectCollection, Generic[ObjectAccessorType, Reconciled
         if self._is_local_owned:
             return
 
-        for obj in self._objects.values():
+        for obj in list(self._objects.values()):
             self._process_delete_internal(obj.get_xrpa_id(), obj)

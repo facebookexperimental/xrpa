@@ -59,6 +59,7 @@ export interface GuidGenSpec {
 export interface CoreXrpaTypes {
     MemoryAccessor: TypeDefinition;
     MemoryOffset: TypeDefinition;
+    StringEmbedding: TypeDefinition;
     ObjectAccessorInterface: TypeDefinition;
     TransportStreamAccessor: TypeDefinition;
     InboundSignalForwarder: TypeDefinition;

@@ -27,13 +27,13 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "@xrpa/xred-device-input": "^1.9.0",
-    "@xrpa/xred-perception-services": "^1.9.0",
-    "@xrpa/xred-sensor-input": "^1.9.0",
-    "@xrpa/xred-signal-output": "^1.9.0",
-    "@xrpa/xred-signal-processing": "^1.9.0",
-    "@xrpa/xred-tactile-pressure": "^1.9.0",
-    "@xrpa/xred-tracking": "^1.9.0",
-    "@xrpa/xrpa-orchestrator": "^1.9.0"
+    "@xrpa/xred-device-input": "^1.10.0",
+    "@xrpa/xred-perception-services": "^1.10.0",
+    "@xrpa/xred-sensor-input": "^1.10.0",
+    "@xrpa/xred-signal-output": "^1.10.0",
+    "@xrpa/xred-signal-processing": "^1.10.0",
+    "@xrpa/xred-tactile-pressure": "^1.10.0",
+    "@xrpa/xred-tracking": "^1.10.0",
+    "@xrpa/xrpa-orchestrator": "^1.10.0"
   }
 }

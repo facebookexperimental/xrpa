@@ -19,6 +19,7 @@ import { PrimitiveType } from "../../shared/PrimitiveType";
 import { TypeDefinition } from "../../shared/TypeDefinition";
 export declare const MemoryOffset: TypeDefinition;
 export declare const MemoryAccessor: TypeDefinition;
+export declare const StringEmbedding: PrimitiveType;
 export declare const HashValue: PrimitiveType;
 export declare const TransportConfig: TypeDefinition;
 export declare const ObjectAccessorInterface: PrimitiveType;

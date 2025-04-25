@@ -80,6 +80,34 @@ function genStateInputParameterAccessors(params) {
     });
     params.validateLines.push(`if (!${(0, CsharpCodeGenImpl_1.genDerefMethodCall)(currentObj, objGetterName, [])}.Equals(${memberFieldName})) {`, `  ${(0, CsharpCodeGenImpl_1.genDerefMethodCall)(currentObj, objSetterName, [memberFieldName])};`, `}`);
 }
+function genStateOutputParameterAccessors(params) {
+    const memberName = (0, xrpa_utils_1.upperFirst)(params.fieldName);
+    const memberFieldName = (0, CsharpCodeGenImpl_1.privateMember)(memberName);
+    const currentObj = (0, CsharpCodeGenImpl_1.privateMember)("currentObj");
+    params.outputParamsStruct.declareLocalFieldClassMember(params.classSpec, params.fieldName, memberFieldName, true, [], "private");
+    params.classSpec.members.push({
+        name: memberName,
+        type: params.fieldType,
+        getter: memberFieldName,
+    });
+    params.classSpec.members.push({
+        name: `On${memberName}Changed`,
+        type: `event System.Action<${params.fieldType.getLocalType(params.classSpec.namespace, params.classSpec.includes)}>`,
+    });
+    params.classSpec.methods.push({
+        name: `Dispatch${memberName}Changed`,
+        parameters: [{
+                name: "value",
+                type: params.fieldType,
+            }],
+        body: [
+            `${memberFieldName} = value;`,
+            `On${memberName}Changed?.Invoke(${memberFieldName});`,
+        ],
+        visibility: "private",
+    });
+    params.runInitializerLines.push(`${currentObj}.On${memberName}Changed += Dispatch${memberName}Changed;`);
+}
 function genInputParameterAccessors(ctx, classSpec, programDef) {
     const spawnInitializerLines = [];
     const runInitializerLines = [];
@@ -137,8 +165,8 @@ function genOutputParameterAccessors(ctx, classSpec, programDef, runInitializerL
         }
         const fieldName = parameter.name;
         const fieldType = outputFields[fieldName].type;
-        const reconcilerDef = (0, DataflowProgramDefinition_1.getReconcilerDefForNode)(ctx.moduleDef, parameter.source.targetNode);
         if ((0, TypeDefinition_1.typeIsMessageData)(fieldType)) {
+            const reconcilerDef = (0, DataflowProgramDefinition_1.getReconcilerDefForNode)(ctx.moduleDef, parameter.source.targetNode);
             (0, MonoBehaviourShared_1.genUnityMessageProxyDispatch)(classSpec, {
                 storeDef: reconcilerDef.storeDef,
                 fieldName,
@@ -148,8 +176,13 @@ function genOutputParameterAccessors(ctx, classSpec, programDef, runInitializerL
             });
         }
         else if ((0, TypeDefinition_1.typeIsStateData)(fieldType)) {
-            // TODO: implement
-            (0, assert_1.default)(false, "Primitive output parameters are not yet implemented");
+            genStateOutputParameterAccessors({
+                classSpec,
+                outputParamsStruct,
+                fieldName,
+                fieldType,
+                runInitializerLines,
+            });
         }
         else {
             (0, assert_1.default)(false, "Only message types are currently supported as output parameters");

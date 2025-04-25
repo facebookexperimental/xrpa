@@ -40,7 +40,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.InboundSignalForwarder = exports.SharedMemoryTransportStream = exports.TransportStreamAccessor = exports.TransportStream = exports.ObjectCollectionIndexedBinding = exports.ObjectCollectionIndex = exports.ObjectCollection = exports.IObjectCollection = exports.DataStoreObject = exports.IDataStoreObjectAccessor = exports.IDataStoreObject = exports.DataStoreReconciler = exports.XrpaModule = exports.ObjectAccessorInterface = exports.TransportConfig = exports.HashValue = exports.MemoryAccessor = exports.MemoryOffset = void 0;
+exports.InboundSignalForwarder = exports.SharedMemoryTransportStream = exports.TransportStreamAccessor = exports.TransportStream = exports.ObjectCollectionIndexedBinding = exports.ObjectCollectionIndex = exports.ObjectCollection = exports.IObjectCollection = exports.DataStoreObject = exports.IDataStoreObjectAccessor = exports.IDataStoreObject = exports.DataStoreReconciler = exports.XrpaModule = exports.ObjectAccessorInterface = exports.TransportConfig = exports.HashValue = exports.StringEmbedding = exports.MemoryAccessor = exports.MemoryOffset = void 0;
 const PrimitiveType_1 = require("../../shared/PrimitiveType");
 const TypeValue_1 = require("../../shared/TypeValue");
 const CodeGen = __importStar(require("./PythonCodeGenImpl"));
@@ -51,6 +51,7 @@ function PythonPrimitiveType(name, size = 0) {
 // Utils:
 exports.MemoryOffset = PythonPrimitiveType("xrpa_runtime.utils.memory_accessor.MemoryOffset", 16);
 exports.MemoryAccessor = PythonPrimitiveType("xrpa_runtime.utils.memory_accessor.MemoryAccessor", 16);
+exports.StringEmbedding = PythonPrimitiveType("xrpa_runtime.utils.string_embedding.StringEmbedding", 16);
 exports.HashValue = PythonPrimitiveType("xrpa_runtime.utils.xrpa_types.HashValue", 32);
 exports.TransportConfig = PythonPrimitiveType("xrpa_runtime.utils.xrpa_types.TransportConfig");
 exports.ObjectAccessorInterface = PythonPrimitiveType("xrpa_runtime.utils.xrpa_types.ObjectAccessorInterface", 8);
@@ -78,6 +79,7 @@ exports.InboundSignalForwarder = PythonPrimitiveType("xrpa_runtime.signals.inbou
 CodeGen.registerXrpaTypes({
     MemoryAccessor: exports.MemoryAccessor,
     MemoryOffset: exports.MemoryOffset,
+    StringEmbedding: exports.StringEmbedding,
     ObjectAccessorInterface: exports.ObjectAccessorInterface,
     TransportStreamAccessor: exports.TransportStreamAccessor,
     InboundSignalForwarder: exports.InboundSignalForwarder,

@@ -160,6 +160,10 @@ class MemoryAccessor:
         return self._data_source[start : start + byte_count].tobytes()
 
     def write_bytearray(self, val: bytearray, offset: MemoryOffset):
+        if val is None:
+            self.write_int(0, offset)
+            return
+
         byte_count = len(val)
         self.write_int(byte_count, offset)
 
@@ -169,4 +173,4 @@ class MemoryAccessor:
 
     @staticmethod
     def dyn_size_of_bytearray(val: bytearray) -> int:
-        return len(val)
+        return len(val) if val is not None else 0

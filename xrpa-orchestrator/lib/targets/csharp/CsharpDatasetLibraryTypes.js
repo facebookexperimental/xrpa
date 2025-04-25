@@ -40,7 +40,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.InboundSignalForwarder = exports.SharedMemoryTransportStream = exports.HeapMemoryTransportStream = exports.TransportStreamAccessor = exports.TransportStream = exports.ObjectCollectionIndexedBinding = exports.IIndexBoundType = exports.ObjectCollectionIndex = exports.ObjectCollection = exports.IObjectCollection = exports.DataStoreObject = exports.IDataStoreObjectAccessor = exports.IDataStoreObject = exports.DataStoreReconciler = exports.ObjectAccessorInterface = exports.TransportConfig = exports.HashValue = exports.MemoryAccessor = exports.MemoryOffset = void 0;
+exports.InboundSignalForwarder = exports.SharedMemoryTransportStream = exports.HeapMemoryTransportStream = exports.TransportStreamAccessor = exports.TransportStream = exports.ObjectCollectionIndexedBinding = exports.IIndexBoundType = exports.ObjectCollectionIndex = exports.ObjectCollection = exports.IObjectCollection = exports.DataStoreObject = exports.IDataStoreObjectAccessor = exports.IDataStoreObject = exports.DataStoreReconciler = exports.ObjectAccessorInterface = exports.TransportConfig = exports.HashValue = exports.StringEmbedding = exports.MemoryAccessor = exports.MemoryOffset = void 0;
 const PrimitiveType_1 = require("../../shared/PrimitiveType");
 const TypeValue_1 = require("../../shared/TypeValue");
 const CodeGen = __importStar(require("./CsharpCodeGenImpl"));
@@ -52,6 +52,7 @@ function CsPrimitiveType(name, size = 0) {
 // Utils:
 exports.MemoryOffset = CsPrimitiveType("MemoryOffset", 4);
 exports.MemoryAccessor = CsPrimitiveType("MemoryAccessor", 16);
+exports.StringEmbedding = CsPrimitiveType("StringEmbedding", 128);
 exports.HashValue = CsPrimitiveType("HashValue", 32);
 exports.TransportConfig = CsPrimitiveType("TransportConfig");
 exports.ObjectAccessorInterface = CsPrimitiveType("ObjectAccessorInterface", 8);
@@ -80,6 +81,7 @@ exports.InboundSignalForwarder = CsPrimitiveType("InboundSignalForwarder");
 CodeGen.registerXrpaTypes({
     MemoryAccessor: exports.MemoryAccessor,
     MemoryOffset: exports.MemoryOffset,
+    StringEmbedding: exports.StringEmbedding,
     ObjectAccessorInterface: exports.ObjectAccessorInterface,
     TransportStreamAccessor: exports.TransportStreamAccessor,
     InboundSignalForwarder: exports.InboundSignalForwarder,

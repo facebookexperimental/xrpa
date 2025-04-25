@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDataflowOutputParamsStructSpec = exports.getDataflowInputParamsStructSpec = exports.getReconcilerDefForNode = exports.getDataflowOutputs = exports.getDataflowInputs = exports.isDataflowProgramDefinition = exports.isDataflowConnection = exports.isDataflowForeignObjectInstantiation = exports.isDataflowGraphNode = void 0;
+exports.getDataflowOutputParamsStructSpec = exports.getDataflowInputParamsStructSpec = exports.getReconcilerDefForNode = exports.getDataflowOutputs = exports.getDataflowInputs = exports.isDataflowProgramDefinition = exports.isDataflowConnection = exports.isDataflowStringEmbedding = exports.isDataflowForeignObjectInstantiation = exports.isDataflowGraphNode = void 0;
 const assert_1 = __importDefault(require("assert"));
 const InterfaceTypes_1 = require("../InterfaceTypes");
 const ProgramInterface_1 = require("../ProgramInterface");
@@ -33,6 +33,10 @@ function isDataflowForeignObjectInstantiation(obj) {
     return Boolean(typeof obj === "object" && obj && obj.__isDataflowObjectInstantiation === true);
 }
 exports.isDataflowForeignObjectInstantiation = isDataflowForeignObjectInstantiation;
+function isDataflowStringEmbedding(obj) {
+    return Boolean(typeof obj === "object" && obj && obj.__isDataflowStringEmbedding === true);
+}
+exports.isDataflowStringEmbedding = isDataflowStringEmbedding;
 function isDataflowConnection(obj) {
     return Boolean(typeof obj === "object" && obj && obj.__isDataflowConnection === true);
 }
@@ -96,7 +100,7 @@ exports.getDataflowInputParamsStructSpec = getDataflowInputParamsStructSpec;
 function getDataflowOutputParamsStructSpec(outputs, moduleDef) {
     const paramsStructSpec = {};
     for (const param of outputs) {
-        if (param.source) {
+        if (param.source && isDataflowForeignObjectInstantiation(param.source.targetNode)) {
             const reconcilerDef = getReconcilerDefForNode(moduleDef, param.source.targetNode);
             const fieldDef = reconcilerDef.type.getAllFields()[param.source.targetPort];
             paramsStructSpec[param.name] = moduleDef.convertUserTypeSpec({

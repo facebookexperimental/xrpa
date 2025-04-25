@@ -30,6 +30,7 @@ const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const TypeValue_1 = require("../../shared/TypeValue");
 const ProgramInterface_1 = require("../../ProgramInterface");
 const GenMessageAccessorsShared_1 = require("./GenMessageAccessorsShared");
+const BuiltinTypes_1 = require("../../shared/BuiltinTypes");
 function paramToMemberName(codegen, paramName) {
     return codegen.privateMember(`param${(0, xrpa_utils_1.upperFirst)(paramName)}`);
 }
@@ -39,17 +40,53 @@ function objToMemberName(codegen, objName) {
 function storeToVarName(storeName) {
     return `datastore${(0, xrpa_utils_1.upperFirst)(storeName)}`;
 }
-function getInfoForObj(ctx, codegen, graphNode, includes) {
-    (0, assert_1.default)((0, DataflowProgramDefinition_1.isDataflowForeignObjectInstantiation)(graphNode));
-    const reconcilerDef = (0, DataflowProgramDefinition_1.getReconcilerDefForNode)(ctx.moduleDef, graphNode);
-    return {
-        objName: graphNode.name,
-        objType: reconcilerDef.type.getLocalType(ctx.namespace, includes),
-        reconcilerName: reconcilerDef.type.getName(),
-        objVarName: objToMemberName(codegen, graphNode.name),
-        reconcilerDef,
-        storeDef: reconcilerDef.storeDef,
-    };
+function getObjectInfo(ctx, codegen, graphNode, includes) {
+    if ((0, DataflowProgramDefinition_1.isDataflowForeignObjectInstantiation)(graphNode)) {
+        const reconcilerDef = (0, DataflowProgramDefinition_1.getReconcilerDefForNode)(ctx.moduleDef, graphNode);
+        return {
+            objName: graphNode.name,
+            objType: reconcilerDef.type.getLocalType(ctx.namespace, includes),
+            objVarName: objToMemberName(codegen, graphNode.name),
+            objTypeFriendlyName: reconcilerDef.type.getName(),
+        };
+    }
+    else if ((0, DataflowProgramDefinition_1.isDataflowStringEmbedding)(graphNode)) {
+        return {
+            objName: graphNode.name,
+            objType: codegen.getXrpaTypes().StringEmbedding.getLocalType(ctx.namespace, includes),
+            objVarName: objToMemberName(codegen, graphNode.name),
+            objTypeFriendlyName: "StringEmbedding",
+        };
+    }
+    else {
+        throw new Error(`Unsupported node: ${JSON.stringify(graphNode)}`);
+    }
+}
+function getTargetInfo(ctx, codegen, connection, includes) {
+    const objInfo = getObjectInfo(ctx, codegen, connection.targetNode, includes);
+    if ((0, DataflowProgramDefinition_1.isDataflowForeignObjectInstantiation)(connection.targetNode)) {
+        const reconcilerDef = (0, DataflowProgramDefinition_1.getReconcilerDefForNode)(ctx.moduleDef, connection.targetNode);
+        const fieldSpec = reconcilerDef.type.getAllFields()[connection.targetPort];
+        (0, assert_1.default)(fieldSpec, `Field ${connection.targetPort} not found on ${reconcilerDef.type.getName()}`);
+        const fieldBitMask = (0, TypeDefinition_1.typeIsStateData)(fieldSpec.type) ? reconcilerDef.type.getFieldBitMask(connection.targetPort) : 0;
+        return {
+            ...objInfo,
+            fieldSpec,
+            fieldBitMask,
+        };
+    }
+    else if ((0, DataflowProgramDefinition_1.isDataflowStringEmbedding)(connection.targetNode)) {
+        return {
+            ...objInfo,
+            fieldSpec: {
+                type: ctx.moduleDef.getBuiltinTypeDefinition(BuiltinTypes_1.BuiltinType.String),
+            },
+            fieldBitMask: 1,
+        };
+    }
+    else {
+        throw new Error(`Unsupported node: ${JSON.stringify(connection.targetNode)}`);
+    }
 }
 function getMessageValues(fieldType) {
     return Object.keys(fieldType.getAllFields()).map(msgField => {
@@ -109,7 +146,7 @@ function onFieldChanged(codegen, classSpec, params) {
         visibility: "private",
     });
     if (dispatcherBody.length === 0) {
-        params.initializersOut.push(`${codegen.genDerefMethodCall(params.objVar, `onXrpaFieldsChanged`, [
+        params.initializersOut.push(`${codegen.genDerefMethodCall(params.objVar, "onXrpaFieldsChanged", [
             codegen.genPassthroughMethodBind(dispatcherName, 1),
         ])};`);
     }
@@ -216,14 +253,19 @@ function verifyStateFieldTypesMatch(params) {
 }
 function genBindStateFieldValues(codegen, classSpec, params) {
     verifyStateFieldTypesMatch(params);
+    const setterName = params.dstIsStringEmbedding ? "setEmbeddingValue" : `set${(0, xrpa_utils_1.upperFirst)(params.dstFieldName)}`;
     const sourceValues = [
         codegen.genDerefMethodCall(params.srcObjVar, `get${(0, xrpa_utils_1.upperFirst)(params.srcFieldName)}`, []),
     ];
+    if (params.dstIsStringEmbedding) {
+        sourceValues.unshift(`"${params.dstFieldName}"`);
+    }
+    params.initializersOut.push(`${codegen.genDerefMethodCall(params.dstObjVar, codegen.methodMember(setterName), sourceValues)};`);
     onFieldChanged(codegen, classSpec, {
         objVar: params.srcObjVar,
         bitMask: params.srcBitMask,
         code: [
-            `${codegen.genDerefMethodCall(params.dstObjVar, codegen.methodMember(`set${(0, xrpa_utils_1.upperFirst)(params.dstFieldName)}`), sourceValues)};`,
+            `${codegen.genDerefMethodCall(params.dstObjVar, codegen.methodMember(setterName), sourceValues)};`,
         ],
         initializersOut: params.initializersOut,
     });
@@ -278,13 +320,24 @@ function genStateInputParameter(codegen, classSpec, params) {
             `${memberName} = ${params.paramName};`,
             // set the field value on connected datastore objects
             ...(0, xrpa_utils_1.mapAndCollapse)(params.inputDef.connections, connection => {
-                (0, assert_1.default)((0, DataflowProgramDefinition_1.isDataflowForeignObjectInstantiation)(connection.targetNode));
                 const objMemberName = objToMemberName(codegen, connection.targetNode.name);
-                return [
-                    `if (${codegen.genNonNullCheck(objMemberName)}) {`,
-                    `  ${codegen.genDerefMethodCall(objMemberName, `set${(0, xrpa_utils_1.upperFirst)(connection.targetPort)}`, [params.paramName])};`,
-                    `}`,
-                ];
+                if ((0, DataflowProgramDefinition_1.isDataflowForeignObjectInstantiation)(connection.targetNode)) {
+                    return [
+                        `if (${codegen.genNonNullCheck(objMemberName)}) {`,
+                        `  ${codegen.genDerefMethodCall(objMemberName, `set${(0, xrpa_utils_1.upperFirst)(connection.targetPort)}`, [params.paramName])};`,
+                        `}`,
+                    ];
+                }
+                else if ((0, DataflowProgramDefinition_1.isDataflowStringEmbedding)(connection.targetNode)) {
+                    return [
+                        `if (${codegen.genNonNullCheck(objMemberName)}) {`,
+                        `  ${codegen.genDerefMethodCall(objMemberName, "setEmbeddingValue", [`"${connection.targetPort}"`, params.paramName])};`,
+                        `}`,
+                    ];
+                }
+                else {
+                    throw new Error(`Unsupported input connection type: ${JSON.stringify(connection.targetNode)}`);
+                }
             }),
         ],
     });
@@ -311,6 +364,12 @@ function genStateOutputParameter(codegen, classSpec, params) {
         visibility: "public",
         isConst: true,
     });
+    const fieldHandlerName = codegen.methodMember(`on${(0, xrpa_utils_1.upperFirst)(params.paramName)}Changed`);
+    classSpec.members.push({
+        name: fieldHandlerName,
+        type: codegen.genEventHandlerType([params.srcFieldType.getLocalType(classSpec.namespace, classSpec.includes)]),
+        initialValue: new TypeValue_1.CodeLiteralValue(codegen, codegen.getNullValue()),
+    });
     const handlerName = codegen.privateMember("xrpaFieldsChangedHandler");
     const handlerType = codegen.genEventHandlerType([codegen.PRIMITIVE_INTRINSICS.uint64.typename]);
     const body = classSpec.getOrCreateMethod({
@@ -336,6 +395,7 @@ function genStateOutputParameter(codegen, classSpec, params) {
         code: [
             `${memberName} = ${codegen.genDerefMethodCall(params.srcObjVar, `get${(0, xrpa_utils_1.upperFirst)(params.srcFieldName)}`, [])};`,
             codegen.genEventHandlerCall(handlerName, [`${paramBitMask}`], true),
+            codegen.genEventHandlerCall(fieldHandlerName, [memberName], true),
         ],
     });
 }
@@ -377,13 +437,12 @@ function genOutputParameterAccessors(ctx, codegen, classSpec, programDef, initia
         }
         const paramName = parameter.name;
         const fieldType = outputFields[paramName].type;
-        const targetInfo = getInfoForObj(ctx, codegen, parameter.source.targetNode, classSpec.includes);
-        const srcFieldType = targetInfo.reconcilerDef.type.getAllFields()[parameter.source.targetPort].type;
+        const targetInfo = getTargetInfo(ctx, codegen, parameter.source, classSpec.includes);
         if ((0, TypeDefinition_1.typeIsMessageData)(fieldType)) {
             genMessageOutputParameter(codegen, classSpec, {
                 srcObjVar: targetInfo.objVarName,
                 srcFieldName: parameter.source.targetPort,
-                srcFieldType,
+                srcFieldType: targetInfo.fieldSpec.type,
                 paramName,
                 paramType: fieldType,
                 initializersOut,
@@ -394,8 +453,8 @@ function genOutputParameterAccessors(ctx, codegen, classSpec, programDef, initia
                 outputParamsStruct,
                 srcObjVar: targetInfo.objVarName,
                 srcFieldName: parameter.source.targetPort,
-                srcFieldType,
-                srcBitMask: targetInfo.reconcilerDef.type.getFieldBitMask(parameter.source.targetPort),
+                srcFieldType: targetInfo.fieldSpec.type,
+                srcBitMask: targetInfo.fieldBitMask,
                 paramName,
                 paramType: fieldType,
                 initializersOut,
@@ -407,6 +466,114 @@ function genOutputParameterAccessors(ctx, codegen, classSpec, programDef, initia
         }
     }
 }
+function genForeignObjectInstantiation(ctx, codegen, classSpec, graphNode, idCall, createLines, updateLines) {
+    const { objType, objVarName } = getObjectInfo(ctx, codegen, graphNode, classSpec.includes);
+    const reconcilerDef = (0, DataflowProgramDefinition_1.getReconcilerDefForNode)(ctx.moduleDef, graphNode);
+    const storeMemberName = codegen.privateMember(storeToVarName(reconcilerDef.storeDef.apiname));
+    // create object
+    createLines.push(`${objVarName} = ${codegen.genCreateObject(objType, [idCall])};`, `${codegen.genDerefMethodCall(codegen.genDeref(storeMemberName, reconcilerDef.type.getName()), "addObject", [objVarName])};`);
+    // set field values
+    const fields = reconcilerDef.type.getAllFields();
+    for (const fieldName in graphNode.fieldValues) {
+        if (!(fieldName in fields)) {
+            continue;
+        }
+        let fieldValue = graphNode.fieldValues[fieldName];
+        if ((0, DataflowProgramDefinition_1.isDataflowConnection)(fieldValue)) {
+            if (fieldValue.targetPort === "id") {
+                fieldValue = fieldValue.targetNode;
+            }
+            else {
+                const targetInfo = getTargetInfo(ctx, codegen, fieldValue, classSpec.includes);
+                const dstFieldType = fields[fieldName].type;
+                if ((0, TypeDefinition_1.typeIsMessageData)(dstFieldType)) {
+                    genBindMessageFieldValues(codegen, classSpec, {
+                        srcObjVar: targetInfo.objVarName,
+                        srcFieldName: fieldValue.targetPort,
+                        srcFieldType: targetInfo.fieldSpec.type,
+                        dstObjVar: objVarName,
+                        dstFieldName: fieldName,
+                        dstFieldType,
+                        initializersOut: updateLines,
+                    });
+                }
+                else if ((0, TypeDefinition_1.typeIsSignalData)(dstFieldType)) {
+                    genBindSignalFieldValues(codegen, classSpec, {
+                        srcObjVar: targetInfo.objVarName,
+                        srcFieldName: fieldValue.targetPort,
+                        srcFieldType: targetInfo.fieldSpec.type,
+                        dstObjVar: objVarName,
+                        dstFieldName: fieldName,
+                        dstFieldType,
+                        initializersOut: updateLines,
+                    });
+                }
+                else {
+                    genBindStateFieldValues(codegen, classSpec, {
+                        srcObjVar: targetInfo.objVarName,
+                        srcFieldName: fieldValue.targetPort,
+                        srcFieldType: targetInfo.fieldSpec.type,
+                        srcBitMask: targetInfo.fieldBitMask,
+                        dstObjVar: objVarName,
+                        dstFieldName: fieldName,
+                        dstFieldType,
+                        dstIsStringEmbedding: false,
+                        initializersOut: updateLines,
+                    });
+                }
+                continue;
+            }
+        }
+        let value = undefined;
+        if ((0, DataflowProgramDefinition_1.isDataflowGraphNode)(fieldValue)) {
+            value = getObjectInfo(ctx, codegen, fieldValue, classSpec.includes).objVarName;
+        }
+        else if ((0, ProgramInterface_1.isXrpaProgramParam)(fieldValue)) {
+            value = paramToMemberName(codegen, fieldValue.name);
+        }
+        else if (fieldValue !== undefined) {
+            const fieldType = reconcilerDef.type.getAllFields()[fieldName].type;
+            const fieldTypeName = fieldType.getLocalType(ctx.namespace, classSpec.includes);
+            if ((0, TypeDefinition_1.typeIsEnum)(fieldType)) {
+                value = codegen.genEnumDynamicConversion(fieldTypeName, new TypeValue_1.CodeLiteralValue(codegen, `${fieldValue}`));
+            }
+            else {
+                value = codegen.genPrimitiveValue(fieldTypeName, fieldValue);
+            }
+        }
+        else {
+            continue;
+        }
+        if ((0, TypeDefinition_1.typeIsStateData)(fields[fieldName].type)) {
+            updateLines.push(`${codegen.genDerefMethodCall(objVarName, `set${(0, xrpa_utils_1.upperFirst)(fieldName)}`, [value.toString()])};`);
+        }
+    }
+}
+function genStringEmbedding(ctx, codegen, classSpec, graphNode, createLines, updateLines) {
+    const { objType, objVarName } = getObjectInfo(ctx, codegen, graphNode, classSpec.includes);
+    // create object
+    createLines.push(`${objVarName} = ${codegen.genCreateObject(objType, [codegen.genPrimitiveValue(codegen.PRIMITIVE_INTRINSICS.string.typename, graphNode.value)])};`);
+    // set initial embedding values from params
+    for (const paramName of graphNode.embeddedParams) {
+        const embeddingKey = `{{{param:${paramName}}}`;
+        updateLines.push(`${codegen.genDerefMethodCall(objVarName, "setEmbeddingValue", [`"${embeddingKey}"`, paramToMemberName(codegen, paramName)])};`);
+    }
+    for (const connection of graphNode.embeddedConnections) {
+        const targetInfo = getTargetInfo(ctx, codegen, connection, classSpec.includes);
+        const embeddingKey = `{{{connection:${connection.targetNode.nodeId}/${connection.targetPort}}}}`;
+        genBindStateFieldValues(codegen, classSpec, {
+            srcObjVar: targetInfo.objVarName,
+            srcFieldName: connection.targetPort,
+            srcFieldType: targetInfo.fieldSpec.type,
+            srcBitMask: targetInfo.fieldBitMask,
+            dstObjVar: objVarName,
+            dstFieldName: embeddingKey,
+            dstFieldType: ctx.moduleDef.getBuiltinTypeDefinition(BuiltinTypes_1.BuiltinType.String),
+            dstIsStringEmbedding: true,
+            initializersOut: updateLines,
+        });
+    }
+}
 function genCreateObjectsBody(ctx, codegen, programDef, classSpec, initializerLines) {
     const createLines = [];
     const updateLines = [];
@@ -416,110 +583,45 @@ function genCreateObjectsBody(ctx, codegen, programDef, classSpec, initializerLi
         includes: classSpec.includes,
     });
     for (const graphNode of programDef.graphNodes) {
-        (0, assert_1.default)((0, DataflowProgramDefinition_1.isDataflowForeignObjectInstantiation)(graphNode));
-        const { objType, reconcilerDef, reconcilerName, objVarName, storeDef } = getInfoForObj(ctx, codegen, graphNode, classSpec.includes);
-        const storeMemberName = codegen.privateMember(storeToVarName(storeDef.apiname));
-        // create object
-        createLines.push(`${objVarName} = ${codegen.genCreateObject(objType, [idCall])};`, `${codegen.genDerefMethodCall(codegen.genDeref(storeMemberName, reconcilerName), "addObject", [objVarName])};`);
-        // set field values
-        const fields = reconcilerDef.type.getAllFields();
-        for (const fieldName in graphNode.fieldValues) {
-            if (!(fieldName in fields)) {
-                continue;
-            }
-            let fieldValue = graphNode.fieldValues[fieldName];
-            if ((0, DataflowProgramDefinition_1.isDataflowConnection)(fieldValue)) {
-                if (fieldValue.targetPort === "id") {
-                    fieldValue = fieldValue.targetNode;
-                }
-                else {
-                    const targetInfo = getInfoForObj(ctx, codegen, fieldValue.targetNode, classSpec.includes);
-                    const targetField = targetInfo.reconcilerDef.type.getAllFields()[fieldValue.targetPort];
-                    (0, assert_1.default)(targetField, `Field ${fieldValue.targetPort} not found on ${targetInfo.reconcilerDef.type.getName()}`);
-                    const dstFieldType = fields[fieldName].type;
-                    if ((0, TypeDefinition_1.typeIsMessageData)(dstFieldType)) {
-                        genBindMessageFieldValues(codegen, classSpec, {
-                            srcObjVar: targetInfo.objVarName,
-                            srcFieldName: fieldValue.targetPort,
-                            srcFieldType: targetField.type,
-                            dstObjVar: objVarName,
-                            dstFieldName: fieldName,
-                            dstFieldType,
-                            initializersOut: updateLines,
-                        });
-                    }
-                    else if ((0, TypeDefinition_1.typeIsSignalData)(dstFieldType)) {
-                        genBindSignalFieldValues(codegen, classSpec, {
-                            srcObjVar: targetInfo.objVarName,
-                            srcFieldName: fieldValue.targetPort,
-                            srcFieldType: targetField.type,
-                            dstObjVar: objVarName,
-                            dstFieldName: fieldName,
-                            dstFieldType,
-                            initializersOut: updateLines,
-                        });
-                    }
-                    else {
-                        genBindStateFieldValues(codegen, classSpec, {
-                            srcObjVar: targetInfo.objVarName,
-                            srcFieldName: fieldValue.targetPort,
-                            srcFieldType: targetField.type,
-                            srcBitMask: targetInfo.reconcilerDef.type.getFieldBitMask(fieldValue.targetPort),
-                            dstObjVar: objVarName,
-                            dstFieldName: fieldName,
-                            dstFieldType,
-                            initializersOut: updateLines,
-                        });
-                    }
-                    continue;
-                }
-            }
-            let value = undefined;
-            if ((0, DataflowProgramDefinition_1.isDataflowGraphNode)(fieldValue)) {
-                value = getInfoForObj(ctx, codegen, fieldValue, classSpec.includes).objVarName;
-            }
-            else if ((0, ProgramInterface_1.isXrpaProgramParam)(fieldValue)) {
-                value = paramToMemberName(codegen, fieldValue.name);
-            }
-            else if (fieldValue !== undefined) {
-                const fieldType = reconcilerDef.type.getAllFields()[fieldName].type;
-                const fieldTypeName = fieldType.getLocalType(ctx.namespace, classSpec.includes);
-                if ((0, TypeDefinition_1.typeIsEnum)(fieldType)) {
-                    value = codegen.genEnumDynamicConversion(fieldTypeName, new TypeValue_1.CodeLiteralValue(codegen, `${fieldValue}`));
-                }
-                else {
-                    value = codegen.genPrimitiveValue(fieldTypeName, fieldValue);
-                }
-            }
-            else {
-                continue;
-            }
-            if ((0, TypeDefinition_1.typeIsStateData)(fields[fieldName].type)) {
-                updateLines.push(`${codegen.genDerefMethodCall(objVarName, `set${(0, xrpa_utils_1.upperFirst)(fieldName)}`, [value.toString()])};`);
-            }
+        if ((0, DataflowProgramDefinition_1.isDataflowForeignObjectInstantiation)(graphNode)) {
+            genForeignObjectInstantiation(ctx, codegen, classSpec, graphNode, idCall, createLines, updateLines);
+        }
+        else if ((0, DataflowProgramDefinition_1.isDataflowStringEmbedding)(graphNode)) {
+            genStringEmbedding(ctx, codegen, classSpec, graphNode, createLines, updateLines);
+        }
+        else {
+            throw new Error(`Unsupported node: ${JSON.stringify(graphNode)}`);
         }
     }
     for (const connection of programDef.selfTerminateEvents) {
-        const targetInfo = getInfoForObj(ctx, codegen, connection.targetNode, classSpec.includes);
-        const targetField = targetInfo.reconcilerDef.type.getAllFields()[connection.targetPort];
-        (0, assert_1.default)(targetField, `Field ${connection.targetPort} not found on ${targetInfo.reconcilerDef.type.getName()}`);
-        (0, assert_1.default)((0, TypeDefinition_1.typeIsMessageData)(targetField.type), "Self-terminate events can only be bound to message fields");
-        updateLines.push(`if (${codegen.genNonNullCheck(targetInfo.objVarName)}) {`, `  ${codegen.genDerefMethodCall(targetInfo.objVarName, `on${(0, xrpa_utils_1.upperFirst)(connection.targetPort)}`, [codegen.genMethodBind("", "terminate", {}, 2)])};`, `}`);
+        const targetInfo = getTargetInfo(ctx, codegen, connection, classSpec.includes);
+        (0, assert_1.default)((0, TypeDefinition_1.typeIsMessageData)(targetInfo.fieldSpec.type), "Self-terminate events can only be bound to message fields");
+        // if a message has no fields then the handler only takes the timestamp as a parameter; otherwise it takes the message reader as well
+        const paramCount = targetInfo.fieldSpec.type.hasFields() ? 2 : 1;
+        updateLines.push(`if (${codegen.genNonNullCheck(targetInfo.objVarName)}) {`, `  ${codegen.genDerefMethodCall(targetInfo.objVarName, `on${(0, xrpa_utils_1.upperFirst)(connection.targetPort)}`, [codegen.genMethodBind("", "terminate", {}, paramCount)])};`, `}`);
     }
     return createLines.concat(updateLines).concat(initializerLines);
 }
 function genDestroyObjectsBody(ctx, codegen, programDef, includes) {
     const lines = [];
     for (const graphNode of programDef.graphNodes) {
-        const { reconcilerName, objVarName, storeDef } = getInfoForObj(ctx, codegen, graphNode, includes);
-        const storeMemberName = codegen.privateMember(storeToVarName(storeDef.apiname));
-        const objId = codegen.genDerefMethodCall(objVarName, "getXrpaId", []);
-        lines.unshift(`if (${codegen.genNonNullCheck(objVarName)}) {`, `  ${codegen.genDerefMethodCall(codegen.genDeref(storeMemberName, reconcilerName), "removeObject", [objId])};`, `  ${objVarName} = ${codegen.getNullValue()};`, `}`);
+        const { objVarName } = getObjectInfo(ctx, codegen, graphNode, includes);
+        if ((0, DataflowProgramDefinition_1.isDataflowForeignObjectInstantiation)(graphNode)) {
+            const reconcilerDef = (0, DataflowProgramDefinition_1.getReconcilerDefForNode)(ctx.moduleDef, graphNode);
+            const storeDef = reconcilerDef.storeDef;
+            const storeMemberName = codegen.privateMember(storeToVarName(storeDef.apiname));
+            const objId = codegen.genDerefMethodCall(objVarName, "getXrpaId", []);
+            lines.unshift(`if (${codegen.genNonNullCheck(objVarName)}) {`, `  ${codegen.genDerefMethodCall(codegen.genDeref(storeMemberName, reconcilerDef.type.getName()), "removeObject", [objId])};`, `  ${objVarName} = ${codegen.getNullValue()};`, `}`);
+        }
+        else if ((0, DataflowProgramDefinition_1.isDataflowStringEmbedding)(graphNode)) {
+            lines.unshift(`if (${codegen.genNonNullCheck(objVarName)}) {`, `  ${objVarName} = ${codegen.getNullValue()};`, `}`);
+        }
+        else {
+            throw new Error(`Unsupported node: ${JSON.stringify(graphNode)}`);
+        }
     }
     return lines;
 }
-// TODO add support for inbound message params
-// TODO add support for outbound field params
 // TODO add support for inbound and outbound signal params
 function genDataflowProgramClassSpec(ctx, codegen, programDef, includes) {
     const classSpec = new ClassSpec_1.ClassSpec({
@@ -562,7 +664,7 @@ function genDataflowProgramClassSpec(ctx, codegen, programDef, includes) {
     genOutputParameterAccessors(ctx, codegen, classSpec, programDef, initializerLines);
     // declare member variables for each object
     for (const graphNode of programDef.graphNodes) {
-        const { objName, objType } = getInfoForObj(ctx, codegen, graphNode, classSpec.includes);
+        const { objName, objType } = getObjectInfo(ctx, codegen, graphNode, classSpec.includes);
         classSpec.members.push({
             name: objToMemberName(codegen, objName),
             type: codegen.genObjectPtrType(objType),

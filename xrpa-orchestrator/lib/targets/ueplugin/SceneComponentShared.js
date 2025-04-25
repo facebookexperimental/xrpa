@@ -273,17 +273,21 @@ function genUEMessageProxyDispatch(classSpec, params) {
                 `UPROPERTY(BlueprintAssignable)`,
         ],
     });
-    const messageReadAccessor = params.fieldType.getReadAccessorType(classSpec.namespace, null);
-    (0, xrpa_utils_1.pushUnique)(params.forwardDeclarations, (0, CppCodeGenImpl_1.forwardDeclareClass)(messageReadAccessor));
+    const parameters = [{
+            name: "timestamp",
+            type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
+        }];
+    if (params.fieldType.hasFields()) {
+        const messageReadAccessor = params.fieldType.getReadAccessorType(classSpec.namespace, null);
+        (0, xrpa_utils_1.pushUnique)(params.forwardDeclarations, (0, CppCodeGenImpl_1.forwardDeclareClass)(messageReadAccessor));
+        parameters.push({
+            name: "message",
+            type: messageReadAccessor,
+        });
+    }
     classSpec.methods.push({
         name: ueDispatchName,
-        parameters: [{
-                name: "timestamp",
-                type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
-            }, {
-                name: "message",
-                type: messageReadAccessor,
-            }],
+        parameters,
         body: includes => (0, CppCodeGenImpl_1.genMessageDispatch)({
             namespace: classSpec.namespace,
             includes,

@@ -18,6 +18,7 @@
 import { TypeDefinition } from "../../shared/TypeDefinition";
 export declare const MemoryOffset: TypeDefinition;
 export declare const MemoryAccessor: TypeDefinition;
+export declare const StringEmbedding: TypeDefinition;
 export declare const HashValue: TypeDefinition;
 export declare const TransportConfig: TypeDefinition;
 export declare const ObjectAccessorInterface: TypeDefinition;

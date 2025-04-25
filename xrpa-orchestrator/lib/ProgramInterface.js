@@ -27,6 +27,7 @@ const simply_immutable_1 = require("simply-immutable");
 const DataflowProgram_1 = require("./DataflowProgram");
 const InterfaceTypes_1 = require("./InterfaceTypes");
 const XrpaLanguage_1 = require("./XrpaLanguage");
+const DataflowProgramDefinition_1 = require("./shared/DataflowProgramDefinition");
 const DIRECTIONALITY = (0, XrpaLanguage_1.InheritedProperty)("xrpa.directionality");
 function isXrpaProgramParam(param) {
     return typeof param === "object" && param !== null && param.__isXrpaProgramParam === true;
@@ -60,6 +61,9 @@ function getDirectionality(dataType) {
     return (0, XrpaLanguage_1.evalProperty)(dataType.properties, DIRECTIONALITY);
 }
 exports.getDirectionality = getDirectionality;
+function programParamToString() {
+    return `{{{param:${this.name}}}}`;
+}
 function ProgramInput(name, dataType) {
     const ctx = getProgramInterfaceContext();
     (0, assert_1.default)(!ctx.parameters[name], `Program already has a parameter with the name "${name}"`);
@@ -73,6 +77,7 @@ function ProgramInput(name, dataType) {
     }
     const ret = {
         __isXrpaProgramParam: true,
+        toString: programParamToString,
         name,
         dataType: Input(dataType),
     };
@@ -88,11 +93,24 @@ function ProgramOutput(name, val) {
     if ((0, DataflowProgram_1.isDataflowConnection)(val)) {
         source = val;
         (0, assert_1.default)((0, DataflowProgram_1.isDataflowProgramContext)(ctx), "A dataflow connection can only be used as a ProgramOutput in a dataflow program");
-        (0, assert_1.default)((0, DataflowProgram_1.isDataflowForeignObjectInstantiation)(source.targetNode));
-        dataType = source.targetNode.collectionType.fieldsStruct.fields[source.targetPort] ??
-            source.targetNode.collectionType.interfaceType?.fieldsStruct.fields[source.targetPort];
-        (0, assert_1.default)(dataType, `Dataflow connection "${source.targetNode.collectionName}.${source.targetPort}" does not exist`);
-        (0, assert_1.default)(getDirectionality(dataType) === "outbound", `Dataflow connection "${source.targetNode.name}.${source.targetPort}" is not an output`);
+        if ((0, DataflowProgram_1.isDataflowForeignObjectInstantiation)(source.targetNode)) {
+            dataType = source.targetNode.collectionType.fieldsStruct.fields[source.targetPort] ??
+                source.targetNode.collectionType.interfaceType?.fieldsStruct.fields[source.targetPort];
+            (0, assert_1.default)(dataType, `Dataflow connection "${source.targetNode.collectionName}.${source.targetPort}" does not exist`);
+            (0, assert_1.default)(getDirectionality(dataType) === "outbound", `Dataflow connection "${source.targetNode.name}.${source.targetPort}" is not an output`);
+        }
+        else if ((0, DataflowProgramDefinition_1.isDataflowStringEmbedding)(source.targetNode)) {
+            dataType = (0, InterfaceTypes_1.String)();
+        }
+        else {
+            (0, assert_1.default)(false, `Dataflow connection "${source.targetNode.name}.${source.targetPort}" is an invalid type`);
+        }
+    }
+    else if (typeof val === "string") {
+        (0, assert_1.default)((0, DataflowProgram_1.isDataflowProgramContext)(ctx), "A string embedding can only be used as a ProgramOutput in a dataflow program");
+        const node = (0, DataflowProgram_1.StringEmbedding)(ctx, val);
+        source = (0, DataflowProgram_1.ObjectField)(node, "value");
+        dataType = (0, InterfaceTypes_1.String)();
     }
     else {
         dataType = val;
@@ -103,6 +121,7 @@ function ProgramOutput(name, val) {
     }
     const ret = {
         __isXrpaProgramParam: true,
+        toString: programParamToString,
         name,
         dataType: Output(dataType),
         source,

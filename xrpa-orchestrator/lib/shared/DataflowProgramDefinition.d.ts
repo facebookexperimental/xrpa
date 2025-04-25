@@ -23,20 +23,29 @@ import { ProgramInterface, XrpaProgramParam } from "../ProgramInterface";
 export type XrpaFieldValue = number | string | boolean | undefined | XrpaProgramParam | XrpaDataflowGraphNode | XrpaDataflowConnection;
 export interface XrpaDataflowGraphNode {
     __isDataflowGraphNode: true;
+    nodeId: number;
+    name: string;
+    isBuffered: boolean;
 }
 export declare function isDataflowGraphNode(obj: unknown): obj is XrpaDataflowGraphNode;
 export interface XrpaDataflowForeignObjectInstantiation extends XrpaDataflowGraphNode {
     __isDataflowObjectInstantiation: true;
-    name: string;
     programInterfaceName: string;
     collectionName: string;
     collectionType: XrpaCollectionType;
     fieldValues: Record<string, XrpaFieldValue>;
-    isBuffered: boolean;
 }
 export declare function isDataflowForeignObjectInstantiation(obj: unknown): obj is XrpaDataflowForeignObjectInstantiation;
+export interface XrpaDataflowStringEmbedding extends XrpaDataflowGraphNode {
+    __isDataflowStringEmbedding: true;
+    value: string;
+    embeddedParams: string[];
+    embeddedConnections: XrpaDataflowConnection[];
+}
+export declare function isDataflowStringEmbedding(obj: unknown): obj is XrpaDataflowStringEmbedding;
 export interface XrpaDataflowConnection {
     __isDataflowConnection: true;
+    toString(): string;
     targetNode: XrpaDataflowGraphNode;
     targetPort: string;
 }

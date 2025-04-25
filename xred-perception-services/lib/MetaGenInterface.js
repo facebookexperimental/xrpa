@@ -41,6 +41,7 @@ exports.XredMetaGenInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xr
         apiKey: xrpa_orchestrator_1.String,
         modelSize: ModelSizeHint,
         sysPrompt: xrpa_orchestrator_1.String,
+        isProcessing: (0, xrpa_orchestrator_1.Output)(xrpa_orchestrator_1.Count),
     };
     (0, xrpa_orchestrator_1.ProgramInput)("LlmQuery", (0, xrpa_orchestrator_1.Collection)({
         maxCount: 32,
@@ -53,6 +54,7 @@ exports.XredMetaGenInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xr
             ResponseStream: (0, xrpa_orchestrator_1.Output)((0, xrpa_orchestrator_1.Message)({
                 data: xrpa_orchestrator_1.String,
             })),
+            QueryComplete: (0, xrpa_orchestrator_1.Output)((0, xrpa_orchestrator_1.Message)()),
         },
     }));
     (0, xrpa_orchestrator_1.ProgramInput)("LlmTriggeredQuery", (0, xrpa_orchestrator_1.Collection)({
@@ -71,7 +73,7 @@ exports.XredMetaGenInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xr
         maxCount: 32,
         fields: {
             ...LlmShared,
-            conversationStarter: xrpa_orchestrator_1.String,
+            conversationStarter: (0, xrpa_orchestrator_1.String)("", "Optional starter message for the conversation. Will be sent as an additional message between the system prompt and the user prompt."),
             ChatMessage: LlmChatMessage,
             ChatResponse: (0, xrpa_orchestrator_1.Output)(LlmChatMessage),
             ChatResponseStream: (0, xrpa_orchestrator_1.Output)(LlmChatMessage),
@@ -96,8 +98,10 @@ function LlmQuery(params) {
         jsonSchema: convertJsonSchema(params.jsonSchema),
     };
     return {
+        isProcessing: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "isProcessing"),
         response: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "response"),
         ResponseStream: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "ResponseStream"),
+        QueryComplete: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "QueryComplete"),
     };
 }
 exports.LlmQuery = LlmQuery;
@@ -109,6 +113,7 @@ function LlmTriggeredQuery(params) {
         jsonSchema: convertJsonSchema(params.jsonSchema),
     };
     return {
+        isProcessing: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "isProcessing"),
         Response: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "Response"),
         ResponseStream: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "ResponseStream"),
     };
@@ -121,6 +126,7 @@ function LlmConversation(params) {
         ...params,
     };
     return {
+        isProcessing: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "isProcessing"),
         ChatResponse: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "ChatResponse"),
         ChatResponseStream: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "ChatResponseStream"),
     };

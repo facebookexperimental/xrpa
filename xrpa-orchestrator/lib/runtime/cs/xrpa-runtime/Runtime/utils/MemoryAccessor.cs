@@ -212,6 +212,12 @@ namespace Xrpa
 
         public void WriteBytes(byte[] val, MemoryOffset offset)
         {
+            if (val == null)
+            {
+                WriteInt(0, offset);
+                return;
+            }
+
             int byteCount = val.Length;
             WriteInt(byteCount, offset);
 
@@ -225,7 +231,7 @@ namespace Xrpa
 
         public static int DynSizeOfBytes(byte[] val)
         {
-            return val.Length;
+            return val == null ? 0 : val.Length;
         }
     }
 

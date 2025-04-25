@@ -234,16 +234,19 @@ function genUnityMessageProxyDispatch(classSpec, params) {
         name: unityHandlerName,
         type: `event ${msgEventType}`,
     });
-    const messageReadAccessor = params.fieldType.getReadAccessorType(classSpec.namespace, classSpec.includes);
+    const parameters = [{
+            name: "timestamp",
+            type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
+        }];
+    if (params.fieldType.hasFields()) {
+        parameters.push({
+            name: "message",
+            type: params.fieldType.getReadAccessorType(classSpec.namespace, classSpec.includes),
+        });
+    }
     classSpec.methods.push({
         name: unityDispatchName,
-        parameters: [{
-                name: "timestamp",
-                type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
-            }, {
-                name: "message",
-                type: messageReadAccessor,
-            }],
+        parameters,
         body: includes => (0, CsharpCodeGenImpl_1.genMessageDispatch)({
             namespace: classSpec.namespace,
             includes,
