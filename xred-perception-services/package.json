@@ -1,6 +1,6 @@
 {
   "name": "@xrpa/xred-perception-services",
-  "version": "1.10.0",
+  "version": "1.10.3",
   "description": "Machine-perception service modules",
   "main": "lib/index.js",
   "files": [

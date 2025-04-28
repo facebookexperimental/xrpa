@@ -21,7 +21,6 @@ export declare enum ModelSize {
     Small = 0,
     Large = 1
 }
-declare const LlmChatMessage: import("@xrpa/xrpa-orchestrator").XrpaMessageType;
 export declare const XredMetaGenInterface: import("@xrpa/xrpa-orchestrator").ProgramInterface;
 interface LlmSharedParams {
     apiKey: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"String">> | string;
@@ -50,7 +49,7 @@ export declare function LlmTriggeredQuery(params: LlmSharedParams & {
 };
 export declare function LlmConversation(params: LlmSharedParams & {
     conversationStarter?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"String">> | string;
-    ChatMessage: XrpaDataflowConnection | XrpaProgramParam<typeof LlmChatMessage>;
+    ChatMessage: XrpaDataflowConnection | XrpaProgramParam;
 }): {
     isProcessing: XrpaDataflowConnection;
     ChatResponse: XrpaDataflowConnection;

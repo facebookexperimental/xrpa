@@ -120,7 +120,7 @@ function LlmTriggeredQuery(params) {
 }
 exports.LlmTriggeredQuery = LlmTriggeredQuery;
 function LlmConversation(params) {
-    const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredMetaGenInterface), "LlmTriggeredQuery"], {});
+    const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredMetaGenInterface), "LlmConversation"], {});
     (0, assert_1.default)((0, xrpa_orchestrator_1.isDataflowForeignObjectInstantiation)(dataflowNode));
     dataflowNode.fieldValues = {
         ...params,
