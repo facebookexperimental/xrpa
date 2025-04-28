@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AriaFlashlight = exports.AriaGlasses = exports.XredSensorInputInterface = void 0;
+exports.AriaGlasses = exports.XredSensorInputInterface = void 0;
 const xred_perception_services_1 = require("@xrpa/xred-perception-services");
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const assert_1 = __importDefault(require("assert"));
@@ -33,9 +33,13 @@ exports.XredSensorInputInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)
     (0, xrpa_orchestrator_1.ProgramInput)("AriaGlasses", (0, xrpa_orchestrator_1.Collection)({
         maxCount: 4,
         fields: {
-            name: xrpa_orchestrator_1.String,
             ipAddress: xrpa_orchestrator_1.String,
             isFlashlight: xrpa_orchestrator_1.Boolean,
+            usbStreaming: xrpa_orchestrator_1.Boolean,
+            trackPose: (0, xrpa_orchestrator_1.Boolean)(true),
+            sendAudioOutput: (0, xrpa_orchestrator_1.Boolean)(true),
+            sendRgbOutput: (0, xrpa_orchestrator_1.Boolean)(true),
+            sendSlamOutputs: (0, xrpa_orchestrator_1.Boolean)(true),
             calibrationJson: (0, xrpa_orchestrator_1.Output)(xrpa_orchestrator_1.String),
             isStreaming: (0, xrpa_orchestrator_1.Output)(xrpa_orchestrator_1.Boolean),
             lastUpdate: (0, xrpa_orchestrator_1.Output)(xrpa_orchestrator_1.Timestamp),
@@ -49,12 +53,10 @@ exports.XredSensorInputInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)
         },
     }));
 });
-function AriaGlasses(ipAddress, isFlashlight = false) {
+function AriaGlasses(params) {
     const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredSensorInputInterface), "AriaGlasses"], {});
     (0, assert_1.default)((0, xrpa_orchestrator_1.isDataflowForeignObjectInstantiation)(dataflowNode));
-    dataflowNode.fieldValues.name = "AriaGlasses";
-    dataflowNode.fieldValues.ipAddress = ipAddress;
-    dataflowNode.fieldValues.isFlashlight = isFlashlight;
+    dataflowNode.fieldValues = { ...params };
     return {
         calibrationJson: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "calibrationJson"),
         isStreaming: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "isStreaming"),
@@ -69,8 +71,4 @@ function AriaGlasses(ipAddress, isFlashlight = false) {
     };
 }
 exports.AriaGlasses = AriaGlasses;
-function AriaFlashlight(ipAddress) {
-    return AriaGlasses(ipAddress, true);
-}
-exports.AriaFlashlight = AriaFlashlight;
 //# sourceMappingURL=index.js.map
