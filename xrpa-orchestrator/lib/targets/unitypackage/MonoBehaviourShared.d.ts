@@ -31,7 +31,6 @@ export declare enum IntrinsicProperty {
 }
 export declare function checkForTransformMapping(fieldName: string, reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition): boolean;
 export declare function getComponentClassName(type: string | InterfaceTypeDefinition, id?: unknown): string;
-export declare function getMessageDelegateName(namespace: string, includes: IncludeAggregator | null, msgType: MessageDataTypeDefinition): string;
 export declare function getFieldMemberName(reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition, fieldName: string): string;
 export declare function genFieldProperties(classSpec: ClassSpec, params: {
     ctx: GenDataStoreContext;
@@ -63,6 +62,12 @@ export declare function genUnityMessageFieldAccessors(classSpec: ClassSpec, para
     namespace: string;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
     genMsgHandler: (msgName: string) => string;
+    proxyObj: string;
+    initializerLines: string[];
+}): void;
+export declare function genUnitySignalFieldAccessors(classSpec: ClassSpec, params: {
+    namespace: string;
+    reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
     proxyObj: string;
     initializerLines: string[];
 }): void;

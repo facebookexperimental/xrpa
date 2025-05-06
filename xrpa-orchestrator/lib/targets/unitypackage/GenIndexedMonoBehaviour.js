@@ -132,6 +132,12 @@ function genInboundMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir, proxyOb
         proxyObj,
         initializerLines,
     });
+    (0, MonoBehaviourShared_1.genUnitySignalFieldAccessors)(classSpec, {
+        namespace: ctx.namespace,
+        reconcilerDef,
+        proxyObj,
+        initializerLines,
+    });
     if (!isSpawned) {
         classSpec.members.push({
             name: `OnXrpaBindingGained`,

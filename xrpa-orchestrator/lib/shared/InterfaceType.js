@@ -36,7 +36,7 @@ class InterfaceType extends StructWithAccessorType_1.StructWithAccessorType {
     }
     getLocalTypePtr(inNamespace, includes) {
         const localType = this.getLocalType(inNamespace, includes);
-        return this.codegen.genPointer(localType, includes);
+        return this.codegen.genSharedPointer(localType, includes);
     }
     registerCollection(collection) {
         this.collections.push(collection);

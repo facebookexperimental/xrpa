@@ -1,6 +1,6 @@
 {
   "name": "@xrpa/xrpa-orchestrator",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "description": "Xrpa Orchestrator",
   "main": "lib/index.js",
   "license": "Apache-2.0",

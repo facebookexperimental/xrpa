@@ -25,6 +25,14 @@
 
 namespace Xrpa {
 
+class MemoryUtils {
+ public:
+  template <typename T>
+  static constexpr int getTypeSize() {
+    return sizeof(T);
+  }
+};
+
 class MemoryOffset {
  public:
   explicit MemoryOffset(int32_t offset = 0) : offset_(offset) {}

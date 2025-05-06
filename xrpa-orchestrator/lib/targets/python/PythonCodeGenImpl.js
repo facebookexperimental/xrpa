@@ -20,8 +20,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genDynSizeOfValue = exports.genWriteValue = exports.genReadValue = exports.genClassDefinition = exports.genMessageDispatch = exports.genOnMessageAccessor = exports.genMessageHandlerType = exports.genEventHandlerCall = exports.genEventHandlerType = exports.makeObjectAccessor = exports.getTypesHeaderNamespace = exports.getTypesHeaderName = exports.getDataStoreClass = exports.getDataStoreHeaderNamespace = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.identifierName = exports.constRef = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.PythonIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.genGetCurrentClockTime = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.HEADER = exports.XRPA_NAMESPACE = exports.getXrpaTypes = exports.registerXrpaTypes = void 0;
-exports.declareVar = exports.ifAllBitsAreSet = exports.ifAnyBitIsSet = exports.applyTemplateParams = exports.genConvertIntToBool = exports.genConvertBoolToInt = exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genPassthroughMethodBind = exports.genMethodBind = exports.genMethodCall = void 0;
+exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genDynSizeOfValue = exports.genWriteValue = exports.genReadValue = exports.genClassDefinition = exports.genMessageDispatch = exports.genOnMessageAccessor = exports.genMessageHandlerType = exports.genEventHandlerCall = exports.genEventHandlerType = exports.makeObjectAccessor = exports.getTypesHeaderNamespace = exports.getTypesHeaderName = exports.getDataStoreClass = exports.getDataStoreHeaderNamespace = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genSharedPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.identifierName = exports.constRef = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.PythonIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.genGetCurrentClockTime = exports.STMT_TERM = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.HEADER = exports.XRPA_NAMESPACE = exports.getXrpaTypes = exports.registerXrpaTypes = void 0;
+exports.declareVar = exports.ifEquals = exports.ifAllBitsAreSet = exports.ifAnyBitIsSet = exports.applyTemplateParams = exports.genConvertIntToBool = exports.genConvertBoolToInt = exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genPassthroughMethodBind = exports.genMethodBind = exports.genMethodCall = exports.genDerefMethodCall = exports.genDeref = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
@@ -89,9 +89,11 @@ exports.PRIMITIVE_INTRINSICS = {
     bool: { typename: "bool" },
     arrayFloat3: { typename: "float[]" },
     bytearray: { typename: "bytearray" },
+    autovar: { typename: "" },
     TRUE: "True",
     FALSE: "False",
 };
+exports.STMT_TERM = "";
 function genGetCurrentClockTime(includes, inNanoseconds = false) {
     includes?.addFile({ namespace: `${exports.XRPA_NAMESPACE}.utils.time_utils` });
     if (inNanoseconds) {
@@ -177,10 +179,14 @@ function privateMember(memberVarName) {
 }
 exports.privateMember = privateMember;
 function methodMember(methodName, visibility = "public") {
+    const parts = methodName.split(nsSep);
     if (visibility !== "public") {
-        return privateMember(methodName);
+        parts[parts.length - 1] = privateMember(parts[parts.length - 1]);
     }
-    return identifierName(methodName);
+    else {
+        parts[parts.length - 1] = identifierName(parts[parts.length - 1]);
+    }
+    return parts.join(nsSep);
 }
 exports.methodMember = methodMember;
 function genInitializer(typename, values) {
@@ -230,6 +236,10 @@ function genDeclaration(params) {
     return `${params.varName}: ${typenameToCode(typename)}${initializer}`;
 }
 exports.genDeclaration = genDeclaration;
+function genSharedPointer(localType) {
+    return `${localType}`;
+}
+exports.genSharedPointer = genSharedPointer;
 function genPointer(localType) {
     return `${localType}`;
 }
@@ -378,8 +388,9 @@ function genMessageHandlerType(params) {
 exports.genMessageHandlerType = genMessageHandlerType;
 function genOnMessageAccessor(classSpec, params) {
     const handlerType = genMessageHandlerType({
-        ...params,
+        namespace: classSpec.namespace,
         includes: classSpec.includes,
+        fieldType: params.fieldType,
     });
     const msgHandler = params.genMsgHandler(params.fieldName);
     classSpec.methods.push({
@@ -412,7 +423,13 @@ function genMessageDispatch(params) {
         lines.push(`if ${genNonNullCheck(msgHandler)}:`);
         indentLevel = 1;
     }
-    if (!params.fieldType.hasFields()) {
+    if ((0, TypeDefinition_1.typeIsSignalData)(params.fieldType)) {
+        const msgParams = [timestamp, "message_data"];
+        lines.push(...(0, xrpa_utils_1.indent)(indentLevel, [
+            `${msgHandler}.on_signal_data(${msgParams.join(", ")})`,
+        ]));
+    }
+    else if (!params.fieldType.hasFields()) {
         lines.push(...(0, xrpa_utils_1.indent)(indentLevel, [
             `${msgHandler}(${timestamp})`,
         ]));
@@ -927,6 +944,13 @@ function ifAllBitsAreSet(value, bitsValue, code) {
     ];
 }
 exports.ifAllBitsAreSet = ifAllBitsAreSet;
+function ifEquals(value, value2, code) {
+    return [
+        `if ${value} == ${value2}:`,
+        ...(0, xrpa_utils_1.indent)(1, code),
+    ];
+}
+exports.ifEquals = ifEquals;
 function declareVar(varName, typename, initialValue) {
     if (!typename) {
         return `${varName} = ${initialValue}`;

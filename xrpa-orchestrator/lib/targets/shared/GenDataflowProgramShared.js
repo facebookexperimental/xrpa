@@ -188,7 +188,6 @@ function genMessageOutputParameter(codegen, classSpec, params) {
     // TODO verify that the field types are compatible
     const memberName = paramToMemberName(codegen, params.paramName);
     codegen.genOnMessageAccessor(classSpec, {
-        namespace: classSpec.namespace,
         fieldName: params.paramName,
         fieldType: params.paramType,
         genMsgHandler: () => memberName,

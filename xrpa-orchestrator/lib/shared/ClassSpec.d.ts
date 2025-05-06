@@ -42,6 +42,7 @@ interface ClassMethodDefinition {
     parameters?: Array<MethodParam>;
     body: ClassBodyThunk;
     templateParams?: Array<string>;
+    whereClauses?: Array<string>;
     isStatic?: boolean;
     isOverride?: boolean;
     isConst?: boolean;

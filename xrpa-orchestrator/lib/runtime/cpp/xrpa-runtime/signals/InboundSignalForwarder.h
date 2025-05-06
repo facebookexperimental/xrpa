@@ -25,8 +25,8 @@ namespace Xrpa {
 
 class InboundSignalForwarder : public InboundSignalDataInterface {
  public:
-  void addRecipient(OutboundSignalData* recipient) {
-    recipients_.push_back(recipient);
+  void addRecipient(OutboundSignalData& recipient) {
+    recipients_.push_back(&recipient);
   }
 
   void onSignalData(uint64_t /*timestamp*/, MemoryAccessor memAccessor) override {

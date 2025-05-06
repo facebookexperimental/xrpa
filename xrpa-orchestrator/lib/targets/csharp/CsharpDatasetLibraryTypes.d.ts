@@ -36,4 +36,9 @@ export declare const TransportStreamAccessor: TypeDefinition;
 export declare const HeapMemoryTransportStream: TypeDefinition;
 export declare const SharedMemoryTransportStream: TypeDefinition;
 export declare const InboundSignalForwarder: TypeDefinition;
+export declare const SignalProducerCallback: TypeDefinition;
+export declare const SignalRingBuffer: TypeDefinition;
+export declare const SignalPacket: TypeDefinition;
+export declare const InboundSignalDataInterface: TypeDefinition;
+export declare const OutboundSignalData: TypeDefinition;
 

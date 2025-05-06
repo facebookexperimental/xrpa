@@ -23,13 +23,13 @@ const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const GenMessageAccessorsShared_1 = require("../shared/GenMessageAccessorsShared");
 const PythonCodeGenImpl_1 = require("./PythonCodeGenImpl");
 const PythonDatasetLibraryTypes_1 = require("./PythonDatasetLibraryTypes");
-function genMessageParamInitializer(ctx, includes, msgType) {
+function genMessageParamInitializer(namespace, includes, msgType) {
     const lines = [];
     const msgFields = msgType.getStateFields();
     for (const key in msgFields) {
         const fieldType = msgFields[key].type;
         if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-            lines.push(`message.set_${(0, PythonCodeGenImpl_1.identifierName)(key)}(${fieldType.convertValueFromLocal(ctx.namespace, includes, key)})`);
+            lines.push(`message.set_${(0, PythonCodeGenImpl_1.identifierName)(key)}(${fieldType.convertValueFromLocal(namespace, includes, key)})`);
         }
         else {
             lines.push(`message.set_${(0, PythonCodeGenImpl_1.identifierName)(key)}(${key})`);
@@ -37,13 +37,13 @@ function genMessageParamInitializer(ctx, includes, msgType) {
     }
     return lines;
 }
-function genMessageSize(ctx, includes, msgType) {
+function genMessageSize(namespace, includes, msgType) {
     const dynFieldSizes = [];
     let staticSize = 0;
     const msgFields = msgType.getStateFields();
     for (const key in msgFields) {
         const fieldType = msgFields[key].type;
-        const byteCount = fieldType.getRuntimeByteCount(key, ctx.namespace, includes);
+        const byteCount = fieldType.getRuntimeByteCount(key, namespace, includes);
         staticSize += byteCount[0];
         if (byteCount[1] !== null) {
             dynFieldSizes.push(byteCount[1]);
@@ -61,8 +61,8 @@ function genSendMessageBody(params) {
     else {
         const messageType = params.typeDef.getFieldIndex(params.fieldName);
         if (params.fieldType.hasFields()) {
-            const msgWriteAccessor = params.fieldType.getWriteAccessorType(params.ctx.namespace, params.includes);
-            lines.push(`message = ${msgWriteAccessor}(self._collection.send_message(`, `    self.get_xrpa_id(),`, `    ${messageType},`, `    ${genMessageSize(params.ctx, params.includes, params.fieldType)}))`, ...genMessageParamInitializer(params.ctx, params.includes, params.fieldType));
+            const msgWriteAccessor = params.fieldType.getWriteAccessorType(params.namespace, params.includes);
+            lines.push(`message = ${msgWriteAccessor}(self._collection.send_message(`, `    self.get_xrpa_id(),`, `    ${messageType},`, `    ${genMessageSize(params.namespace, params.includes, params.fieldType)}))`, ...genMessageParamInitializer(params.namespace, params.includes, params.fieldType));
         }
         else {
             lines.push(`self._collection.send_message(`, `    self.get_xrpa_id(),`, `    ${messageType},`, `    0)`);
@@ -79,8 +79,8 @@ function isImageStruct(type) {
 function genSendMessageAccessor(classSpec, params) {
     classSpec.methods.push({
         name: params.name ?? `send_${params.fieldName}`,
-        parameters: (0, GenMessageAccessorsShared_1.genMessageMethodParams)({ ...params, namespace: params.ctx.namespace, includes: classSpec.includes }),
-        body: includes => genSendMessageBody({ ...params, includes }),
+        parameters: (0, GenMessageAccessorsShared_1.genMessageMethodParams)({ ...params, namespace: classSpec.namespace, includes: classSpec.includes }),
+        body: includes => genSendMessageBody({ ...params, namespace: classSpec.namespace, includes }),
     });
     const messageFields = params.fieldType.getStateFields();
     const messageFieldNames = Object.keys(messageFields);
@@ -90,10 +90,10 @@ function genSendMessageAccessor(classSpec, params) {
     // PsyhcoPy window source helper
     const messageFieldType = messageFields[messageFieldNames[0]].type;
     if (isImageStruct(messageFieldType)) {
-        const imageType = messageFieldType.getLocalType(params.ctx.namespace, classSpec.includes);
-        const imageFormat = messageFieldType.getStateField("format").getLocalType(params.ctx.namespace, classSpec.includes);
-        const imageEncoding = messageFieldType.getStateField("encoding").getLocalType(params.ctx.namespace, classSpec.includes);
-        const imageOrientation = messageFieldType.getStateField("orientation").getLocalType(params.ctx.namespace, classSpec.includes);
+        const imageType = messageFieldType.getLocalType(classSpec.namespace, classSpec.includes);
+        const imageFormat = messageFieldType.getStateField("format").getLocalType(classSpec.namespace, classSpec.includes);
+        const imageEncoding = messageFieldType.getStateField("encoding").getLocalType(classSpec.namespace, classSpec.includes);
+        const imageOrientation = messageFieldType.getStateField("orientation").getLocalType(classSpec.namespace, classSpec.includes);
         classSpec.includes?.addFile({ namespace: "io" });
         classSpec.includes?.addFile({ namespace: "typing" });
         classSpec.methods.push({
@@ -145,7 +145,7 @@ function genMessageDispatchBody(params) {
         const fieldType = typeFields[fieldName];
         const msgType = typeDef.getFieldIndex(fieldName);
         lines.push(`if message_type == ${msgType}:`, ...(0, xrpa_utils_1.indent)(1, (0, PythonCodeGenImpl_1.genMessageDispatch)({
-            namespace: params.ctx.namespace,
+            namespace: params.namespace,
             includes: params.includes,
             fieldName,
             fieldType,
@@ -169,7 +169,7 @@ function genMessageChannelDispatch(classSpec, params) {
                 name: "message_data",
                 type: PythonDatasetLibraryTypes_1.MemoryAccessor,
             }],
-        body: includes => genMessageDispatchBody({ ...params, includes }),
+        body: includes => genMessageDispatchBody({ ...params, namespace: classSpec.namespace, includes }),
         isOverride: params.isOverride,
     });
 }
@@ -181,7 +181,6 @@ function genMessageFieldAccessors(classSpec, params) {
         const fieldType = typeFields[fieldName];
         if (params.reconcilerDef.isInboundField(fieldName)) {
             (0, PythonCodeGenImpl_1.genOnMessageAccessor)(classSpec, {
-                namespace: params.ctx.namespace,
                 fieldName,
                 fieldType,
                 genMsgHandler: params.genMsgHandler,

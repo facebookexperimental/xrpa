@@ -153,6 +153,12 @@ function genMonoBehaviour(ctx, fileWriter, reconcilerDef, outDir) {
         proxyObj,
         initializerLines,
     });
+    (0, MonoBehaviourShared_1.genUnitySignalFieldAccessors)(classSpec, {
+        namespace: ctx.namespace,
+        reconcilerDef,
+        proxyObj,
+        initializerLines,
+    });
     classSpec.methods.push({
         name: "InitializeDS",
         body: includes => genComponentInit(ctx, includes, reconcilerDef, initializerLines),

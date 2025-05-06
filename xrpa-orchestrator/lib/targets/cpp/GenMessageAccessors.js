@@ -16,14 +16,38 @@
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genMessageChannelDispatch = exports.genMessageFieldAccessors = exports.genSendMessageAccessor = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const GenMessageAccessorsShared_1 = require("../shared/GenMessageAccessorsShared");
+const GenSignalAccessorsShared_1 = require("../shared/GenSignalAccessorsShared");
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
+const CppCodeGenImpl = __importStar(require("./CppCodeGenImpl"));
 const CppDatasetLibraryTypes_1 = require("./CppDatasetLibraryTypes");
-const GenSignalAccessors_1 = require("./GenSignalAccessors");
 function genMessageParamInitializer(namespace, includes, msgType) {
     const lines = [];
     const msgFields = msgType.getStateFields();
@@ -75,8 +99,8 @@ function genSendMessageAccessor(classSpec, params) {
     classSpec.methods.push({
         name: params.name ?? `send${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
         decorations: params.decorations,
-        parameters: (0, GenMessageAccessorsShared_1.genMessageMethodParams)({ ...params, namespace: params.namespace, includes: classSpec.includes }),
-        body: includes => genSendMessageBody({ ...params, includes }),
+        parameters: (0, GenMessageAccessorsShared_1.genMessageMethodParams)({ ...params, namespace: classSpec.namespace, includes: classSpec.includes }),
+        body: includes => genSendMessageBody({ ...params, namespace: classSpec.namespace, includes }),
         separateImplementation: params.separateImplementation,
     });
 }
@@ -92,7 +116,7 @@ function genMessageDispatchBody(params) {
         const fieldType = typeFields[fieldName];
         const msgType = typeDef.getFieldIndex(fieldName);
         lines.push(`if (messageType == ${msgType}) {`, ...(0, xrpa_utils_1.indent)(1, (0, CppCodeGenImpl_1.genMessageDispatch)({
-            namespace: params.ctx.namespace,
+            namespace: params.namespace,
             includes: params.includes,
             fieldName,
             fieldType,
@@ -145,8 +169,8 @@ function genMessageChannelDispatch(classSpec, params) {
             }],
         body: includes => {
             return [
-                ...genMessageDispatchBody({ ...params, includes }),
-                ...(0, GenSignalAccessors_1.genSignalDispatchBody)({ ...params, includes }),
+                ...genMessageDispatchBody({ ...params, namespace: classSpec.namespace, includes }),
+                ...(0, GenSignalAccessorsShared_1.genSignalDispatchBody)({ ...params, namespace: classSpec.namespace, includes, codegen: CppCodeGenImpl }),
             ];
         },
         separateImplementation: params.separateImplementation,

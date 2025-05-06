@@ -19,6 +19,44 @@ using System.Text;
 
 namespace Xrpa
 {
+    public static class MemoryUtils
+    {
+        public static int GetTypeSize<T>()
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return 4;
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                return 4;
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                return 2;
+            }
+            else if (typeof(T) == typeof(sbyte))
+            {
+                return 1;
+            }
+            else if (typeof(T) == typeof(uint))
+            {
+                return 4;
+            }
+            else if (typeof(T) == typeof(ushort))
+            {
+                return 2;
+            }
+            else if (typeof(T) == typeof(byte))
+            {
+                return 1;
+            }
+            else
+            {
+                throw new ArgumentException("Unsupported type: " + typeof(T).Name);
+            }
+        }
+    }
 
     public class MemoryOffset
     {
@@ -35,6 +73,42 @@ namespace Xrpa
         }
 
         public int _offset;
+    }
+
+    public class MemoryArray<ValueType> where ValueType : unmanaged
+    {
+        private readonly MemoryAccessor _memAccessor;
+        private readonly int _valueSize;
+
+        public MemoryArray(MemoryAccessor memAccessor)
+        {
+            _memAccessor = memAccessor;
+            _valueSize = MemoryUtils.GetTypeSize<ValueType>();
+        }
+
+        public bool IsNull()
+        {
+            return _memAccessor.IsNull();
+        }
+
+        public ValueType this[int idx]
+        {
+            get => _memAccessor.ReadAtOffset<ValueType>(idx * _valueSize, _valueSize);
+            set => _memAccessor.WriteAtOffset<ValueType>(idx * _valueSize, _valueSize, value);
+        }
+
+        public void CopyFrom(int selfOffset, MemoryArray<ValueType> other, int otherOffset, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                this[selfOffset + i] = other[otherOffset + i];
+            }
+        }
+
+        public MemoryArray<ValueType> Slice(int offsetIdx)
+        {
+            return new MemoryArray<ValueType>(_memAccessor.Slice(offsetIdx * _valueSize));
+        }
     }
 
     unsafe public class MemoryAccessor
@@ -119,6 +193,23 @@ namespace Xrpa
                     WriteByte(other.ReadByte(readPos), writePos);
                 }
             }
+        }
+
+        public MemoryArray<ValueType> GetArray<ValueType>() where ValueType : unmanaged
+        {
+            return new MemoryArray<ValueType>(this);
+        }
+
+        public ValueType ReadAtOffset<ValueType>(int offset, int valueSize) where ValueType : unmanaged
+        {
+            XrpaUtils.BoundsAssert(offset, valueSize, 0, _size);
+            return *((ValueType*)(_dataSource + _memOffset + offset));
+        }
+
+        public void WriteAtOffset<ValueType>(int offset, int valueSize, ValueType val) where ValueType : unmanaged
+        {
+            XrpaUtils.BoundsAssert(offset, valueSize, 0, _size);
+            *((ValueType*)(_dataSource + _memOffset + offset)) = val;
         }
 
         public byte ReadByte(MemoryOffset offset)

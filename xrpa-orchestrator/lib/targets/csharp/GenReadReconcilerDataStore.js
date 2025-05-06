@@ -46,6 +46,7 @@ const ClassSpec_1 = require("../../shared/ClassSpec");
 const DataStore_1 = require("../../shared/DataStore");
 const TypeValue_1 = require("../../shared/TypeValue");
 const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
+const GenSignalAccessorsShared_1 = require("../shared/GenSignalAccessorsShared");
 const CsharpCodeGenImpl_1 = require("./CsharpCodeGenImpl");
 const CsharpCodeGenImpl = __importStar(require("./CsharpCodeGenImpl"));
 const CsharpDatasetLibraryTypes_1 = require("./CsharpDatasetLibraryTypes");
@@ -165,12 +166,15 @@ function genInboundReconciledTypes(ctx, includesIn) {
             (0, CsharpCodeGenImpl_1.genFieldChangedCheck)(classSpec, { parentType: typeDef, fieldName: name });
         }
         (0, GenMessageAccessors_1.genMessageFieldAccessors)(classSpec, {
-            namespace: ctx.namespace,
             reconcilerDef,
             genMsgHandler: GenDataStore_1.genMsgHandler,
         });
+        (0, GenSignalAccessorsShared_1.genSignalFieldAccessors)(classSpec, {
+            codegen: CsharpCodeGenImpl,
+            reconcilerDef,
+            proxyObj: null,
+        });
         (0, GenMessageAccessors_1.genMessageChannelDispatch)(classSpec, {
-            namespace: ctx.namespace,
             reconcilerDef,
             genMsgHandler: GenDataStore_1.genMsgHandler,
             msgDataToParams: () => ["message"],

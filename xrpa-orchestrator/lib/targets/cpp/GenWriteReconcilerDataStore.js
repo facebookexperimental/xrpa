@@ -44,15 +44,15 @@ exports.genOutboundReconciledTypes = exports.genChangeHandlerMethods = exports.d
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const ClassSpec_1 = require("../../shared/ClassSpec");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
+const TypeValue_1 = require("../../shared/TypeValue");
+const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
+const GenSignalAccessorsShared_1 = require("../shared/GenSignalAccessorsShared");
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
 const CppCodeGenImpl = __importStar(require("./CppCodeGenImpl"));
 const CppDatasetLibraryTypes_1 = require("./CppDatasetLibraryTypes");
-const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
 const GenMessageAccessors_1 = require("./GenMessageAccessors");
 const GenDataStore_1 = require("./GenDataStore");
-const GenSignalAccessors_1 = require("./GenSignalAccessors");
 const GenReadReconcilerDataStore_1 = require("./GenReadReconcilerDataStore");
-const TypeValue_1 = require("../../shared/TypeValue");
 function genFieldSetDirty(params) {
     const changeBit = params.typeDef.getFieldBitMask(params.fieldName);
     const fieldSize = params.typeDef.getStateField(params.fieldName).getRuntimeByteCount(params.fieldVar, params.ctx.namespace, params.includes);
@@ -409,17 +409,15 @@ function genOutboundReconciledTypes(ctx, includesIn) {
             (0, CppCodeGenImpl_1.genFieldChangedCheck)(classSpec, { parentType: typeDef, fieldName: name });
         }
         (0, GenMessageAccessors_1.genMessageFieldAccessors)(classSpec, {
-            namespace: ctx.namespace,
             reconcilerDef,
             genMsgHandler: GenDataStore_1.genMsgHandler,
         });
-        (0, GenSignalAccessors_1.genSignalFieldAccessors)(classSpec, {
-            ctx,
+        (0, GenSignalAccessorsShared_1.genSignalFieldAccessors)(classSpec, {
+            codegen: CppCodeGenImpl,
             reconcilerDef,
             proxyObj: null,
         });
         (0, GenMessageAccessors_1.genMessageChannelDispatch)(classSpec, {
-            ctx,
             reconcilerDef,
             genMsgHandler: GenDataStore_1.genMsgHandler,
             msgDataToParams: () => ["message"],

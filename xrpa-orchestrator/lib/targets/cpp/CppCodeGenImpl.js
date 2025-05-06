@@ -20,8 +20,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genDynSizeOfValue = exports.genWriteValue = exports.genReadValue = exports.genClassSourceDefinition = exports.genClassHeaderDefinition = exports.genClassDefinition = exports.genMessageDispatch = exports.genOnMessageAccessor = exports.genMessageHandlerType = exports.genEventHandlerCall = exports.genEventHandlerType = exports.makeObjectAccessor = exports.getTypesHeaderNamespace = exports.getTypesHeaderName = exports.getDataStoreClass = exports.getDataStoreHeaderNamespace = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.constRef = exports.forwardDeclareClass = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.CppIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.genGetCurrentClockTime = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.BUCK_HEADER = exports.HEADER = exports.XRPA_NAMESPACE = exports.getXrpaTypes = exports.registerXrpaTypes = void 0;
-exports.declareVar = exports.ifAllBitsAreSet = exports.ifAnyBitIsSet = exports.applyTemplateParams = exports.genConvertIntToBool = exports.genConvertBoolToInt = exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genPassthroughMethodBind = exports.genMethodBind = exports.genMethodCall = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = void 0;
+exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genDynSizeOfValue = exports.genWriteValue = exports.genReadValue = exports.genClassSourceDefinition = exports.genClassHeaderDefinition = exports.genClassDefinition = exports.genMessageDispatch = exports.genOnMessageAccessor = exports.genMessageHandlerType = exports.genEventHandlerCall = exports.genEventHandlerType = exports.makeObjectAccessor = exports.getTypesHeaderNamespace = exports.getTypesHeaderName = exports.getDataStoreClass = exports.getDataStoreHeaderNamespace = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genSharedPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.constRef = exports.forwardDeclareClass = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.CppIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.genGetCurrentClockTime = exports.STMT_TERM = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.BUCK_HEADER = exports.HEADER = exports.XRPA_NAMESPACE = exports.getXrpaTypes = exports.registerXrpaTypes = void 0;
+exports.declareVar = exports.ifEquals = exports.ifAllBitsAreSet = exports.ifAnyBitIsSet = exports.applyTemplateParams = exports.genConvertIntToBool = exports.genConvertBoolToInt = exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genPassthroughMethodBind = exports.genMethodBind = exports.genMethodCall = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
@@ -95,9 +95,11 @@ exports.PRIMITIVE_INTRINSICS = {
     bool: { typename: "bool" },
     arrayFloat3: { typename: "std::array<float, 3>", headerFile: "<array>" },
     bytearray: { typename: "std::vector<uint8_t>", headerFile: "<vector>" },
+    autovar: { typename: "auto" },
     TRUE: "true",
     FALSE: "false",
 };
+exports.STMT_TERM = ";";
 function genGetCurrentClockTime(_includes, inNanoseconds = false) {
     if (inNanoseconds) {
         return `${exports.XRPA_NAMESPACE}::getCurrentClockTimeNanoseconds()`;
@@ -207,7 +209,9 @@ function privateMember(memberVarName) {
 }
 exports.privateMember = privateMember;
 function methodMember(methodName) {
-    return methodName;
+    const parts = methodName.split(nsSep);
+    parts[parts.length - 1] = (0, xrpa_utils_1.lowerFirst)(parts[parts.length - 1]);
+    return parts.join(nsSep);
 }
 exports.methodMember = methodMember;
 function genInitializer(values) {
@@ -273,12 +277,16 @@ function genDeclaration(params) {
     return `${prefix}${typename} ${params.varName}${initializer}` + (params.includeTerminator ? ";" : "");
 }
 exports.genDeclaration = genDeclaration;
-function genPointer(localType, includes) {
+function genSharedPointer(localType, includes) {
     includes?.addFile({
         filename: "<memory>",
         typename: "std::shared_ptr",
     });
     return `std::shared_ptr<${localType}>`;
+}
+exports.genSharedPointer = genSharedPointer;
+function genPointer(localType) {
+    return `${localType}*`;
 }
 exports.genPointer = genPointer;
 function reinterpretValue(fromType, toType, value) {
@@ -425,8 +433,9 @@ function genMessageHandlerType(params) {
 exports.genMessageHandlerType = genMessageHandlerType;
 function genOnMessageAccessor(classSpec, params) {
     const handlerType = genMessageHandlerType({
-        ...params,
+        namespace: classSpec.namespace,
         includes: classSpec.includes,
+        fieldType: params.fieldType,
     });
     const msgHandler = params.genMsgHandler(params.fieldName);
     classSpec.methods.push({
@@ -457,7 +466,13 @@ function genMessageDispatch(params) {
         lines.push(`if (${msgHandler}) {`);
         indentLevel = 1;
     }
-    if (!params.fieldType.hasFields()) {
+    if ((0, TypeDefinition_1.typeIsSignalData)(params.fieldType)) {
+        const msgParams = [timestamp, "messageData"];
+        lines.push(...(0, xrpa_utils_1.indent)(indentLevel, [
+            `${msgHandler}->onSignalData(${msgParams.join(", ")});`,
+        ]));
+    }
+    else if (!params.fieldType.hasFields()) {
         lines.push(...(0, xrpa_utils_1.indent)(indentLevel, [
             `${msgHandler}(${timestamp});`,
         ]));
@@ -466,7 +481,7 @@ function genMessageDispatch(params) {
         const prelude = [];
         const msgParams = [timestamp].concat(params.msgDataToParams(params.fieldType, prelude, params.includes));
         lines.push(...(0, xrpa_utils_1.indent)(indentLevel, [
-            ...(params.convertToReadAccessor ? [
+            ...((params.convertToReadAccessor) ? [
                 `auto message = ${params.fieldType.getReadAccessorType(params.namespace, params.includes)}(messageData);`,
             ] : []),
             ...prelude,
@@ -1011,7 +1026,7 @@ function genDeref(ptrName, memberName) {
 }
 exports.genDeref = genDeref;
 function genDerefMethodCall(ptrName, methodName, params) {
-    const methodCall = `${(0, xrpa_utils_1.lowerFirst)(methodName)}(${params.join(", ")})`;
+    const methodCall = `${methodMember(methodName)}(${params.join(", ")})`;
     if (!ptrName) {
         return methodCall;
     }
@@ -1019,7 +1034,7 @@ function genDerefMethodCall(ptrName, methodName, params) {
 }
 exports.genDerefMethodCall = genDerefMethodCall;
 function genMethodCall(varName, methodName, params) {
-    const methodCall = `${(0, xrpa_utils_1.lowerFirst)(methodName)}(${params.join(", ")})`;
+    const methodCall = `${methodMember(methodName)}(${params.join(", ")})`;
     if (!varName) {
         return methodCall;
     }
@@ -1028,7 +1043,7 @@ function genMethodCall(varName, methodName, params) {
 exports.genMethodCall = genMethodCall;
 function genMethodBind(ptrName, methodName, params, ignoreParamCount) {
     const bindParams = (new Array(ignoreParamCount)).fill("auto").concat(Object.keys(params).map(p => `auto ${p}`));
-    const methodCall = `${(0, xrpa_utils_1.lowerFirst)(methodName)}(${(0, xrpa_utils_1.collapse)(Object.values(params)).join(", ")})`;
+    const methodCall = `${methodMember(methodName)}(${(0, xrpa_utils_1.collapse)(Object.values(params)).join(", ")})`;
     if (!ptrName) {
         return `[this](${bindParams.join(", ")}) { ${methodCall}; }`;
     }
@@ -1038,7 +1053,7 @@ exports.genMethodBind = genMethodBind;
 function genPassthroughMethodBind(methodName, paramCount) {
     const paramNames = (new Array(paramCount)).fill("_").map((_, i) => `p${i}`);
     const bindParams = paramNames.map(p => `auto ${p}`);
-    return `[this](${bindParams.join(", ")}) { ${(0, xrpa_utils_1.lowerFirst)(methodName)}(${paramNames.join(", ")}); }`;
+    return `[this](${bindParams.join(", ")}) { ${methodMember(methodName)}(${paramNames.join(", ")}); }`;
 }
 exports.genPassthroughMethodBind = genPassthroughMethodBind;
 function genNonNullCheck(ptrName) {
@@ -1084,6 +1099,14 @@ function ifAllBitsAreSet(value, bitsValue, code) {
     ];
 }
 exports.ifAllBitsAreSet = ifAllBitsAreSet;
+function ifEquals(value, value2, code) {
+    return [
+        `if (${value} == ${value2}) {`,
+        ...(0, xrpa_utils_1.indent)(1, code),
+        `}`,
+    ];
+}
+exports.ifEquals = ifEquals;
 function declareVar(varName, typename, initialValue) {
     typename = typename || "auto";
     return `${typename} ${varName} = ${initialValue};`;

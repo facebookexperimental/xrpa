@@ -43,7 +43,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.writeMonoBehaviour = exports.genDataStoreObjectAccessors = exports.genProcessUpdateBody = exports.genTransformUpdates = exports.genTransformInitializers = exports.genFieldInitializers = exports.genFieldDefaultInitializers = exports.genUnityMessageFieldAccessors = exports.genUnityMessageProxyDispatch = exports.genUnitySendMessageAccessor = exports.genFieldSetterCalls = exports.genFieldProperties = exports.getFieldMemberName = exports.getMessageDelegateName = exports.getComponentClassName = exports.checkForTransformMapping = exports.IntrinsicProperty = void 0;
+exports.writeMonoBehaviour = exports.genDataStoreObjectAccessors = exports.genProcessUpdateBody = exports.genTransformUpdates = exports.genTransformInitializers = exports.genFieldInitializers = exports.genFieldDefaultInitializers = exports.genUnitySignalFieldAccessors = exports.genUnityMessageFieldAccessors = exports.genUnityMessageProxyDispatch = exports.genUnitySendMessageAccessor = exports.genFieldSetterCalls = exports.genFieldProperties = exports.getFieldMemberName = exports.getComponentClassName = exports.checkForTransformMapping = exports.IntrinsicProperty = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const path_1 = __importDefault(require("path"));
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
@@ -52,6 +52,8 @@ const CsharpCodeGenImpl = __importStar(require("../csharp/CsharpCodeGenImpl"));
 const GenMessageAccessors_1 = require("../csharp/GenMessageAccessors");
 const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
 const GenDataStoreSubsystem_1 = require("./GenDataStoreSubsystem");
+const CsharpDatasetLibraryTypes_1 = require("../csharp/CsharpDatasetLibraryTypes");
+const TypeValue_1 = require("../../shared/TypeValue");
 var IntrinsicProperty;
 (function (IntrinsicProperty) {
     IntrinsicProperty["position"] = "position";
@@ -99,9 +101,8 @@ function getMessageDelegateName(namespace, includes, msgType) {
             paramTypes.push(fieldType.declareLocalParam(namespace, includes, ""));
         }
     }
-    return `System.Action<${paramTypes.join(", ")}>`;
+    return CsharpCodeGenImpl.genEventHandlerType(paramTypes);
 }
-exports.getMessageDelegateName = getMessageDelegateName;
 function getFieldMemberName(reconcilerDef, fieldName) {
     return (0, xrpa_utils_1.filterToString)(reconcilerDef.fieldAccessorNameOverrides[fieldName]) ?? (0, xrpa_utils_1.upperFirst)(fieldName);
 }
@@ -304,6 +305,81 @@ function genUnityMessageFieldAccessors(classSpec, params) {
     }
 }
 exports.genUnityMessageFieldAccessors = genUnityMessageFieldAccessors;
+/********************************************************/
+function genUnityOnSignalAccessor(classSpec, params) {
+    const signalHandler = CsharpCodeGenImpl.privateMember(`${params.fieldName}SignalHandler`);
+    const inboundSignalDataInterface = CsharpDatasetLibraryTypes_1.InboundSignalDataInterface.getLocalType(classSpec.namespace, classSpec.includes);
+    classSpec.methods.push({
+        name: `On${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
+        parameters: [{
+                name: "handler",
+                type: CsharpCodeGenImpl.genSharedPointer(inboundSignalDataInterface),
+            }],
+        body: [
+            `${signalHandler} = handler;`,
+            `if (${params.proxyObj} != null) {`,
+            `  ${params.proxyObj}.On${(0, xrpa_utils_1.upperFirst)(params.fieldName)}(${signalHandler});`,
+            `}`,
+        ],
+    });
+    classSpec.members.push({
+        name: signalHandler,
+        type: inboundSignalDataInterface,
+        initialValue: new TypeValue_1.CodeLiteralValue(CsharpCodeGenImpl, CsharpCodeGenImpl.getNullValue()),
+        visibility: "private",
+    });
+    params.initializerLines.push(`${(0, CsharpCodeGenImpl_1.genDerefMethodCall)(params.proxyObj, `On${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`, [signalHandler])};`);
+}
+function genUnitySendSignalAccessor(classSpec, params) {
+    classSpec.methods.push({
+        name: `Send${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
+        templateParams: ["SampleType"],
+        whereClauses: ["SampleType : unmanaged"],
+        returnType: CsharpDatasetLibraryTypes_1.SignalPacket.getLocalType(classSpec.namespace, classSpec.includes),
+        parameters: [{
+                name: "frameCount",
+                type: CsharpCodeGenImpl.PRIMITIVE_INTRINSICS.int32.typename,
+            }, {
+                name: "numChannels",
+                type: CsharpCodeGenImpl.PRIMITIVE_INTRINSICS.int32.typename,
+            }, {
+                name: "framesPerSecond",
+                type: CsharpCodeGenImpl.PRIMITIVE_INTRINSICS.int32.typename,
+            }],
+        body: () => {
+            const proxyMethod = CsharpCodeGenImpl.applyTemplateParams(`Send${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`, "SampleType");
+            const methodCall = CsharpCodeGenImpl.genMethodCall(params.proxyObj, proxyMethod, ["frameCount", "numChannels", "framesPerSecond"]);
+            return [
+                `return ${methodCall};`,
+            ];
+        },
+    });
+}
+function genUnitySignalFieldAccessors(classSpec, params) {
+    const typeDef = params.reconcilerDef.type;
+    const typeFields = typeDef.getFieldsOfType(TypeDefinition_1.typeIsSignalData);
+    for (const fieldName in typeFields) {
+        const fieldType = typeFields[fieldName];
+        if (params.reconcilerDef.isInboundField(fieldName)) {
+            genUnityOnSignalAccessor(classSpec, {
+                ...params,
+                fieldName,
+                fieldType,
+                proxyObj: params.proxyObj,
+                initializerLines: params.initializerLines,
+            });
+        }
+        if (params.reconcilerDef.isOutboundField(fieldName)) {
+            genUnitySendSignalAccessor(classSpec, {
+                ...params,
+                typeDef,
+                fieldName,
+                fieldType,
+            });
+        }
+    }
+}
+exports.genUnitySignalFieldAccessors = genUnitySignalFieldAccessors;
 /********************************************************/
 function genFieldDefaultInitializers(namespace, includes, reconcilerDef) {
     const lines = [];

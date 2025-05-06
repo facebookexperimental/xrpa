@@ -34,7 +34,7 @@ template <typename SampleType>
 class InboundSignalData : public InboundSignalDataInterface {
  public:
   InboundSignalData(int32_t numChannels, int32_t framesPerSecond, float warmupTimeInSeconds = 0.f)
-      : sampleType_(inferSampleType<SampleType>()),
+      : sampleType_(SignalTypeInference::inferSampleType<SampleType>()),
         framesPerSecond_(framesPerSecond),
         numChannels_(numChannels) {
     int warmupFrames = warmupTimeInSeconds * framesPerSecond_;

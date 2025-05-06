@@ -20,7 +20,7 @@ import { ClassSpec, ClassVisibility } from "../../shared/ClassSpec";
 import { UnitTransformer } from "../../shared/CoordinateTransformer";
 import { IncludeAggregator } from "../../shared/Helpers";
 import { CoreXrpaTypes, FieldTypeAndAccessor, GuidGenSpec, PrimitiveIntrinsics } from "../../shared/TargetCodeGen";
-import { MessageDataTypeDefinition, StructTypeDefinition, TypeDefinition } from "../../shared/TypeDefinition";
+import { MessageDataTypeDefinition, SignalDataTypeDefinition, StructTypeDefinition, TypeDefinition } from "../../shared/TypeDefinition";
 import { TypeValue } from "../../shared/TypeValue";
 export declare function registerXrpaTypes(types: CoreXrpaTypes): void;
 export declare function getXrpaTypes(): CoreXrpaTypes;
@@ -28,6 +28,7 @@ export declare const XRPA_NAMESPACE = "xrpa_runtime";
 export declare const HEADER: string[];
 export declare const UNIT_TRANSFORMER: UnitTransformer;
 export declare const PRIMITIVE_INTRINSICS: PrimitiveIntrinsics;
+export declare const STMT_TERM = "";
 export declare function genGetCurrentClockTime(includes: IncludeAggregator | null, inNanoseconds?: boolean): string;
 export declare const DEFAULT_INTERFACE_PTR_TYPE = "bare";
 export declare class PythonIncludeAggregator implements IncludeAggregator {
@@ -60,6 +61,7 @@ export declare function genDeclaration(params: {
     isStatic?: boolean;
     isConst?: boolean;
 }): string;
+export declare function genSharedPointer(localType: string): string;
 export declare function genPointer(localType: string): string;
 export declare function reinterpretValue(_fromType: string, _toType: string, value: TypeValue): string;
 export declare function getDataStoreName(apiname: string): string;
@@ -82,7 +84,6 @@ export declare function genMessageHandlerType(params: {
     fieldType: MessageDataTypeDefinition;
 }): string;
 export declare function genOnMessageAccessor(classSpec: ClassSpec, params: {
-    namespace: string;
     fieldName: string;
     fieldType: MessageDataTypeDefinition;
     genMsgHandler: (msgName: string) => string;
@@ -91,7 +92,7 @@ export declare function genMessageDispatch(params: {
     namespace: string;
     includes: IncludeAggregator | null;
     fieldName: string;
-    fieldType: MessageDataTypeDefinition;
+    fieldType: MessageDataTypeDefinition | SignalDataTypeDefinition;
     genMsgHandler: (fieldName: string) => string;
     msgDataToParams: (msgType: MessageDataTypeDefinition, prelude: string[], includes: IncludeAggregator | null) => string[];
     convertToReadAccessor: boolean;
@@ -171,5 +172,6 @@ export declare function genConvertIntToBool(value: TypeValue): string;
 export declare function applyTemplateParams(typename: string, ...templateParams: string[]): string;
 export declare function ifAnyBitIsSet(value: string, bitValue: number, code: string[]): string[];
 export declare function ifAllBitsAreSet(value: string, bitsValue: number, code: string[]): string[];
+export declare function ifEquals(value: string, value2: string, code: string[]): string[];
 export declare function declareVar(varName: string, typename: string, initialValue: TypeValue): string;
 

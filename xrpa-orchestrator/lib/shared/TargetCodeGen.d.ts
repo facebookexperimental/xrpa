@@ -18,7 +18,7 @@
 import { ClassSpec, ClassVisibility } from "./ClassSpec";
 import { UnitTransformer } from "./CoordinateTransformer";
 import { IncludeAggregator } from "./Helpers";
-import { MessageDataTypeDefinition, StructTypeDefinition, TypeDefinition, TypeSize } from "./TypeDefinition";
+import { MessageDataTypeDefinition, SignalDataTypeDefinition, StructTypeDefinition, TypeDefinition, TypeSize } from "./TypeDefinition";
 import { TypeValue } from "./TypeValue";
 export interface TypeSpec {
     typename: string;
@@ -46,6 +46,7 @@ export interface PrimitiveIntrinsics {
     bool: TypeSpec;
     arrayFloat3: TypeSpec;
     bytearray: TypeSpec;
+    autovar: TypeSpec;
     TRUE: string;
     FALSE: string;
 }
@@ -63,12 +64,18 @@ export interface CoreXrpaTypes {
     ObjectAccessorInterface: TypeDefinition;
     TransportStreamAccessor: TypeDefinition;
     InboundSignalForwarder: TypeDefinition;
+    SignalProducerCallback: TypeDefinition;
+    SignalRingBuffer: TypeDefinition;
+    SignalPacket: TypeDefinition;
+    InboundSignalDataInterface: TypeDefinition;
+    OutboundSignalData: TypeDefinition;
 }
 export interface TargetCodeGenImpl {
     HEADER: string[];
     UNIT_TRANSFORMER: UnitTransformer;
     PRIMITIVE_INTRINSICS: PrimitiveIntrinsics;
     XRPA_NAMESPACE: string;
+    STMT_TERM: string;
     getXrpaTypes(): CoreXrpaTypes;
     nsQualify(qualifiedName: string, inNamespace: string): string;
     nsJoin(...names: string[]): string;
@@ -88,7 +95,8 @@ export interface TargetCodeGenImpl {
         isStatic?: boolean;
         isConst?: boolean;
     }): string;
-    genPointer(localType: string, includes: IncludeAggregator | null): string;
+    genSharedPointer(localType: string, includes: IncludeAggregator | null): string;
+    genPointer(localType: string): string;
     genReadValue(params: {
         accessor: string;
         accessorIsStruct: boolean;
@@ -123,7 +131,6 @@ export interface TargetCodeGenImpl {
         fieldType: MessageDataTypeDefinition;
     }): string;
     genOnMessageAccessor(classSpec: ClassSpec, params: {
-        namespace: string;
         fieldName: string;
         fieldType: MessageDataTypeDefinition;
         genMsgHandler: (msgName: string) => string;
@@ -132,7 +139,7 @@ export interface TargetCodeGenImpl {
         namespace: string;
         includes: IncludeAggregator | null;
         fieldName: string;
-        fieldType: MessageDataTypeDefinition;
+        fieldType: MessageDataTypeDefinition | SignalDataTypeDefinition;
         genMsgHandler: (fieldName: string) => string;
         msgDataToParams: (msgType: MessageDataTypeDefinition, prelude: string[], includes: IncludeAggregator | null) => string[];
         convertToReadAccessor: boolean;
@@ -199,6 +206,7 @@ export interface TargetCodeGenImpl {
     applyTemplateParams(typename: string, ...templateParams: string[]): string;
     ifAnyBitIsSet(value: string, bitsValue: number, code: string[]): string[];
     ifAllBitsAreSet(value: string, bitsValue: number, code: string[]): string[];
+    ifEquals(value: string, value2: string, code: string[]): string[];
     declareVar(varName: string, typename: string, initialValue: TypeValue): string;
 }
 

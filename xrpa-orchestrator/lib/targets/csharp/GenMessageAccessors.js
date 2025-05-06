@@ -16,12 +16,37 @@
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genMessageFieldAccessors = exports.genMessageChannelDispatch = exports.genSendMessageAccessor = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const GenMessageAccessorsShared_1 = require("../shared/GenMessageAccessorsShared");
+const GenSignalAccessorsShared_1 = require("../shared/GenSignalAccessorsShared");
 const CsharpCodeGenImpl_1 = require("./CsharpCodeGenImpl");
+const CsharpCodeGenImpl = __importStar(require("./CsharpCodeGenImpl"));
 const CsharpDatasetLibraryTypes_1 = require("./CsharpDatasetLibraryTypes");
 function genMessageParamInitializer(namespace, includes, msgType) {
     const lines = [];
@@ -73,8 +98,8 @@ function genSendMessageBody(params) {
 function genSendMessageAccessor(classSpec, params) {
     classSpec.methods.push({
         name: params.name ?? `Send${params.fieldName}`,
-        parameters: (0, GenMessageAccessorsShared_1.genMessageMethodParams)({ ...params, includes: classSpec.includes }),
-        body: includes => genSendMessageBody({ ...params, includes }),
+        parameters: (0, GenMessageAccessorsShared_1.genMessageMethodParams)({ ...params, namespace: classSpec.namespace, includes: classSpec.includes }),
+        body: includes => genSendMessageBody({ ...params, namespace: classSpec.namespace, includes }),
     });
 }
 exports.genSendMessageAccessor = genSendMessageAccessor;
@@ -110,7 +135,12 @@ function genMessageChannelDispatch(classSpec, params) {
                 name: "messageData",
                 type: CsharpDatasetLibraryTypes_1.MemoryAccessor,
             }],
-        body: includes => genMessageDispatchBody({ ...params, includes }),
+        body: includes => {
+            return [
+                ...genMessageDispatchBody({ ...params, namespace: classSpec.namespace, includes }),
+                ...(0, GenSignalAccessorsShared_1.genSignalDispatchBody)({ ...params, namespace: classSpec.namespace, includes, codegen: CsharpCodeGenImpl }),
+            ];
+        },
         isOverride: params.isOverride,
     });
 }
@@ -122,7 +152,6 @@ function genMessageFieldAccessors(classSpec, params) {
         const fieldType = typeFields[fieldName];
         if (params.reconcilerDef.isInboundField(fieldName)) {
             (0, CsharpCodeGenImpl_1.genOnMessageAccessor)(classSpec, {
-                namespace: params.namespace,
                 fieldName,
                 fieldType,
                 genMsgHandler: params.genMsgHandler,

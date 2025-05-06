@@ -20,7 +20,6 @@ import { InputReconcilerDefinition, OutputReconcilerDefinition } from "../../sha
 import { IncludeAggregator } from "../../shared/Helpers";
 import { MessageDataTypeDefinition, StructTypeDefinition } from "../../shared/TypeDefinition";
 export declare function genSendMessageAccessor(classSpec: ClassSpec, params: {
-    namespace: string;
     typeDef: StructTypeDefinition;
     fieldName: string;
     fieldType: MessageDataTypeDefinition;
@@ -29,14 +28,12 @@ export declare function genSendMessageAccessor(classSpec: ClassSpec, params: {
     name?: string;
 }): void;
 export declare function genMessageChannelDispatch(classSpec: ClassSpec, params: {
-    namespace: string;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
     genMsgHandler: (msgName: string) => string;
     msgDataToParams: (msgType: MessageDataTypeDefinition, prelude: string[], includes: IncludeAggregator | null) => string[];
     isOverride?: boolean;
 }): void;
 export declare function genMessageFieldAccessors(classSpec: ClassSpec, params: {
-    namespace: string;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
     genMsgHandler: (msgName: string) => string;
 }): void;

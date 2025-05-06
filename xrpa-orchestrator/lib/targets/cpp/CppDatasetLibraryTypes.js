@@ -85,5 +85,10 @@ CodeGen.registerXrpaTypes({
     ObjectAccessorInterface: exports.ObjectAccessorInterface,
     TransportStreamAccessor: exports.TransportStreamAccessor,
     InboundSignalForwarder: exports.InboundSignalForwarder,
+    SignalProducerCallback: exports.SignalProducerCallback,
+    SignalRingBuffer: exports.SignalRingBuffer,
+    SignalPacket: exports.SignalPacket,
+    InboundSignalDataInterface: exports.InboundSignalDataInterface,
+    OutboundSignalData: exports.OutboundSignalData,
 });
 //# sourceMappingURL=CppDatasetLibraryTypes.js.map

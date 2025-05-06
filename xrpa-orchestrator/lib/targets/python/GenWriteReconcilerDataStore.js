@@ -399,12 +399,10 @@ function genOutboundReconciledTypes(ctx, includesIn) {
             (0, PythonCodeGenImpl_1.genFieldChangedCheck)(classSpec, { parentType: typeDef, fieldName: name });
         }
         (0, GenMessageAccessors_1.genMessageFieldAccessors)(classSpec, {
-            ctx,
             reconcilerDef,
             genMsgHandler: GenDataStore_1.genMsgHandler,
         });
         (0, GenMessageAccessors_1.genMessageChannelDispatch)(classSpec, {
-            ctx,
             reconcilerDef,
             genMsgHandler: GenDataStore_1.genMsgHandler,
             msgDataToParams: () => ["message"],

@@ -19,9 +19,7 @@ import { ClassSpec } from "../../shared/ClassSpec";
 import { InputReconcilerDefinition, OutputReconcilerDefinition } from "../../shared/DataStore";
 import { IncludeAggregator } from "../../shared/Helpers";
 import { CollectionTypeDefinition, MessageDataTypeDefinition } from "../../shared/TypeDefinition";
-import { GenDataStoreContext } from "../shared/GenDataStoreShared";
 export declare function genSendMessageAccessor(classSpec: ClassSpec, params: {
-    ctx: GenDataStoreContext;
     typeDef: CollectionTypeDefinition;
     fieldName: string;
     fieldType: MessageDataTypeDefinition;
@@ -30,14 +28,12 @@ export declare function genSendMessageAccessor(classSpec: ClassSpec, params: {
     name?: string;
 }): void;
 export declare function genMessageChannelDispatch(classSpec: ClassSpec, params: {
-    ctx: GenDataStoreContext;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
     genMsgHandler: (msgName: string) => string;
     msgDataToParams: (msgType: MessageDataTypeDefinition, prelude: string[], includes: IncludeAggregator | null) => string[];
     isOverride?: boolean;
 }): void;
 export declare function genMessageFieldAccessors(classSpec: ClassSpec, params: {
-    ctx: GenDataStoreContext;
     reconcilerDef: InputReconcilerDefinition | OutputReconcilerDefinition;
     genMsgHandler: (msgName: string) => string;
 }): void;

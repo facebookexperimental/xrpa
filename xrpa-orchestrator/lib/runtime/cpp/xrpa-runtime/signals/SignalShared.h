@@ -24,6 +24,8 @@
 
 namespace Xrpa {
 
+namespace SignalTypeInference {
+
 template <typename...>
 constexpr bool always_false = false;
 
@@ -52,6 +54,8 @@ constexpr int32_t inferSampleType() {
     unsupportedSampleType<T>();
   }
 }
+
+} // namespace SignalTypeInference
 
 template <typename SampleType>
 class SignalChannelData {

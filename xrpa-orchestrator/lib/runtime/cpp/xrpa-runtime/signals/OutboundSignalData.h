@@ -102,7 +102,7 @@ class OutboundSignalData {
   int32_t sampleType_ = 0;
   int32_t sampleSize_ = 4;
   int32_t numChannels_ = 1;
-  int32_t framesPerSecond_ = 10;
+  int32_t framesPerSecond_ = 0;
   int32_t framesPerPacket_ = 1024;
 
   // internal state management
@@ -112,7 +112,7 @@ class OutboundSignalData {
   template <typename T>
   void
   setSignalSourceShared(int32_t numChannels, int32_t framesPerSecond, int32_t framesPerPacket) {
-    sampleType_ = inferSampleType<T>();
+    sampleType_ = SignalTypeInference::inferSampleType<T>();
     sampleSize_ = sizeof(T);
     numChannels_ = numChannels;
     framesPerSecond_ = framesPerSecond;
