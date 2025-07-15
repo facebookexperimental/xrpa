@@ -9,11 +9,22 @@
     "update": "ts-node ./js/index.ts",
     "codegen": "ts-node ./js/index.ts",
     "lint": "eslint --ext .ts,.tsx ./src",
+    "ImageViewer": "node_modules/@xrpa/xred-debug/bin/ImageViewer.exe",
+    "ImageViewer-mac": "node_modules/@xrpa/xred-debug/bin/ImageViewer",
     "Knob": "node_modules/@xrpa/xred-device-input/bin/Knob.exe",
+    "Knob-mac": "node_modules/@xrpa/xred-device-input/bin/Knob",
+    "ImageSelector": "node_modules/@xrpa/xred-perception-services/bin/ImageSelector.exe",
+    "ImageSelector-mac": "node_modules/@xrpa/xred-perception-services/bin/ImageSelector",
     "MetaGen": "node_modules/@xrpa/xred-perception-services/bin/MetaGen.exe",
+    "MetaGen-mac": "node_modules/@xrpa/xred-perception-services/bin/MetaGen",
     "Aria": "node_modules/@xrpa/xred-sensor-input/bin/Aria.exe",
+    "Aria-mac": "node_modules/@xrpa/xred-sensor-input/bin/Aria",
+    "Camera": "node_modules/@xrpa/xred-sensor-input/bin/Camera.exe",
+    "Camera-mac": "node_modules/@xrpa/xred-sensor-input/bin/Camera",
     "SignalProcessing": "node_modules/@xrpa/xred-signal-processing/bin/FbaProcessing.exe",
+    "SignalProcessing-mac": "node_modules/@xrpa/xred-signal-processing/bin/FbaProcessing",
     "SignalOutput": "node_modules/@xrpa/xred-signal-output/bin/XredOutput.exe",
+    "SignalOutput-mac": "node_modules/@xrpa/xred-signal-output/bin/XredOutput",
     "STO": "node_modules/@xrpa/xred-tracking/bin/PulsarSTO.exe",
     "Fiducials": "node_modules/@xrpa/xred-tracking/bin/Fiducials.exe"
   },
@@ -27,13 +38,14 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "@xrpa/xred-device-input": "^1.10.0",
-    "@xrpa/xred-perception-services": "^1.10.0",
-    "@xrpa/xred-sensor-input": "^1.10.0",
-    "@xrpa/xred-signal-output": "^1.10.0",
-    "@xrpa/xred-signal-processing": "^1.10.0",
-    "@xrpa/xred-tactile-pressure": "^1.10.0",
-    "@xrpa/xred-tracking": "^1.10.0",
-    "@xrpa/xrpa-orchestrator": "^1.10.0"
+    "@xrpa/xred-debug": "^1.11.0",
+    "@xrpa/xred-device-input": "^1.11.0",
+    "@xrpa/xred-perception-services": "^1.11.0",
+    "@xrpa/xred-sensor-input": "^1.11.0",
+    "@xrpa/xred-signal-output": "^1.11.0",
+    "@xrpa/xred-signal-processing": "^1.11.0",
+    "@xrpa/xred-tactile-pressure": "^1.11.0",
+    "@xrpa/xred-tracking": "^1.11.0",
+    "@xrpa/xrpa-orchestrator": "^1.11.0"
   }
 }

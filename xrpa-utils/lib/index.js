@@ -37,6 +37,7 @@ __exportStar(require("./ContextStack"), exports);
 __exportStar(require("./MiscUtils"), exports);
 __exportStar(require("./NamespaceUtils"), exports);
 __exportStar(require("./ObjectUtils"), exports);
+__exportStar(require("./StringFilter"), exports);
 __exportStar(require("./StringUtils"), exports);
 __exportStar(require("./ThreadTaskQueue"), exports);
 __exportStar(require("./Thunk"), exports);

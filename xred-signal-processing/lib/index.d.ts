@@ -18,5 +18,5 @@
 export * from "./SignalProcessingInterface";
 export * from "./MathOps";
 export * from "./ProcessingNodes";
-export * from "./StringFilter";
+export { strStartsWith, strEndsWith, strContains, strEquals, } from "@xrpa/xrpa-utils";
 

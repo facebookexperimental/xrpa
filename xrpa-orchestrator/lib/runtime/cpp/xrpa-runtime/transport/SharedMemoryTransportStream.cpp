@@ -16,6 +16,8 @@
 
 #include <xrpa-runtime/transport/SharedMemoryTransportStream.h>
 
+#if defined(WIN32)
+#include <Windows.h>
 #ifdef TEXT
 #undef TEXT // undefine UE4 macro, if defined
 #endif
@@ -23,7 +25,13 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include <Windows.h>
+
+#elif defined(__APPLE__)
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
 
 namespace Xrpa {
 
@@ -32,7 +40,7 @@ SharedMemoryTransportStream::SharedMemoryTransportStream(
     const TransportConfig& config)
     : MemoryTransportStream(name, config) {
   bool didCreate = false;
-
+#if defined(WIN32)
   // open the shared memory file if it already exists
   memHandle_ = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, name_.c_str());
 
@@ -52,12 +60,39 @@ SharedMemoryTransportStream::SharedMemoryTransportStream(
 
   // map the shared memory file to memory
   memBuffer_ = (unsigned char*)MapViewOfFile(memHandle_, FILE_MAP_ALL_ACCESS, 0, 0, memSize_);
+#elif defined(__APPLE__)
+  std::string filePath = "/tmp/xrpa/" + name;
+  int fd = open(filePath.c_str(), O_RDWR | O_CREAT, 0666);
+  if (fd != -1) {
+    struct stat st;
+    fstat(fd, &st);
+    didCreate = (st.st_size == 0);
+    if (didCreate) {
+      ftruncate(fd, memSize_);
+    }
+  }
 
-  // initialize the memory
+  if (fd == -1) {
+    perror("Error opening shared memory");
+  }
+
+  // Set the size of the shared memory segment
+  ftruncate(fd, memSize_);
+
+  // Map the shared memory segment into our address space
+  memBuffer_ = (unsigned char*)mmap(NULL, memSize_, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  if (memBuffer_ == MAP_FAILED) {
+    perror("Error mapping shared memory");
+  }
+
+  close(fd);
+#endif
+
   initializeMemory(didCreate);
 }
 
 SharedMemoryTransportStream::~SharedMemoryTransportStream() {
+#if defined(WIN32)
   if (memBuffer_ != nullptr) {
     UnmapViewOfFile(memBuffer_);
     memBuffer_ = nullptr;
@@ -67,6 +102,12 @@ SharedMemoryTransportStream::~SharedMemoryTransportStream() {
     CloseHandle(memHandle_);
     memHandle_ = 0;
   }
+#elif defined(__APPLE__)
+  if (memBuffer_ != nullptr) {
+    munmap(memBuffer_, memSize_);
+    memBuffer_ = nullptr;
+  }
+#endif
 }
 
 } // namespace Xrpa

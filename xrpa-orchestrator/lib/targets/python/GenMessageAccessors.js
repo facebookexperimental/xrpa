@@ -16,12 +16,37 @@
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genMessageFieldAccessors = exports.genMessageChannelDispatch = exports.genSendMessageAccessor = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const GenMessageAccessorsShared_1 = require("../shared/GenMessageAccessorsShared");
+const GenSignalAccessorsShared_1 = require("../shared/GenSignalAccessorsShared");
 const PythonCodeGenImpl_1 = require("./PythonCodeGenImpl");
+const PythonCodeGenImpl = __importStar(require("./PythonCodeGenImpl"));
 const PythonDatasetLibraryTypes_1 = require("./PythonDatasetLibraryTypes");
 function genMessageParamInitializer(namespace, includes, msgType) {
     const lines = [];
@@ -29,10 +54,10 @@ function genMessageParamInitializer(namespace, includes, msgType) {
     for (const key in msgFields) {
         const fieldType = msgFields[key].type;
         if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-            lines.push(`message.set_${(0, PythonCodeGenImpl_1.identifierName)(key)}(${fieldType.convertValueFromLocal(namespace, includes, key)})`);
+            lines.push(`message.set_${(0, PythonCodeGenImpl_1.identifierName)(key)}(${fieldType.convertValueFromLocal(namespace, includes, (0, PythonCodeGenImpl_1.identifierName)(key))})`);
         }
         else {
-            lines.push(`message.set_${(0, PythonCodeGenImpl_1.identifierName)(key)}(${key})`);
+            lines.push(`message.set_${(0, PythonCodeGenImpl_1.identifierName)(key)}(${(0, PythonCodeGenImpl_1.identifierName)(key)})`);
         }
     }
     return lines;
@@ -115,6 +140,7 @@ function genSendMessageAccessor(classSpec, params) {
                 `  1.0,`,
                 `  0,`,
                 `  ${(0, PythonCodeGenImpl_1.genGetCurrentClockTime)(classSpec.includes)},`,
+                `  0,`,
                 `  bytearray(jpeg_data.read())`,
                 `)`,
                 `self.send_${params.fieldName}(image_data)`,
@@ -169,7 +195,12 @@ function genMessageChannelDispatch(classSpec, params) {
                 name: "message_data",
                 type: PythonDatasetLibraryTypes_1.MemoryAccessor,
             }],
-        body: includes => genMessageDispatchBody({ ...params, namespace: classSpec.namespace, includes }),
+        body: includes => {
+            return [
+                ...genMessageDispatchBody({ ...params, namespace: classSpec.namespace, includes }),
+                ...(0, GenSignalAccessorsShared_1.genSignalDispatchBody)({ ...params, namespace: classSpec.namespace, includes, codegen: PythonCodeGenImpl }),
+            ];
+        },
         isOverride: params.isOverride,
     });
 }

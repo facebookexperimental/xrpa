@@ -26,6 +26,7 @@ const xrpa_file_utils_1 = require("@xrpa/xrpa-file-utils");
 const promises_1 = __importDefault(require("fs/promises"));
 const os_1 = __importDefault(require("os"));
 const path_1 = __importDefault(require("path"));
+const crypto_1 = __importDefault(require("crypto"));
 const InterfaceTypes_1 = require("./InterfaceTypes");
 const NativeProgram_1 = require("./NativeProgram");
 const RuntimeEnvironment_1 = require("./RuntimeEnvironment");
@@ -121,8 +122,8 @@ function mapInterfaceImageTypes(programInterface, usingBuck) {
 function mapCppImageTypes() {
     const ctx = (0, NativeProgram_1.getNativeProgramContext)();
     const usingBuck = getBuckConfig(ctx) != undefined;
-    if (ctx.programInterface) {
-        mapInterfaceImageTypes(ctx.programInterface, usingBuck);
+    for (const programInterface of ctx.programInterfaces) {
+        mapInterfaceImageTypes(programInterface, usingBuck);
     }
     for (const key in ctx.externalProgramInterfaces) {
         const programInterface = ctx.externalProgramInterfaces[key].programInterface;
@@ -133,7 +134,7 @@ function XrpaNativeCppProgram(name, outputDir, callback) {
     const ctx = {
         __isRuntimeEnvironmentContext: true,
         __isNativeProgramContext: true,
-        programInterface: undefined,
+        programInterfaces: [],
         externalProgramInterfaces: {},
         properties: {},
     };
@@ -153,7 +154,7 @@ function XrpaNativePythonProgram(name, outputDir, callback) {
     const ctx = {
         __isRuntimeEnvironmentContext: true,
         __isNativeProgramContext: true,
-        programInterface: undefined,
+        programInterfaces: [],
         externalProgramInterfaces: {},
         properties: {},
     };
@@ -175,19 +176,45 @@ function XrpaPythonStandalone(name, outputDir, callback) {
 }
 exports.XrpaPythonStandalone = XrpaPythonStandalone;
 async function runInCondaEnvironmentInternal(yamlPath, cwd, args) {
-    const yamlLines = await promises_1.default.readFile(yamlPath, "utf8");
-    const envName = yamlLines.split("\n")[0].split(" ")[1];
+    const yamlContent = await promises_1.default.readFile(yamlPath, "utf8");
+    const envName = yamlContent.split("\n")[0].split(" ")[1];
+    const yamlHash = crypto_1.default.createHash("sha256").update(yamlContent).digest("hex");
+    const hashFilename = crypto_1.default.createHash("md5").update(yamlPath).digest("hex");
+    const hashFilePath = path_1.default.join(os_1.default.tmpdir(), `${hashFilename}.txt`);
+    let shouldRecreate = false;
     const envList = JSON.parse(await (0, xrpa_file_utils_1.runProcess)({
         filename: "conda",
         args: ["env", "list", "--json"],
     }));
     const found = envList.envs.some((env) => env.endsWith(envName) || path_1.default.basename(env) === envName);
-    if (!found) {
-        console.log(`Creating conda environment from ${yamlPath}...`);
+    if (found) {
+        try {
+            const existingHash = await promises_1.default.readFile(hashFilePath, "utf8");
+            if (existingHash !== yamlHash) {
+                console.log(`Conda environment ${envName} exists but yaml file has changed. Recreating...`);
+                shouldRecreate = true;
+            }
+        }
+        catch (error) {
+            shouldRecreate = true;
+        }
+    }
+    if (!found || shouldRecreate) {
+        if (shouldRecreate) {
+            console.log(`Removing existing conda environment ${envName}...`);
+            await (0, xrpa_file_utils_1.runProcess)({
+                filename: "conda",
+                args: ["env", "remove", "-n", envName, "-y"],
+            });
+        }
+        else {
+            console.log(`Creating conda environment from ${yamlPath}...`);
+        }
         await (0, xrpa_file_utils_1.runProcess)({
             filename: "conda",
             args: ["env", "create", "-f", yamlPath],
         });
+        await promises_1.default.writeFile(hashFilePath, yamlHash);
     }
     await (0, xrpa_file_utils_1.runProcess)({
         filename: "conda",

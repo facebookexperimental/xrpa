@@ -29,6 +29,7 @@ export declare class CppModuleDefinition extends ModuleDefinition {
     readonly buckDef?: ModuleBuckConfig | undefined;
     readonly libDir: string;
     readonly runtimeDir: string;
+    private needsExternalUtils;
     constructor(name: string, datamap: DataMapDefinition, genOutputDir: string, buckDef?: ModuleBuckConfig | undefined, guidGen?: GuidGenSpec);
     protected createObjectUuid(): StructTypeDefinition;
     doCodeGen(): FileWriter;

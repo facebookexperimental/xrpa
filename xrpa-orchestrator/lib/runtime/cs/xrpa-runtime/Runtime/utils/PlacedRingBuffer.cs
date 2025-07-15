@@ -195,8 +195,6 @@ namespace Xrpa
 
             Count++;
             idOut = StartID + Count - 1;
-
-            XrpaUtils.BoundsAssert(offset, sizeNeeded, 0, PoolSize);
             SetElementSize(offset, numBytes);
             LastElemOffset = offset;
             return GetElementAccessor(offset);
@@ -238,14 +236,12 @@ namespace Xrpa
 
         private void SetElementSize(int offset, int numBytes)
         {
-            XrpaUtils.DebugAssert(numBytes > 0);
             _poolAccessor.WriteInt(numBytes, new MemoryOffset(offset));
         }
 
         private int GetElementSize(int offset)
         {
             int numBytes = _poolAccessor.ReadInt(new MemoryOffset(offset));
-            XrpaUtils.DebugAssert(numBytes > 0);
             return numBytes;
         }
 
@@ -285,7 +281,6 @@ namespace Xrpa
         {
             if (Count == 0)
             {
-                XrpaUtils.DebugAssert(StartOffset == 0);
                 return StartOffset;
             }
 
@@ -302,7 +297,6 @@ namespace Xrpa
                 else
                 {
                     // need to wrap around
-                    XrpaUtils.DebugAssert(offset <= PoolSize, "Last element of ring buffer extends beyond memory range");
                     PrewrapOffset = offset;
                     offset = 0;
                 }

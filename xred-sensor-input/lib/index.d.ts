@@ -15,29 +15,6 @@
  */
 
 
-import { BuiltinType, XrpaDataType, XrpaProgramParam } from "@xrpa/xrpa-orchestrator";
-export declare const XredSensorInputInterface: import("@xrpa/xrpa-orchestrator").ProgramInterface;
-export declare function AriaGlasses(params: {
-    ipAddress: string | XrpaProgramParam<XrpaDataType<BuiltinType.String>>;
-    isFlashlight?: boolean | XrpaProgramParam<XrpaDataType<BuiltinType.Boolean>>;
-    usbStreaming?: boolean | XrpaProgramParam<XrpaDataType<BuiltinType.Boolean>>;
-    trackPose?: boolean | XrpaProgramParam<XrpaDataType<BuiltinType.Boolean>>;
-    sendAudioOutput?: boolean | XrpaProgramParam<XrpaDataType<BuiltinType.Boolean>>;
-    sendRgbOutput?: boolean | XrpaProgramParam<XrpaDataType<BuiltinType.Boolean>>;
-    sendSlamOutputs?: boolean | XrpaProgramParam<XrpaDataType<BuiltinType.Boolean>>;
-}): {
-    calibrationJson: import("@xrpa/xrpa-orchestrator").XrpaDataflowConnection;
-    isStreaming: import("@xrpa/xrpa-orchestrator").XrpaDataflowConnection;
-    lastUpdate: import("@xrpa/xrpa-orchestrator").XrpaDataflowConnection;
-    audio: {
-        numChannels: number;
-        signal: import("@xrpa/xrpa-orchestrator").XrpaDataflowConnection;
-    };
-    rgbCamera: import("@xrpa/xrpa-orchestrator").XrpaDataflowConnection;
-    slamCamera1: import("@xrpa/xrpa-orchestrator").XrpaDataflowConnection;
-    slamCamera2: import("@xrpa/xrpa-orchestrator").XrpaDataflowConnection;
-    poseDynamics: import("@xrpa/xrpa-orchestrator").XrpaDataflowConnection;
-    pose: import("@xrpa/xrpa-orchestrator").XrpaDataflowConnection;
-    coordinateFrameId: import("@xrpa/xrpa-orchestrator").XrpaDataflowConnection;
-};
+export * from "./AriaInterface";
+export * from "./CameraInterface";
 

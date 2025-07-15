@@ -96,7 +96,6 @@ struct PlacedRingBuffer {
     // validateEntries();
 
     numBytes = PRB_ALIGN(numBytes);
-    xrpaDebugAssert(numBytes > 0);
     const int32_t sizeNeeded = ELEMENT_HEADER_SIZE + numBytes;
     if (sizeNeeded >= poolSize) {
       return {};
@@ -160,14 +159,10 @@ struct PlacedRingBuffer {
     for (int32_t i = 0; i < count; ++i) {
       int32_t numBytes = getElementSize(offset);
       if (isWrapped) {
-        xrpaDebugBoundsAssert(offset, ELEMENT_HEADER_SIZE + numBytes, 0, startOffset);
       } else {
-        xrpaDebugBoundsAssert(offset, ELEMENT_HEADER_SIZE + numBytes, startOffset, prewrapOffset);
       }
       offset += ELEMENT_HEADER_SIZE + numBytes;
       if (offset >= prewrapOffset) {
-        xrpaDebugAssert(offset == prewrapOffset);
-        xrpaDebugAssert(!isWrapped, "Wrapped twice");
         isWrapped = true;
         offset = 0;
       }
@@ -178,23 +173,18 @@ struct PlacedRingBuffer {
   friend class PlacedRingBufferIterator;
 
   void setElementSize(int32_t offset, int32_t numBytes) {
-    xrpaDebugAssert(numBytes > 0);
-    xrpaDebugBoundsAssert(offset, 4, 0, poolSize);
     uint8_t* poolStart = PRB_POOL_START;
     *reinterpret_cast<int32_t*>(poolStart + offset) = numBytes;
   }
 
   [[nodiscard]] int32_t getElementSize(int32_t offset) const {
-    xrpaDebugBoundsAssert(offset, 4, 0, poolSize);
     const uint8_t* poolStart = PRB_POOL_START_CONST;
     int32_t numBytes = *reinterpret_cast<const int32_t*>(poolStart + offset);
-    xrpaDebugAssert(numBytes > 0);
     return numBytes;
   }
 
   [[nodiscard]] MemoryAccessor getElementAccessor(int32_t offset) {
     int32_t numBytes = getElementSize(offset);
-    xrpaDebugBoundsAssert(offset, ELEMENT_HEADER_SIZE + numBytes, 0, poolSize);
     return {PRB_POOL_START, offset + ELEMENT_HEADER_SIZE, numBytes};
   }
 
@@ -221,7 +211,6 @@ struct PlacedRingBuffer {
   // sizeNeeded includes the size of the header
   [[nodiscard]] int32_t findFreeOffset(int32_t sizeNeeded) {
     if (count == 0) {
-      xrpaDebugAssert(startOffset == 0);
       return startOffset;
     }
 
@@ -233,8 +222,6 @@ struct PlacedRingBuffer {
         return offset;
       } else {
         // need to wrap around
-        xrpaDebugAssert(
-            offset <= poolSize, "Last element of ring buffer extends beyond memory range");
         prewrapOffset = offset;
         offset = 0;
       }

@@ -29,6 +29,7 @@ export declare const HEADER: string[];
 export declare const UNIT_TRANSFORMER: UnitTransformer;
 export declare const PRIMITIVE_INTRINSICS: PrimitiveIntrinsics;
 export declare const STMT_TERM = "";
+export declare const HAS_NATIVE_PRIMITIVE_TYPES = false;
 export declare function genGetCurrentClockTime(includes: IncludeAggregator | null, inNanoseconds?: boolean): string;
 export declare const DEFAULT_INTERFACE_PTR_TYPE = "bare";
 export declare class PythonIncludeAggregator implements IncludeAggregator {
@@ -127,6 +128,7 @@ export declare function genReadWriteValueFunctions(classSpec: ClassSpec, params:
     fieldsFromLocal: Record<string, TypeValue>;
     localValueParamName: string;
 }): void;
+export declare function sanitizeEnumNames(enumValues: Record<string, number>): Record<string, number>;
 export declare function genEnumDefinition(enumName: string, enumValues: Record<string, number>, includes: IncludeAggregator | null): string[];
 export declare function genEnumDynamicConversion(targetTypename: string, value: TypeValue): string;
 export declare function getNullValue(): string;

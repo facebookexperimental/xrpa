@@ -296,6 +296,7 @@ function Image(arg0, arg1) {
         gain: Scalar(1.0, "Image gain"),
         exposureDuration: HiResTimestamp("Image exposure duration, if available"),
         timestamp: HiResTimestamp("Capture timestamp, if available"),
+        captureFrameRate: Scalar(0.0, "Capture frame rate, if available"),
         data: ByteArray(Math.ceil(params.expectedWidth * params.expectedHeight * params.expectedBytesPerPixel), "Image data"),
     }), exports.IS_IMAGE_TYPE, true);
     if (params.description) {

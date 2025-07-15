@@ -16,6 +16,7 @@
 
 
 import { TypeDefinition } from "../../shared/TypeDefinition";
+export declare const MemoryUtils: TypeDefinition;
 export declare const MemoryOffset: TypeDefinition;
 export declare const MemoryAccessor: TypeDefinition;
 export declare const StringEmbedding: TypeDefinition;
@@ -39,6 +40,7 @@ export declare const InboundSignalForwarder: TypeDefinition;
 export declare const SignalProducerCallback: TypeDefinition;
 export declare const SignalRingBuffer: TypeDefinition;
 export declare const SignalPacket: TypeDefinition;
+export declare const SignalTypeInference: TypeDefinition;
 export declare const InboundSignalDataInterface: TypeDefinition;
 export declare const OutboundSignalData: TypeDefinition;
 

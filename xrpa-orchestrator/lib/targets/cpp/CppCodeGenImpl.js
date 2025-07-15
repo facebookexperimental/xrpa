@@ -20,8 +20,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genDynSizeOfValue = exports.genWriteValue = exports.genReadValue = exports.genClassSourceDefinition = exports.genClassHeaderDefinition = exports.genClassDefinition = exports.genMessageDispatch = exports.genOnMessageAccessor = exports.genMessageHandlerType = exports.genEventHandlerCall = exports.genEventHandlerType = exports.makeObjectAccessor = exports.getTypesHeaderNamespace = exports.getTypesHeaderName = exports.getDataStoreClass = exports.getDataStoreHeaderNamespace = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genSharedPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.constRef = exports.forwardDeclareClass = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.CppIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.genGetCurrentClockTime = exports.STMT_TERM = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.BUCK_HEADER = exports.HEADER = exports.XRPA_NAMESPACE = exports.getXrpaTypes = exports.registerXrpaTypes = void 0;
-exports.declareVar = exports.ifEquals = exports.ifAllBitsAreSet = exports.ifAnyBitIsSet = exports.applyTemplateParams = exports.genConvertIntToBool = exports.genConvertBoolToInt = exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genPassthroughMethodBind = exports.genMethodBind = exports.genMethodCall = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = void 0;
+exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.sanitizeEnumNames = exports.genReadWriteValueFunctions = exports.genDynSizeOfValue = exports.genWriteValue = exports.genReadValue = exports.genClassSourceDefinition = exports.genClassHeaderDefinition = exports.genClassDefinition = exports.genMessageDispatch = exports.genOnMessageAccessor = exports.genMessageHandlerType = exports.genEventHandlerCall = exports.genEventHandlerType = exports.makeObjectAccessor = exports.getTypesHeaderNamespace = exports.getTypesHeaderName = exports.getDataStoreClass = exports.getDataStoreHeaderNamespace = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genSharedPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.identifierName = exports.constRef = exports.forwardDeclareClass = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.CppIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.genGetCurrentClockTime = exports.HAS_NATIVE_PRIMITIVE_TYPES = exports.STMT_TERM = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.BUCK_HEADER = exports.HEADER = exports.XRPA_NAMESPACE = exports.getXrpaTypes = exports.registerXrpaTypes = void 0;
+exports.declareVar = exports.ifEquals = exports.ifAllBitsAreSet = exports.ifAnyBitIsSet = exports.applyTemplateParams = exports.genConvertIntToBool = exports.genConvertBoolToInt = exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genPassthroughMethodBind = exports.genMethodBind = exports.genMethodCall = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
@@ -100,6 +100,7 @@ exports.PRIMITIVE_INTRINSICS = {
     FALSE: "false",
 };
 exports.STMT_TERM = ";";
+exports.HAS_NATIVE_PRIMITIVE_TYPES = true;
 function genGetCurrentClockTime(_includes, inNanoseconds = false) {
     if (inNanoseconds) {
         return `${exports.XRPA_NAMESPACE}::getCurrentClockTimeNanoseconds()`;
@@ -200,6 +201,10 @@ function constRef(type, byteSize) {
     return `const ${type}&`;
 }
 exports.constRef = constRef;
+function identifierName(name) {
+    return name;
+}
+exports.identifierName = identifierName;
 function privateMember(memberVarName) {
     if (memberVarName.endsWith("_")) {
         // already private
@@ -870,6 +875,10 @@ function genReadWriteValueFunctions(classSpec, params) {
     }
 }
 exports.genReadWriteValueFunctions = genReadWriteValueFunctions;
+function sanitizeEnumNames(enumValues) {
+    return enumValues;
+}
+exports.sanitizeEnumNames = sanitizeEnumNames;
 function genEnumDefinition(enumName, enumValues) {
     return [
         `enum class ${enumName}: uint32_t {`,

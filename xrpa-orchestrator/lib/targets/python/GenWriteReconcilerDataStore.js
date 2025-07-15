@@ -44,14 +44,15 @@ exports.genOutboundReconciledTypes = exports.genChangeHandlerMethods = exports.d
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const ClassSpec_1 = require("../../shared/ClassSpec");
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
-const PythonCodeGenImpl_1 = require("./PythonCodeGenImpl");
-const PythonCodeGenImpl = __importStar(require("./PythonCodeGenImpl"));
-const PythonDatasetLibraryTypes_1 = require("./PythonDatasetLibraryTypes");
+const TypeValue_1 = require("../../shared/TypeValue");
 const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
+const GenSignalAccessorsShared_1 = require("../shared/GenSignalAccessorsShared");
 const GenMessageAccessors_1 = require("./GenMessageAccessors");
 const GenDataStore_1 = require("./GenDataStore");
 const GenReadReconcilerDataStore_1 = require("./GenReadReconcilerDataStore");
-const TypeValue_1 = require("../../shared/TypeValue");
+const PythonCodeGenImpl_1 = require("./PythonCodeGenImpl");
+const PythonCodeGenImpl = __importStar(require("./PythonCodeGenImpl"));
+const PythonDatasetLibraryTypes_1 = require("./PythonDatasetLibraryTypes");
 function genFieldSetDirty(params) {
     const changeBit = params.typeDef.getFieldBitMask(params.fieldName);
     const fieldSize = params.typeDef.getStateField(params.fieldName).getRuntimeByteCount(params.fieldVar, params.ctx.namespace, params.includes);
@@ -110,17 +111,6 @@ function genWriteFieldSetters(classSpec, params) {
     }
     else if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
         const setterName = (0, xrpa_utils_1.filterToString)(fieldAccessorNameOverride) ?? `set_${(0, PythonCodeGenImpl_1.identifierName)(params.fieldName)}`;
-        classSpec.methods.push({
-            name: setterName,
-            parameters: [{
-                    name: params.fieldName,
-                    type: fieldType.getReferencedSuperType(params.ctx.namespace, classSpec.includes),
-                }],
-            body: includes => [
-                `${fieldVar} = ${fieldType.convertValueFromLocal(params.ctx.namespace, includes, (0, PythonCodeGenImpl_1.identifierName)(params.fieldName))}`,
-                ...genFieldSetDirty({ ...params, includes, fieldVar }),
-            ],
-        });
         classSpec.methods.push({
             name: setterName + "_id",
             parameters: [{
@@ -401,6 +391,11 @@ function genOutboundReconciledTypes(ctx, includesIn) {
         (0, GenMessageAccessors_1.genMessageFieldAccessors)(classSpec, {
             reconcilerDef,
             genMsgHandler: GenDataStore_1.genMsgHandler,
+        });
+        (0, GenSignalAccessorsShared_1.genSignalFieldAccessors)(classSpec, {
+            codegen: PythonCodeGenImpl,
+            reconcilerDef,
+            proxyObj: null,
         });
         (0, GenMessageAccessors_1.genMessageChannelDispatch)(classSpec, {
             reconcilerDef,

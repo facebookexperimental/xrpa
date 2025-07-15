@@ -81,7 +81,6 @@ class MemoryAccessor {
     if (size < 0) {
       size = 0;
     }
-    xrpaDebugBoundsAssert(offset, size, 0, size_);
     return {memPtr_, offset_ + offset, size};
   }
 
@@ -148,15 +147,12 @@ class MemoryAccessor {
 
   template <typename T>
   [[nodiscard]] T readValue(MemoryOffset& pos) const {
-    xrpaDebugBoundsAssert(pos.offset_, sizeof(T), 0, size_);
     return *reinterpret_cast<T*>(memPtr_ + offset_ + pos.advance(sizeof(T)));
   }
 
   template <>
   [[nodiscard]] std::string readValue<std::string>(MemoryOffset& pos) const {
     auto byteCount = readValue<int32_t>(pos);
-
-    xrpaDebugBoundsAssert(pos.offset_, byteCount, 0, size_);
     return std::string(
         reinterpret_cast<char*>(memPtr_ + offset_ + pos.advance(byteCount)), byteCount);
   }
@@ -164,34 +160,27 @@ class MemoryAccessor {
   template <>
   [[nodiscard]] std::vector<uint8_t> readValue<std::vector<uint8_t>>(MemoryOffset& pos) const {
     auto byteCount = readValue<int32_t>(pos);
-
-    xrpaDebugBoundsAssert(pos.offset_, byteCount, 0, size_);
     auto ret = std::vector<uint8_t>(byteCount);
     std::memcpy(ret.data(), memPtr_ + offset_ + pos.advance(byteCount), byteCount);
     return ret;
   }
 
   template <typename T>
-  void writeValue(const T& val, MemoryOffset& pos) {
-    xrpaDebugBoundsAssert(pos.offset_, sizeof(T), 0, size_);
+  void writeValue(const T& val, MemoryOffset& pos) const {
     *reinterpret_cast<T*>(memPtr_ + offset_ + pos.advance(sizeof(T))) = val;
   }
 
   template <>
-  void writeValue<std::string>(const std::string& val, MemoryOffset& pos) {
+  void writeValue<std::string>(const std::string& val, MemoryOffset& pos) const {
     int32_t byteCount = val.size();
     writeValue<int32_t>(byteCount, pos);
-
-    xrpaDebugBoundsAssert(pos.offset_, byteCount, 0, size_);
     std::memcpy(memPtr_ + offset_ + pos.advance(byteCount), val.data(), byteCount);
   }
 
   template <>
-  void writeValue<std::vector<uint8_t>>(const std::vector<uint8_t>& val, MemoryOffset& pos) {
+  void writeValue<std::vector<uint8_t>>(const std::vector<uint8_t>& val, MemoryOffset& pos) const {
     int32_t byteCount = val.size();
     writeValue<int32_t>(byteCount, pos);
-
-    xrpaDebugBoundsAssert(pos.offset_, byteCount, 0, size_);
     std::memcpy(memPtr_ + offset_ + pos.advance(byteCount), val.data(), byteCount);
   }
 
@@ -201,7 +190,6 @@ class MemoryAccessor {
   }
 
   void* getRawPointer(int32_t pos, int32_t maxBytes) {
-    xrpaDebugBoundsAssert(pos, maxBytes, 0, size_);
     return memPtr_ + offset_ + pos;
   }
 

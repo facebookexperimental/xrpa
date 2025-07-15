@@ -16,12 +16,15 @@
 
 #include <xrpa-runtime/external_utils/CommandLineUtils.h>
 
+#if defined(WIN32)
 #include <Windows.h>
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
+#endif
 
 #include <boost/tokenizer.hpp>
 #include <filesystem>
 #include <fstream>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -49,9 +52,19 @@ std::vector<std::string> processCommandLine(int argc, char** argv) {
   std::vector<std::string> commandLineArgs;
 
   // get the path of the running executable
+  std::string exePath;
+
+#if defined(WIN32)
   char runningFilename[MAX_PATH] = {0};
   GetModuleFileNameA(NULL, runningFilename, MAX_PATH);
-  std::string exePath = std::filesystem::path(runningFilename).remove_filename().string();
+  exePath = std::filesystem::path(runningFilename).remove_filename().string();
+#elif defined(__APPLE__)
+  char runningFilename[PATH_MAX] = {0};
+  uint32_t size = PATH_MAX;
+  if (_NSGetExecutablePath(runningFilename, &size) == 0) {
+    exePath = std::filesystem::path(runningFilename).remove_filename().string();
+  }
+#endif
 
   // check for a command line file in the same directory as the running executable
   parseCommandLineFile(commandLineArgs, exePath + "/command_line.txt");

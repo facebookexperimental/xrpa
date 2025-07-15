@@ -140,7 +140,6 @@ namespace Xrpa
             {
                 size = 0;
             }
-            XrpaUtils.BoundsAssert((int)offset, (int)size, 0, _size);
             return new MemoryAccessor(_dataSource, _memOffset + offset, size);
         }
 
@@ -202,73 +201,61 @@ namespace Xrpa
 
         public ValueType ReadAtOffset<ValueType>(int offset, int valueSize) where ValueType : unmanaged
         {
-            XrpaUtils.BoundsAssert(offset, valueSize, 0, _size);
             return *((ValueType*)(_dataSource + _memOffset + offset));
         }
 
         public void WriteAtOffset<ValueType>(int offset, int valueSize, ValueType val) where ValueType : unmanaged
         {
-            XrpaUtils.BoundsAssert(offset, valueSize, 0, _size);
             *((ValueType*)(_dataSource + _memOffset + offset)) = val;
         }
 
         public byte ReadByte(MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset._offset, 1, 0, _size);
             return *(_dataSource + _memOffset + offset.Advance(1));
         }
 
         public void WriteByte(byte val, MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset._offset, 1, 0, _size);
             *(_dataSource + _memOffset + offset.Advance(1)) = val;
         }
 
         public int ReadInt(MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset._offset, 4, 0, _size);
             return *((int*)(_dataSource + _memOffset + offset.Advance(4)));
         }
 
         public void WriteInt(int val, MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset._offset, 4, 0, _size);
             *((int*)(_dataSource + _memOffset + offset.Advance(4))) = val;
         }
 
         public uint ReadUint(MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset._offset, 4, 0, _size);
             return *((uint*)(_dataSource + _memOffset + offset.Advance(4)));
         }
 
         public void WriteUint(uint val, MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset._offset, 4, 0, _size);
             *((uint*)(_dataSource + _memOffset + offset.Advance(4))) = val;
         }
 
         public float ReadFloat(MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset._offset, 4, 0, _size);
             return *((float*)(_dataSource + _memOffset + offset.Advance(4)));
         }
 
         public void WriteFloat(float val, MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset._offset, 4, 0, _size);
             *((float*)(_dataSource + _memOffset + offset.Advance(4))) = val;
         }
 
         public ulong ReadUlong(MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset._offset, 8, 0, _size);
             return *((ulong*)(_dataSource + _memOffset + offset.Advance(8)));
         }
 
         public void WriteUlong(ulong val, MemoryOffset offset)
         {
-            XrpaUtils.BoundsAssert(offset._offset, 8, 0, _size);
             *((ulong*)(_dataSource + _memOffset + offset.Advance(8))) = val;
         }
 
@@ -292,7 +279,6 @@ namespace Xrpa
         {
             int byteCount = ReadInt(offset);
             int strOffset = offset.Advance(byteCount);
-            XrpaUtils.BoundsAssert(strOffset, byteCount, 0, _size);
             byte[] byteArray = new byte[byteCount];
             for (int i = 0; i < byteCount; i++)
             {
@@ -313,7 +299,6 @@ namespace Xrpa
             WriteInt(byteCount, offset);
 
             int strOffset = offset.Advance(byteCount);
-            XrpaUtils.BoundsAssert(strOffset, byteCount, 0, _size);
             for (int i = 0; i < byteCount; i++)
             {
                 *(_dataSource + _memOffset + strOffset + i) = val[i];

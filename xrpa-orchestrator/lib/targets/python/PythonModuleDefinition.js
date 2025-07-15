@@ -60,7 +60,7 @@ class PythonModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
     constructor(name, datamap, genOutputDir, guidGen) {
         super(PythonCodeGenImpl, name, datamap, guidGen ?? {
             includes: [{
-                    filename: "uuid",
+                    namespace: "uuid",
                 }],
             code: "uuid.uuid4()",
         });

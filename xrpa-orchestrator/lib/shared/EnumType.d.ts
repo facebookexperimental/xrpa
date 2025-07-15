@@ -22,8 +22,8 @@ import { UserDefaultValue } from "./TypeDefinition";
 import { TypeValue } from "./TypeValue";
 export declare class EnumType extends PrimitiveType {
     readonly enumName: string;
-    readonly enumValues: Record<string, number>;
     readonly localTypeOverride?: TypeSpec | undefined;
+    readonly enumValues: Record<string, number>;
     constructor(codegen: TargetCodeGenImpl, enumName: string, apiname: string, enumValues: Record<string, number>, localTypeOverride?: TypeSpec | undefined);
     getHashData(): Record<string, unknown>;
     userDefaultToTypeValue(inNamespace: string, _includes: IncludeAggregator | null, userDefault: UserDefaultValue): TypeValue | undefined;

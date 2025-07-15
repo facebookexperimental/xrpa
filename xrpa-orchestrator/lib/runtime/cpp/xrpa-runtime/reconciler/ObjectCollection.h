@@ -165,7 +165,7 @@ class ObjectCollection : public IObjectCollection {
     }
   }
 
-  void processCreate(const ObjectUuid& id, MemoryAccessor memAccessor) final {
+  void processCreate(const ObjectUuid& id, const MemoryAccessor& memAccessor) final {
     if (isLocalOwned_) {
       return;
     }
@@ -224,7 +224,7 @@ class ObjectCollection : public IObjectCollection {
     }
   }
 
-  void processUpsert(const ObjectUuid& id, MemoryAccessor memAccessor) final {
+  void processUpsert(const ObjectUuid& id, const MemoryAccessor& memAccessor) final {
     if (!processUpdateInternal(id, memAccessor, inboundFieldMask_, true)) {
       processCreate(id, memAccessor);
     }
@@ -273,14 +273,16 @@ class ObjectCollection : public IObjectCollection {
     }
   }
 
-  bool processUpdate(const ObjectUuid& id, MemoryAccessor memAccessor, uint64_t fieldsChanged)
-      final {
+  bool processUpdate(
+      const ObjectUuid& id,
+      const MemoryAccessor& memAccessor,
+      uint64_t fieldsChanged) final {
     return processUpdateInternal(id, memAccessor, fieldsChanged, true);
   }
 
   bool processUpdateInternal(
       const ObjectUuid& id,
-      MemoryAccessor memAccessor,
+      const MemoryAccessor& memAccessor,
       uint64_t fieldsChanged,
       bool notify) {
     fieldsChanged &= inboundFieldMask_;
@@ -316,7 +318,7 @@ class ObjectCollection : public IObjectCollection {
       const ObjectUuid& id,
       int32_t messageType,
       uint64_t timestamp,
-      MemoryAccessor msgAccessor) final {
+      const MemoryAccessor& msgAccessor) final {
     auto iter = objects_.find(id);
     if (iter == objects_.end()) {
       return;

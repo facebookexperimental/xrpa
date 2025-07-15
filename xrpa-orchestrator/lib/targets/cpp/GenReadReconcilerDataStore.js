@@ -225,8 +225,8 @@ function genObjectCollectionClasses(ctx, includesIn) {
         });
         const constructorBody = [];
         // inbound (remotely created) objects are created by the reconciler, so we need to give it a delegate functions
+        const reconciledTypeName = typeDef.getLocalType(ctx.namespace, null);
         if (reconcilerDef instanceof DataStore_1.InputReconcilerDefinition) {
-            const reconciledTypeName = typeDef.getLocalType(ctx.namespace, null);
             constructorBody.push(`setCreateDelegateInternal(${reconciledTypeName}::create);`);
             classSpec.methods.push({
                 name: "setCreateDelegate",
@@ -238,7 +238,7 @@ function genObjectCollectionClasses(ctx, includesIn) {
             });
         }
         else {
-            // expose addObject and removeObject to the user
+            // expose addObject, removeObject, and createObject to the user
             classSpec.methods.push({
                 name: "addObject",
                 parameters: [{
@@ -246,6 +246,21 @@ function genObjectCollectionClasses(ctx, includesIn) {
                         type: localPtr,
                     }],
                 body: ["addObjectInternal(obj);"],
+            });
+            const id = (0, CppCodeGenImpl_1.genRuntimeGuid)({
+                objectUuidType: ctx.moduleDef.ObjectUuid.getLocalType(ctx.namespace, classSpec.includes),
+                guidGen: ctx.moduleDef.guidGen,
+                includes: classSpec.includes,
+            });
+            classSpec.methods.push({
+                name: "createObject",
+                returnType: (0, CppCodeGenImpl_1.genSharedPointer)(reconciledTypeName, classSpec.includes),
+                noDiscard: true,
+                body: [
+                    `auto obj = std::make_shared<${reconciledTypeName}>(${id});`,
+                    `addObjectInternal(obj);`,
+                    `return obj;`,
+                ],
             });
             classSpec.methods.push({
                 name: "removeObject",

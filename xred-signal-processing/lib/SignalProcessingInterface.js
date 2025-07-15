@@ -261,6 +261,7 @@ exports.XredSignalProcessingInterface = (0, xrpa_orchestrator_1.XrpaProgramInter
             channelOffset: (0, xrpa_orchestrator_1.Count)(0),
             deviceNameFilter: (0, xrpa_orchestrator_1.String)("", "pseudo-regex, with just $ and ^ supported for now"),
             deviceHandednessFilter: (0, xrpa_orchestrator_1.Enum)("DeviceHandednessFilter", ["Any", "None", "Left", "Right"]),
+            outputToSystemAudio: xrpa_orchestrator_1.Boolean,
             // TODO channelName, driverIdentifier, driverPort filters?
             foundMatch: (0, xrpa_orchestrator_1.Output)((0, xrpa_orchestrator_1.Boolean)(false, "Set to true if a matching device was found")),
         },

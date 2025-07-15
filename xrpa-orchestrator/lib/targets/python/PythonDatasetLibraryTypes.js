@@ -40,7 +40,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OutboundSignalData = exports.InboundSignalDataInterface = exports.SignalPacket = exports.SignalRingBuffer = exports.SignalProducerCallback = exports.InboundSignalForwarder = exports.SharedMemoryTransportStream = exports.TransportStreamAccessor = exports.TransportStream = exports.ObjectCollectionIndexedBinding = exports.ObjectCollectionIndex = exports.ObjectCollection = exports.IObjectCollection = exports.DataStoreObject = exports.IDataStoreObjectAccessor = exports.IDataStoreObject = exports.DataStoreReconciler = exports.XrpaModule = exports.ObjectAccessorInterface = exports.TransportConfig = exports.HashValue = exports.StringEmbedding = exports.MemoryAccessor = exports.MemoryOffset = void 0;
+exports.OutboundSignalData = exports.InboundSignalDataInterface = exports.SignalPacket = exports.SignalTypeInference = exports.SignalRingBuffer = exports.SignalProducerCallback = exports.InboundSignalForwarder = exports.SharedMemoryTransportStream = exports.TransportStreamAccessor = exports.TransportStream = exports.ObjectCollectionIndexedBinding = exports.ObjectCollectionIndex = exports.ObjectCollection = exports.IObjectCollection = exports.DataStoreObject = exports.IDataStoreObjectAccessor = exports.IDataStoreObject = exports.DataStoreReconciler = exports.XrpaModule = exports.ObjectAccessorInterface = exports.TransportConfig = exports.HashValue = exports.StringEmbedding = exports.MemoryAccessor = exports.MemoryOffset = exports.MemoryUtils = void 0;
 const PrimitiveType_1 = require("../../shared/PrimitiveType");
 const TypeValue_1 = require("../../shared/TypeValue");
 const CodeGen = __importStar(require("./PythonCodeGenImpl"));
@@ -49,6 +49,7 @@ function PythonPrimitiveType(name, size = 0) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 // Utils:
+exports.MemoryUtils = PythonPrimitiveType("xrpa_runtime.utils.memory_accessor.MemoryUtils", 16);
 exports.MemoryOffset = PythonPrimitiveType("xrpa_runtime.utils.memory_accessor.MemoryOffset", 16);
 exports.MemoryAccessor = PythonPrimitiveType("xrpa_runtime.utils.memory_accessor.MemoryAccessor", 16);
 exports.StringEmbedding = PythonPrimitiveType("xrpa_runtime.utils.string_embedding.StringEmbedding", 16);
@@ -78,12 +79,14 @@ exports.SharedMemoryTransportStream = PythonPrimitiveType("xrpa_runtime.transpor
 exports.InboundSignalForwarder = PythonPrimitiveType("xrpa_runtime.signals.inbound_signal_forwarder.InboundSignalForwarder");
 exports.SignalProducerCallback = PythonPrimitiveType("xrpa_runtime.signals.outbound_signal_data.SignalProducerCallback");
 exports.SignalRingBuffer = PythonPrimitiveType("xrpa_runtime.signals.signal_ring_buffer.SignalRingBuffer");
+exports.SignalTypeInference = PythonPrimitiveType("xrpa_runtime.signals.signal_shared.SignalTypeInference");
 exports.SignalPacket = PythonPrimitiveType("xrpa_runtime.signals.signal_shared.SignalPacket");
 exports.InboundSignalDataInterface = PythonPrimitiveType("xrpa_runtime.signals.inbound_signal_data.InboundSignalDataInterface");
 exports.OutboundSignalData = PythonPrimitiveType("xrpa_runtime.signals.outbound_signal_data.OutboundSignalData");
 CodeGen.registerXrpaTypes({
     MemoryAccessor: exports.MemoryAccessor,
     MemoryOffset: exports.MemoryOffset,
+    MemoryUtils: exports.MemoryUtils,
     StringEmbedding: exports.StringEmbedding,
     ObjectAccessorInterface: exports.ObjectAccessorInterface,
     TransportStreamAccessor: exports.TransportStreamAccessor,
@@ -91,6 +94,7 @@ CodeGen.registerXrpaTypes({
     SignalProducerCallback: exports.SignalProducerCallback,
     SignalRingBuffer: exports.SignalRingBuffer,
     SignalPacket: exports.SignalPacket,
+    SignalTypeInference: exports.SignalTypeInference,
     InboundSignalDataInterface: exports.InboundSignalDataInterface,
     OutboundSignalData: exports.OutboundSignalData,
 });

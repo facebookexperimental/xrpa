@@ -224,7 +224,7 @@ function genBindSignalFieldValues(codegen, classSpec, params) {
         fieldName: params.srcFieldName,
         initializersOut: params.initializersOut,
     });
-    params.initializersOut.push(`${codegen.genDerefMethodCall(params.dstObjVar, codegen.applyTemplateParams(`set${(0, xrpa_utils_1.upperFirst)(params.dstFieldName)}`, codegen.PRIMITIVE_INTRINSICS.float32.typename), [signalForwarder])};`);
+    params.initializersOut.push(`${codegen.genDerefMethodCall(params.dstObjVar, codegen.applyTemplateParams(`set${(0, xrpa_utils_1.upperFirst)(params.dstFieldName)}Forwarder`, codegen.PRIMITIVE_INTRINSICS.float32.typename), [signalForwarder])};`);
 }
 function verifyStateFieldTypesMatch(params) {
     if ((0, TypeDefinition_1.typeIsStateData)(params.srcFieldType)) {
@@ -465,12 +465,12 @@ function genOutputParameterAccessors(ctx, codegen, classSpec, programDef, initia
         }
     }
 }
-function genForeignObjectInstantiation(ctx, codegen, classSpec, graphNode, idCall, createLines, updateLines) {
-    const { objType, objVarName } = getObjectInfo(ctx, codegen, graphNode, classSpec.includes);
+function genForeignObjectInstantiation(ctx, codegen, classSpec, graphNode, createLines, updateLines) {
+    const { objVarName } = getObjectInfo(ctx, codegen, graphNode, classSpec.includes);
     const reconcilerDef = (0, DataflowProgramDefinition_1.getReconcilerDefForNode)(ctx.moduleDef, graphNode);
     const storeMemberName = codegen.privateMember(storeToVarName(reconcilerDef.storeDef.apiname));
     // create object
-    createLines.push(`${objVarName} = ${codegen.genCreateObject(objType, [idCall])};`, `${codegen.genDerefMethodCall(codegen.genDeref(storeMemberName, reconcilerDef.type.getName()), "addObject", [objVarName])};`);
+    createLines.push(`${objVarName} = ${codegen.genDerefMethodCall(codegen.genDeref(storeMemberName, reconcilerDef.type.getName()), "createObject", [])};`);
     // set field values
     const fields = reconcilerDef.type.getAllFields();
     for (const fieldName in graphNode.fieldValues) {
@@ -576,14 +576,9 @@ function genStringEmbedding(ctx, codegen, classSpec, graphNode, createLines, upd
 function genCreateObjectsBody(ctx, codegen, programDef, classSpec, initializerLines) {
     const createLines = [];
     const updateLines = [];
-    const idCall = codegen.genRuntimeGuid({
-        objectUuidType: ctx.moduleDef.ObjectUuid.getLocalType(ctx.namespace, classSpec.includes),
-        guidGen: ctx.moduleDef.guidGen,
-        includes: classSpec.includes,
-    });
     for (const graphNode of programDef.graphNodes) {
         if ((0, DataflowProgramDefinition_1.isDataflowForeignObjectInstantiation)(graphNode)) {
-            genForeignObjectInstantiation(ctx, codegen, classSpec, graphNode, idCall, createLines, updateLines);
+            genForeignObjectInstantiation(ctx, codegen, classSpec, graphNode, createLines, updateLines);
         }
         else if ((0, DataflowProgramDefinition_1.isDataflowStringEmbedding)(graphNode)) {
             genStringEmbedding(ctx, codegen, classSpec, graphNode, createLines, updateLines);

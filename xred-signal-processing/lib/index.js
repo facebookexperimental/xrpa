@@ -31,8 +31,13 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.strEquals = exports.strContains = exports.strEndsWith = exports.strStartsWith = void 0;
 __exportStar(require("./SignalProcessingInterface"), exports);
 __exportStar(require("./MathOps"), exports);
 __exportStar(require("./ProcessingNodes"), exports);
-__exportStar(require("./StringFilter"), exports);
+var xrpa_utils_1 = require("@xrpa/xrpa-utils");
+Object.defineProperty(exports, "strStartsWith", { enumerable: true, get: function () { return xrpa_utils_1.strStartsWith; } });
+Object.defineProperty(exports, "strEndsWith", { enumerable: true, get: function () { return xrpa_utils_1.strEndsWith; } });
+Object.defineProperty(exports, "strContains", { enumerable: true, get: function () { return xrpa_utils_1.strContains; } });
+Object.defineProperty(exports, "strEquals", { enumerable: true, get: function () { return xrpa_utils_1.strEquals; } });
 //# sourceMappingURL=index.js.map

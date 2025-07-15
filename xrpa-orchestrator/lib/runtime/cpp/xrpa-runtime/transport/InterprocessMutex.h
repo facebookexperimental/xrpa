@@ -16,69 +16,65 @@
 
 #pragma once
 
-#include <xrpa-runtime/utils/XrpaUtils.h>
-#include <chrono>
 #include <functional>
 #include <string>
 
 namespace Xrpa {
 
+/**
+ * Abstract base class for interprocess mutex implementations.
+ * Provides platform-independent interface for interprocess synchronization.
+ */
 class InterprocessMutex {
  public:
-  explicit InterprocessMutex(const std::string& name) : mutexName_(name) {
-    createMutex();
-  }
+  virtual ~InterprocessMutex() = default;
 
-  ~InterprocessMutex() {
-    freeMutex();
-  }
+  virtual void unlock() = 0;
 
-  // copy constructor
-  InterprocessMutex(const InterprocessMutex& other) : InterprocessMutex(other.mutexName_) {}
+  virtual void dispose() = 0;
 
-  // copy assignment
-  InterprocessMutex& operator=(const InterprocessMutex& other) {
-    if (this != &other) {
-      freeMutex();
-      this->mutexName_ = other.mutexName_;
-      createMutex();
-    }
-    return *this;
-  }
+  // Execute a callback while holding the mutex lock, with appropriate exception handling
+  virtual bool lockAndExecute(int timeoutMS, std::function<void()> lockCallback) = 0;
+};
 
-  // move constructor
-  InterprocessMutex(InterprocessMutex&& other) noexcept : mutexName_(std::move(other.mutexName_)) {
-    this->mutexHandle_ = other.mutexHandle_;
-    other.mutexHandle_ = nullptr;
-  }
+#ifdef WIN32
 
-  // move assignment
-  InterprocessMutex& operator=(InterprocessMutex&& other) noexcept {
-    if (this != &other) {
-      freeMutex();
-      this->mutexName_ = other.mutexName_;
-      this->mutexHandle_ = other.mutexHandle_;
-      other.mutexHandle_ = nullptr;
-    }
-    return *this;
-  }
+class WindowsInterprocessMutex : public InterprocessMutex {
+ public:
+  explicit WindowsInterprocessMutex(const std::string& name);
+  ~WindowsInterprocessMutex() override;
 
-  template <typename R>
-  bool lock(std::chrono::duration<int64_t, R> timeout, std::function<void()> lockCallback) {
-    auto timeoutMS = std::chrono::duration_cast<std::chrono::milliseconds>(timeout).count();
-    return lockInternal(timeoutMS, lockCallback);
-  }
+  void unlock() override;
+  void dispose() override;
 
-  void unlock();
+  // Execute a callback while holding the mutex lock, with SEH exception handling
+  bool lockAndExecute(int timeoutMS, std::function<void()> lockCallback) override;
 
  private:
   std::string mutexName_;
   void* mutexHandle_ = nullptr;
   bool hasLoggedError_ = false;
-
-  void createMutex();
-  void freeMutex();
-  bool lockInternal(int32_t timeoutMS, std::function<void()> lockCallback);
 };
+#endif // _WIN32
+
+#ifdef __APPLE__
+
+class MacInterprocessMutex : public InterprocessMutex {
+ public:
+  explicit MacInterprocessMutex(const std::string& name);
+  ~MacInterprocessMutex() override;
+
+  void unlock() override;
+  void dispose() override;
+
+  // Execute a callback while holding the mutex lock, with standard exception handling
+  bool lockAndExecute(int timeoutMS, std::function<void()> lockCallback) override;
+
+ private:
+  std::string lockFilePath_;
+  int fileDescriptor_ = -1;
+  bool isLocked_ = false;
+};
+#endif // __APPLE__
 
 } // namespace Xrpa

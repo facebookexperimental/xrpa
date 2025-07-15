@@ -27,7 +27,7 @@ class InboundSignalDataInterface {
  public:
   virtual ~InboundSignalDataInterface() = default;
 
-  virtual void onSignalData(uint64_t timestamp, MemoryAccessor memAccessor) = 0;
+  virtual void onSignalData(uint64_t timestamp, const MemoryAccessor& memAccessor) = 0;
 };
 
 template <typename SampleType>
@@ -42,7 +42,7 @@ class InboundSignalData : public InboundSignalDataInterface {
     ringBuffer_.initialize(maxFramesInBuffer, warmupFrames, numChannels_);
   }
 
-  void onSignalData(uint64_t /*timestamp*/, MemoryAccessor memAccessor) final {
+  void onSignalData(uint64_t /*timestamp*/, const MemoryAccessor& memAccessor) final {
     auto packet = SignalPacket{memAccessor};
     auto sampleType = packet.getSampleType();
     auto framesPerSecond = packet.getFrameRate();

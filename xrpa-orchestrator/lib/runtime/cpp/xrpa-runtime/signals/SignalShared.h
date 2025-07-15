@@ -20,7 +20,6 @@
 #include <xrpa-runtime/utils/MemoryAccessor.h>
 #include <cstdint>
 #include <type_traits>
-#include <utility>
 
 namespace Xrpa {
 
@@ -60,8 +59,8 @@ constexpr int32_t inferSampleType() {
 template <typename SampleType>
 class SignalChannelData {
  public:
-  SignalChannelData(MemoryAccessor memAccessor, int32_t frameCount, int32_t numChannels)
-      : memAccessor_(std::move(memAccessor)), frameCount_(frameCount), numChannels_(numChannels) {}
+  SignalChannelData(const MemoryAccessor& memAccessor, int32_t frameCount, int32_t numChannels)
+      : memAccessor_(memAccessor), frameCount_(frameCount), numChannels_(numChannels) {}
 
   int32_t getNumChannels() {
     return numChannels_;
@@ -144,7 +143,7 @@ class SignalChannelData {
 
 class SignalPacket {
  public:
-  explicit SignalPacket(MemoryAccessor memAccessor) : memAccessor_(std::move(memAccessor)) {}
+  explicit SignalPacket(const MemoryAccessor& memAccessor) : memAccessor_(memAccessor) {}
 
   int32_t getFrameCount() {
     auto offset = MemoryOffset(0);

@@ -44,10 +44,20 @@ function genStandaloneHeader(fileWriter, outdir) {
         ...CppCodeGenImpl_1.HEADER,
         `#pragma once`,
         ``,
-        `#ifdef BUILDING_MAIN_STANDALONE`,
-        `#define DLLEXPORT __declspec(dllexport)`,
+        `#if defined(WIN32)`,
+        `  #ifdef BUILDING_MAIN_STANDALONE`,
+        `    #define DLLEXPORT __declspec(dllexport)`,
+        `  #else`,
+        `    #define DLLEXPORT __declspec(dllimport)`,
+        `  #endif`,
+        `#elif defined(__APPLE__)`,
+        `  #ifdef BUILDING_MAIN_STANDALONE`,
+        `    #define DLLEXPORT __attribute__((visibility("default")))`,
+        `  #else`,
+        `    #define DLLEXPORT __attribute__((visibility("default")))`,
+        `  #endif`,
         `#else`,
-        `#define DLLEXPORT __declspec(dllimport)`,
+        `  #define DLLEXPORT`,
         `#endif`,
         ``,
         `extern "C" {`,
@@ -157,8 +167,8 @@ function genStandaloneBuck(fileWriter, outdir, runtimeDir, buckTarget, moduleDef
             `"${buckTarget}",`,
         ];
         if (!(0, xrpa_utils_1.objectIsEmpty)(moduleDef.getSettings().getAllFields())) {
-            deps.push(`"${runtimeDepPath}:external_utils",`);
-            deps.push(`"//third-party/cli11:cli11",`);
+            (0, xrpa_utils_1.pushUnique)(deps, `"${runtimeDepPath}:external_utils",`);
+            (0, xrpa_utils_1.pushUnique)(deps, `"//third-party/cli11:cli11",`);
         }
         return [
             ...CppCodeGenImpl_1.BUCK_HEADER,
@@ -170,6 +180,7 @@ function genStandaloneBuck(fileWriter, outdir, runtimeDir, buckTarget, moduleDef
             `    name = "${moduleDef.name}_standalone",`,
             `    srcs = ["StandaloneWrapper.cpp"],`,
             `    compatible_with = [`,
+            `        "ovr_config//os:macos",`,
             `        "ovr_config//os:windows",`,
             `    ],`,
             `    link_style = "static",`,
@@ -186,6 +197,7 @@ function genStandaloneBuck(fileWriter, outdir, runtimeDir, buckTarget, moduleDef
             `    name = "${moduleDef.name}",`,
             `    srcs = ["MainStandalone.cpp"],`,
             `    compatible_with = [`,
+            `        "ovr_config//os:macos",`,
             `        "ovr_config//os:windows",`,
             `    ],`,
             `    link_style = "shared",`,

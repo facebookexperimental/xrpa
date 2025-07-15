@@ -43,16 +43,18 @@ function addSetting(name, dataType) {
 exports.addSetting = addSetting;
 function setProgramInterface(programInterface) {
     const ctx = getNativeProgramContext();
-    if (ctx.programInterface) {
-        throw new Error("Program interface already set");
+    if (Array.isArray(programInterface)) {
+        ctx.programInterfaces.push(...programInterface);
     }
-    ctx.programInterface = programInterface;
+    else {
+        ctx.programInterfaces.push(programInterface);
+    }
 }
 exports.setProgramInterface = setProgramInterface;
 //////////////////////////////////////////////////////////////////////////////
 function applyNativeProgramContext(ctx, moduleDef) {
-    if (ctx.programInterface) {
-        (0, ProgramInterfaceConverter_1.bindProgramInterfaceToModule)(ctx, moduleDef, ctx.programInterface, false);
+    for (const programInterface of ctx.programInterfaces) {
+        (0, ProgramInterfaceConverter_1.bindProgramInterfaceToModule)(ctx, moduleDef, programInterface, false);
     }
     for (const name in ctx.externalProgramInterfaces) {
         (0, ProgramInterfaceConverter_1.bindProgramInterfaceToModule)(ctx, moduleDef, ctx.externalProgramInterfaces[name].programInterface, true);

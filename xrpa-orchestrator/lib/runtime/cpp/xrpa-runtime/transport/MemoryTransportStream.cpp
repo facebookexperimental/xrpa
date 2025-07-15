@@ -27,7 +27,13 @@ using namespace std::chrono_literals;
 static constexpr auto INIT_TIMEOUT = 5s;
 MemoryTransportStream::MemoryTransportStream(const std::string& name, const TransportConfig& config)
     : name_(name), config_(config), memSize_(MemoryTransportStreamAccessor::getMemSize(config)) {
-  mutex_ = std::make_unique<InterprocessMutex>(name_ + "Mutex");
+#ifdef WIN32
+  mutex_ = std::make_unique<WindowsInterprocessMutex>(name);
+#elif defined(__APPLE__)
+  mutex_ = std::make_unique<MacInterprocessMutex>(name);
+#else
+#error "Unsupported platform"
+#endif
 }
 
 bool MemoryTransportStream::transact(
@@ -37,7 +43,7 @@ bool MemoryTransportStream::transact(
     return false;
   }
 
-  return mutex_->lock(timeout, [&]() {
+  return mutex_->lockAndExecute(timeout.count(), [&]() {
     MemoryTransportStreamAccessor streamAccessor{accessMemory()};
     auto* changelog = streamAccessor.getChangelog();
     auto baseTimestamp = streamAccessor.getBaseTimestamp();
@@ -67,7 +73,7 @@ bool MemoryTransportStream::initializeMemory(bool didCreate) {
   }
 
   if (didCreate) {
-    return mutex_->lock(INIT_TIMEOUT, [&]() {
+    return mutex_->lockAndExecute(INIT_TIMEOUT.count(), [&]() {
       MemoryTransportStreamAccessor streamAccessor{accessMemory()};
       streamAccessor.initialize(config_);
     });

@@ -411,6 +411,7 @@ class SignalOutputDeviceType extends SPNode {
         this.setField("srcNode", params.source);
         this.setField("deviceNameFilter", params.deviceNameFilter);
         this.setField("deviceHandednessFilter", params.deviceHandednessFilter);
+        this.setField("outputToSystemAudio", params.outputToSystemAudio);
         this.setField("channelOffset", params.channelOffset);
     }
 }

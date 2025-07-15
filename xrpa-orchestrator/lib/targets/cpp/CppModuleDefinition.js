@@ -66,8 +66,12 @@ class CppModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
         });
         this.genOutputDir = genOutputDir;
         this.buckDef = buckDef;
+        this.needsExternalUtils = false;
         this.libDir = path_1.default.join(this.genOutputDir, "lib");
         this.runtimeDir = path_1.default.join(this.genOutputDir, "xrpa-runtime");
+        if (!guidGen) {
+            this.needsExternalUtils = true;
+        }
     }
     createObjectUuid() {
         const ObjectUuid = this.createStruct("Identifier", "", {
@@ -116,6 +120,9 @@ class CppModuleDefinition extends ModuleDefinition_1.ModuleDefinition {
             const buckRoot = await (0, xrpa_file_utils_1.buckRootDir)();
             const runtimeRelPath = path_1.default.relative(buckRoot, this.runtimeDir);
             const runtimeDepPath = `//${runtimeRelPath.replace(/\\/g, "/")}`;
+            if (this.needsExternalUtils) {
+                (0, xrpa_utils_1.pushUnique)(this.datamap.typeBuckDeps, `${runtimeDepPath}:external_utils`);
+            }
             const deps = (moduleDef.datamap.typeBuckDeps).map(s => `"${s}",`).concat([
                 `"${runtimeDepPath}:reconciler",`,
                 `"${runtimeDepPath}:transport",`,

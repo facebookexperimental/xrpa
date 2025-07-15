@@ -60,6 +60,7 @@ export interface GuidGenSpec {
 export interface CoreXrpaTypes {
     MemoryAccessor: TypeDefinition;
     MemoryOffset: TypeDefinition;
+    MemoryUtils: TypeDefinition;
     StringEmbedding: TypeDefinition;
     ObjectAccessorInterface: TypeDefinition;
     TransportStreamAccessor: TypeDefinition;
@@ -67,6 +68,7 @@ export interface CoreXrpaTypes {
     SignalProducerCallback: TypeDefinition;
     SignalRingBuffer: TypeDefinition;
     SignalPacket: TypeDefinition;
+    SignalTypeInference: TypeDefinition;
     InboundSignalDataInterface: TypeDefinition;
     OutboundSignalData: TypeDefinition;
 }
@@ -76,10 +78,12 @@ export interface TargetCodeGenImpl {
     PRIMITIVE_INTRINSICS: PrimitiveIntrinsics;
     XRPA_NAMESPACE: string;
     STMT_TERM: string;
+    HAS_NATIVE_PRIMITIVE_TYPES: boolean;
     getXrpaTypes(): CoreXrpaTypes;
     nsQualify(qualifiedName: string, inNamespace: string): string;
     nsJoin(...names: string[]): string;
     nsExtract(qualifiedName: string, nonNamespacePartCount?: number): string;
+    identifierName(name: string, maintainPrivateMarker?: boolean): string;
     privateMember(memberVarName: string): string;
     methodMember(methodName: string): string;
     genCommentLines(str?: string): string[];
@@ -175,6 +179,7 @@ export interface TargetCodeGenImpl {
         fieldName: string;
         visibility?: ClassVisibility;
     }): void;
+    sanitizeEnumNames(enumValues: Record<string, number>): Record<string, number>;
     genEnumDefinition(enumName: string, enumValues: Record<string, number>, includes: IncludeAggregator | null): string[];
     genEnumDynamicConversion(targetTypename: string, value: TypeValue): string;
     genReferencePtrToID(varName: string, objectUuidType: string): string;

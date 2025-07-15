@@ -12,10 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 from abc import abstractmethod
 from typing import Callable
 
-from xrpa_runtime.transport.interprocess_mutex import InterprocessMutex
+from xrpa_runtime.transport.interprocess_mutex import (
+    MacOsInterprocessMutex,
+    WindowsInterprocessMutex,
+)
 from xrpa_runtime.transport.memory_transport_stream_accessor import (
     MemoryTransportStreamAccessor,
 )
@@ -82,7 +86,12 @@ class MemoryTransportStream(TransportStream):
         self._name = name
         self._config = config
         self._mem_size = MemoryTransportStreamAccessor.get_mem_size(config)
-        self._mutex = InterprocessMutex(name + "Mutex")
+        if sys.platform == "win32":
+            self._mutex = WindowsInterprocessMutex(name)
+        elif sys.platform == "darwin":
+            self._mutex = MacOsInterprocessMutex(name)
+        else:
+            raise NotImplementedError(f"Unsupported platform: {sys.platform}")
 
     def __del__(self):
         self._mutex.close()

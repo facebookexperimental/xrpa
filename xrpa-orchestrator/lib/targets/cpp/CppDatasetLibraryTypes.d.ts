@@ -17,6 +17,7 @@
 
 import { PrimitiveType } from "../../shared/PrimitiveType";
 import { TypeDefinition } from "../../shared/TypeDefinition";
+export declare const MemoryUtils: TypeDefinition;
 export declare const MemoryOffset: TypeDefinition;
 export declare const MemoryAccessor: TypeDefinition;
 export declare const StringEmbedding: PrimitiveType;
@@ -40,4 +41,5 @@ export declare const OutboundSignalData: TypeDefinition;
 export declare const SignalProducerCallback: TypeDefinition;
 export declare const SignalRingBuffer: TypeDefinition;
 export declare const SignalPacket: TypeDefinition;
+export declare const SignalTypeInference: TypeDefinition;
 

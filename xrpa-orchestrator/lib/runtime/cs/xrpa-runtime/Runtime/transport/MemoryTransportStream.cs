@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-using System.Threading;
+using System;
+using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Xrpa
 {
-
     public abstract class MemoryTransportStream : TransportStream
     {
         public MemoryTransportStream(string name, TransportConfig config)
@@ -26,7 +27,18 @@ namespace Xrpa
             _name = name;
             _config = config;
             _memSize = MemoryTransportStreamAccessor.GetMemSize(config);
-            _mutex = new Mutex(false, "Global\\" + _name + "Mutex");
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                _mutex = new WindowsInterprocessMutex(_name);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                _mutex = new MacOsInterprocessMutex(_name);
+            }
+            else
+            {
+                throw new NotImplementedException($"Unsupported platform: {RuntimeInformation.OSDescription}");
+            }
         }
 
         public override void Dispose()
@@ -70,8 +82,9 @@ namespace Xrpa
 
         private bool Lock(int timeoutMS, System.Action<MemoryAccessor> func)
         {
-            if (!_mutex.WaitOne(timeoutMS))
+            if (!_mutex.LockWait(timeoutMS))
             {
+                Console.WriteLine($"Failed to acquire mutex for {_name} after {timeoutMS}ms");
                 return false;
             }
 
@@ -81,7 +94,7 @@ namespace Xrpa
             }
             finally
             {
-                _mutex.ReleaseMutex();
+                _mutex.Unlock();
             }
         }
 
@@ -111,7 +124,7 @@ namespace Xrpa
         protected string _name;
         protected TransportConfig _config;
         protected int _memSize;
-        protected Mutex _mutex;
+        protected InterprocessMutex _mutex;
 
         private class MemoryTransportStreamIteratorData : TransportStreamIteratorData
         {

@@ -23,10 +23,11 @@ const TypeValue_1 = require("./TypeValue");
 class EnumType extends PrimitiveType_1.PrimitiveType {
     constructor(codegen, enumName, apiname, enumValues, localTypeOverride) {
         const typename = codegen.nsJoin(codegen.getTypesHeaderNamespace(apiname), enumName);
+        enumValues = codegen.sanitizeEnumNames(enumValues);
         super(codegen, enumName, codegen.PRIMITIVE_INTRINSICS.uint32, localTypeOverride ?? { typename, headerFile: codegen.getTypesHeaderName(apiname) }, 4, true, new TypeValue_1.EnumValue(codegen, typename, Object.keys(enumValues)[0], ""));
         this.enumName = enumName;
-        this.enumValues = enumValues;
         this.localTypeOverride = localTypeOverride;
+        this.enumValues = enumValues;
     }
     getHashData() {
         return {

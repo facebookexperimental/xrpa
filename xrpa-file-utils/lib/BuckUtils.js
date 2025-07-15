@@ -60,7 +60,15 @@ async function buckBuildAndPrep(params) {
 async function buckRun(params) {
     try {
         const targetName = params.target.split(":").pop() ?? "";
-        const exeFilename = params.exeFilename ?? (targetName + ".exe");
+        let platformSuffix = "";
+        if (process.platform === "win32") {
+            platformSuffix = ".exe";
+        }
+        else if (process.platform === "darwin") {
+            // On macOS, don't add a suffix as the executable is likely not in a .app bundle
+            platformSuffix = "";
+        }
+        const exeFilename = params.exeFilename ?? (targetName + platformSuffix);
         const outputPath = await buckBuildAndPrep(params);
         const exePath = path_1.default.join(outputPath, exeFilename);
         console.log(exePath);

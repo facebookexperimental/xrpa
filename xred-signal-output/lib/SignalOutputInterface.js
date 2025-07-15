@@ -37,6 +37,7 @@ exports.XredSignalOutputInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface
             sampleSemantics: SampleSemantics,
             bytesPerSample: xrpa_orchestrator_1.Count,
             samplesPerChannelPerSec: xrpa_orchestrator_1.Count,
+            isSystemAudioOutput: xrpa_orchestrator_1.Boolean,
             inputEvent: (0, xrpa_orchestrator_1.Message)("InputEvent", {
                 type: (0, xrpa_orchestrator_1.Enum)("InputEventType", ["Release", "Press"]),
                 source: xrpa_orchestrator_1.Count,
@@ -47,6 +48,7 @@ exports.XredSignalOutputInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface
         maxCount: 128,
         fields: {
             device: (0, xrpa_orchestrator_1.ReferenceTo)(SignalOutputDevice),
+            outputToSystemAudio: xrpa_orchestrator_1.Boolean,
             signal: xrpa_orchestrator_1.Signal,
         },
     })));

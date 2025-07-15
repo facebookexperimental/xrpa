@@ -230,8 +230,9 @@ export declare class SignalOutputDataType extends SPNode {
 export declare class SignalOutputDeviceType extends SPNode {
     constructor(params: {
         source: ISignalNodeType;
-        deviceNameFilter: string;
+        deviceNameFilter?: string;
         deviceHandednessFilter?: DeviceHandednessFilterEnum;
+        outputToSystemAudio?: boolean;
         channelOffset?: NonSignalNumericValue;
     });
 }

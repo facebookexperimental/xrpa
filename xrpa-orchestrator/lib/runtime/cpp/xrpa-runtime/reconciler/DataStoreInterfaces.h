@@ -66,10 +66,12 @@ class IObjectCollection {
 
   virtual void prepFullUpdate(std::vector<FullUpdateEntry>& entries) = 0;
 
-  virtual void processCreate(const ObjectUuid& id, MemoryAccessor objAccessor) = 0;
+  virtual void processCreate(const ObjectUuid& id, const MemoryAccessor& objAccessor) = 0;
 
-  virtual bool
-  processUpdate(const ObjectUuid& id, MemoryAccessor objAccessor, uint64_t fieldsChanged) = 0;
+  virtual bool processUpdate(
+      const ObjectUuid& id,
+      const MemoryAccessor& objAccessor,
+      uint64_t fieldsChanged) = 0;
 
   virtual void processDelete(const ObjectUuid& id) = 0;
 
@@ -77,9 +79,9 @@ class IObjectCollection {
       const ObjectUuid& id,
       int32_t messageType,
       uint64_t timestamp,
-      MemoryAccessor msgAccessor) = 0;
+      const MemoryAccessor& msgAccessor) = 0;
 
-  virtual void processUpsert(const ObjectUuid& id, MemoryAccessor objAccessor) = 0;
+  virtual void processUpsert(const ObjectUuid& id, const MemoryAccessor& objAccessor) = 0;
 
   virtual void processFullReconcile(const std::unordered_set<ObjectUuid>& reconciledIds) = 0;
 

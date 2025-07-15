@@ -91,6 +91,7 @@ namespace Xrpa
 
             if (!didLock)
             {
+                Console.WriteLine("Warning: Failed to acquire lock for inbound transport transaction");
                 // TODO raise a warning about this, the expiry time for the transact call may need adjusting
                 return;
             }
@@ -124,6 +125,7 @@ namespace Xrpa
 
             if (!didLock)
             {
+                Console.WriteLine("Warning: Failed to acquire lock for outbound transport transaction");
                 // TODO raise a warning about this, the expiry time for the transact call may need adjusting
                 return;
             }

@@ -123,13 +123,16 @@ function XrpaNativeUnityProgram(packageName, outputPath, callback) {
         __isRuntimeEnvironmentContext: true,
         __UnityRuntime: true,
         properties: {},
-        programInterface: undefined,
+        programInterfaces: [],
         externalProgramInterfaces: {},
     };
     runUnityContext(ctx, callback);
-    const programInterface = ctx.programInterface;
+    const programInterface = ctx.programInterfaces[0];
     if (!programInterface) {
         throw new Error("No program interface defined");
+    }
+    if (ctx.programInterfaces.length > 1) {
+        throw new Error("Only one program interface is supported for Unity native programs");
     }
     const companyName = programInterface.companyName;
     const packageInfo = {

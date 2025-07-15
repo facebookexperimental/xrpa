@@ -46,6 +46,7 @@ const ClassSpec_1 = require("../../shared/ClassSpec");
 const DataStore_1 = require("../../shared/DataStore");
 const TypeValue_1 = require("../../shared/TypeValue");
 const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
+const GenSignalAccessorsShared_1 = require("../shared/GenSignalAccessorsShared");
 const PythonCodeGenImpl_1 = require("./PythonCodeGenImpl");
 const PythonCodeGenImpl = __importStar(require("./PythonCodeGenImpl"));
 const PythonDatasetLibraryTypes_1 = require("./PythonDatasetLibraryTypes");
@@ -169,6 +170,11 @@ function genInboundReconciledTypes(ctx, includesIn) {
             reconcilerDef,
             genMsgHandler: GenDataStore_1.genMsgHandler,
         });
+        (0, GenSignalAccessorsShared_1.genSignalFieldAccessors)(classSpec, {
+            codegen: PythonCodeGenImpl,
+            reconcilerDef,
+            proxyObj: null,
+        });
         (0, GenMessageAccessors_1.genMessageChannelDispatch)(classSpec, {
             reconcilerDef,
             genMsgHandler: GenDataStore_1.genMsgHandler,
@@ -223,8 +229,8 @@ function genObjectCollectionClasses(ctx, includesIn) {
         });
         const constructorBody = [];
         // inbound (remotely created) objects are created by the reconciler, so we need to give it a delegate functions
+        const reconciledTypeName = typeDef.getLocalType(ctx.namespace, null);
         if (reconcilerDef instanceof DataStore_1.InputReconcilerDefinition) {
-            const reconciledTypeName = typeDef.getLocalType(ctx.namespace, null);
             constructorBody.push(`self._set_create_delegate_internal(${reconciledTypeName}.create)`);
             classSpec.methods.push({
                 name: "set_create_delegate",
@@ -237,7 +243,7 @@ function genObjectCollectionClasses(ctx, includesIn) {
             includesIn.addFile({ namespace: "typing" });
         }
         else {
-            // expose addObject and removeObject to the user
+            // expose addObject, removeObject, and createObject to the user
             classSpec.methods.push({
                 name: "add_object",
                 parameters: [{
@@ -245,6 +251,20 @@ function genObjectCollectionClasses(ctx, includesIn) {
                         type: localPtr,
                     }],
                 body: ["self._add_object_internal(obj)"],
+            });
+            const id = (0, PythonCodeGenImpl_1.genRuntimeGuid)({
+                objectUuidType: ctx.moduleDef.ObjectUuid.getLocalType(ctx.namespace, classSpec.includes),
+                guidGen: ctx.moduleDef.guidGen,
+                includes: classSpec.includes,
+            });
+            classSpec.methods.push({
+                name: "create_object",
+                returnType: reconciledTypeName,
+                body: [
+                    `obj = ${reconciledTypeName}(${id})`,
+                    `self._add_object_internal(obj)`,
+                    `return obj`,
+                ],
             });
             classSpec.methods.push({
                 name: "remove_object",

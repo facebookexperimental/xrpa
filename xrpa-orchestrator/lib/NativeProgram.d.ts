@@ -22,13 +22,13 @@ import { XrpaDataType } from "./XrpaLanguage";
 import { ModuleDefinition } from "./shared/ModuleDefinition";
 export interface NativeProgramContext extends RuntimeEnvironmentContext {
     __isNativeProgramContext: true;
-    programInterface: ProgramInterface | undefined;
+    programInterfaces: Array<ProgramInterface>;
 }
 export declare function isNativeProgramContext(ctx: unknown): ctx is NativeProgramContext;
 export declare function getNativeProgramContext(): NativeProgramContext;
 type SettingsType = "Boolean" | "Count" | "Scalar" | "String" | "Angle" | "Distance" | "Float3";
 export declare function addSetting(name: string, dataType: Thunk<XrpaDataType<SettingsType>>): void;
-export declare function setProgramInterface(programInterface: ProgramInterface): void;
+export declare function setProgramInterface(programInterface: ProgramInterface | Array<ProgramInterface>): void;
 export declare function applyNativeProgramContext(ctx: NativeProgramContext, moduleDef: ModuleDefinition): void;
 export {};
 

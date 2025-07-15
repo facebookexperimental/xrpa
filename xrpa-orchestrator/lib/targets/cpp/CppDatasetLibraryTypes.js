@@ -40,14 +40,14 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SignalPacket = exports.SignalRingBuffer = exports.SignalProducerCallback = exports.OutboundSignalData = exports.InboundSignalForwarder = exports.InboundSignalDataInterface = exports.SharedMemoryTransportStream = exports.HeapMemoryTransportStream = exports.TransportStream = exports.TransportStreamAccessor = exports.ObjectCollectionIndexedBinding = exports.ObjectCollectionIndex = exports.ObjectCollection = exports.IObjectCollection = exports.DataStoreObject = exports.DataStoreReconciler = exports.XrpaModule = exports.ObjectAccessorInterface = exports.TransportConfig = exports.HashValue = exports.StringEmbedding = exports.MemoryAccessor = exports.MemoryOffset = void 0;
+exports.SignalTypeInference = exports.SignalPacket = exports.SignalRingBuffer = exports.SignalProducerCallback = exports.OutboundSignalData = exports.InboundSignalForwarder = exports.InboundSignalDataInterface = exports.SharedMemoryTransportStream = exports.HeapMemoryTransportStream = exports.TransportStream = exports.TransportStreamAccessor = exports.ObjectCollectionIndexedBinding = exports.ObjectCollectionIndex = exports.ObjectCollection = exports.IObjectCollection = exports.DataStoreObject = exports.DataStoreReconciler = exports.XrpaModule = exports.ObjectAccessorInterface = exports.TransportConfig = exports.HashValue = exports.StringEmbedding = exports.MemoryAccessor = exports.MemoryOffset = exports.MemoryUtils = void 0;
 const PrimitiveType_1 = require("../../shared/PrimitiveType");
 const TypeValue_1 = require("../../shared/TypeValue");
 const CodeGen = __importStar(require("./CppCodeGenImpl"));
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
+exports.MemoryUtils = new PrimitiveType_1.PrimitiveType(CodeGen, "MemoryUtils", { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "MemoryUtils"), headerFile: "<xrpa-runtime/utils/MemoryAccessor.h>" }, { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "MemoryUtils"), headerFile: "<xrpa-runtime/utils/MemoryAccessor.h>" }, 0, true, new TypeValue_1.EmptyValue(CodeGen, CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "MemoryUtils"), ""));
 exports.MemoryOffset = new PrimitiveType_1.PrimitiveType(CodeGen, "MemoryOffset", { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "MemoryOffset"), headerFile: "<xrpa-runtime/utils/MemoryAccessor.h>" }, { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "MemoryOffset"), headerFile: "<xrpa-runtime/utils/MemoryAccessor.h>" }, 4, true, new TypeValue_1.EmptyValue(CodeGen, CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "MemoryOffset"), ""));
-exports.MemoryAccessor = new PrimitiveType_1.PrimitiveType(CodeGen, "MemoryAccessor", { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "MemoryAccessor"), headerFile: "<xrpa-runtime/utils/MemoryAccessor.h>" }, { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "MemoryAccessor"), headerFile: "<xrpa-runtime/utils/MemoryAccessor.h>" }, 0, // not actually true but this will force it to be passed by value
-true, new TypeValue_1.EmptyValue(CodeGen, CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "MemoryAccessor"), ""));
+exports.MemoryAccessor = new PrimitiveType_1.PrimitiveType(CodeGen, "MemoryAccessor", { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "MemoryAccessor"), headerFile: "<xrpa-runtime/utils/MemoryAccessor.h>" }, { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "MemoryAccessor"), headerFile: "<xrpa-runtime/utils/MemoryAccessor.h>" }, 12, true, new TypeValue_1.EmptyValue(CodeGen, CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "MemoryAccessor"), ""));
 exports.StringEmbedding = new PrimitiveType_1.PrimitiveType(CodeGen, "StringEmbedding", { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "StringEmbedding"), headerFile: "<xrpa-runtime/utils/StringEmbedding.h>" }, { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "StringEmbedding"), headerFile: "<xrpa-runtime/utils/StringEmbedding.h>" }, 128, // not true but it doesn't matter
 true, new TypeValue_1.EmptyValue(CodeGen, CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "StringEmbedding"), ""));
 exports.HashValue = new PrimitiveType_1.PrimitiveType(CodeGen, "HashValue", { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "HashValue"), headerFile: "<xrpa-runtime/utils/XrpaTypes.h>" }, { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "HashValue"), headerFile: "<xrpa-runtime/utils/XrpaTypes.h>" }, 32, true, new TypeValue_1.EmptyValue(CodeGen, CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "HashValue"), ""));
@@ -78,9 +78,11 @@ exports.OutboundSignalData = new PrimitiveType_1.PrimitiveType(CodeGen, "Outboun
 exports.SignalProducerCallback = new PrimitiveType_1.PrimitiveType(CodeGen, "SignalProducerCallback", { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "SignalProducerCallback"), headerFile: "<xrpa-runtime/signals/OutboundSignalData.h>" }, { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "SignalProducerCallback"), headerFile: "<xrpa-runtime/signals/OutboundSignalData.h>" }, 0, true, new TypeValue_1.EmptyValue(CodeGen, CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "SignalProducerCallback"), ""));
 exports.SignalRingBuffer = new PrimitiveType_1.PrimitiveType(CodeGen, "SignalRingBuffer", { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "SignalRingBuffer"), headerFile: "<xrpa-runtime/signals/SignalRingBuffer.h>" }, { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "SignalRingBuffer"), headerFile: "<xrpa-runtime/signals/SignalRingBuffer.h>" }, 0, true, new TypeValue_1.EmptyValue(CodeGen, CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "SignalRingBuffer"), ""));
 exports.SignalPacket = new PrimitiveType_1.PrimitiveType(CodeGen, "SignalPacket", { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "SignalPacket"), headerFile: "<xrpa-runtime/signals/SignalShared.h>" }, { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "SignalPacket"), headerFile: "<xrpa-runtime/signals/SignalShared.h>" }, 0, true, new TypeValue_1.EmptyValue(CodeGen, CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "SignalPacket"), ""));
+exports.SignalTypeInference = new PrimitiveType_1.PrimitiveType(CodeGen, "SignalTypeInference", { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "SignalTypeInference"), headerFile: "<xrpa-runtime/signals/SignalShared.h>" }, { typename: CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "SignalTypeInference"), headerFile: "<xrpa-runtime/signals/SignalShared.h>" }, 0, true, new TypeValue_1.EmptyValue(CodeGen, CodeGen.nsJoin(CppCodeGenImpl_1.XRPA_NAMESPACE, "SignalTypeInference"), ""));
 CodeGen.registerXrpaTypes({
     MemoryAccessor: exports.MemoryAccessor,
     MemoryOffset: exports.MemoryOffset,
+    MemoryUtils: exports.MemoryUtils,
     StringEmbedding: exports.StringEmbedding,
     ObjectAccessorInterface: exports.ObjectAccessorInterface,
     TransportStreamAccessor: exports.TransportStreamAccessor,
@@ -88,6 +90,7 @@ CodeGen.registerXrpaTypes({
     SignalProducerCallback: exports.SignalProducerCallback,
     SignalRingBuffer: exports.SignalRingBuffer,
     SignalPacket: exports.SignalPacket,
+    SignalTypeInference: exports.SignalTypeInference,
     InboundSignalDataInterface: exports.InboundSignalDataInterface,
     OutboundSignalData: exports.OutboundSignalData,
 });

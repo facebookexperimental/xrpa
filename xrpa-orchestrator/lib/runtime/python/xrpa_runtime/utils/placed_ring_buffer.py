@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from xrpa_runtime.utils.memory_accessor import MemoryAccessor, MemoryOffset
+from xrpa_runtime.utils.xrpa_utils import xrpa_debug_assert
 
 
 class PlacedRingBuffer:
@@ -177,7 +178,6 @@ class PlacedRingBuffer:
         return ret
 
     def _set_element_size(self, offset: int, num_bytes: int):
-        assert num_bytes > 0
         self._pool_accessor.write_int(num_bytes, MemoryOffset(offset))
 
     def _get_element_size(self, offset: int) -> int:
@@ -213,7 +213,6 @@ class PlacedRingBuffer:
         pool_size = self.pool_size
 
         if self.count == 0:
-            assert start_offset == 0
             return start_offset
 
         last_elem_offset = self.last_elem_offset
@@ -229,7 +228,6 @@ class PlacedRingBuffer:
                 return offset
 
             # need to wrap around
-            assert offset <= pool_size
             self.prewrap_offset = offset
             offset = 0
 

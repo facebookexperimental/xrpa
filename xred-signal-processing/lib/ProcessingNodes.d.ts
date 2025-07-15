@@ -16,10 +16,14 @@
 
 
 import { XrpaDataflowConnection } from "@xrpa/xrpa-orchestrator";
+import { StringFilter } from "@xrpa/xrpa-utils";
 import { AcceptsStartEvent, FilterTypeEnum, FiresDoneEvent, FiresEvent, ISignalNodeType, NonSignalNumericValue, NumericValue, SignalCurveType, SignalFeedbackType, SignalOutputDeviceType } from "./SignalProcessingTypes";
-import { StringFilter } from "./StringFilter";
 export declare function OutputToDevice(params: {
     deviceName: StringFilter;
+    source: ISignalNodeType;
+    channelOffset?: number;
+}): SignalOutputDeviceType;
+export declare function OutputToSystemAudio(params: {
     source: ISignalNodeType;
     channelOffset?: number;
 }): SignalOutputDeviceType;

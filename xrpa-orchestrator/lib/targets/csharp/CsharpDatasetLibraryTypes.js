@@ -40,7 +40,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OutboundSignalData = exports.InboundSignalDataInterface = exports.SignalPacket = exports.SignalRingBuffer = exports.SignalProducerCallback = exports.InboundSignalForwarder = exports.SharedMemoryTransportStream = exports.HeapMemoryTransportStream = exports.TransportStreamAccessor = exports.TransportStream = exports.ObjectCollectionIndexedBinding = exports.IIndexBoundType = exports.ObjectCollectionIndex = exports.ObjectCollection = exports.IObjectCollection = exports.DataStoreObject = exports.IDataStoreObjectAccessor = exports.IDataStoreObject = exports.DataStoreReconciler = exports.ObjectAccessorInterface = exports.TransportConfig = exports.HashValue = exports.StringEmbedding = exports.MemoryAccessor = exports.MemoryOffset = void 0;
+exports.OutboundSignalData = exports.InboundSignalDataInterface = exports.SignalTypeInference = exports.SignalPacket = exports.SignalRingBuffer = exports.SignalProducerCallback = exports.InboundSignalForwarder = exports.SharedMemoryTransportStream = exports.HeapMemoryTransportStream = exports.TransportStreamAccessor = exports.TransportStream = exports.ObjectCollectionIndexedBinding = exports.IIndexBoundType = exports.ObjectCollectionIndex = exports.ObjectCollection = exports.IObjectCollection = exports.DataStoreObject = exports.IDataStoreObjectAccessor = exports.IDataStoreObject = exports.DataStoreReconciler = exports.ObjectAccessorInterface = exports.TransportConfig = exports.HashValue = exports.StringEmbedding = exports.MemoryAccessor = exports.MemoryOffset = exports.MemoryUtils = void 0;
 const PrimitiveType_1 = require("../../shared/PrimitiveType");
 const TypeValue_1 = require("../../shared/TypeValue");
 const CodeGen = __importStar(require("./CsharpCodeGenImpl"));
@@ -50,6 +50,7 @@ function CsPrimitiveType(name, size = 0) {
 }
 ///////////////////////////////////////////////////////////////////////////////
 // Utils:
+exports.MemoryUtils = CsPrimitiveType("MemoryUtils", 0);
 exports.MemoryOffset = CsPrimitiveType("MemoryOffset", 4);
 exports.MemoryAccessor = CsPrimitiveType("MemoryAccessor", 16);
 exports.StringEmbedding = CsPrimitiveType("StringEmbedding", 128);
@@ -81,11 +82,13 @@ exports.InboundSignalForwarder = CsPrimitiveType("InboundSignalForwarder");
 exports.SignalProducerCallback = CsPrimitiveType("SignalProducerCallback");
 exports.SignalRingBuffer = CsPrimitiveType("SignalRingBuffer");
 exports.SignalPacket = CsPrimitiveType("SignalPacket");
+exports.SignalTypeInference = CsPrimitiveType("SignalTypeInference");
 exports.InboundSignalDataInterface = CsPrimitiveType("InboundSignalDataInterface");
 exports.OutboundSignalData = CsPrimitiveType("OutboundSignalData");
 CodeGen.registerXrpaTypes({
     MemoryAccessor: exports.MemoryAccessor,
     MemoryOffset: exports.MemoryOffset,
+    MemoryUtils: exports.MemoryUtils,
     StringEmbedding: exports.StringEmbedding,
     ObjectAccessorInterface: exports.ObjectAccessorInterface,
     TransportStreamAccessor: exports.TransportStreamAccessor,
@@ -93,6 +96,7 @@ CodeGen.registerXrpaTypes({
     SignalProducerCallback: exports.SignalProducerCallback,
     SignalRingBuffer: exports.SignalRingBuffer,
     SignalPacket: exports.SignalPacket,
+    SignalTypeInference: exports.SignalTypeInference,
     InboundSignalDataInterface: exports.InboundSignalDataInterface,
     OutboundSignalData: exports.OutboundSignalData,
 });

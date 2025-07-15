@@ -20,8 +20,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.genReadWriteValueFunctions = exports.genDynSizeOfValue = exports.genWriteValue = exports.genReadValue = exports.genClassDefinition = exports.genMessageDispatch = exports.genOnMessageAccessor = exports.genMessageHandlerType = exports.genEventHandlerCall = exports.genEventHandlerType = exports.makeObjectAccessor = exports.getTypesHeaderNamespace = exports.getTypesHeaderName = exports.getDataStoreClass = exports.getDataStoreHeaderNamespace = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genSharedPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.identifierName = exports.constRef = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.PythonIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.genGetCurrentClockTime = exports.STMT_TERM = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.HEADER = exports.XRPA_NAMESPACE = exports.getXrpaTypes = exports.registerXrpaTypes = void 0;
-exports.declareVar = exports.ifEquals = exports.ifAllBitsAreSet = exports.ifAnyBitIsSet = exports.applyTemplateParams = exports.genConvertIntToBool = exports.genConvertBoolToInt = exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genPassthroughMethodBind = exports.genMethodBind = exports.genMethodCall = exports.genDerefMethodCall = exports.genDeref = void 0;
+exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.sanitizeEnumNames = exports.genReadWriteValueFunctions = exports.genDynSizeOfValue = exports.genWriteValue = exports.genReadValue = exports.genClassDefinition = exports.genMessageDispatch = exports.genOnMessageAccessor = exports.genMessageHandlerType = exports.genEventHandlerCall = exports.genEventHandlerType = exports.makeObjectAccessor = exports.getTypesHeaderNamespace = exports.getTypesHeaderName = exports.getDataStoreClass = exports.getDataStoreHeaderNamespace = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genSharedPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.identifierName = exports.constRef = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.PythonIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.genGetCurrentClockTime = exports.HAS_NATIVE_PRIMITIVE_TYPES = exports.STMT_TERM = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.HEADER = exports.XRPA_NAMESPACE = exports.getXrpaTypes = exports.registerXrpaTypes = void 0;
+exports.declareVar = exports.ifEquals = exports.ifAllBitsAreSet = exports.ifAnyBitIsSet = exports.applyTemplateParams = exports.genConvertIntToBool = exports.genConvertBoolToInt = exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genPassthroughMethodBind = exports.genMethodBind = exports.genMethodCall = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
@@ -94,6 +94,7 @@ exports.PRIMITIVE_INTRINSICS = {
     FALSE: "False",
 };
 exports.STMT_TERM = "";
+exports.HAS_NATIVE_PRIMITIVE_TYPES = false;
 function genGetCurrentClockTime(includes, inNanoseconds = false) {
     includes?.addFile({ namespace: `${exports.XRPA_NAMESPACE}.utils.time_utils` });
     if (inNanoseconds) {
@@ -166,6 +167,9 @@ function constRef(type, _byteSize) {
 }
 exports.constRef = constRef;
 function identifierName(name, maintainPrivateMarker = false) {
+    if (name.includes(" ")) {
+        return name;
+    }
     const prefix = maintainPrivateMarker && name.startsWith("_") ? "_" : "";
     return prefix + (0, xrpa_utils_1.normalizeIdentifier)(name).join("_");
 }
@@ -233,7 +237,13 @@ function genDeclaration(params) {
     // TODO(Python) I suspect this will always need an initializer
     const typename = nsQualify(params.typename, params.inNamespace);
     const initializer = params.initialValue instanceof TypeValue_1.EmptyValue ? "" : ` = ${params.initialValue.toString(params.inNamespace)}`;
-    return `${params.varName}: ${typenameToCode(typename)}${initializer}`;
+    if (!typename) {
+        if (initializer) {
+            return `${identifierName(params.varName)}${initializer}`;
+        }
+        return "";
+    }
+    return `${identifierName(params.varName)}: ${typenameToCode(typename)}${initializer}`;
 }
 exports.genDeclaration = genDeclaration;
 function genSharedPointer(localType) {
@@ -525,7 +535,7 @@ function genClassDefinitionConstructors(classSpec, includes) {
                 continue;
             }
             const initialValue = typeof def.type === "string" ? def.initialValue : def.type.getLocalDefaultValue(classSpec.namespace, includes, false, def.initialValue);
-            if (!initialValue || initialValue instanceof TypeValue_1.EmptyValue) {
+            if (!initialValue) {
                 memberInitializers.push([varName, "None"]);
             }
             else {
@@ -624,11 +634,12 @@ function genReadValue(params) {
 }
 exports.genReadValue = genReadValue;
 function genWriteValue(params) {
+    const value = `${params.value}`;
     if (params.accessorIsStruct) {
-        return `${params.accessor}.write_value(${params.value}, ${params.memAccessorVar}, ${params.fieldOffsetVar})`;
+        return `${params.accessor}.write_value(${value}, ${params.memAccessorVar}, ${params.fieldOffsetVar})`;
     }
     else {
-        return `${params.memAccessorVar}.write_${identifierName(params.accessor)}(${params.value}, ${params.fieldOffsetVar})`;
+        return `${params.memAccessorVar}.write_${identifierName(params.accessor)}(${identifierName(value)}, ${params.fieldOffsetVar})`;
     }
 }
 exports.genWriteValue = genWriteValue;
@@ -725,6 +736,19 @@ function genReadWriteValueFunctions(classSpec, params) {
     }
 }
 exports.genReadWriteValueFunctions = genReadWriteValueFunctions;
+function sanitizeEnumNames(enumValues) {
+    const sanitized = {};
+    for (let name in enumValues) {
+        const value = enumValues[name];
+        if (name === "None") {
+            // reserved name in Python
+            name = "None_";
+        }
+        sanitized[name] = value;
+    }
+    return sanitized;
+}
+exports.sanitizeEnumNames = sanitizeEnumNames;
 function genEnumDefinition(enumName, enumValues, includes) {
     if (includes) {
         includes.addFile({ namespace: "enum" });
@@ -759,36 +783,13 @@ function genFieldGetter(classSpec, params) {
     const fieldVar = params.fieldToMemberVar(params.fieldName);
     const funcName = `get_${identifierName(params.fieldName)}`;
     const fieldType = params.fieldType;
+    // For reference types, we now only generate the ID getter
+    // The object getter was causing problems and has been removed
     if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-        const returnType = fieldType.getReferencedSuperType(classSpec.namespace, classSpec.includes);
-        classSpec.methods.push({
-            decorations: decorations,
-            name: funcName,
-            returnType,
-            parameters: [{
-                    name: "datastore",
-                    type: getDataStoreClass(params.apiname, classSpec.namespace, classSpec.includes),
-                }],
-            isConst: params.isConst,
-            noDiscard: true,
-            visibility: params.visibility,
-            body: includes => {
-                const body = [
-                    `obj_id = ${fieldVar}`,
-                ];
-                const validLeafTypes = fieldType.getReferencedTypeList(classSpec.namespace, includes);
-                for (const leafType of validLeafTypes) {
-                    const varName = identifierName(leafType.collectionName) + "_val";
-                    body.push(`${varName} = datastore.${leafType.collectionName}.get_object(obj_id)`, `if ${varName} is not None:`, `  return ${varName}`);
-                }
-                body.push(`return None`);
-                return body;
-            },
-        });
         classSpec.methods.push({
             decorations,
             name: `${funcName}Id`,
-            returnType: fieldType.declareLocalReturnType(classSpec.namespace, classSpec.includes, !params.convertToLocal),
+            returnType: params.fieldType.declareLocalReturnType(classSpec.namespace, classSpec.includes, !params.convertToLocal),
             isConst: params.isConst,
             visibility: params.visibility,
             body: [

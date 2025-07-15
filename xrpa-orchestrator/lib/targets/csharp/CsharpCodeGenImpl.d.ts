@@ -29,6 +29,7 @@ export declare const HEADER: string[];
 export declare const UNIT_TRANSFORMER: UnitTransformer;
 export declare const PRIMITIVE_INTRINSICS: PrimitiveIntrinsics;
 export declare const STMT_TERM = ";";
+export declare const HAS_NATIVE_PRIMITIVE_TYPES = true;
 export declare function genGetCurrentClockTime(_includes: IncludeAggregator | null, inNanoseconds?: boolean): string;
 export declare const DEFAULT_INTERFACE_PTR_TYPE = "bare";
 export declare class CsIncludeAggregator implements IncludeAggregator {
@@ -47,6 +48,7 @@ export declare function nsQualify(qualifiedName: string, inNamespace: string): s
 export declare function nsJoin(...names: string[]): string;
 export declare function nsExtract(qualifiedName: string, nonNamespacePartCount?: number): string;
 export declare function constRef(type: string, _byteSize: number): string;
+export declare function identifierName(name: string): string;
 export declare function privateMember(memberVarName: string): string;
 export declare function methodMember(methodName: string): string;
 export declare function genPrimitiveValue(typename: string, value: string | boolean | number | null): string;
@@ -126,6 +128,7 @@ export declare function genReadWriteValueFunctions(classSpec: ClassSpec, params:
     fieldsFromLocal: Record<string, TypeValue>;
     localValueParamName: string;
 }): void;
+export declare function sanitizeEnumNames(enumValues: Record<string, number>): Record<string, number>;
 export declare function genEnumDefinition(enumName: string, enumValues: Record<string, number>): string[];
 export declare function genEnumDynamicConversion(targetTypename: string, value: TypeValue): string;
 export declare function getNullValue(): string;

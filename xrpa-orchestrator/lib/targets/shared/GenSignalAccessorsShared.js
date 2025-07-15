@@ -31,7 +31,7 @@ function genSignalDispatchBody(params) {
         }
         const signalHandler = params.codegen.privateMember(`${fieldName}SignalHandler`);
         const msgType = typeDef.getFieldIndex(fieldName);
-        lines.push(...params.codegen.ifEquals("messageType", `${msgType}`, params.codegen.genMessageDispatch({
+        lines.push(...params.codegen.ifEquals(params.codegen.identifierName("messageType"), `${msgType}`, params.codegen.genMessageDispatch({
             namespace: params.namespace,
             includes: params.includes,
             fieldName,
@@ -54,7 +54,7 @@ function genOnSignalAccessor(classSpec, params) {
                 type: params.codegen.genSharedPointer(inboundSignalDataInterface, classSpec.includes),
             }],
         body: [
-            `${signalHandler} = handler` + params.codegen.STMT_TERM,
+            `${params.codegen.genDeref("", signalHandler)} = handler` + params.codegen.STMT_TERM,
         ],
     });
     classSpec.members.push({
@@ -65,24 +65,40 @@ function genOnSignalAccessor(classSpec, params) {
     });
 }
 function genSendSignalAccessor(classSpec, params) {
+    const canInferSampleType = params.codegen.HAS_NATIVE_PRIMITIVE_TYPES;
     const localFieldVar = params.codegen.privateMember(`local${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`);
-    const collection = params.codegen.privateMember("collection");
+    const localFieldMember = params.codegen.genDeref("", localFieldVar);
+    const collection = params.codegen.genDeref("", params.codegen.privateMember("collection"));
     const getXrpaId = params.codegen.genMethodCall("", "getXrpaId", []);
-    const inferSampleType = params.codegen.genMethodCall("", params.codegen.applyTemplateParams(params.codegen.nsJoin(params.codegen.XRPA_NAMESPACE, "SignalTypeInference", "inferSampleType"), "SampleType"), []);
-    const sizeofSampleType = params.codegen.genMethodCall("", params.codegen.applyTemplateParams(params.codegen.nsJoin(params.codegen.XRPA_NAMESPACE, "MemoryUtils", "getTypeSize"), "SampleType"), []);
-    const SignalProducerCallback = params.codegen.applyTemplateParams(params.codegen.getXrpaTypes().SignalProducerCallback.getLocalType(classSpec.namespace, classSpec.includes), "SampleType");
-    const SignalRingBuffer = params.codegen.applyTemplateParams(params.codegen.getXrpaTypes().SignalRingBuffer.getLocalType(classSpec.namespace, classSpec.includes), "SampleType");
+    const MemoryUtils = params.codegen.getXrpaTypes().MemoryUtils.getLocalType(classSpec.namespace, classSpec.includes);
+    let SignalProducerCallback = params.codegen.getXrpaTypes().SignalProducerCallback.getLocalType(classSpec.namespace, classSpec.includes);
+    let SignalRingBuffer = params.codegen.getXrpaTypes().SignalRingBuffer.getLocalType(classSpec.namespace, classSpec.includes);
+    const SignalTypeInference = params.codegen.getXrpaTypes().SignalTypeInference.getLocalType(classSpec.namespace, classSpec.includes);
     const InboundSignalForwarder = params.codegen.getXrpaTypes().InboundSignalForwarder.getLocalType(classSpec.namespace, classSpec.includes);
     const SignalPacket = params.codegen.getXrpaTypes().SignalPacket.getLocalType(classSpec.namespace, classSpec.includes);
+    const OutboundSignalData = params.codegen.getXrpaTypes().OutboundSignalData;
+    let inferSampleType = params.codegen.nsJoin(SignalTypeInference, "inferSampleType");
+    let sizeofSampleType = params.codegen.nsJoin(MemoryUtils, "getTypeSize");
+    if (canInferSampleType) {
+        SignalProducerCallback = params.codegen.applyTemplateParams(SignalProducerCallback, "SampleType");
+        SignalRingBuffer = params.codegen.applyTemplateParams(SignalRingBuffer, "SampleType");
+        inferSampleType = params.codegen.applyTemplateParams(inferSampleType, "SampleType");
+        sizeofSampleType = params.codegen.applyTemplateParams(sizeofSampleType, "SampleType");
+    }
     classSpec.methods.push({
-        name: params.name ?? `set${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
+        name: params.name ?? `set${(0, xrpa_utils_1.upperFirst)(params.fieldName)}Callback`,
         decorations: params.decorations,
-        templateParams: ["SampleType"],
-        whereClauses: ["SampleType : unmanaged"],
+        templateParams: canInferSampleType ? ["SampleType"] : undefined,
+        whereClauses: canInferSampleType ? ["SampleType : unmanaged"] : undefined,
         parameters: [{
                 name: "signalCallback",
                 type: SignalProducerCallback,
-            }, {
+            },
+            ...(canInferSampleType ? [] : [{
+                    name: "sampleTypeName",
+                    type: params.codegen.PRIMITIVE_INTRINSICS.string.typename,
+                }]),
+            {
                 name: "numChannels",
                 type: params.codegen.PRIMITIVE_INTRINSICS.int32.typename,
             }, {
@@ -94,20 +110,31 @@ function genSendSignalAccessor(classSpec, params) {
             }],
         body: () => {
             return [
-                params.codegen.genMethodCall(localFieldVar, "setSignalSource", ["signalCallback", "numChannels", "framesPerSecond", "framesPerPacket"]) + params.codegen.STMT_TERM,
+                params.codegen.genMethodCall(localFieldMember, "setSignalSource", [
+                    params.codegen.identifierName("signalCallback"),
+                    params.codegen.identifierName("numChannels"),
+                    params.codegen.identifierName("framesPerSecond"),
+                    params.codegen.identifierName("framesPerPacket"),
+                    ...(canInferSampleType ? [] : [params.codegen.identifierName("sampleTypeName")]),
+                ]) + params.codegen.STMT_TERM,
             ];
         },
         separateImplementation: params.separateImplementation,
     });
     classSpec.methods.push({
-        name: params.name ?? `set${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
+        name: params.name ?? `set${(0, xrpa_utils_1.upperFirst)(params.fieldName)}RingBuffer`,
         decorations: params.decorations,
-        templateParams: ["SampleType"],
-        whereClauses: ["SampleType : unmanaged"],
+        templateParams: canInferSampleType ? ["SampleType"] : undefined,
+        whereClauses: canInferSampleType ? ["SampleType : unmanaged"] : undefined,
         parameters: [{
                 name: "signalRingBuffer",
                 type: params.codegen.genPointer(SignalRingBuffer),
-            }, {
+            },
+            ...(canInferSampleType ? [] : [{
+                    name: "sampleTypeName",
+                    type: params.codegen.PRIMITIVE_INTRINSICS.string.typename,
+                }]),
+            {
                 name: "numChannels",
                 type: params.codegen.PRIMITIVE_INTRINSICS.int32.typename,
             }, {
@@ -119,24 +146,30 @@ function genSendSignalAccessor(classSpec, params) {
             }],
         body: () => {
             return [
-                params.codegen.genMethodCall(localFieldVar, "setSignalSource", ["signalRingBuffer", "numChannels", "framesPerSecond", "framesPerPacket"]) + params.codegen.STMT_TERM,
+                params.codegen.genMethodCall(localFieldMember, "setSignalSource", [
+                    params.codegen.identifierName("signalRingBuffer"),
+                    params.codegen.identifierName("numChannels"),
+                    params.codegen.identifierName("framesPerSecond"),
+                    params.codegen.identifierName("framesPerPacket"),
+                    ...(canInferSampleType ? [] : [params.codegen.identifierName("sampleTypeName")]),
+                ]) + params.codegen.STMT_TERM,
             ];
         },
         separateImplementation: params.separateImplementation,
     });
     classSpec.methods.push({
-        name: params.name ?? `set${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
+        name: params.name ?? `set${(0, xrpa_utils_1.upperFirst)(params.fieldName)}Forwarder`,
         decorations: params.decorations,
-        templateParams: ["SampleType"],
-        whereClauses: ["SampleType : unmanaged"],
+        templateParams: canInferSampleType ? ["SampleType"] : undefined,
+        whereClauses: canInferSampleType ? ["SampleType : unmanaged"] : undefined,
         parameters: [{
                 name: "signalForwarder",
                 type: params.codegen.genSharedPointer(InboundSignalForwarder, classSpec.includes),
             }],
         body: () => {
             return [
-                params.codegen.genMethodCall(localFieldVar, "setRecipient", [getXrpaId, collection, `${messageType}`]) + params.codegen.STMT_TERM,
-                params.codegen.genDerefMethodCall("signalForwarder", "addRecipient", [localFieldVar]) + params.codegen.STMT_TERM,
+                params.codegen.genMethodCall(localFieldMember, "setRecipient", [getXrpaId, collection, `${messageType}`]) + params.codegen.STMT_TERM,
+                params.codegen.genDerefMethodCall(params.codegen.identifierName("signalForwarder"), "addRecipient", [localFieldMember]) + params.codegen.STMT_TERM,
             ];
         },
         separateImplementation: params.separateImplementation,
@@ -144,13 +177,18 @@ function genSendSignalAccessor(classSpec, params) {
     classSpec.methods.push({
         name: `send${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
         decorations: params.decorations,
-        templateParams: ["SampleType"],
-        whereClauses: ["SampleType : unmanaged"],
+        templateParams: canInferSampleType ? ["SampleType"] : undefined,
+        whereClauses: canInferSampleType ? ["SampleType : unmanaged"] : undefined,
         returnType: SignalPacket,
         parameters: [{
                 name: "frameCount",
                 type: params.codegen.PRIMITIVE_INTRINSICS.int32.typename,
-            }, {
+            },
+            ...(canInferSampleType ? [] : [{
+                    name: "sampleTypeName",
+                    type: params.codegen.PRIMITIVE_INTRINSICS.string.typename,
+                }]),
+            {
                 name: "numChannels",
                 type: params.codegen.PRIMITIVE_INTRINSICS.int32.typename,
             }, {
@@ -163,22 +201,29 @@ function genSendSignalAccessor(classSpec, params) {
                     typename: params.codegen.PRIMITIVE_INTRINSICS.int32.typename,
                     inNamespace: classSpec.namespace,
                     varName: "sampleType",
-                    initialValue: new TypeValue_1.CodeLiteralValue(params.codegen, inferSampleType),
+                    initialValue: new TypeValue_1.CodeLiteralValue(params.codegen, params.codegen.genMethodCall("", inferSampleType, canInferSampleType ? [] : [params.codegen.identifierName("sampleTypeName")])),
                     includeTerminator: true,
                 }),
-                params.codegen.genMethodCall(localFieldVar, "setRecipient", [getXrpaId, collection, `${messageType}`]) + params.codegen.STMT_TERM,
-                "return " + params.codegen.genMethodCall(localFieldVar, "sendSignalPacket", [sizeofSampleType, "frameCount", "sampleType", "numChannels", "framesPerSecond"]) + params.codegen.STMT_TERM,
+                params.codegen.genMethodCall(localFieldMember, "setRecipient", [getXrpaId, collection, `${messageType}`]) + params.codegen.STMT_TERM,
+                "return " + params.codegen.genMethodCall(localFieldMember, "sendSignalPacket", [
+                    params.codegen.genMethodCall("", sizeofSampleType, canInferSampleType ? [] : [params.codegen.identifierName("sampleTypeName")]),
+                    params.codegen.identifierName("frameCount"),
+                    params.codegen.identifierName("sampleType"),
+                    params.codegen.identifierName("numChannels"),
+                    params.codegen.identifierName("framesPerSecond"),
+                ]) + params.codegen.STMT_TERM,
             ];
         },
         separateImplementation: params.separateImplementation,
     });
     classSpec.members.push({
         name: localFieldVar,
-        type: params.codegen.getXrpaTypes().OutboundSignalData,
+        type: OutboundSignalData,
+        initialValue: new TypeValue_1.EmptyValue(params.codegen, OutboundSignalData.getLocalType(classSpec.namespace, classSpec.includes), classSpec.namespace),
         visibility: "private",
     });
     const messageType = params.typeDef.getFieldIndex(params.fieldName);
-    params.tickLines.push(params.codegen.genMethodCall(localFieldVar, "setRecipient", ["id", collection, `${messageType}`]) + params.codegen.STMT_TERM, params.codegen.genMethodCall(localFieldVar, "tick", []) + params.codegen.STMT_TERM);
+    params.tickLines.push(params.codegen.genMethodCall(localFieldMember, "setRecipient", ["id", collection, `${messageType}`]) + params.codegen.STMT_TERM, params.codegen.genMethodCall(localFieldMember, "tick", []) + params.codegen.STMT_TERM);
 }
 function genSignalFieldAccessors(classSpec, params) {
     const typeDef = params.reconcilerDef.type;

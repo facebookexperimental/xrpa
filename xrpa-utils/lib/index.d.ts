@@ -21,6 +21,7 @@ export * from "./ContextStack";
 export * from "./MiscUtils";
 export * from "./NamespaceUtils";
 export * from "./ObjectUtils";
+export * from "./StringFilter";
 export * from "./StringUtils";
 export * from "./ThreadTaskQueue";
 export * from "./Thunk";
