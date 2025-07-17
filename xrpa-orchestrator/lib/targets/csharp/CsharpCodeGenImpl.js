@@ -568,6 +568,7 @@ function genClassDefinition(classSpec) {
         classExtends.push(classSpec.interfaceName);
     }
     if (classSpec.destructorBody) {
+        classSpec.includes?.addFile({ namespace: "System" });
         classExtends.push("IDisposable");
     }
     const extStr = classExtends.length > 0 ? `: ${classExtends.join(", ")} ` : "";
