@@ -115,31 +115,6 @@ function genWriteFieldSetters(classSpec, params) {
             body: includes => genClearSetClearFunctionBody({ ...params, includes, fieldVar, needsSetDirty: true }),
         });
     }
-    else if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-        const setterName = (0, xrpa_utils_1.filterToString)(fieldAccessorNameOverride) ?? `Set${pascalFieldName}`;
-        classSpec.methods.push({
-            name: setterName,
-            parameters: [{
-                    name: params.fieldName,
-                    type: fieldType.getReferencedSuperType(params.ctx.namespace, classSpec.includes),
-                }],
-            body: includes => [
-                `${fieldVar} = ${fieldType.convertValueFromLocal(params.ctx.namespace, includes, params.fieldName)};`,
-                ...genFieldSetDirty({ ...params, includes, fieldVar }),
-            ],
-        });
-        classSpec.methods.push({
-            name: setterName + "Id",
-            parameters: [{
-                    name: params.fieldName,
-                    type: fieldType,
-                }],
-            body: includes => [
-                `${fieldVar} = ${params.fieldName};`,
-                ...genFieldSetDirty({ ...params, includes, fieldVar }),
-            ],
-        });
-    }
     else {
         const setterName = (0, xrpa_utils_1.filterToString)(fieldAccessorNameOverride) ?? `Set${pascalFieldName}`;
         classSpec.methods.push({

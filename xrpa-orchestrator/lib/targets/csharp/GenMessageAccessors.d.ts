@@ -23,7 +23,6 @@ export declare function genSendMessageAccessor(classSpec: ClassSpec, params: {
     typeDef: StructTypeDefinition;
     fieldName: string;
     fieldType: MessageDataTypeDefinition;
-    referencesNeedConversion: boolean;
     proxyObj: string | null;
     name?: string;
 }): void;

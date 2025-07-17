@@ -244,7 +244,6 @@ function genSignalFieldAccessors(classSpec, params) {
                 typeDef,
                 fieldName,
                 fieldType,
-                referencesNeedConversion: true,
                 separateImplementation: true,
                 tickLines,
             });

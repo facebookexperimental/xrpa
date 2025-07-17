@@ -48,17 +48,11 @@ const GenSignalAccessorsShared_1 = require("../shared/GenSignalAccessorsShared")
 const PythonCodeGenImpl_1 = require("./PythonCodeGenImpl");
 const PythonCodeGenImpl = __importStar(require("./PythonCodeGenImpl"));
 const PythonDatasetLibraryTypes_1 = require("./PythonDatasetLibraryTypes");
-function genMessageParamInitializer(namespace, includes, msgType) {
+function genMessageParamInitializer(msgType) {
     const lines = [];
     const msgFields = msgType.getStateFields();
     for (const key in msgFields) {
-        const fieldType = msgFields[key].type;
-        if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-            lines.push(`message.set_${(0, PythonCodeGenImpl_1.identifierName)(key)}(${fieldType.convertValueFromLocal(namespace, includes, (0, PythonCodeGenImpl_1.identifierName)(key))})`);
-        }
-        else {
-            lines.push(`message.set_${(0, PythonCodeGenImpl_1.identifierName)(key)}(${(0, PythonCodeGenImpl_1.identifierName)(key)})`);
-        }
+        lines.push(`message.set_${(0, PythonCodeGenImpl_1.identifierName)(key)}(${(0, PythonCodeGenImpl_1.identifierName)(key)})`);
     }
     return lines;
 }
@@ -87,7 +81,7 @@ function genSendMessageBody(params) {
         const messageType = params.typeDef.getFieldIndex(params.fieldName);
         if (params.fieldType.hasFields()) {
             const msgWriteAccessor = params.fieldType.getWriteAccessorType(params.namespace, params.includes);
-            lines.push(`message = ${msgWriteAccessor}(self._collection.send_message(`, `    self.get_xrpa_id(),`, `    ${messageType},`, `    ${genMessageSize(params.namespace, params.includes, params.fieldType)}))`, ...genMessageParamInitializer(params.namespace, params.includes, params.fieldType));
+            lines.push(`message = ${msgWriteAccessor}(self._collection.send_message(`, `    self.get_xrpa_id(),`, `    ${messageType},`, `    ${genMessageSize(params.namespace, params.includes, params.fieldType)}))`, ...genMessageParamInitializer(params.fieldType));
         }
         else {
             lines.push(`self._collection.send_message(`, `    self.get_xrpa_id(),`, `    ${messageType},`, `    0)`);
@@ -223,7 +217,6 @@ function genMessageFieldAccessors(classSpec, params) {
                 typeDef,
                 fieldName,
                 fieldType,
-                referencesNeedConversion: true,
                 proxyObj: null,
             });
         }

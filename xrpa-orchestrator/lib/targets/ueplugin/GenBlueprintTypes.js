@@ -24,7 +24,6 @@ exports.genBlueprintTypes = exports.getMessageDelegateName = exports.getBlueprin
 const path_1 = __importDefault(require("path"));
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const CppCodeGenImpl_1 = require("../cpp/CppCodeGenImpl");
-const SceneComponentShared_1 = require("./SceneComponentShared");
 function getBlueprintTypesHeaderName(apiname) {
     return `${apiname}BlueprintTypes.h`;
 }
@@ -56,12 +55,7 @@ function genMessageDelegateDeclaration(ctx, includes, typeDef) {
         const fields = typeDef.getStateFields();
         for (const key in fields) {
             const fieldType = fields[key].type;
-            if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-                params.push(`${(0, SceneComponentShared_1.getComponentClassName)(includes, fieldType.toType)}*, ${key}`);
-            }
-            else {
-                params.push(`${fieldType.declareLocalParam(ctx.namespace, includes, "")}, ${key}`);
-            }
+            params.push(`${fieldType.declareLocalParam(ctx.namespace, includes, "")}, ${key}`);
         }
     }
     return `DECLARE_DYNAMIC_MULTICAST_DELEGATE_${paramsCountName(params.length)}(${getMessageDelegateName(typeDef, ctx.storeDef.apiname)}, ${params.join(", ")});`;

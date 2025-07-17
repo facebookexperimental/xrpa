@@ -83,6 +83,18 @@ async function buckRun(params) {
     }
 }
 exports.buckRun = buckRun;
+function fileIsExecutable(filename) {
+    if (fs_extra_1.default.statSync(filename).mode & 0o100) {
+        return true;
+    }
+    if (process.platform === "win32") {
+        return filename.endsWith(".exe") || filename.endsWith(".dll");
+    }
+    if (process.platform === "darwin") {
+        return filename.endsWith(".app") || filename.endsWith(".dylib");
+    }
+    return false;
+}
 async function buckBuild(params) {
     try {
         const outputPath = await buckBuildAndPrep(params);
@@ -90,7 +102,7 @@ async function buckBuild(params) {
         const filenames = [];
         await (0, FileUtils_1.recursiveDirScan)(outputPath, filenames);
         for (const filename of filenames) {
-            if (filename.endsWith(".exe") || filename.endsWith(".dll")) {
+            if (fileIsExecutable(filename)) {
                 const dstFilename = path_1.default.join(params.dstPath, filename.slice(outputPath.length + 1));
                 await fs_extra_1.default.ensureDir(path_1.default.dirname(dstFilename));
                 await fs_extra_1.default.copyFile(filename, dstFilename);

@@ -24,7 +24,6 @@ export declare function genSendMessageAccessor(classSpec: ClassSpec, params: {
     fieldName: string;
     fieldType: MessageDataTypeDefinition;
     separateImplementation?: boolean;
-    referencesNeedConversion: boolean;
     proxyObj: string | null;
     name?: string;
     decorations?: string[];

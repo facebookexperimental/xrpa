@@ -48,17 +48,11 @@ const GenSignalAccessorsShared_1 = require("../shared/GenSignalAccessorsShared")
 const CppCodeGenImpl_1 = require("./CppCodeGenImpl");
 const CppCodeGenImpl = __importStar(require("./CppCodeGenImpl"));
 const CppDatasetLibraryTypes_1 = require("./CppDatasetLibraryTypes");
-function genMessageParamInitializer(namespace, includes, msgType) {
+function genMessageParamInitializer(msgType) {
     const lines = [];
     const msgFields = msgType.getStateFields();
     for (const key in msgFields) {
-        const fieldType = msgFields[key].type;
-        if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-            lines.push(`message.set${(0, xrpa_utils_1.upperFirst)(key)}(${fieldType.convertValueFromLocal(namespace, includes, key)});`);
-        }
-        else {
-            lines.push(`message.set${(0, xrpa_utils_1.upperFirst)(key)}(${key});`);
-        }
+        lines.push(`message.set${(0, xrpa_utils_1.upperFirst)(key)}(${key});`);
     }
     return lines;
 }
@@ -87,7 +81,7 @@ function genSendMessageBody(params) {
         const messageType = params.typeDef.getFieldIndex(params.fieldName);
         if (params.fieldType.hasFields()) {
             const msgWriteAccessor = params.fieldType.getWriteAccessorType(params.namespace, params.includes);
-            lines.push(`auto message = ${msgWriteAccessor}(collection_->sendMessage(`, `    getXrpaId(),`, `    ${messageType},`, `    ${genMessageSize(params.namespace, params.includes, params.fieldType)}));`, ...genMessageParamInitializer(params.namespace, params.includes, params.fieldType));
+            lines.push(`auto message = ${msgWriteAccessor}(collection_->sendMessage(`, `    getXrpaId(),`, `    ${messageType},`, `    ${genMessageSize(params.namespace, params.includes, params.fieldType)}));`, ...genMessageParamInitializer(params.fieldType));
         }
         else {
             lines.push(`collection_->sendMessage(`, `    getXrpaId(),`, `    ${messageType},`, `    0);`);
@@ -145,8 +139,6 @@ function genMessageFieldAccessors(classSpec, params) {
                 typeDef,
                 fieldName,
                 fieldType,
-                referencesNeedConversion: true,
-                separateImplementation: true,
                 proxyObj: null,
             });
         }

@@ -783,12 +783,10 @@ function genFieldGetter(classSpec, params) {
     const fieldVar = params.fieldToMemberVar(params.fieldName);
     const funcName = `get_${identifierName(params.fieldName)}`;
     const fieldType = params.fieldType;
-    // For reference types, we now only generate the ID getter
-    // The object getter was causing problems and has been removed
     if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
         classSpec.methods.push({
             decorations,
-            name: `${funcName}Id`,
+            name: funcName,
             returnType: params.fieldType.declareLocalReturnType(classSpec.namespace, classSpec.includes, !params.convertToLocal),
             isConst: params.isConst,
             visibility: params.visibility,

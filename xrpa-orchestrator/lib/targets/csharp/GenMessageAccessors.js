@@ -48,17 +48,11 @@ const GenSignalAccessorsShared_1 = require("../shared/GenSignalAccessorsShared")
 const CsharpCodeGenImpl_1 = require("./CsharpCodeGenImpl");
 const CsharpCodeGenImpl = __importStar(require("./CsharpCodeGenImpl"));
 const CsharpDatasetLibraryTypes_1 = require("./CsharpDatasetLibraryTypes");
-function genMessageParamInitializer(namespace, includes, msgType) {
+function genMessageParamInitializer(msgType) {
     const lines = [];
     const msgFields = msgType.getStateFields();
     for (const key in msgFields) {
-        const fieldType = msgFields[key].type;
-        if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-            lines.push(`message.Set${(0, xrpa_utils_1.upperFirst)(key)}(${fieldType.convertValueFromLocal(namespace, includes, key)});`);
-        }
-        else {
-            lines.push(`message.Set${(0, xrpa_utils_1.upperFirst)(key)}(${key});`);
-        }
+        lines.push(`message.Set${(0, xrpa_utils_1.upperFirst)(key)}(${key});`);
     }
     return lines;
 }
@@ -87,7 +81,7 @@ function genSendMessageBody(params) {
         const messageType = params.typeDef.getFieldIndex(params.fieldName);
         if (params.fieldType.hasFields()) {
             const msgWriteAccessor = params.fieldType.getWriteAccessorType(params.namespace, params.includes);
-            lines.push(`${msgWriteAccessor} message = new(_collection.SendMessage(`, `    GetXrpaId(),`, `    ${messageType},`, `    ${genMessageSize(params.namespace, params.includes, params.fieldType)}));`, ...genMessageParamInitializer(params.namespace, params.includes, params.fieldType));
+            lines.push(`${msgWriteAccessor} message = new(_collection.SendMessage(`, `    GetXrpaId(),`, `    ${messageType},`, `    ${genMessageSize(params.namespace, params.includes, params.fieldType)}));`, ...genMessageParamInitializer(params.fieldType));
         }
         else {
             lines.push(`_collection.SendMessage(`, `    GetXrpaId(),`, `    ${messageType},`, `    0);`);
@@ -163,7 +157,6 @@ function genMessageFieldAccessors(classSpec, params) {
                 typeDef,
                 fieldName,
                 fieldType,
-                referencesNeedConversion: true,
                 proxyObj: null,
             });
         }

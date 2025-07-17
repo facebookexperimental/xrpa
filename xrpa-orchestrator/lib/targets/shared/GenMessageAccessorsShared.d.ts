@@ -22,6 +22,5 @@ export declare function genMessageMethodParams(params: {
     namespace: string;
     includes: IncludeAggregator | null;
     fieldType: MessageDataTypeDefinition;
-    referencesNeedConversion: boolean;
 }): MethodParam[];
 

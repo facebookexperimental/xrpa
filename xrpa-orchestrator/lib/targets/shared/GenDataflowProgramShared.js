@@ -274,7 +274,6 @@ function genMessageInputParameter(codegen, classSpec, params) {
         namespace: classSpec.namespace,
         includes: classSpec.includes,
         fieldType: params.paramType,
-        referencesNeedConversion: false,
     });
     const msgParamNames = msgParams.map(p => p.name);
     classSpec.methods.push({
@@ -525,7 +524,7 @@ function genForeignObjectInstantiation(ctx, codegen, classSpec, graphNode, creat
         }
         let value = undefined;
         if ((0, DataflowProgramDefinition_1.isDataflowGraphNode)(fieldValue)) {
-            value = getObjectInfo(ctx, codegen, fieldValue, classSpec.includes).objVarName;
+            value = codegen.genDerefMethodCall(getObjectInfo(ctx, codegen, fieldValue, classSpec.includes).objVarName, "getXrpaId", []);
         }
         else if ((0, ProgramInterface_1.isXrpaProgramParam)(fieldValue)) {
             value = paramToMemberName(codegen, fieldValue.name);

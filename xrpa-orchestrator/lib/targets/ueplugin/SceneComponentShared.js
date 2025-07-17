@@ -96,7 +96,8 @@ function isLegalBlueprintType(ctx, typeDef) {
         return true;
     }
     if ((0, TypeDefinition_1.typeIsReference)(typeDef)) {
-        return true;
+        // TODO make UUID a legal blueprint type
+        return false;
     }
     const localType = typeDef.getLocalType(ctx.namespace, null);
     if (localType in LegalBlueprintTypes) {
@@ -231,13 +232,7 @@ function genFieldSetterCalls(params) {
     for (const fieldName in fields) {
         const memberName = getFieldMemberName(params.reconcilerDef, fieldName);
         if (params.reconcilerDef.isOutboundField(fieldName)) {
-            const fieldType = fields[fieldName].type;
-            if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-                lines.push(`${params.proxyObj}->set${(0, xrpa_utils_1.upperFirst)(fieldName)}Id(${memberName});`);
-            }
-            else {
-                lines.push(`${params.proxyObj}->set${(0, xrpa_utils_1.upperFirst)(fieldName)}(${memberName});`);
-            }
+            lines.push(`${params.proxyObj}->set${(0, xrpa_utils_1.upperFirst)(fieldName)}(${memberName});`);
         }
     }
     return lines;
@@ -253,7 +248,6 @@ function genUESendMessageAccessor(classSpec, params) {
                 `UFUNCTION(BlueprintCallable, Category = "${params.categoryName}")` :
                 `UFUNCTION(BlueprintCallable)`,
         ],
-        referencesNeedConversion: false,
         separateImplementation: true,
     });
 }
@@ -305,18 +299,11 @@ function genUEMessageProxyDispatch(classSpec, params) {
     params.initializerLines.push(`${(0, CppCodeGenImpl_1.genDerefMethodCall)(params.proxyObj, params.proxyIsXrpaObj ? proxyHandlerName : (0, xrpa_utils_1.upperFirst)(proxyHandlerName), [dispatchBind])};`);
 }
 exports.genUEMessageProxyDispatch = genUEMessageProxyDispatch;
-function convertMessageTypeToParams(msgType, prelude) {
+function convertMessageTypeToParams(msgType) {
     const params = [];
     const fields = msgType.getStateFields();
     for (const key in fields) {
-        const fieldType = fields[key].type;
-        if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-            (0, xrpa_utils_1.pushUnique)(prelude, `auto datastore = GetDataStoreSubsystem()->DataStore.get();`);
-            params.push(`message.get${(0, xrpa_utils_1.upperFirst)(key)}(datastore)->getXrpaOwner<${getComponentClassName(null, fieldType.toType)}>()`);
-        }
-        else {
-            params.push(`message.get${(0, xrpa_utils_1.upperFirst)(key)}()`);
-        }
+        params.push(`message.get${(0, xrpa_utils_1.upperFirst)(key)}()`);
     }
     return params;
 }
@@ -524,11 +511,7 @@ function genProcessUpdateBody(params) {
             continue;
         }
         const memberName = getFieldMemberName(params.reconcilerDef, fieldName);
-        let funcName = `get${(0, xrpa_utils_1.upperFirst)(fieldName)}`;
-        if ((0, TypeDefinition_1.typeIsReference)(fields[fieldName].type)) {
-            funcName += "Id";
-        }
-        lines.push(`if (${params.proxyObj}->check${(0, xrpa_utils_1.upperFirst)(fieldName)}Changed(fieldsChanged)) {`, `  ${memberName} = ${params.proxyObj}->${funcName}();`);
+        lines.push(`if (${params.proxyObj}->check${(0, xrpa_utils_1.upperFirst)(fieldName)}Changed(fieldsChanged)) {`, `  ${memberName} = ${params.proxyObj}->get${(0, xrpa_utils_1.upperFirst)(fieldName)}();`);
         // handle property binding
         const fieldBinding = params.reconcilerDef.getFieldPropertyBinding(fieldName);
         if (typeof fieldBinding === "string") {

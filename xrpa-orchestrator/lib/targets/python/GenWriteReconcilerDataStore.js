@@ -109,20 +109,6 @@ function genWriteFieldSetters(classSpec, params) {
             body: includes => genClearSetClearFunctionBody({ ...params, includes, fieldVar, needsSetDirty: true }),
         });
     }
-    else if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-        const setterName = (0, xrpa_utils_1.filterToString)(fieldAccessorNameOverride) ?? `set_${(0, PythonCodeGenImpl_1.identifierName)(params.fieldName)}`;
-        classSpec.methods.push({
-            name: setterName + "_id",
-            parameters: [{
-                    name: (0, PythonCodeGenImpl_1.identifierName)(params.fieldName),
-                    type: fieldType,
-                }],
-            body: includes => [
-                `${fieldVar} = ${(0, PythonCodeGenImpl_1.identifierName)(params.fieldName)}`,
-                ...genFieldSetDirty({ ...params, includes, fieldVar }),
-            ],
-        });
-    }
     else {
         const setterName = (0, xrpa_utils_1.filterToString)(fieldAccessorNameOverride) ?? `set_${(0, PythonCodeGenImpl_1.identifierName)(params.fieldName)}`;
         classSpec.methods.push({

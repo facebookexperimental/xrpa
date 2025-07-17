@@ -19,14 +19,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genFieldProperties = exports.getOutboundCollectionClassName = exports.getInboundCollectionClassName = exports.fieldGetterFuncName = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
-const TypeDefinition_1 = require("../../shared/TypeDefinition");
 const TypeValue_1 = require("../../shared/TypeValue");
 function fieldGetterFuncName(codegen, typeFields, fieldName) {
-    let funcName = `get${(0, xrpa_utils_1.upperFirst)(fieldName)}`;
-    if ((0, TypeDefinition_1.typeIsReference)(typeFields[fieldName].type)) {
-        funcName += "Id";
-    }
-    return codegen.methodMember(funcName);
+    return codegen.methodMember(`get${(0, xrpa_utils_1.upperFirst)(fieldName)}`);
 }
 exports.fieldGetterFuncName = fieldGetterFuncName;
 function getInboundCollectionClassName(ctx, typeDef) {

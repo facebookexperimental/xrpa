@@ -742,33 +742,9 @@ function genFieldGetter(classSpec, params) {
     const funcName = `Get${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`;
     const fieldType = params.fieldType;
     if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-        const returnType = fieldType.getReferencedSuperType(classSpec.namespace, classSpec.includes);
-        classSpec.methods.push({
-            decorations: decorations,
-            name: funcName,
-            returnType,
-            parameters: [{
-                    name: "datastore",
-                    type: getDataStoreClass(params.apiname, classSpec.namespace, classSpec.includes),
-                }],
-            isConst: params.isConst,
-            noDiscard: true,
-            visibility: params.visibility,
-            body: includes => {
-                const body = [
-                    `var objId = ${fieldVar};`,
-                ];
-                const validLeafTypes = fieldType.getReferencedTypeList(classSpec.namespace, includes);
-                for (const leafType of validLeafTypes) {
-                    body.push(`var ${leafType.collectionName}Val = datastore.${leafType.collectionName}.GetObject(objId);`, `if (${leafType.collectionName}Val != null) {`, `  return ${leafType.collectionName}Val;`, `}`);
-                }
-                body.push(`return null;`);
-                return body;
-            },
-        });
         classSpec.methods.push({
             decorations,
-            name: `${funcName}Id`,
+            name: funcName,
             returnType: fieldType.declareLocalReturnType(classSpec.namespace, classSpec.includes, !params.convertToLocal),
             isConst: params.isConst,
             visibility: params.visibility,

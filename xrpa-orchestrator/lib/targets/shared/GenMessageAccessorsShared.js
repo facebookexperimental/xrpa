@@ -18,24 +18,15 @@
 
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.genMessageMethodParams = void 0;
-const TypeDefinition_1 = require("../../shared/TypeDefinition");
 function genMessageMethodParams(params) {
     const methodParams = [];
     const msgFields = params.fieldType.getStateFields();
     for (const key in msgFields) {
         const fieldType = msgFields[key].type;
-        if (params.referencesNeedConversion && (0, TypeDefinition_1.typeIsReference)(fieldType)) {
-            methodParams.push({
-                name: key,
-                type: fieldType.getReferencedSuperType(params.namespace, params.includes),
-            });
-        }
-        else {
-            methodParams.push({
-                name: key,
-                type: fieldType,
-            });
-        }
+        methodParams.push({
+            name: key,
+            type: fieldType,
+        });
     }
     return methodParams;
 }

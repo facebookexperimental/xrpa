@@ -51,7 +51,6 @@ const CsharpCodeGenImpl_1 = require("../csharp/CsharpCodeGenImpl");
 const CsharpCodeGenImpl = __importStar(require("../csharp/CsharpCodeGenImpl"));
 const GenMessageAccessors_1 = require("../csharp/GenMessageAccessors");
 const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
-const GenDataStoreSubsystem_1 = require("./GenDataStoreSubsystem");
 const CsharpDatasetLibraryTypes_1 = require("../csharp/CsharpDatasetLibraryTypes");
 const TypeValue_1 = require("../../shared/TypeValue");
 var IntrinsicProperty;
@@ -94,12 +93,7 @@ function getMessageDelegateName(namespace, includes, msgType) {
     const fields = msgType.getStateFields();
     for (const key in fields) {
         const fieldType = fields[key].type;
-        if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-            paramTypes.push(getComponentClassName(fieldType.toType));
-        }
-        else {
-            paramTypes.push(fieldType.declareLocalParam(namespace, includes, ""));
-        }
+        paramTypes.push(fieldType.declareLocalParam(namespace, includes, ""));
     }
     return CsharpCodeGenImpl.genEventHandlerType(paramTypes);
 }
@@ -205,13 +199,7 @@ function genFieldSetterCalls(params) {
     for (const fieldName in fields) {
         const memberName = getFieldMemberName(params.reconcilerDef, fieldName);
         if (params.reconcilerDef.isOutboundField(fieldName)) {
-            const fieldType = fields[fieldName].type;
-            if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-                lines.push(`${params.proxyObj}.Set${(0, xrpa_utils_1.upperFirst)(fieldName)}Id(${(0, CsharpCodeGenImpl_1.privateMember)(memberName)});`);
-            }
-            else {
-                lines.push(`${params.proxyObj}.Set${(0, xrpa_utils_1.upperFirst)(fieldName)}(${(0, CsharpCodeGenImpl_1.privateMember)(memberName)});`);
-            }
+            lines.push(`${params.proxyObj}.Set${(0, xrpa_utils_1.upperFirst)(fieldName)}(${(0, CsharpCodeGenImpl_1.privateMember)(memberName)});`);
         }
     }
     return lines;
@@ -222,7 +210,6 @@ function genUnitySendMessageAccessor(classSpec, params) {
     (0, GenMessageAccessors_1.genSendMessageAccessor)(classSpec, {
         ...params,
         name: `Send${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
-        referencesNeedConversion: false,
     });
 }
 exports.genUnitySendMessageAccessor = genUnitySendMessageAccessor;
@@ -254,9 +241,7 @@ function genUnityMessageProxyDispatch(classSpec, params) {
             fieldName: params.fieldName,
             fieldType: params.fieldType,
             genMsgHandler: msg => `On${(0, xrpa_utils_1.upperFirst)(msg)}?.Invoke`,
-            msgDataToParams: (msgType, prelude) => {
-                return convertMessageTypeToParams(params.storeDef, msgType, prelude);
-            },
+            msgDataToParams: convertMessageTypeToParams,
             convertToReadAccessor: false,
         }),
         visibility: "private",
@@ -264,18 +249,11 @@ function genUnityMessageProxyDispatch(classSpec, params) {
     params.initializerLines.push(`${(0, CsharpCodeGenImpl_1.genDerefMethodCall)(params.proxyObj, proxyHandlerName, [unityDispatchName])};`);
 }
 exports.genUnityMessageProxyDispatch = genUnityMessageProxyDispatch;
-function convertMessageTypeToParams(storeDef, msgType, prelude) {
+function convertMessageTypeToParams(msgType) {
     const params = [];
     const fields = msgType.getStateFields();
     for (const key in fields) {
-        const fieldType = fields[key].type;
-        if ((0, TypeDefinition_1.typeIsReference)(fieldType)) {
-            (0, xrpa_utils_1.pushUnique)(prelude, `var datastore = ${(0, GenDataStoreSubsystem_1.getDataStoreSubsystemName)(storeDef)}.Instance.DataStore;`);
-            params.push(`message.Get${(0, xrpa_utils_1.upperFirst)(key)}(datastore).GetXrpaOwner<${getComponentClassName(fieldType.toType)}>()`);
-        }
-        else {
-            params.push(`message.Get${(0, xrpa_utils_1.upperFirst)(key)}()`);
-        }
+        params.push(`message.Get${(0, xrpa_utils_1.upperFirst)(key)}()`);
     }
     return params;
 }
@@ -570,11 +548,7 @@ function genProcessUpdateBody(params) {
         }
         const memberName = getFieldMemberName(params.reconcilerDef, fieldName);
         const checkName = `Check${(0, xrpa_utils_1.upperFirst)(fieldName)}Changed`;
-        let funcName = `Get${(0, xrpa_utils_1.upperFirst)(fieldName)}`;
-        if ((0, TypeDefinition_1.typeIsReference)(fields[fieldName].type)) {
-            funcName += "Id";
-        }
-        lines.push(`if (${params.proxyObj}.${checkName}(fieldsChanged)) {`, `  ${(0, CsharpCodeGenImpl_1.privateMember)(memberName)} = ${params.proxyObj}.${funcName}();`);
+        lines.push(`if (${params.proxyObj}.${checkName}(fieldsChanged)) {`, `  ${(0, CsharpCodeGenImpl_1.privateMember)(memberName)} = ${params.proxyObj}.Get${(0, xrpa_utils_1.upperFirst)(fieldName)}();`);
         // handle property binding
         const fieldBinding = params.reconcilerDef.getFieldPropertyBinding(fieldName);
         if (typeof fieldBinding === "string") {
