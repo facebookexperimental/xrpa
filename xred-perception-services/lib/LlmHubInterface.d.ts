@@ -46,7 +46,9 @@ export interface McpServerConfigParams {
 }
 export declare function McpServerSet(servers: McpServerConfigParams[]): XrpaDataflowGraphNode;
 export declare function LlmQuery(params: LlmSharedParams & {
-    Query: XrpaDataflowConnection | XrpaProgramParam;
+    Query?: XrpaDataflowConnection | XrpaProgramParam;
+    userPrompt?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"String">> | string;
+    jpegImageData?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"ByteArray">>;
     jsonSchema?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"String">> | string | ZodSchema;
     mcpServerSet?: XrpaDataflowGraphNode;
 }): {

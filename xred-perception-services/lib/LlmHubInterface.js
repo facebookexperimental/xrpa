@@ -85,7 +85,10 @@ exports.XredLlmHubInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xre
             ...LlmShared,
             jsonSchema: (0, xrpa_orchestrator_1.String)("", "Optional JSON schema for the response."),
             mcpServerSet: (0, xrpa_orchestrator_1.ReferenceTo)(McpServerSet),
+            // Supports either a query message OR a stateful user prompt
             Query: LlmChatMessage,
+            userPrompt: xrpa_orchestrator_1.String,
+            jpegImageData: (0, xrpa_orchestrator_1.ByteArray)(Math.floor(1024 * 1024 * 3 / 10), "Optional JPEG image data."),
             Response: (0, xrpa_orchestrator_1.Output)(LlmChatResponse),
             ResponseStream: (0, xrpa_orchestrator_1.Output)(LlmChatResponse),
         },
