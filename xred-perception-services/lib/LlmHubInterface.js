@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LlmConversation = exports.LlmTriggeredQuery = exports.LlmQuery = exports.createMcpServerSet = exports.XredMetaGenInterface = exports.DEFAULT_LLM_FUNCTION_MAX_COUNT = exports.DEFAULT_SERVER_SET_MAX_COUNT = exports.DEFAULT_CONFIG_COLLECTION_MAX_COUNT = exports.DEFAULT_CONFIG_MAX_COUNT = exports.ApiProvider = exports.ModelSize = void 0;
+exports.LlmConversation = exports.LlmTriggeredQuery = exports.LlmQuery = exports.McpServerSet = exports.XredLlmHubInterface = exports.DEFAULT_LLM_FUNCTION_MAX_COUNT = exports.DEFAULT_SERVER_SET_MAX_COUNT = exports.DEFAULT_CONFIG_COLLECTION_MAX_COUNT = exports.DEFAULT_CONFIG_MAX_COUNT = exports.ApiProvider = exports.ModelSize = void 0;
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const assert_1 = __importDefault(require("assert"));
 const zod_to_json_schema_1 = require("zod-to-json-schema");
@@ -36,10 +36,15 @@ var ApiProvider;
     ApiProvider[ApiProvider["LlamaAPI"] = 1] = "LlamaAPI";
     ApiProvider[ApiProvider["LocalLLM"] = 2] = "LocalLLM";
 })(ApiProvider = exports.ApiProvider || (exports.ApiProvider = {}));
-const LlmChatMessage = (0, xrpa_orchestrator_1.Message)("LlmChatMessage", {
+const LlmChatMessage = (0, xrpa_orchestrator_1.MessageRate)(1, (0, xrpa_orchestrator_1.Message)("LlmChatMessage", {
+    data: xrpa_orchestrator_1.String,
+    jpegImageData: (0, xrpa_orchestrator_1.ByteArray)(Math.floor(1024 * 1024 * 3 / 10), "Optional JPEG image data."),
+    id: (0, xrpa_orchestrator_1.Count)(0, "Optional ID. If sent with a chat message, the response will have the same ID."),
+}));
+const LlmChatResponse = (0, xrpa_orchestrator_1.MessageRate)(1, (0, xrpa_orchestrator_1.Message)("LlmChatResponse", {
     data: xrpa_orchestrator_1.String,
     id: (0, xrpa_orchestrator_1.Count)(0, "Optional ID. If sent with a chat message, the response will have the same ID."),
-});
+}));
 // Default collection size limits - can be overridden when needed
 // These numbers are just hints to the transport layer for memory allocation in the ring buffer
 // It's fine for them to be on the larger side
@@ -47,26 +52,19 @@ exports.DEFAULT_CONFIG_MAX_COUNT = 32;
 exports.DEFAULT_CONFIG_COLLECTION_MAX_COUNT = 32;
 exports.DEFAULT_SERVER_SET_MAX_COUNT = 64;
 exports.DEFAULT_LLM_FUNCTION_MAX_COUNT = 128;
-exports.XredMetaGenInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.MetaGen", () => {
+exports.XredLlmHubInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.LlmHub", () => {
     const ModelSizeHint = (0, xrpa_orchestrator_1.Enum)("ModelSizeHint", ["Small", "Large"]);
     const ApiProviderEnum = (0, xrpa_orchestrator_1.Enum)("ApiProvider", ["MetaGenProxy", "LlamaAPI", "LocalLLM"]);
     const { rgbMessage, } = (0, Shared_1.getPerceptionTypes)();
     // MCP configuration
     const McpServerSet = (0, xrpa_orchestrator_1.ProgramInput)("McpServerSet", (0, xrpa_orchestrator_1.Collection)({
         maxCount: exports.DEFAULT_SERVER_SET_MAX_COUNT,
-        fields: {
-            name: xrpa_orchestrator_1.String,
-            description: (0, xrpa_orchestrator_1.String)("", "Description of this MCP server set"),
-        },
+        fields: {},
     }));
-    const McpServerConfig = (0, xrpa_orchestrator_1.ProgramInput)("McpServerConfig", (0, xrpa_orchestrator_1.Collection)({
+    (0, xrpa_orchestrator_1.ProgramInput)("McpServerConfig", (0, xrpa_orchestrator_1.Collection)({
         maxCount: exports.DEFAULT_CONFIG_MAX_COUNT,
         fields: {
-            name: xrpa_orchestrator_1.String,
-            description: (0, xrpa_orchestrator_1.String)("", "Description of this MCP configuration"),
-            version: (0, xrpa_orchestrator_1.String)("1.0.0", "Version of the MCP server"),
-            url: (0, xrpa_orchestrator_1.String)("http://localhost:3000/mcp", "URL of the MCP server (for HTTP transport)"),
-            transportType: (0, xrpa_orchestrator_1.String)("http", "Transport type: 'http', 'stdio', or 'websocket'"),
+            url: (0, xrpa_orchestrator_1.String)("http://localhost:3000/mcp", "URL of the MCP server"),
             authToken: (0, xrpa_orchestrator_1.String)("", "Authentication token for the MCP server"),
             serverSet: (0, xrpa_orchestrator_1.IndexKey)((0, xrpa_orchestrator_1.ReferenceTo)(McpServerSet, "Reference back to the server set this config belongs to")),
         },
@@ -85,28 +83,24 @@ exports.XredMetaGenInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xr
         maxCount: exports.DEFAULT_LLM_FUNCTION_MAX_COUNT,
         fields: {
             ...LlmShared,
-            userPrompt: xrpa_orchestrator_1.String,
             jsonSchema: (0, xrpa_orchestrator_1.String)("", "Optional JSON schema for the response."),
             mcpServerSet: (0, xrpa_orchestrator_1.ReferenceTo)(McpServerSet),
-            jpegImageData: (0, xrpa_orchestrator_1.ByteArray)(Math.floor(2048 * 2048 * 3 / 10), "Optional JPEG image data."),
-            response: (0, xrpa_orchestrator_1.Output)(xrpa_orchestrator_1.String),
-            ResponseStream: (0, xrpa_orchestrator_1.Output)((0, xrpa_orchestrator_1.Message)({
-                data: xrpa_orchestrator_1.String,
-            })),
-            QueryComplete: (0, xrpa_orchestrator_1.Output)((0, xrpa_orchestrator_1.Message)()),
+            Query: LlmChatMessage,
+            Response: (0, xrpa_orchestrator_1.Output)(LlmChatResponse),
+            ResponseStream: (0, xrpa_orchestrator_1.Output)(LlmChatResponse),
         },
     }));
     (0, xrpa_orchestrator_1.ProgramInput)("LlmTriggeredQuery", (0, xrpa_orchestrator_1.Collection)({
         maxCount: exports.DEFAULT_LLM_FUNCTION_MAX_COUNT,
         fields: {
             ...LlmShared,
-            userPrompt: xrpa_orchestrator_1.String,
             jsonSchema: (0, xrpa_orchestrator_1.String)("", "Optional JSON schema for the response."),
             mcpServerSet: (0, xrpa_orchestrator_1.ReferenceTo)(McpServerSet),
+            userPrompt: xrpa_orchestrator_1.String,
             RgbImageFeed: rgbMessage,
             triggerId: xrpa_orchestrator_1.Count,
-            Response: (0, xrpa_orchestrator_1.Output)(LlmChatMessage),
-            ResponseStream: (0, xrpa_orchestrator_1.Output)(LlmChatMessage),
+            Response: (0, xrpa_orchestrator_1.Output)(LlmChatResponse),
+            ResponseStream: (0, xrpa_orchestrator_1.Output)(LlmChatResponse),
         },
     }));
     (0, xrpa_orchestrator_1.ProgramInput)("LlmConversation", (0, xrpa_orchestrator_1.Collection)({
@@ -116,8 +110,8 @@ exports.XredMetaGenInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xr
             conversationStarter: (0, xrpa_orchestrator_1.String)("", "Optional starter message for the conversation. Will be sent as an additional message between the system prompt and the user prompt."),
             mcpServerSet: (0, xrpa_orchestrator_1.ReferenceTo)(McpServerSet),
             ChatMessage: LlmChatMessage,
-            ChatResponse: (0, xrpa_orchestrator_1.Output)(LlmChatMessage),
-            ChatResponseStream: (0, xrpa_orchestrator_1.Output)(LlmChatMessage),
+            ChatResponse: (0, xrpa_orchestrator_1.Output)(LlmChatResponse),
+            ChatResponseStream: (0, xrpa_orchestrator_1.Output)(LlmChatResponse),
         },
     }));
 });
@@ -131,35 +125,23 @@ function convertJsonSchema(jsonSchema) {
         return jsonSchema;
     }
 }
-function createMcpServerSet(params) {
-    const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredMetaGenInterface), "McpServerSet"], {});
+function McpServerSet(servers) {
+    const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredLlmHubInterface), "McpServerSet"], {});
     (0, assert_1.default)((0, xrpa_orchestrator_1.isDataflowForeignObjectInstantiation)(dataflowNode));
-    dataflowNode.fieldValues = {
-        name: params.name,
-        description: params.description || "",
-    };
-    const serverConfigs = (params.configs || []).map(configParams => {
-        const configNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredMetaGenInterface), "McpServerConfig"], {});
-        (0, assert_1.default)((0, xrpa_orchestrator_1.isDataflowForeignObjectInstantiation)(configNode));
-        configNode.fieldValues = {
-            name: configParams.name,
-            description: configParams.description || "",
-            version: configParams.version || "1.0.0",
-            url: configParams.url || "http://localhost:3000/mcp",
-            transportType: configParams.transportType || "http",
-            authToken: configParams.authToken || "",
+    for (const serverConfig of servers) {
+        const serverNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredLlmHubInterface), "McpServerConfig"], {});
+        (0, assert_1.default)((0, xrpa_orchestrator_1.isDataflowForeignObjectInstantiation)(serverNode));
+        serverNode.fieldValues = {
+            url: serverConfig.url || "http://localhost:3000/mcp",
+            authToken: serverConfig.authToken || "",
             serverSet: dataflowNode,
         };
-        return configNode;
-    });
-    return {
-        serverSet: dataflowNode,
-        configs: serverConfigs
-    };
+    }
+    return dataflowNode;
 }
-exports.createMcpServerSet = createMcpServerSet;
+exports.McpServerSet = McpServerSet;
 function LlmQuery(params) {
-    const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredMetaGenInterface), "LlmQuery"], {});
+    const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredLlmHubInterface), "LlmQuery"], {});
     (0, assert_1.default)((0, xrpa_orchestrator_1.isDataflowForeignObjectInstantiation)(dataflowNode));
     dataflowNode.fieldValues = {
         ...params,
@@ -167,14 +149,13 @@ function LlmQuery(params) {
     };
     return {
         isProcessing: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "isProcessing"),
-        response: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "response"),
+        Response: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "Response"),
         ResponseStream: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "ResponseStream"),
-        QueryComplete: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "QueryComplete"),
     };
 }
 exports.LlmQuery = LlmQuery;
 function LlmTriggeredQuery(params) {
-    const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredMetaGenInterface), "LlmTriggeredQuery"], {});
+    const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredLlmHubInterface), "LlmTriggeredQuery"], {});
     (0, assert_1.default)((0, xrpa_orchestrator_1.isDataflowForeignObjectInstantiation)(dataflowNode));
     dataflowNode.fieldValues = {
         ...params,
@@ -188,7 +169,7 @@ function LlmTriggeredQuery(params) {
 }
 exports.LlmTriggeredQuery = LlmTriggeredQuery;
 function LlmConversation(params) {
-    const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredMetaGenInterface), "LlmConversation"], {});
+    const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredLlmHubInterface), "LlmConversation"], {});
     (0, assert_1.default)((0, xrpa_orchestrator_1.isDataflowForeignObjectInstantiation)(dataflowNode));
     dataflowNode.fieldValues = {
         ...params,
@@ -200,4 +181,4 @@ function LlmConversation(params) {
     };
 }
 exports.LlmConversation = LlmConversation;
-//# sourceMappingURL=MetaGenInterface.js.map
+//# sourceMappingURL=LlmHubInterface.js.map

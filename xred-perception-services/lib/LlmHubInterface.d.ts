@@ -15,7 +15,7 @@
  */
 
 
-import { XrpaDataflowConnection, XrpaDataType, XrpaProgramParam } from "@xrpa/xrpa-orchestrator";
+import { XrpaDataflowConnection, XrpaDataType, XrpaProgramParam, XrpaDataflowGraphNode } from "@xrpa/xrpa-orchestrator";
 import { ZodSchema } from "zod";
 export declare enum ModelSize {
     Small = 0,
@@ -30,7 +30,7 @@ export declare const DEFAULT_CONFIG_MAX_COUNT = 32;
 export declare const DEFAULT_CONFIG_COLLECTION_MAX_COUNT = 32;
 export declare const DEFAULT_SERVER_SET_MAX_COUNT = 64;
 export declare const DEFAULT_LLM_FUNCTION_MAX_COUNT = 128;
-export declare const XredMetaGenInterface: import("@xrpa/xrpa-orchestrator").ProgramInterface;
+export declare const XredLlmHubInterface: import("@xrpa/xrpa-orchestrator").ProgramInterface;
 interface LlmSharedParams {
     apiKey: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"String">> | string;
     apiProvider?: XrpaDataflowConnection | ApiProvider;
@@ -41,37 +41,23 @@ interface LlmSharedParams {
     maxConsecutiveToolCalls?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"Count">> | number;
 }
 export interface McpServerConfigParams {
-    name: string;
-    description?: string;
-    version?: string;
-    url?: string;
-    transportType?: string;
+    url: string;
     authToken?: string;
 }
-export interface McpServerSetParams {
-    name: string;
-    description?: string;
-    configs: McpServerConfigParams[];
-}
-export declare function createMcpServerSet(params: McpServerSetParams): {
-    serverSet: import("@xrpa/xrpa-orchestrator").XrpaDataflowForeignObjectInstantiation;
-    configs: import("@xrpa/xrpa-orchestrator").XrpaDataflowForeignObjectInstantiation[];
-};
+export declare function McpServerSet(servers: McpServerConfigParams[]): XrpaDataflowGraphNode;
 export declare function LlmQuery(params: LlmSharedParams & {
-    userPrompt: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"String">> | string;
+    Query: XrpaDataflowConnection | XrpaProgramParam;
     jsonSchema?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"String">> | string | ZodSchema;
-    mcpServerSet?: XrpaDataflowConnection | XrpaProgramParam | string;
-    jpegImageData?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"ByteArray">>;
+    mcpServerSet?: XrpaDataflowGraphNode;
 }): {
     isProcessing: XrpaDataflowConnection;
-    response: XrpaDataflowConnection;
+    Response: XrpaDataflowConnection;
     ResponseStream: XrpaDataflowConnection;
-    QueryComplete: XrpaDataflowConnection;
 };
 export declare function LlmTriggeredQuery(params: LlmSharedParams & {
     userPrompt: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"String">> | string;
     jsonSchema?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"String">> | string | ZodSchema;
-    mcpServerSet?: XrpaDataflowConnection | XrpaProgramParam | string;
+    mcpServerSet?: XrpaDataflowGraphNode;
     RgbImageFeed?: XrpaDataflowConnection | XrpaProgramParam;
     triggerId?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"Count">>;
 }): {
@@ -81,7 +67,7 @@ export declare function LlmTriggeredQuery(params: LlmSharedParams & {
 };
 export declare function LlmConversation(params: LlmSharedParams & {
     conversationStarter?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"String">> | string;
-    mcpServerSet?: XrpaDataflowConnection | XrpaProgramParam | string;
+    mcpServerSet?: XrpaDataflowGraphNode;
     ChatMessage: XrpaDataflowConnection | XrpaProgramParam;
 }): {
     isProcessing: XrpaDataflowConnection;
