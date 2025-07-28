@@ -76,7 +76,7 @@ exports.XredLlmHubInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xre
         sysPrompt: xrpa_orchestrator_1.String,
         temperature: (0, xrpa_orchestrator_1.Scalar)(0.7, "Controls randomness: 0.0 = deterministic, 1.0 = creative"),
         maxTokens: (0, xrpa_orchestrator_1.Count)(256, "Maximum number of tokens to generate"),
-        maxConsecutiveToolCalls: (0, xrpa_orchestrator_1.Count)(10, "Maximum number of consecutive tool calls"),
+        maxConsecutiveToolCalls: (0, xrpa_orchestrator_1.Count)(20, "Maximum number of consecutive tool calls"),
         isProcessing: (0, xrpa_orchestrator_1.Output)(xrpa_orchestrator_1.Count),
     };
     (0, xrpa_orchestrator_1.ProgramInput)("LlmQuery", (0, xrpa_orchestrator_1.Collection)({
