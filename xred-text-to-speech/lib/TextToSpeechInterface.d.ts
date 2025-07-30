@@ -19,12 +19,12 @@ import { XrpaDataflowConnection, XrpaProgramParam } from "@xrpa/xrpa-orchestrato
 export declare const DEFAULT_TTS_REQUEST_MAX_COUNT = 16;
 export declare const XredTextToSpeechInterface: import("@xrpa/xrpa-orchestrator").ProgramInterface;
 export declare function TtsRequest(params: {
-    textRequest: XrpaDataflowConnection | XrpaProgramParam;
+    TextRequest: XrpaDataflowConnection | XrpaProgramParam;
 }): {
     audio: {
         numChannels: number;
         signal: XrpaDataflowConnection;
     };
-    ttsResponse: XrpaDataflowConnection;
+    TtsResponse: XrpaDataflowConnection;
 };
 

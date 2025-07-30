@@ -26,33 +26,30 @@ const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const assert_1 = __importDefault(require("assert"));
 exports.DEFAULT_TTS_REQUEST_MAX_COUNT = 16;
 exports.XredTextToSpeechInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.TextToSpeech", () => {
-    const TextRequest = (0, xrpa_orchestrator_1.Message)("TextRequest", {
-        text: (0, xrpa_orchestrator_1.String)("", "Text to convert to speech"),
-        modelName: (0, xrpa_orchestrator_1.String)("chatterbox", "ChatterboxTTS model name"),
-        id: (0, xrpa_orchestrator_1.Count)(0, "Optional ID. If sent with a text request, the response will have the same ID."),
-    });
-    const TtsResponse = (0, xrpa_orchestrator_1.Message)("TtsResponse", {
-        id: (0, xrpa_orchestrator_1.Count)(0, "Request ID that matches the original text request"),
-        success: (0, xrpa_orchestrator_1.Boolean)(false, "Whether synthesis completed successfully"),
-        errorMessage: (0, xrpa_orchestrator_1.String)("", "Error message if processing failed"),
-        playbackStartTimestamp: (0, xrpa_orchestrator_1.HiResTimestamp)("Timestamp when audio playback started"),
-    });
     (0, xrpa_orchestrator_1.ProgramInput)("TextToSpeech", (0, xrpa_orchestrator_1.Collection)({
         maxCount: exports.DEFAULT_TTS_REQUEST_MAX_COUNT,
         fields: {
-            textRequest: TextRequest,
+            TextRequest: (0, xrpa_orchestrator_1.Message)("TextRequest", {
+                text: (0, xrpa_orchestrator_1.String)("", "Text to convert to speech"),
+                id: (0, xrpa_orchestrator_1.Count)(0, "Optional ID. If sent with a text request, the response will have the same ID."),
+            }),
             audio: (0, xrpa_orchestrator_1.Output)(xrpa_orchestrator_1.Signal),
-            ttsResponse: (0, xrpa_orchestrator_1.Output)(TtsResponse),
+            TtsResponse: (0, xrpa_orchestrator_1.Output)((0, xrpa_orchestrator_1.Message)("TtsResponse", {
+                id: (0, xrpa_orchestrator_1.Count)(0, "Request ID that matches the original text request"),
+                success: (0, xrpa_orchestrator_1.Boolean)(false, "Whether synthesis completed successfully"),
+                errorMessage: (0, xrpa_orchestrator_1.String)("", "Error message if processing failed"),
+                playbackStartTimestamp: (0, xrpa_orchestrator_1.HiResTimestamp)("Timestamp when audio playback started"),
+            })),
         },
     }));
 });
 function TtsRequest(params) {
     const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredTextToSpeechInterface), "TextToSpeech"], {});
     (0, assert_1.default)((0, xrpa_orchestrator_1.isDataflowForeignObjectInstantiation)(dataflowNode));
-    dataflowNode.fieldValues.textRequest = params.textRequest;
+    dataflowNode.fieldValues.TextRequest = params.TextRequest;
     return {
         audio: { numChannels: 2, signal: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "audio") },
-        ttsResponse: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "ttsResponse"),
+        TtsResponse: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "TtsResponse"),
     };
 }
 //# sourceMappingURL=TextToSpeechInterface.js.map

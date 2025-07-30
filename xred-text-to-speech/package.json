@@ -1,6 +1,6 @@
 {
   "name": "@xrpa/xred-text-to-speech",
-  "version": "1.11.0",
+  "version": "1.11.1",
   "description": "Text-to-speech service module",
   "main": "lib/index.js",
   "files": [
