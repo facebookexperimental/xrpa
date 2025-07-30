@@ -1,0 +1,14 @@
+{
+  "name": "@xrpa/xred-audio-input",
+  "version": "1.11.0",
+  "description": "Audio Input Interface",
+  "main": "lib/index.js",
+  "files": [
+    "bin/**/*",
+    "lib/**/*"
+  ],
+  "license": "Apache-2.0",
+  "peerDependencies": {
+    "@xrpa/xrpa-orchestrator": "1.11.0"
+  }
+}
