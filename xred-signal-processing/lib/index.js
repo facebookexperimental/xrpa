@@ -31,10 +31,13 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.strEquals = exports.strContains = exports.strEndsWith = exports.strStartsWith = void 0;
+exports.strEquals = exports.strContains = exports.strEndsWith = exports.strStartsWith = exports.isISignalNodeType = exports.ISignalNodeType = void 0;
 __exportStar(require("./SignalProcessingInterface"), exports);
 __exportStar(require("./MathOps"), exports);
 __exportStar(require("./ProcessingNodes"), exports);
+var SignalProcessingTypes_1 = require("./SignalProcessingTypes");
+Object.defineProperty(exports, "ISignalNodeType", { enumerable: true, get: function () { return SignalProcessingTypes_1.ISignalNodeType; } });
+Object.defineProperty(exports, "isISignalNodeType", { enumerable: true, get: function () { return SignalProcessingTypes_1.isISignalNodeType; } });
 var xrpa_utils_1 = require("@xrpa/xrpa-utils");
 Object.defineProperty(exports, "strStartsWith", { enumerable: true, get: function () { return xrpa_utils_1.strStartsWith; } });
 Object.defineProperty(exports, "strEndsWith", { enumerable: true, get: function () { return xrpa_utils_1.strEndsWith; } });

@@ -18,6 +18,10 @@
 import { XrpaDataflowConnection } from "@xrpa/xrpa-orchestrator";
 import { StringFilter } from "@xrpa/xrpa-utils";
 import { AcceptsStartEvent, FilterTypeEnum, FiresDoneEvent, FiresEvent, ISignalNodeType, NonSignalNumericValue, NumericValue, SignalCurveType, SignalFeedbackType, SignalOutputDeviceType } from "./SignalProcessingTypes";
+export declare function OutputSignal(params: {
+    source: ISignalNodeType;
+    frameRate: NonSignalNumericValue;
+}): XrpaDataflowConnection;
 export declare function OutputToDevice(params: {
     deviceName: StringFilter;
     source: ISignalNodeType;

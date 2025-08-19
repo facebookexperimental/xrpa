@@ -24,7 +24,8 @@ exports.AriaGlasses = exports.XredAriaInterface = void 0;
 const xred_perception_services_1 = require("@xrpa/xred-perception-services");
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const assert_1 = __importDefault(require("assert"));
-exports.XredAriaInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.Aria", () => {
+const path_1 = __importDefault(require("path"));
+exports.XredAriaInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.Aria", path_1.default.join(__dirname, "../package.json"), () => {
     const { pose, poseDynamicsMessage, rgbMessage, slamMessage, } = (0, xred_perception_services_1.getPerceptionTypes)();
     const PoseTransform = (0, xrpa_orchestrator_1.ObjectTransform)({
         position: "position",

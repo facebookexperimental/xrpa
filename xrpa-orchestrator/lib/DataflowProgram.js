@@ -143,7 +143,7 @@ function replaceStringEmbeddings(ctx) {
 }
 function XrpaDataflowProgram(name, callback) {
     let ctx;
-    const programInterface = (0, ProgramInterface_1.XrpaProgramInterface)(`XrpaDataflow.${name}`, piCtx => {
+    const programInterface = (0, ProgramInterface_1.XrpaProgramInterface)(`XrpaDataflow.${name}`, "", piCtx => {
         const dfCtx = (0, xrpa_utils_1.augmentInPlace)(piCtx, {
             __isDataflowProgramContext: true,
             externalProgramInterfaces: {},

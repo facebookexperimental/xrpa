@@ -23,6 +23,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LlmConversation = exports.LlmTriggeredQuery = exports.LlmQuery = exports.McpServerSet = exports.XredLlmHubInterface = exports.DEFAULT_LLM_FUNCTION_MAX_COUNT = exports.DEFAULT_SERVER_SET_MAX_COUNT = exports.DEFAULT_CONFIG_COLLECTION_MAX_COUNT = exports.DEFAULT_CONFIG_MAX_COUNT = exports.ApiProvider = exports.ModelSize = void 0;
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const assert_1 = __importDefault(require("assert"));
+const path_1 = __importDefault(require("path"));
 const zod_to_json_schema_1 = require("zod-to-json-schema");
 const Shared_1 = require("./Shared");
 var ModelSize;
@@ -52,7 +53,7 @@ exports.DEFAULT_CONFIG_MAX_COUNT = 32;
 exports.DEFAULT_CONFIG_COLLECTION_MAX_COUNT = 32;
 exports.DEFAULT_SERVER_SET_MAX_COUNT = 64;
 exports.DEFAULT_LLM_FUNCTION_MAX_COUNT = 128;
-exports.XredLlmHubInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.LlmHub", () => {
+exports.XredLlmHubInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.LlmHub", path_1.default.join(__dirname, "../package.json"), () => {
     const ModelSizeHint = (0, xrpa_orchestrator_1.Enum)("ModelSizeHint", ["Small", "Large"]);
     const ApiProviderEnum = (0, xrpa_orchestrator_1.Enum)("ApiProvider", ["MetaGenProxy", "LlamaAPI", "LocalLLM"]);
     const { rgbMessage, } = (0, Shared_1.getPerceptionTypes)();

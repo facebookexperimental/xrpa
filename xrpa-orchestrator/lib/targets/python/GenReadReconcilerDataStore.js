@@ -320,10 +320,10 @@ function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
         const indexFieldType = fields[indexConfig.indexFieldName].type;
         const indexFieldTypeName = indexFieldType.getLocalType(ctx.namespace, classSpec.includes);
         const indexFieldGet = (0, GenDataStoreShared_1.fieldGetterFuncName)(PythonCodeGenImpl, fields, indexConfig.indexFieldName);
-        const memberName = indexConfig.boundClassName ? PythonCodeGenImpl.privateMember(`binding_${indexConfig.boundClassName}_to_${indexConfig.indexFieldName}`) : `${indexConfig.indexFieldName}_index`;
-        indexNotifyCreateLines.push(`${memberName}.on_create(obj, obj.${indexFieldGet}())`);
-        indexNotifyUpdateLines.push(`if (fields_changed & ${reconcilerDef.type.getFieldBitMask(indexConfig.indexFieldName)}) != 0:`, `  ${memberName}.on_update(obj, obj.${indexFieldGet}())`);
-        indexNotifyDeleteLines.push(`${memberName}.on_delete(obj, obj.${indexFieldGet}())`);
+        const memberName = indexConfig.boundClassName ? PythonCodeGenImpl.privateMember(`binding_${indexConfig.boundClassName}_to_${indexConfig.indexFieldName}`) : `${(0, PythonCodeGenImpl_1.identifierName)(indexConfig.indexFieldName)}_index`;
+        indexNotifyCreateLines.push(`self.${memberName}.on_create(obj, obj.${indexFieldGet}())`);
+        indexNotifyUpdateLines.push(`if (fields_changed & ${reconcilerDef.type.getFieldBitMask(indexConfig.indexFieldName)}) != 0:`, `  self.${memberName}.on_update(obj, obj.${indexFieldGet}())`);
+        indexNotifyDeleteLines.push(`self.${memberName}.on_delete(obj, obj.${indexFieldGet}())`);
         if (boundType) {
             const memberType = `${PythonDatasetLibraryTypes_1.ObjectCollectionIndexedBinding.getLocalType(ctx.namespace, classSpec.includes)}[${readAccessor}, ${localPtr}, ${indexFieldTypeName}, ${boundType}]`;
             classSpec.members.push({
@@ -342,7 +342,7 @@ function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
                         type: boundType,
                     }],
                 body: [
-                    `${memberName}.add_local_object(index_value, local_obj)`,
+                    `self.${memberName}.add_local_object(index_value, local_obj)`,
                 ],
             });
             classSpec.methods.push({
@@ -355,7 +355,7 @@ function setupCollectionClassIndexing(ctx, classSpec, reconcilerDef) {
                         type: boundType,
                     }],
                 body: [
-                    `${memberName}.remove_local_object(index_value, local_obj)`,
+                    `self.${memberName}.remove_local_object(index_value, local_obj)`,
                 ],
             });
         }

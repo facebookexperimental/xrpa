@@ -23,6 +23,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.reverseProgramDirectionality = exports.reverseDirectionality = exports.propagatePropertiesToInterface = exports.XrpaProgramInterface = exports.UppercaseCompanyName = exports.ProgramOutput = exports.ProgramInput = exports.getDirectionality = exports.IfOutput = exports.IfInput = exports.Output = exports.Input = exports.getProgramInterfaceContext = exports.isProgramInterfaceContext = exports.isXrpaProgramParam = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
+const fs_extra_1 = __importDefault(require("fs-extra"));
 const simply_immutable_1 = require("simply-immutable");
 const DataflowProgram_1 = require("./DataflowProgram");
 const InterfaceTypes_1 = require("./InterfaceTypes");
@@ -222,7 +223,7 @@ class TypeReplacer {
         return dataType;
     }
 }
-function XrpaProgramInterface(name, callback) {
+function XrpaProgramInterface(name, packageJsonPath, callback) {
     const split = name.split(".");
     (0, assert_1.default)(split.length == 2, `Program interface name must be in the form "<company>.<name>"`);
     const ctx = {
@@ -235,8 +236,19 @@ function XrpaProgramInterface(name, callback) {
         ...ctx,
         companyName: split[0],
         interfaceName: split[1],
+        version: [1, 0, 0],
         namedTypes: {},
     };
+    // read version from package.json, if provided
+    if (packageJsonPath) {
+        const packageJson = fs_extra_1.default.readJsonSync(packageJsonPath);
+        if (packageJson.version) {
+            const splitVersion = packageJson.version.split(".");
+            programInterface.version[0] = parseInt(splitVersion[0]);
+            programInterface.version[1] = parseInt(splitVersion[1]);
+            programInterface.version[2] = parseInt(splitVersion[2]);
+        }
+    }
     // propagate names down from fields to all NamedTypes (name is required for named types after this point)
     // - keep track of field path, for default naming and for name collision disambiguation
     // - store name -> type lookup

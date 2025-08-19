@@ -93,6 +93,9 @@ class ObjectUuid:
         self.ID0 = 0
         self.ID1 = 0
 
+    def is_empty(self) -> bool:
+        return self.ID0 == 0 and self.ID1 == 0
+
     def __eq__(self, other: "ObjectUuid"):
         return self.ID0 == other.ID0 and self.ID1 == other.ID1
 

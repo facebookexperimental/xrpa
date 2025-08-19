@@ -25,6 +25,7 @@ exports.getVisualEmotionDetectionTypes = getVisualEmotionDetectionTypes;
 exports.VisualEmotionDetection = VisualEmotionDetection;
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const assert_1 = __importDefault(require("assert"));
+const path_1 = __importDefault(require("path"));
 var EmotionType;
 (function (EmotionType) {
     EmotionType[EmotionType["Neutral"] = 0] = "Neutral";
@@ -47,7 +48,7 @@ function getVisualEmotionDetectionTypes(width = 1920, height = 1080, bytesPerPix
     };
 }
 function createVisualEmotionDetectionInterface(width = 1920, height = 1080, bytesPerPixel = 4) {
-    return (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.VisualEmotionDetection", () => {
+    return (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.VisualEmotionDetection", path_1.default.join(__dirname, "../package.json"), () => {
         const EmotionTypeEnum = (0, xrpa_orchestrator_1.Enum)("EmotionType", [
             "Neutral",
             "Happy",

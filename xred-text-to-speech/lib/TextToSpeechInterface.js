@@ -24,8 +24,9 @@ exports.XredTextToSpeechInterface = exports.DEFAULT_TTS_REQUEST_MAX_COUNT = void
 exports.TtsRequest = TtsRequest;
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const assert_1 = __importDefault(require("assert"));
+const path_1 = __importDefault(require("path"));
 exports.DEFAULT_TTS_REQUEST_MAX_COUNT = 16;
-exports.XredTextToSpeechInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.TextToSpeech", () => {
+exports.XredTextToSpeechInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.TextToSpeech", path_1.default.join(__dirname, "../package.json"), () => {
     (0, xrpa_orchestrator_1.ProgramInput)("TextToSpeech", (0, xrpa_orchestrator_1.Collection)({
         maxCount: exports.DEFAULT_TTS_REQUEST_MAX_COUNT,
         fields: {

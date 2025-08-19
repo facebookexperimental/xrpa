@@ -16,6 +16,7 @@
 
 
 export declare function buckRootDir(): Promise<string>;
+export declare function normalizeBuckMode(mode: string): string;
 export declare function buckRun(params: {
     mode: string;
     target: string;

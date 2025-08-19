@@ -21,49 +21,102 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.XredAudioInputInterface = exports.DEFAULT_AUDIO_INPUT_MAX_COUNT = void 0;
-exports.AudioInputSource = AudioInputSource;
-exports.AvailableAudioDevices = AvailableAudioDevices;
-const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
+exports.InputFromDevice = InputFromDevice;
+exports.InputFromMatchingDevice = InputFromMatchingDevice;
+exports.InputFromSystemAudio = InputFromSystemAudio;
+exports.InputFromTcpStream = InputFromTcpStream;
 const assert_1 = __importDefault(require("assert"));
-exports.DEFAULT_AUDIO_INPUT_MAX_COUNT = 4;
-exports.XredAudioInputInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.AudioInput", () => {
+const path_1 = __importDefault(require("path"));
+const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
+exports.DEFAULT_AUDIO_INPUT_MAX_COUNT = 16;
+exports.XredAudioInputInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.AudioInput", path_1.default.join(__dirname, "../package.json"), () => {
+    const AudioInputDevice = (0, xrpa_orchestrator_1.ProgramOutput)("AudioInputDevice", (0, xrpa_orchestrator_1.Collection)({
+        maxCount: 32,
+        fields: {
+            deviceName: (0, xrpa_orchestrator_1.String)("", "Human-readable device name"),
+            numChannels: (0, xrpa_orchestrator_1.Count)(2, "Number of channels available"),
+            frameRate: (0, xrpa_orchestrator_1.Count)(48000, "Default frame rate for audio capture"),
+            isSystemAudioInput: (0, xrpa_orchestrator_1.Boolean)(false, "Whether this is the default input device"),
+        },
+    }));
     (0, xrpa_orchestrator_1.ProgramInput)("AudioInputSource", (0, xrpa_orchestrator_1.Collection)({
         maxCount: exports.DEFAULT_AUDIO_INPUT_MAX_COUNT,
         fields: {
-            deviceName: (0, xrpa_orchestrator_1.String)("default", "Audio input device name"),
-            sampleRate: (0, xrpa_orchestrator_1.Count)(48000, "Sample rate for audio capture"),
+            bindTo: (0, xrpa_orchestrator_1.Enum)("DeviceBindingType", ["Device", "DeviceByName", "SystemAudio", "TcpStream"]),
+            device: (0, xrpa_orchestrator_1.ReferenceTo)(AudioInputDevice),
+            deviceName: xrpa_orchestrator_1.String,
+            hostname: xrpa_orchestrator_1.String,
+            port: xrpa_orchestrator_1.Count,
+            frameRate: (0, xrpa_orchestrator_1.Count)(48000, "Frame rate for audio capture"),
+            numChannels: (0, xrpa_orchestrator_1.Count)(2, "Number of channels for audio capture"),
             audioSignal: (0, xrpa_orchestrator_1.Output)(xrpa_orchestrator_1.Signal),
             isActive: (0, xrpa_orchestrator_1.Output)((0, xrpa_orchestrator_1.Boolean)(false, "Whether audio input is currently active")),
             errorMessage: (0, xrpa_orchestrator_1.Output)((0, xrpa_orchestrator_1.String)("", "Error message if audio input failed")),
         },
     }));
-    (0, xrpa_orchestrator_1.ProgramOutput)("AvailableAudioDevices", (0, xrpa_orchestrator_1.Collection)({
-        maxCount: 8,
-        fields: {
-            deviceName: (0, xrpa_orchestrator_1.String)("", "Human-readable device name"),
-            isDefault: (0, xrpa_orchestrator_1.Boolean)(false, "Whether this is the default input device"),
-        },
-    }));
 });
-function AudioInputSource(params) {
+function InputFromDevice(params) {
+    const numChannels = params.numChannels ?? 2;
     const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredAudioInputInterface), "AudioInputSource"], {});
     (0, assert_1.default)((0, xrpa_orchestrator_1.isDataflowForeignObjectInstantiation)(dataflowNode));
     dataflowNode.fieldValues = {
-        deviceName: params.deviceName || "default",
-        sampleRate: params.sampleRate || 48000,
+        bindTo: 0,
+        device: params.device,
+        frameRate: params.frameRate ?? 48000,
+        numChannels,
     };
     return {
-        audioSignal: { numChannels: 2, signal: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "audioSignal") },
+        audioSignal: { numChannels, signal: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "audioSignal") },
         isActive: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "isActive"),
         errorMessage: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "errorMessage"),
     };
 }
-function AvailableAudioDevices() {
-    const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredAudioInputInterface), "AvailableAudioDevices"], {});
+function InputFromMatchingDevice(params) {
+    const numChannels = params.numChannels ?? 2;
+    const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredAudioInputInterface), "AudioInputSource"], {});
     (0, assert_1.default)((0, xrpa_orchestrator_1.isDataflowForeignObjectInstantiation)(dataflowNode));
+    dataflowNode.fieldValues = {
+        bindTo: 1,
+        deviceName: params.name,
+        frameRate: params.frameRate ?? 48000,
+        numChannels,
+    };
     return {
-        deviceName: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "deviceName"),
-        isDefault: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "isDefault"),
+        audioSignal: { numChannels, signal: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "audioSignal") },
+        isActive: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "isActive"),
+        errorMessage: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "errorMessage"),
+    };
+}
+function InputFromSystemAudio(params) {
+    const numChannels = params.numChannels ?? 2;
+    const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredAudioInputInterface), "AudioInputSource"], {});
+    (0, assert_1.default)((0, xrpa_orchestrator_1.isDataflowForeignObjectInstantiation)(dataflowNode));
+    dataflowNode.fieldValues = {
+        bindTo: 2,
+        frameRate: params.frameRate ?? 48000,
+        numChannels,
+    };
+    return {
+        audioSignal: { numChannels, signal: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "audioSignal") },
+        isActive: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "isActive"),
+        errorMessage: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "errorMessage"),
+    };
+}
+function InputFromTcpStream(params) {
+    const numChannels = params.numChannels ?? 2;
+    const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(exports.XredAudioInputInterface), "AudioInputSource"], {});
+    (0, assert_1.default)((0, xrpa_orchestrator_1.isDataflowForeignObjectInstantiation)(dataflowNode));
+    dataflowNode.fieldValues = {
+        bindTo: 3,
+        hostname: params.hostname,
+        port: params.port,
+        frameRate: params.frameRate ?? 48000,
+        numChannels,
+    };
+    return {
+        audioSignal: { numChannels, signal: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "audioSignal") },
+        isActive: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "isActive"),
+        errorMessage: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "errorMessage"),
     };
 }
 //# sourceMappingURL=AudioInputInterface.js.map

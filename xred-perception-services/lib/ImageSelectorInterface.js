@@ -24,7 +24,8 @@ exports.ImageSelector = exports.XredImageSelectorInterface = void 0;
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const Shared_1 = require("./Shared");
 const assert_1 = __importDefault(require("assert"));
-exports.XredImageSelectorInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.ImageSelector", () => {
+const path_1 = __importDefault(require("path"));
+exports.XredImageSelectorInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.ImageSelector", path_1.default.join(__dirname, "../package.json"), () => {
     const { poseDynamicsMessage, rgbMessage, } = (0, Shared_1.getPerceptionTypes)();
     (0, xrpa_orchestrator_1.ProgramInput)("ImageSelector", (0, xrpa_orchestrator_1.Collection)({
         maxCount: 2,

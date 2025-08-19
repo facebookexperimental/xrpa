@@ -156,7 +156,23 @@ function genStandaloneCpp(fileWriter, outdir, moduleDef) {
     genStandaloneWrapper(fileWriter, outdir, moduleDef);
 }
 exports.genStandaloneCpp = genStandaloneCpp;
-function genStandaloneBuck(fileWriter, outdir, runtimeDir, buckTarget, moduleDef, oncall) {
+function genStandaloneBuck(fileWriter, outdir, runtimeDir, buckDef, moduleDef) {
+    const ciLabels = [];
+    const compatibleWith = [];
+    if (buckDef.modes.windows) {
+        const testMode = buckDef.modes.windows.release || buckDef.modes.windows.debug;
+        compatibleWith.push(`"ovr_config//os:windows",`);
+        if (testMode) {
+            ciLabels.push(`ci.skip_test(ci.windows(ci.mode("${(0, xrpa_file_utils_1.normalizeBuckMode)(testMode)}"))),`);
+        }
+    }
+    if (buckDef.modes.macos) {
+        const testMode = buckDef.modes.macos.release || buckDef.modes.macos.debug;
+        compatibleWith.push(`"ovr_config//os:macos",`);
+        if (testMode) {
+            ciLabels.push(`ci.skip_test(ci.mac(ci.mode("${(0, xrpa_file_utils_1.normalizeBuckMode)(testMode)}"))),`);
+        }
+    }
     fileWriter.writeFile(path_1.default.join(outdir, "BUCK"), async () => {
         const buckRoot = await (0, xrpa_file_utils_1.buckRootDir)();
         const runtimeRelPath = path_1.default.relative(buckRoot, runtimeDir);
@@ -164,7 +180,7 @@ function genStandaloneBuck(fileWriter, outdir, runtimeDir, buckTarget, moduleDef
         const deps = [
             `"${runtimeDepPath}:transport",`,
             `"${runtimeDepPath}:utils",`,
-            `"${buckTarget}",`,
+            `"${buckDef.target}",`,
         ];
         if (!(0, xrpa_utils_1.objectIsEmpty)(moduleDef.getSettings().getAllFields())) {
             (0, xrpa_utils_1.pushUnique)(deps, `"${runtimeDepPath}:external_utils",`);
@@ -173,15 +189,15 @@ function genStandaloneBuck(fileWriter, outdir, runtimeDir, buckTarget, moduleDef
         return [
             ...CppCodeGenImpl_1.BUCK_HEADER,
             `load("//arvr/tools/build_defs:oxx.bzl", "oxx_binary", "oxx_shared_library")`,
+            ...(ciLabels.length ? [`load("@fbsource//tools/target_determinator/macros:ci.bzl", "ci")`] : []),
             ``,
-            `oncall("${oncall}")`,
+            `oncall("${buckDef.oncall}")`,
             ``,
             `oxx_shared_library(`,
             `    name = "${moduleDef.name}_standalone",`,
             `    srcs = ["StandaloneWrapper.cpp"],`,
             `    compatible_with = [`,
-            `        "ovr_config//os:macos",`,
-            `        "ovr_config//os:windows",`,
+            ...(0, xrpa_utils_1.indent)(4, compatibleWith),
             `    ],`,
             `    link_style = "static",`,
             `    preprocessor_flags = ["-DBUILDING_MAIN_STANDALONE"],`,
@@ -197,14 +213,18 @@ function genStandaloneBuck(fileWriter, outdir, runtimeDir, buckTarget, moduleDef
             `    name = "${moduleDef.name}",`,
             `    srcs = ["MainStandalone.cpp"],`,
             `    compatible_with = [`,
-            `        "ovr_config//os:macos",`,
-            `        "ovr_config//os:windows",`,
+            ...(0, xrpa_utils_1.indent)(4, compatibleWith),
             `    ],`,
             `    link_style = "shared",`,
             `    visibility = ["PUBLIC"],`,
             `    deps = [`,
             `        ":${moduleDef.name}_standalone",`,
             `    ],`,
+            ...(ciLabels.length ? [
+                `    labels = ci.labels(`,
+                ...(0, xrpa_utils_1.indent)(4, ciLabels),
+                `    ),`,
+            ] : []),
             `)`,
             ``,
         ];

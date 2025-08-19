@@ -24,7 +24,8 @@ exports.CameraFeed = exports.XredCameraInterface = void 0;
 const xred_perception_services_1 = require("@xrpa/xred-perception-services");
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const assert_1 = __importDefault(require("assert"));
-exports.XredCameraInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.Camera", () => {
+const path_1 = __importDefault(require("path"));
+exports.XredCameraInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.Camera", path_1.default.join(__dirname, "../package.json"), () => {
     const { rgbMessage, } = (0, xred_perception_services_1.getPerceptionTypes)();
     (0, xrpa_orchestrator_1.ProgramOutput)("CameraDevice", (0, xrpa_orchestrator_1.Collection)({
         maxCount: 4,

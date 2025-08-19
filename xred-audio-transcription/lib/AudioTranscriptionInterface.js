@@ -24,9 +24,10 @@ exports.XredAudioTranscriptionInterface = exports.DEFAULT_TRANSCRIPTION_MAX_COUN
 exports.AudioTranscription = AudioTranscription;
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const assert_1 = __importDefault(require("assert"));
+const path_1 = __importDefault(require("path"));
 exports.DEFAULT_TRANSCRIPTION_MAX_COUNT = 4;
 function createAudioTranscriptionInterface() {
-    return (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.AudioTranscription", () => {
+    return (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.AudioTranscription", path_1.default.join(__dirname, "../package.json"), () => {
         const TranscriptionResult = (0, xrpa_orchestrator_1.Message)("TranscriptionResult", {
             text: (0, xrpa_orchestrator_1.String)("", "Transcribed text from audio"),
             timestamp: (0, xrpa_orchestrator_1.HiResTimestamp)("Timestamp of the start of the audio segment from which the transcription is generated"),

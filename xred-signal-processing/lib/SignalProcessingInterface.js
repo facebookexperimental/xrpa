@@ -16,10 +16,14 @@
 
 "use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.XredSignalProcessingInterface = void 0;
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
-exports.XredSignalProcessingInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.SignalProcessing", () => {
+const path_1 = __importDefault(require("path"));
+exports.XredSignalProcessingInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.SignalProcessing", path_1.default.join(__dirname, "../package.json"), () => {
     (0, xrpa_orchestrator_1.useCoordinateSystem)(xrpa_orchestrator_1.UnityCoordinateSystem);
     (0, xrpa_orchestrator_1.GameComponentBindingsDisabled)();
     const SignalEvent = (0, xrpa_orchestrator_1.ProgramInput)("SignalEvent", (0, xrpa_orchestrator_1.Collection)({
@@ -243,14 +247,12 @@ exports.XredSignalProcessingInterface = (0, xrpa_orchestrator_1.XrpaProgramInter
             srcNode: (0, xrpa_orchestrator_1.ReferenceTo)(ISignalNode),
         },
     }));
-    const SampleType = (0, xrpa_orchestrator_1.Enum)("SampleType", ["Float", "SignedInt32", "UnsignedInt32"]);
     (0, xrpa_orchestrator_1.ProgramInput)("SignalOutputData", (0, xrpa_orchestrator_1.Collection)({
         maxCount: 64,
         fields: {
             srcNode: (0, xrpa_orchestrator_1.ReferenceTo)(ISignalNode),
             numChannels: (0, xrpa_orchestrator_1.Count)(1),
-            sampleType: SampleType,
-            samplesPerChannelPerSec: xrpa_orchestrator_1.Count,
+            frameRate: xrpa_orchestrator_1.Count,
             data: (0, xrpa_orchestrator_1.Output)(xrpa_orchestrator_1.Signal),
         },
     }));
@@ -260,7 +262,6 @@ exports.XredSignalProcessingInterface = (0, xrpa_orchestrator_1.XrpaProgramInter
             srcNode: (0, xrpa_orchestrator_1.ReferenceTo)(ISignalNode),
             channelOffset: (0, xrpa_orchestrator_1.Count)(0),
             deviceNameFilter: (0, xrpa_orchestrator_1.String)("", "pseudo-regex, with just $ and ^ supported for now"),
-            deviceHandednessFilter: (0, xrpa_orchestrator_1.Enum)("DeviceHandednessFilter", ["Any", "None", "Left", "Right"]),
             outputToSystemAudio: xrpa_orchestrator_1.Boolean,
             // TODO channelName, driverIdentifier, driverPort filters?
             foundMatch: (0, xrpa_orchestrator_1.Output)((0, xrpa_orchestrator_1.Boolean)(false, "Set to true if a matching device was found")),

@@ -15,12 +15,14 @@
  */
 
 
-import { XrpaDataflowConnection, XrpaDataType, XrpaProgramParam } from "@xrpa/xrpa-orchestrator";
-export declare const DEFAULT_AUDIO_INPUT_MAX_COUNT = 4;
+import { XrpaDataflowConnection, XrpaDataType, XrpaProgramParam, XrpaDataflowGraphNode } from "@xrpa/xrpa-orchestrator";
+import { StringFilter } from "@xrpa/xrpa-utils";
+export declare const DEFAULT_AUDIO_INPUT_MAX_COUNT = 16;
 export declare const XredAudioInputInterface: import("@xrpa/xrpa-orchestrator").ProgramInterface;
-export declare function AudioInputSource(params: {
-    deviceName?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"String">> | string;
-    sampleRate?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"Count">> | number;
+export declare function InputFromDevice(params: {
+    device: XrpaProgramParam | XrpaDataflowGraphNode;
+    frameRate?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"Count">> | number;
+    numChannels?: number;
 }): {
     audioSignal: {
         numChannels: number;
@@ -29,8 +31,40 @@ export declare function AudioInputSource(params: {
     isActive: XrpaDataflowConnection;
     errorMessage: XrpaDataflowConnection;
 };
-export declare function AvailableAudioDevices(): {
-    deviceName: XrpaDataflowConnection;
-    isDefault: XrpaDataflowConnection;
+export declare function InputFromMatchingDevice(params: {
+    name: StringFilter;
+    frameRate?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"Count">> | number;
+    numChannels?: number;
+}): {
+    audioSignal: {
+        numChannels: number;
+        signal: XrpaDataflowConnection;
+    };
+    isActive: XrpaDataflowConnection;
+    errorMessage: XrpaDataflowConnection;
+};
+export declare function InputFromSystemAudio(params: {
+    frameRate?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"Count">> | number;
+    numChannels?: number;
+}): {
+    audioSignal: {
+        numChannels: number;
+        signal: XrpaDataflowConnection;
+    };
+    isActive: XrpaDataflowConnection;
+    errorMessage: XrpaDataflowConnection;
+};
+export declare function InputFromTcpStream(params: {
+    hostname: string | XrpaProgramParam | XrpaDataflowConnection;
+    port: number | XrpaProgramParam | XrpaDataflowConnection;
+    frameRate?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"Count">> | number;
+    numChannels?: number;
+}): {
+    audioSignal: {
+        numChannels: number;
+        signal: XrpaDataflowConnection;
+    };
+    isActive: XrpaDataflowConnection;
+    errorMessage: XrpaDataflowConnection;
 };
 

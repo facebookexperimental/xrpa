@@ -24,7 +24,8 @@ exports.ObjectRecognition = exports.XredObjectRecognitionInterface = void 0;
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const Shared_1 = require("./Shared");
 const assert_1 = __importDefault(require("assert"));
-exports.XredObjectRecognitionInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.ObjectRecognition", () => {
+const path_1 = __importDefault(require("path"));
+exports.XredObjectRecognitionInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.ObjectRecognition", path_1.default.join(__dirname, "../package.json"), () => {
     const { rgbMessage, } = (0, Shared_1.getPerceptionTypes)();
     (0, xrpa_orchestrator_1.ProgramInput)("ObjectRecognition", (0, xrpa_orchestrator_1.Collection)({
         maxCount: 2,

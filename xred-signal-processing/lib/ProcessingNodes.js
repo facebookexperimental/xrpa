@@ -40,11 +40,19 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PitchShift = exports.BandPassFilter = exports.HighPassFilter = exports.LowPassFilter = exports.ParametricEqualizer = exports.Feedback = exports.Delay = exports.Sequence = exports.AudioStream = exports.SignalStream = exports.AdsrEnvelope = exports.TrapezoidCurve = exports.ClickPulse = exports.RepeatAndStack = exports.StackChannels = exports.SelectChannel = exports.RouteToChannel = exports.SoftClip = exports.CustomWave = exports.WhiteNoise = exports.SquareWave = exports.TriangleWave = exports.SawtoothWave = exports.SineWave = exports.DoneWhen = exports.OutputToSystemAudio = exports.OutputToDevice = void 0;
+exports.PitchShift = exports.BandPassFilter = exports.HighPassFilter = exports.LowPassFilter = exports.ParametricEqualizer = exports.Feedback = exports.Delay = exports.Sequence = exports.AudioStream = exports.SignalStream = exports.AdsrEnvelope = exports.TrapezoidCurve = exports.ClickPulse = exports.RepeatAndStack = exports.StackChannels = exports.SelectChannel = exports.RouteToChannel = exports.SoftClip = exports.CustomWave = exports.WhiteNoise = exports.SquareWave = exports.TriangleWave = exports.SawtoothWave = exports.SineWave = exports.DoneWhen = exports.OutputToSystemAudio = exports.OutputToDevice = exports.OutputSignal = void 0;
 const path = __importStar(require("path"));
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const MathOps_1 = require("./MathOps");
 const SignalProcessingTypes_1 = require("./SignalProcessingTypes");
+function OutputSignal(params) {
+    const node = new SignalProcessingTypes_1.SignalOutputDataType({
+        source: params.source,
+        frameRate: params.frameRate,
+    });
+    return node.data;
+}
+exports.OutputSignal = OutputSignal;
 function OutputToDevice(params) {
     return new SignalProcessingTypes_1.SignalOutputDeviceType({
         source: params.source,

@@ -227,15 +227,24 @@ async function runInCondaEnvironment(yamlPath, filename) {
     await runInCondaEnvironmentInternal(yamlPath, path_1.default.dirname(filename), ["python", "-u", filename]);
 }
 exports.runInCondaEnvironment = runInCondaEnvironment;
-async function buildCondaApplication(yamlPath, filename, outname) {
-    await runInCondaEnvironmentInternal(yamlPath, path_1.default.dirname(filename), ["pip", "install", "pyinstaller"]);
-    await runInCondaEnvironmentInternal(yamlPath, path_1.default.dirname(filename), [
-        "pyinstaller",
+async function buildCondaApplication(yamlPath, filename, outname, options) {
+    const params = [
         "--onefile", filename,
         "--name", path_1.default.basename(outname),
         "--distpath", path_1.default.dirname(outname),
         "--specpath", path_1.default.join(os_1.default.tmpdir(), path_1.default.basename(outname)),
         "--workpath", path_1.default.join(os_1.default.tmpdir(), path_1.default.basename(outname), "build"),
+    ];
+    for (const imp of (options?.hiddenImports ?? [])) {
+        params.push("--hidden-import", imp);
+    }
+    for (const mod of (options?.collectAll ?? [])) {
+        params.push("--collect-all", mod);
+    }
+    await runInCondaEnvironmentInternal(yamlPath, path_1.default.dirname(filename), ["pip", "install", "pyinstaller"]);
+    await runInCondaEnvironmentInternal(yamlPath, path_1.default.dirname(filename), [
+        "pyinstaller",
+        ...params,
     ]);
 }
 exports.buildCondaApplication = buildCondaApplication;

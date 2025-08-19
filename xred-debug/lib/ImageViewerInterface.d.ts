@@ -21,3 +21,4 @@ export declare function ImageWindow(params: {
     windowTitle: string;
     image: XrpaDataflowConnection;
 }): void;
+

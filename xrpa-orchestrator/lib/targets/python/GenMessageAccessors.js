@@ -62,7 +62,7 @@ function genMessageSize(namespace, includes, msgType) {
     const msgFields = msgType.getStateFields();
     for (const key in msgFields) {
         const fieldType = msgFields[key].type;
-        const byteCount = fieldType.getRuntimeByteCount(key, namespace, includes);
+        const byteCount = fieldType.getRuntimeByteCount((0, PythonCodeGenImpl_1.identifierName)(key), namespace, includes);
         staticSize += byteCount[0];
         if (byteCount[1] !== null) {
             dynFieldSizes.push(byteCount[1]);

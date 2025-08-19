@@ -149,6 +149,11 @@ namespace Xrpa
             ID1 = 0;
         }
 
+        public bool IsEmpty()
+        {
+            return ID0 == 0 && ID1 == 0;
+        }
+
         public static bool operator ==(ObjectUuid left, ObjectUuid right)
         {
             return left.ID0 == right.ID0 && left.ID1 == right.ID1;

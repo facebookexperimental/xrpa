@@ -20,13 +20,26 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SignalOutputDeviceType = exports.SignalOutputDataType = exports.SignalSoftClipType = exports.SignalPitchShiftType = exports.SignalMultiplexerType = exports.SignalMathOpType = exports.SignalParametricEqualizerType = exports.SignalFeedbackType = exports.SignalDelayType = exports.SignalCurveType = exports.SignalChannelStackType = exports.SignalChannelSelectType = exports.SignalChannelRouterType = exports.SignalOscillatorType = exports.SignalSourceFileType = exports.SignalSourceType = exports.ISignalNodeType = exports.SignalEventCombinerType = exports.SignalEventType = exports.FilterTypeEnum = exports.EventCombinerParameterMode = exports.DeviceHandednessFilterEnum = exports.SampleTypeEnum = exports.MathOperationEnum = exports.WaveformTypeEnum = void 0;
+exports.SignalOutputDeviceType = exports.SignalOutputDataType = exports.SignalSoftClipType = exports.SignalPitchShiftType = exports.SignalMultiplexerType = exports.SignalMathOpType = exports.SignalParametricEqualizerType = exports.SignalFeedbackType = exports.SignalDelayType = exports.SignalCurveType = exports.SignalChannelStackType = exports.SignalChannelSelectType = exports.SignalChannelRouterType = exports.SignalOscillatorType = exports.SignalSourceFileType = exports.SignalSourceType = exports.ISignalNodeType = exports.SignalEventCombinerType = exports.SignalEventType = exports.FilterTypeEnum = exports.EventCombinerParameterMode = exports.DeviceHandednessFilterEnum = exports.MathOperationEnum = exports.WaveformTypeEnum = exports.isSignalEventType = exports.isISignalNodeType = exports.isSPNode = void 0;
 const assert_1 = __importDefault(require("assert"));
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const SignalProcessingInterface_1 = require("./SignalProcessingInterface");
+function isSPNode(node) {
+    return typeof node === "object" && node !== null && "__isSPNode" in node;
+}
+exports.isSPNode = isSPNode;
+function isISignalNodeType(node) {
+    return typeof node === "object" && node !== null && "__isISignalNodeType" in node;
+}
+exports.isISignalNodeType = isISignalNodeType;
+function isSignalEventType(node) {
+    return typeof node === "object" && node !== null && "__isSignalEventType" in node;
+}
+exports.isSignalEventType = isSignalEventType;
 class SPNode {
     constructor(type, isBuffered = false) {
         this.type = type;
+        this.__isSPNode = true;
         this.fieldValues = {};
         const dataflowNode = (0, xrpa_orchestrator_1.Instantiate)([(0, xrpa_orchestrator_1.bindExternalProgram)(SignalProcessingInterface_1.XredSignalProcessingInterface), type], {});
         (0, assert_1.default)((0, xrpa_orchestrator_1.isDataflowForeignObjectInstantiation)(dataflowNode));
@@ -35,7 +48,7 @@ class SPNode {
     }
     setFieldValueInternal(fieldName, value) {
         this.fieldValues[fieldName] = value;
-        if (value instanceof SPNode) {
+        if (isSPNode(value)) {
             this.dataflowNode.fieldValues[fieldName] = value.dataflowNode;
         }
         else {
@@ -44,7 +57,7 @@ class SPNode {
     }
     setField(fieldName, value) {
         this.setFieldValueInternal(fieldName, value);
-        if (value instanceof ISignalNodeType) {
+        if (isISignalNodeType(value)) {
             value.incrementOutputCount();
         }
     }
@@ -55,7 +68,7 @@ class SPNode {
         if ((0, xrpa_orchestrator_1.isXrpaProgramParam)(value)) {
             this.setFieldValueInternal(fieldName, value);
         }
-        else if (value instanceof ISignalNodeType) {
+        else if (isISignalNodeType(value)) {
             (0, assert_1.default)(nodeFieldName);
             this.setFieldValueInternal(nodeFieldName, value);
             value.incrementOutputCount();
@@ -81,7 +94,7 @@ class SPNode {
     }
     getOrCreateEventField(fieldName, eventDependency) {
         const existing = this.fieldValues[fieldName];
-        if (existing instanceof SignalEventType) {
+        if (isSignalEventType(existing)) {
             return existing;
         }
         const ev = new SignalEventType();
@@ -111,12 +124,6 @@ var MathOperationEnum;
     MathOperationEnum[MathOperationEnum["Multiply"] = 1] = "Multiply";
     MathOperationEnum[MathOperationEnum["Subtract"] = 2] = "Subtract";
 })(MathOperationEnum = exports.MathOperationEnum || (exports.MathOperationEnum = {}));
-var SampleTypeEnum;
-(function (SampleTypeEnum) {
-    SampleTypeEnum[SampleTypeEnum["Float"] = 0] = "Float";
-    SampleTypeEnum[SampleTypeEnum["SignedInt32"] = 1] = "SignedInt32";
-    SampleTypeEnum[SampleTypeEnum["UnsignedInt32"] = 2] = "UnsignedInt32";
-})(SampleTypeEnum = exports.SampleTypeEnum || (exports.SampleTypeEnum = {}));
 var DeviceHandednessFilterEnum;
 (function (DeviceHandednessFilterEnum) {
     DeviceHandednessFilterEnum[DeviceHandednessFilterEnum["Any"] = 0] = "Any";
@@ -146,6 +153,7 @@ class SignalEventType extends SPNode {
     // FUTURE: readonly sendEvent?: XrpaMessage,
     ) {
         super("SignalEvent");
+        this.__isSignalEventType = true;
         this.extraDependency = null;
     }
     onEvent() {
@@ -173,6 +181,7 @@ exports.SignalEventCombinerType = SignalEventCombinerType;
 class ISignalNodeType extends SPNode {
     constructor() {
         super(...arguments);
+        this.__isISignalNodeType = true;
         this.numOutputs = 0;
         this.numOutputChannels = 0;
     }
@@ -190,7 +199,7 @@ class ISignalNodeType extends SPNode {
         this.numOutputChannels = 0;
         for (const key in this.fieldValues) {
             const value = this.fieldValues[key];
-            if (value instanceof ISignalNodeType) {
+            if (isISignalNodeType(value)) {
                 this.numOutputChannels = Math.max(this.numOutputChannels, value.numOutputChannels);
             }
         }
@@ -199,7 +208,7 @@ class ISignalNodeType extends SPNode {
         this.numOutputChannels = 0;
         for (const key in this.fieldValues) {
             const value = this.fieldValues[key];
-            if (value instanceof ISignalNodeType) {
+            if (isISignalNodeType(value)) {
                 this.numOutputChannels += value.numOutputChannels;
             }
         }
@@ -395,12 +404,12 @@ class SignalSoftClipType extends ISignalNodeType {
 }
 exports.SignalSoftClipType = SignalSoftClipType;
 class SignalOutputDataType extends SPNode {
-    // FUTURE: readonly data = new XrpaSignal();
     constructor(params) {
         super("SignalOutputData");
         this.setField("srcNode", params.source);
-        this.setField("sampleType", params.sampleType);
-        this.setField("samplesPerChannelPerSec", params.samplesPerChannelPerSec);
+        this.setField("numChannels", params.source.getNumChannels());
+        this.setField("frameRate", params.frameRate);
+        this.data = (0, xrpa_orchestrator_1.ObjectField)(this.dataflowNode, "data");
     }
 }
 exports.SignalOutputDataType = SignalOutputDataType;
@@ -410,7 +419,6 @@ class SignalOutputDeviceType extends SPNode {
         super("SignalOutputDevice");
         this.setField("srcNode", params.source);
         this.setField("deviceNameFilter", params.deviceNameFilter);
-        this.setField("deviceHandednessFilter", params.deviceHandednessFilter);
         this.setField("outputToSystemAudio", params.outputToSystemAudio);
         this.setField("channelOffset", params.channelOffset);
     }

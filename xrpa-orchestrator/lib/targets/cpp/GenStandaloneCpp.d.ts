@@ -16,11 +16,12 @@
 
 
 import { FileWriter } from "@xrpa/xrpa-file-utils";
+import { DataStoreDefinition } from "../../shared/DataStore";
 import { IncludeAggregator } from "../../shared/Helpers";
 import { ModuleDefinition } from "../../shared/ModuleDefinition";
-import { DataStoreDefinition } from "../../shared/DataStore";
+import { ModuleBuckConfig } from "./CppModuleDefinition";
 export declare function genTransportInitializer(storeDef: DataStoreDefinition, namespace: string, includes: IncludeAggregator): string[];
 export declare function genTransportDeinitializer(storeDef: DataStoreDefinition): string[];
 export declare function genStandaloneCpp(fileWriter: FileWriter, outdir: string, moduleDef: ModuleDefinition): void;
-export declare function genStandaloneBuck(fileWriter: FileWriter, outdir: string, runtimeDir: string, buckTarget: string, moduleDef: ModuleDefinition, oncall: string): void;
+export declare function genStandaloneBuck(fileWriter: FileWriter, outdir: string, runtimeDir: string, buckDef: ModuleBuckConfig, moduleDef: ModuleDefinition): void;
 

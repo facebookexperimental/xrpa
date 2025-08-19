@@ -16,13 +16,20 @@
 
 "use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CppStandalone = void 0;
+const xrpa_file_utils_1 = require("@xrpa/xrpa-file-utils");
+const path_1 = __importDefault(require("path"));
 const GenStandaloneCpp_1 = require("./GenStandaloneCpp");
 class CppStandalone {
-    constructor(moduleDef, standaloneDir) {
+    constructor(moduleDef, standaloneDir, manifestFilename) {
         this.moduleDef = moduleDef;
         this.standaloneDir = standaloneDir;
+        this.manifestFilename = manifestFilename;
+        this.resourceFilenames = [];
     }
     doCodeGen() {
         const fileWriter = this.moduleDef.doCodeGen();
@@ -30,9 +37,59 @@ class CppStandalone {
         (0, GenStandaloneCpp_1.genStandaloneCpp)(fileWriter, this.standaloneDir, this.moduleDef);
         if (this.moduleDef.buckDef) {
             // generate buck file
-            (0, GenStandaloneCpp_1.genStandaloneBuck)(fileWriter, this.standaloneDir, this.moduleDef.runtimeDir, this.moduleDef.buckDef.target, this.moduleDef, this.moduleDef.buckDef.oncall);
+            (0, GenStandaloneCpp_1.genStandaloneBuck)(fileWriter, this.standaloneDir, this.moduleDef.runtimeDir, this.moduleDef.buckDef, this.moduleDef);
         }
         return fileWriter;
+    }
+    addResourceFile(filename) {
+        this.resourceFilenames.push(filename);
+    }
+    async getStandaloneTarget() {
+        const buckRoot = await (0, xrpa_file_utils_1.buckRootDir)();
+        const standaloneRelPath = path_1.default.relative(buckRoot, this.standaloneDir);
+        return `//${standaloneRelPath.replace(/\\/g, "/")}:${this.moduleDef.name}`;
+    }
+    getBuckMode(optLevel) {
+        const buckDef = this.moduleDef.buckDef;
+        if (!buckDef) {
+            throw new Error("Buck is not configured for this module");
+        }
+        let buckMode;
+        if (process.platform == "win32") {
+            buckMode = buckDef.modes.windows?.[optLevel];
+        }
+        else if (process.platform == "darwin") {
+            buckMode = buckDef.modes.macos?.[optLevel];
+        }
+        if (!buckMode) {
+            throw new Error("There is no buck mode configured for the current platform");
+        }
+        return buckMode;
+    }
+    async buckRunDebug() {
+        await this.doCodeGen().finalize(this.manifestFilename);
+        await (0, xrpa_file_utils_1.buckRun)({
+            mode: this.getBuckMode("debug"),
+            target: await this.getStandaloneTarget(),
+            resourceFilenames: this.resourceFilenames,
+        });
+    }
+    async buckBuildRelease(dstPath) {
+        await this.doCodeGen().finalize(this.manifestFilename);
+        let mode = "";
+        try {
+            mode = this.getBuckMode("release");
+        }
+        catch (e) {
+            // ignore, it is just not supported on this platform
+            return;
+        }
+        await (0, xrpa_file_utils_1.buckBuild)({
+            mode,
+            target: await this.getStandaloneTarget(),
+            dstPath,
+            resourceFilenames: this.resourceFilenames,
+        });
     }
 }
 exports.CppStandalone = CppStandalone;

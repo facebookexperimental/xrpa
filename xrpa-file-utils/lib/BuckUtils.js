@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.buckBuild = exports.buckRun = exports.buckRootDir = void 0;
+exports.buckBuild = exports.buckRun = exports.normalizeBuckMode = exports.buckRootDir = void 0;
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
 const FileUtils_1 = require("./FileUtils");
@@ -29,13 +29,24 @@ async function buckRootDir() {
     return await (0, FileUtils_1.runProcess)({ filename: BUCK, args: ["root"] });
 }
 exports.buckRootDir = buckRootDir;
+function normalizeBuckMode(mode) {
+    if (mode.startsWith("@")) {
+        mode = mode.slice(1);
+    }
+    if (!mode.startsWith("fbsource//")) {
+        mode = `fbsource//${mode}`;
+    }
+    return mode;
+}
+exports.normalizeBuckMode = normalizeBuckMode;
 async function buckBuildAndPrep(params) {
+    const buckMode = normalizeBuckMode(params.mode);
     try {
         const buckRoot = await (0, FileUtils_1.runProcess)({ filename: BUCK, args: ["root"] });
-        console.log(`${BUCK} build ${params.mode} ${params.target}`);
+        console.log(`${BUCK} build @${buckMode} ${params.target}`);
         const buildOutput = await (0, FileUtils_1.runProcess)({
             filename: BUCK,
-            args: ["build", params.mode, params.target, "--show-json-output"],
+            args: ["build", `@${buckMode}`, params.target, "--show-json-output"],
             onLineReceived: line => console.log(line),
         });
         const buildOutputJson = JSON.parse(buildOutput);

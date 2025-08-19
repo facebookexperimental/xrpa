@@ -102,7 +102,7 @@ async function UnityProject(projectPath, projectName, callback) {
         packageInfos[programInterface.interfaceName] = {
             packageName: `${companyName}${programInterface.interfaceName}`,
             name: `com.${companyName.toLocaleLowerCase()}.${programInterface.interfaceName.toLocaleLowerCase()}`,
-            version: [1, 0, 0],
+            version: programInterface.version,
             displayName: programInterface.interfaceName,
             description: `${programInterface.interfaceName} Bindings`,
             companyName,

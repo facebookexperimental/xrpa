@@ -16,10 +16,14 @@
 
 "use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.XredTactilePressureInterface = void 0;
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
-exports.XredTactilePressureInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.TactilePressure", () => {
+const path_1 = __importDefault(require("path"));
+exports.XredTactilePressureInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.TactilePressure", path_1.default.join(__dirname, "../package.json"), () => {
     (0, xrpa_orchestrator_1.useCoordinateSystem)(xrpa_orchestrator_1.UnityCoordinateSystem);
     const Pose = (0, xrpa_orchestrator_1.Struct)("Pose", {
         position: xrpa_orchestrator_1.Vector3,

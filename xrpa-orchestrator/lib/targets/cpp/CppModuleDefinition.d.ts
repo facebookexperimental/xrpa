@@ -20,9 +20,17 @@ import { DataMapDefinition } from "../../shared/DataMap";
 import { ModuleDefinition } from "../../shared/ModuleDefinition";
 import { GuidGenSpec } from "../../shared/TargetCodeGen";
 import { StructTypeDefinition } from "../../shared/TypeDefinition";
+export interface ModuleBuckTargetPlatformConfig {
+    debug: string;
+    release: string;
+}
 export interface ModuleBuckConfig {
     target: string;
     oncall: string;
+    modes: {
+        windows?: ModuleBuckTargetPlatformConfig;
+        macos?: ModuleBuckTargetPlatformConfig;
+    };
 }
 export declare class CppModuleDefinition extends ModuleDefinition {
     readonly genOutputDir: string;

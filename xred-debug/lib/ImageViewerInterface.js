@@ -23,7 +23,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ImageWindow = exports.XredImageViewerInterface = void 0;
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
 const assert_1 = __importDefault(require("assert"));
-exports.XredImageViewerInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.ImageViewer", () => {
+const path_1 = __importDefault(require("path"));
+exports.XredImageViewerInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.ImageViewer", path_1.default.join(__dirname, "../package.json"), () => {
     (0, xrpa_orchestrator_1.ProgramInput)("ImageWindow", (0, xrpa_orchestrator_1.Collection)({
         maxCount: 10,
         fields: {

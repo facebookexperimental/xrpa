@@ -28,8 +28,12 @@ export interface FiresEvent {
 export type NonSignalNumericValue = XrpaProgramParam<ReturnType<typeof Count>> | XrpaProgramParam<ReturnType<typeof Scalar>> | XrpaProgramParam<ReturnType<typeof Distance>> | number;
 export type NumericValue = NonSignalNumericValue | ISignalNodeType;
 type SPFieldValue = Exclude<XrpaFieldValue, XrpaDataflowGraphNode> | SPNode;
+export declare function isSPNode(node: unknown): node is SPNode;
+export declare function isISignalNodeType(node: unknown): node is ISignalNodeType;
+export declare function isSignalEventType(node: unknown): node is SignalEventType;
 declare class SPNode {
     readonly type: string;
+    __isSPNode: boolean;
     dataflowNode: XrpaDataflowForeignObjectInstantiation;
     protected fieldValues: Record<string, SPFieldValue>;
     constructor(type: string, isBuffered?: boolean);
@@ -52,11 +56,6 @@ export declare enum MathOperationEnum {
     Multiply = 1,
     Subtract = 2
 }
-export declare enum SampleTypeEnum {
-    Float = 0,
-    SignedInt32 = 1,
-    UnsignedInt32 = 2
-}
 export declare enum DeviceHandednessFilterEnum {
     Any = 0,
     None = 1,
@@ -78,6 +77,7 @@ export declare enum FilterTypeEnum {
     BandPass = 6
 }
 export declare class SignalEventType extends SPNode implements FiresEvent {
+    __isSignalEventType: boolean;
     extraDependency: SPNode | null;
     constructor();
     onEvent(): SignalEventType;
@@ -91,6 +91,7 @@ export declare class SignalEventCombinerType extends SPNode implements FiresEven
     onEvent(): SignalEventType;
 }
 export declare class ISignalNodeType extends SPNode {
+    __isISignalNodeType: boolean;
     protected numOutputs: number;
     protected numOutputChannels: number;
     incrementOutputCount(): void;
@@ -221,17 +222,16 @@ export declare class SignalSoftClipType extends ISignalNodeType {
     });
 }
 export declare class SignalOutputDataType extends SPNode {
+    readonly data: XrpaDataflowConnection;
     constructor(params: {
         source: ISignalNodeType;
-        sampleType: SampleTypeEnum;
-        samplesPerChannelPerSec: NonSignalNumericValue;
+        frameRate: NonSignalNumericValue;
     });
 }
 export declare class SignalOutputDeviceType extends SPNode {
     constructor(params: {
         source: ISignalNodeType;
         deviceNameFilter?: string;
-        deviceHandednessFilter?: DeviceHandednessFilterEnum;
         outputToSystemAudio?: boolean;
         channelOffset?: NonSignalNumericValue;
     });

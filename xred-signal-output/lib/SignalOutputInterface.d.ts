@@ -15,5 +15,31 @@
  */
 
 
+import { XrpaDataflowConnection, XrpaDataflowGraphNode, XrpaProgramParam } from "@xrpa/xrpa-orchestrator";
+import { StringFilter } from "@xrpa/xrpa-utils";
 export declare const XredSignalOutputInterface: import("@xrpa/xrpa-orchestrator").ProgramInterface;
+export declare function OutputToDevice(params: {
+    device: XrpaProgramParam | XrpaDataflowGraphNode;
+    signal: XrpaProgramParam | XrpaDataflowConnection;
+}): {
+    isConnected: XrpaDataflowConnection;
+};
+export declare function OutputToMatchingDevice(params: {
+    name: StringFilter;
+    signal: XrpaProgramParam | XrpaDataflowConnection;
+}): {
+    isConnected: XrpaDataflowConnection;
+};
+export declare function OutputToSystemAudio(params: {
+    signal: XrpaProgramParam | XrpaDataflowConnection;
+}): {
+    isConnected: XrpaDataflowConnection;
+};
+export declare function OutputToTcpStream(params: {
+    hostname: string | XrpaProgramParam | XrpaDataflowConnection;
+    port: number | XrpaProgramParam | XrpaDataflowConnection;
+    signal: XrpaProgramParam | XrpaDataflowConnection;
+}): {
+    isConnected: XrpaDataflowConnection;
+};
 

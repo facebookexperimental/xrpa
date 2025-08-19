@@ -35,6 +35,7 @@ export declare function getProgramInterfaceContext(): ProgramInterfaceContext;
 export interface ProgramInterface extends ProgramInterfaceContext {
     companyName: string;
     interfaceName: string;
+    version: [number, number, number];
     namedTypes: Record<string, XrpaNamedDataType>;
 }
 export declare function Input<T extends XrpaDataType>(dataType: Thunk<T>): T;
@@ -48,7 +49,7 @@ export declare function ProgramOutput<T extends XrpaDataType = XrpaDataType>(nam
 export declare function ProgramOutput(name: string, source: XrpaDataflowConnection): XrpaProgramParam;
 export declare function ProgramOutput(name: string, source: string): XrpaProgramParam;
 export declare function UppercaseCompanyName(programInterface: ProgramInterface): ProgramInterface;
-export declare function XrpaProgramInterface(name: string, callback: (ctx: ProgramInterfaceContext) => void): ProgramInterface;
+export declare function XrpaProgramInterface(name: string, packageJsonPath: string, callback: (ctx: ProgramInterfaceContext) => void): ProgramInterface;
 export declare function propagatePropertiesToInterface(programInterface: ProgramInterface, properties: BindingProperties): ProgramInterface;
 export declare function reverseDirectionality(dataType: XrpaDataType): XrpaDataType;
 export declare function reverseProgramDirectionality(programInterface: ProgramInterface): ProgramInterface;

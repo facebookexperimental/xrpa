@@ -16,10 +16,14 @@
 
 "use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.XredTrackingInterface = void 0;
 const xrpa_orchestrator_1 = require("@xrpa/xrpa-orchestrator");
-exports.XredTrackingInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.Tracking", () => {
+const path_1 = __importDefault(require("path"));
+exports.XredTrackingInterface = (0, xrpa_orchestrator_1.XrpaProgramInterface)("Xred.Tracking", path_1.default.join(__dirname, "../package.json"), () => {
     (0, xrpa_orchestrator_1.useCoordinateSystem)(xrpa_orchestrator_1.UnityCoordinateSystem);
     const Pose = (0, xrpa_orchestrator_1.Struct)("Pose", {
         position: xrpa_orchestrator_1.Vector3,

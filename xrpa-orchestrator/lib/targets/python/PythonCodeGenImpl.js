@@ -885,7 +885,15 @@ function genDerefMethodCall(ptrName, methodName, params) {
 exports.genDerefMethodCall = genDerefMethodCall;
 function genMethodCall(varName, methodName, params) {
     const methodCall = `${methodMember(methodName)}(${params.join(", ")})`;
-    return `${varName || "self"}.${methodCall}`;
+    if (!varName) {
+        // Special case for Python: if methodName doesn't contain a namespace separator (.)
+        // and varName is empty, we assume it's an instance method and prefix with "self."
+        if (!methodName.includes('.')) {
+            return `self.${methodCall}`;
+        }
+        return methodCall;
+    }
+    return `${varName}.${methodCall}`;
 }
 exports.genMethodCall = genMethodCall;
 function genMethodBind(ptrName, methodName, params, ignoreParamCount) {

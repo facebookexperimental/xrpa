@@ -21,7 +21,14 @@ import { CppModuleDefinition } from "./CppModuleDefinition";
 export declare class CppStandalone implements CodeGen {
     readonly moduleDef: CppModuleDefinition;
     readonly standaloneDir: string;
-    constructor(moduleDef: CppModuleDefinition, standaloneDir: string);
+    readonly manifestFilename: string;
+    private readonly resourceFilenames;
+    constructor(moduleDef: CppModuleDefinition, standaloneDir: string, manifestFilename: string);
     doCodeGen(): FileWriter;
+    addResourceFile(filename: string): void;
+    getStandaloneTarget(): Promise<string>;
+    getBuckMode(optLevel: "debug" | "release"): string;
+    buckRunDebug(): Promise<void>;
+    buckBuildRelease(dstPath: string): Promise<void>;
 }
 

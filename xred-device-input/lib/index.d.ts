@@ -16,20 +16,47 @@
 
 
 import { XrpaDataflowConnection, XrpaProgramParam } from "@xrpa/xrpa-orchestrator";
+import { ISignalNodeType } from "@xrpa/xred-signal-processing";
 export declare enum KnobControlMode {
     Disabled = 0,
     Position = 1,
     Detent = 2
 }
-export declare const XredKnobInputInterface: import("@xrpa/xrpa-orchestrator").ProgramInterface;
+export type ColorSRGBA = [number, number, number, number];
+export declare const XredSmartControllerInterface: import("@xrpa/xrpa-orchestrator").ProgramInterface;
 export declare function KnobControl(params: {
-    name?: string;
+    ipAddress: string | XrpaProgramParam | XrpaDataflowConnection;
     controlMode: KnobControlMode | XrpaProgramParam | XrpaDataflowConnection;
     position?: number | XrpaProgramParam | XrpaDataflowConnection;
     detentCount?: number | XrpaProgramParam | XrpaDataflowConnection;
 }): {
-    device: XrpaDataflowConnection;
+    isConnected: XrpaDataflowConnection;
     inputEvent: XrpaDataflowConnection;
     positionEvent: XrpaDataflowConnection;
+};
+export declare function LightControl(params: {
+    ipAddress: string | XrpaProgramParam | XrpaDataflowConnection;
+    lightColors: Array<ColorSRGBA> | XrpaProgramParam | XrpaDataflowConnection;
+    rotationOffset?: number | XrpaProgramParam | XrpaDataflowConnection;
+    rotationSpeed?: number | XrpaProgramParam | XrpaDataflowConnection;
+    priority?: number | XrpaProgramParam | XrpaDataflowConnection;
+}): {
+    isConnected: XrpaDataflowConnection;
+};
+export declare function InputFromSmartMicrophone(params: {
+    ipAddress: string | XrpaProgramParam | XrpaDataflowConnection;
+}): {
+    audioSignal: {
+        numChannels: number;
+        signal: XrpaDataflowConnection;
+    };
+    isActive: XrpaDataflowConnection;
+    errorMessage: XrpaDataflowConnection;
+};
+export declare function OutputToSmartSpeaker(params: {
+    ipAddress: string | XrpaProgramParam | XrpaDataflowConnection;
+    audioSignal: XrpaProgramParam | XrpaDataflowConnection | ISignalNodeType;
+}): {
+    isConnected: XrpaDataflowConnection;
 };
 
