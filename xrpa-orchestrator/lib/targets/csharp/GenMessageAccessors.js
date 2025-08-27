@@ -75,7 +75,7 @@ function genSendMessageBody(params) {
     const lines = [];
     if (params.proxyObj) {
         const msgParams = Object.keys(params.fieldType.getStateFields());
-        lines.push(`${params.proxyObj}?.Send${params.fieldName}(${msgParams.join(", ")});`);
+        lines.push(`${params.proxyObj}?.Send${(0, xrpa_utils_1.upperFirst)(params.fieldName)}(${msgParams.join(", ")});`);
     }
     else {
         const messageType = params.typeDef.getFieldIndex(params.fieldName);
@@ -91,7 +91,7 @@ function genSendMessageBody(params) {
 }
 function genSendMessageAccessor(classSpec, params) {
     classSpec.methods.push({
-        name: params.name ?? `Send${params.fieldName}`,
+        name: params.name ?? `Send${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
         parameters: (0, GenMessageAccessorsShared_1.genMessageMethodParams)({ ...params, namespace: classSpec.namespace, includes: classSpec.includes }),
         body: includes => genSendMessageBody({ ...params, namespace: classSpec.namespace, includes }),
     });
