@@ -277,6 +277,9 @@ class StructType extends PrimitiveType_1.PrimitiveType {
         if (value instanceof TypeValue_1.EmptyValue) {
             return new TypeValue_1.EmptyValue(this.codegen, this.localType.typename, value.defaultNamespace);
         }
+        if (value instanceof TypeValue_1.ConstructValue) {
+            return new TypeValue_1.ConstructValue(this.codegen, this.localType.typename, value.defaultNamespace);
+        }
         return new TypeValue_1.CodeLiteralValue(this.codegen, value.toString(inNamespace));
     }
     getDatasetDefaultFieldValues(inNamespace, includes, isSetter) {
@@ -298,7 +301,7 @@ class StructType extends PrimitiveType_1.PrimitiveType {
                 return userDefault;
             }
         }
-        if (defaultOverride instanceof TypeValue_1.StructValue || defaultOverride instanceof TypeValue_1.EmptyValue) {
+        if (defaultOverride instanceof TypeValue_1.StructValue || defaultOverride instanceof TypeValue_1.EmptyValue || defaultOverride instanceof TypeValue_1.ConstructValue) {
             return defaultOverride;
         }
         return this.getDatasetDefaultFieldValues(inNamespace, includes, isSetter);

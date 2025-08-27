@@ -47,6 +47,13 @@ export declare class EmptyValue implements TypeValue {
     constructor(codegen: TargetCodeGenImpl, typename: string, defaultNamespace: string);
     toString(inNamespace: string): string;
 }
+export declare class ConstructValue implements TypeValue {
+    readonly codegen: TargetCodeGenImpl;
+    readonly typename: string;
+    readonly defaultNamespace: string;
+    constructor(codegen: TargetCodeGenImpl, typename: string, defaultNamespace: string);
+    toString(inNamespace: string): string;
+}
 export declare class StructValue implements TypeValue {
     readonly codegen: TargetCodeGenImpl;
     readonly typename: string;

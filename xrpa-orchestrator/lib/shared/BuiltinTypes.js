@@ -75,6 +75,9 @@ class TimestampType extends PrimitiveType_1.PrimitiveType {
         if (value instanceof TypeValue_1.EmptyValue) {
             return new TypeValue_1.EmptyValue(this.codegen, this.datasetType.typename, value.defaultNamespace);
         }
+        if (value instanceof TypeValue_1.ConstructValue) {
+            return new TypeValue_1.ConstructValue(this.codegen, this.datasetType.typename, value.defaultNamespace);
+        }
         const dsType = this.getInternalType(inNamespace, includes);
         const localType = this.getLocalType(inNamespace, includes);
         return new TypeValue_1.CodeLiteralValue(this.codegen, this.codegen.reinterpretValue(localType, dsType, value));
@@ -88,6 +91,9 @@ class TimestampType extends PrimitiveType_1.PrimitiveType {
         }
         if (value instanceof TypeValue_1.EmptyValue) {
             return new TypeValue_1.EmptyValue(this.codegen, this.localType.typename, value.defaultNamespace);
+        }
+        if (value instanceof TypeValue_1.ConstructValue) {
+            return new TypeValue_1.ConstructValue(this.codegen, this.localType.typename, value.defaultNamespace);
         }
         const dsType = this.getInternalType(inNamespace, includes);
         const localType = this.getLocalType(inNamespace, includes);
@@ -116,6 +122,9 @@ class BooleanType extends PrimitiveType_1.PrimitiveType {
         if (value instanceof TypeValue_1.EmptyValue) {
             return new TypeValue_1.EmptyValue(this.codegen, this.datasetType.typename, value.defaultNamespace);
         }
+        if (value instanceof TypeValue_1.ConstructValue) {
+            return new TypeValue_1.ConstructValue(this.codegen, this.datasetType.typename, value.defaultNamespace);
+        }
         return new TypeValue_1.CodeLiteralValue(this.codegen, this.codegen.genConvertBoolToInt(value));
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -128,6 +137,9 @@ class BooleanType extends PrimitiveType_1.PrimitiveType {
         }
         if (value instanceof TypeValue_1.EmptyValue) {
             return new TypeValue_1.EmptyValue(this.codegen, this.localType.typename, value.defaultNamespace);
+        }
+        if (value instanceof TypeValue_1.ConstructValue) {
+            return new TypeValue_1.ConstructValue(this.codegen, this.localType.typename, value.defaultNamespace);
         }
         return new TypeValue_1.CodeLiteralValue(this.codegen, this.codegen.genConvertIntToBool(value));
     }

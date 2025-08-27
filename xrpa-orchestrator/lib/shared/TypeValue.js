@@ -17,7 +17,7 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isSameTypeValue = exports.isTypeValue = exports.StructValue = exports.EmptyValue = exports.CodeLiteralValue = exports.EnumValue = exports.PrimitiveValue = void 0;
+exports.isSameTypeValue = exports.isTypeValue = exports.StructValue = exports.ConstructValue = exports.EmptyValue = exports.CodeLiteralValue = exports.EnumValue = exports.PrimitiveValue = void 0;
 class PrimitiveValue {
     constructor(codegen, typename, value) {
         this.codegen = codegen;
@@ -67,6 +67,21 @@ class EmptyValue {
     }
 }
 exports.EmptyValue = EmptyValue;
+class ConstructValue {
+    constructor(codegen, typename, defaultNamespace) {
+        this.codegen = codegen;
+        this.typename = typename;
+        this.defaultNamespace = defaultNamespace;
+    }
+    toString(inNamespace) {
+        if (!this.typename) {
+            return "";
+        }
+        inNamespace = inNamespace ?? this.defaultNamespace;
+        return this.codegen.genPrimitiveValue(this.codegen.nsQualify(this.typename, inNamespace), null);
+    }
+}
+exports.ConstructValue = ConstructValue;
 class StructValue {
     constructor(codegen, typename, hasInitializerConstructor, fieldValues, defaultNamespace) {
         this.codegen = codegen;
@@ -87,6 +102,7 @@ function isTypeValue(val) {
         val instanceof EnumValue ||
         val instanceof CodeLiteralValue ||
         val instanceof EmptyValue ||
+        val instanceof ConstructValue ||
         val instanceof StructValue);
 }
 exports.isTypeValue = isTypeValue;
@@ -101,6 +117,9 @@ function isSameTypeValue(a, b) {
         return a.code === b.code;
     }
     if (a instanceof EmptyValue && b instanceof EmptyValue) {
+        return a.typename === b.typename;
+    }
+    if (a instanceof ConstructValue && b instanceof ConstructValue) {
         return a.typename === b.typename;
     }
     if (a instanceof StructValue && b instanceof StructValue) {

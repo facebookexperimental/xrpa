@@ -116,6 +116,9 @@ class NumericSemanticType extends StructType_1.StructType {
         if (value instanceof TypeValue_1.EmptyValue) {
             return new TypeValue_1.EmptyValue(this.codegen, this.localType.typename, value.defaultNamespace);
         }
+        if (value instanceof TypeValue_1.ConstructValue) {
+            return new TypeValue_1.ConstructValue(this.codegen, this.localType.typename, value.defaultNamespace);
+        }
         return super.convertValueToLocal(inNamespace, includes, value);
     }
 }

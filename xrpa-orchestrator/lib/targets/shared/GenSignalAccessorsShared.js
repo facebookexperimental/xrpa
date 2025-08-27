@@ -219,7 +219,7 @@ function genSendSignalAccessor(classSpec, params) {
     classSpec.members.push({
         name: localFieldVar,
         type: OutboundSignalData,
-        initialValue: new TypeValue_1.EmptyValue(params.codegen, OutboundSignalData.getLocalType(classSpec.namespace, classSpec.includes), classSpec.namespace),
+        initialValue: new TypeValue_1.ConstructValue(params.codegen, OutboundSignalData.getLocalType(classSpec.namespace, classSpec.includes), classSpec.namespace),
         visibility: "private",
     });
     const messageType = params.typeDef.getFieldIndex(params.fieldName);

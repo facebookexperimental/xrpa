@@ -54,6 +54,9 @@ class EnumType extends PrimitiveType_1.PrimitiveType {
         if (value instanceof TypeValue_1.EmptyValue) {
             return new TypeValue_1.EmptyValue(this.codegen, this.datasetType.typename, value.defaultNamespace);
         }
+        if (value instanceof TypeValue_1.ConstructValue) {
+            return new TypeValue_1.ConstructValue(this.codegen, this.datasetType.typename, value.defaultNamespace);
+        }
         if (value instanceof TypeValue_1.EnumValue && value.typename === this.localType.typename) {
             let enumValue = value.enumValue;
             if (this.localTypeOverride?.fieldMap) {
@@ -74,6 +77,9 @@ class EnumType extends PrimitiveType_1.PrimitiveType {
         }
         if (value instanceof TypeValue_1.EmptyValue) {
             return new TypeValue_1.EmptyValue(this.codegen, this.localType.typename, value.defaultNamespace);
+        }
+        if (value instanceof TypeValue_1.ConstructValue) {
+            return new TypeValue_1.ConstructValue(this.codegen, this.localType.typename, value.defaultNamespace);
         }
         if (value instanceof TypeValue_1.EnumValue) {
             let enumValue = value.enumValue;
