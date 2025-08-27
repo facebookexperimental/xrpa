@@ -89,7 +89,7 @@ function addBuckDependency(dep) {
     }
 }
 exports.addBuckDependency = addBuckDependency;
-function mapInterfaceImageTypes(programInterface, usingBuck) {
+function mapCppInterfaceImageTypes(programInterface, usingBuck) {
     let hasImageTypes = false;
     for (const name in programInterface.namedTypes) {
         const type = programInterface.namedTypes[name];
@@ -123,11 +123,11 @@ function mapCppImageTypes() {
     const ctx = (0, NativeProgram_1.getNativeProgramContext)();
     const usingBuck = getBuckConfig(ctx) != undefined;
     for (const programInterface of ctx.programInterfaces) {
-        mapInterfaceImageTypes(programInterface, usingBuck);
+        mapCppInterfaceImageTypes(programInterface, usingBuck);
     }
     for (const key in ctx.externalProgramInterfaces) {
         const programInterface = ctx.externalProgramInterfaces[key].programInterface;
-        mapInterfaceImageTypes(programInterface, usingBuck);
+        mapCppInterfaceImageTypes(programInterface, usingBuck);
     }
 }
 function XrpaNativeCppProgram(name, outputDir, callback) {

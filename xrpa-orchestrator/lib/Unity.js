@@ -49,6 +49,41 @@ exports.IfUnity = {
     propertyToCheck: GameEngine_1.COMPONENT_BASE_CLASS,
     expectedValue: "MonoBehaviour",
 };
+function mapCsInterfaceImageTypes(programInterface) {
+    let hasImageTypes = false;
+    for (const name in programInterface.namedTypes) {
+        const type = programInterface.namedTypes[name];
+        if (type.properties[InterfaceTypes_1.IS_IMAGE_TYPE] === true) {
+            (0, RuntimeEnvironment_1.mapInterfaceType)(programInterface, type.name, {
+                typename: "Xrpa.Image",
+            });
+            hasImageTypes = true;
+        }
+    }
+    if (hasImageTypes) {
+        (0, RuntimeEnvironment_1.mapInterfaceType)(programInterface, "ImageFormat", {
+            typename: "Xrpa.ImageFormat",
+        });
+        (0, RuntimeEnvironment_1.mapInterfaceType)(programInterface, "ImageEncoding", {
+            typename: "Xrpa.ImageEncoding",
+        });
+        (0, RuntimeEnvironment_1.mapInterfaceType)(programInterface, "ImageOrientation", {
+            typename: "Xrpa.ImageOrientation",
+        });
+    }
+}
+function mapCsImageTypes(ctx) {
+    const programInterfaces = ctx.programInterfaces;
+    if (Array.isArray(programInterfaces)) {
+        for (const programInterface of programInterfaces) {
+            mapCsInterfaceImageTypes(programInterface);
+        }
+    }
+    for (const key in ctx.externalProgramInterfaces) {
+        const programInterface = ctx.externalProgramInterfaces[key].programInterface;
+        mapCsInterfaceImageTypes(programInterface);
+    }
+}
 function runUnityContext(ctx, callback) {
     (0, GameEngine_1.GameEngineConfig)(ctx, {
         componentBaseClass: "MonoBehaviour",
@@ -82,6 +117,7 @@ function runUnityContext(ctx, callback) {
         });
         (0, RuntimeEnvironment_1.mapArrays)(exports.UnityArrayType);
     });
+    (0, xrpa_utils_1.runInContext)(ctx, mapCsImageTypes);
 }
 async function UnityProject(projectPath, projectName, callback) {
     const ctx = {
