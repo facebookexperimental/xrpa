@@ -63,10 +63,10 @@ exports.HEADER = [
 exports.UNIT_TRANSFORMER = {
     angular: {
         radian: {
-            degree: [" * 180f / Math.PI", 180 / Math.PI],
+            degree: [" * 180f / ((float)System.Math.PI)", 180 / Math.PI],
         },
         degree: {
-            radian: [" * Math.PI / 180f", Math.PI / 180],
+            radian: [" * ((float)System.Math.PI) / 180f", Math.PI / 180],
         },
     },
     spatial: {
