@@ -38,14 +38,18 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "@xrpa/xred-debug": "^1.11.0",
-    "@xrpa/xred-device-input": "^1.11.0",
-    "@xrpa/xred-perception-services": "^1.11.0",
-    "@xrpa/xred-sensor-input": "^1.11.0",
-    "@xrpa/xred-signal-output": "^1.11.0",
-    "@xrpa/xred-signal-processing": "^1.11.0",
-    "@xrpa/xred-tactile-pressure": "^1.11.0",
-    "@xrpa/xred-tracking": "^1.11.0",
-    "@xrpa/xrpa-orchestrator": "^1.11.0"
+    "@xrpa/xred-audio-input": "^1.13.0",
+    "@xrpa/xred-audio-transcription": "^1.13.0",
+    "@xrpa/xred-debug": "^1.13.0",
+    "@xrpa/xred-device-input": "^1.13.0",
+    "@xrpa/xred-optical-character-recognition": "^1.13.0",
+    "@xrpa/xred-perception-services": "^1.13.0",
+    "@xrpa/xred-sensor-input": "^1.13.0",
+    "@xrpa/xred-signal-output": "^1.13.0",
+    "@xrpa/xred-signal-processing": "^1.13.0",
+    "@xrpa/xred-speaker-identification": "^1.13.0",
+    "@xrpa/xred-tactile-pressure": "^1.13.0",
+    "@xrpa/xred-tracking": "^1.13.0",
+    "@xrpa/xrpa-orchestrator": "^1.13.0"
   }
 }

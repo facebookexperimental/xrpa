@@ -20,8 +20,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.sanitizeEnumNames = exports.genReadWriteValueFunctions = exports.genDynSizeOfValue = exports.genWriteValue = exports.genReadValue = exports.genClassSourceDefinition = exports.genClassHeaderDefinition = exports.genClassDefinition = exports.genMessageDispatch = exports.genOnMessageAccessor = exports.genMessageHandlerType = exports.genEventHandlerCall = exports.genEventHandlerType = exports.makeObjectAccessor = exports.getTypesHeaderNamespace = exports.getTypesHeaderName = exports.getDataStoreClass = exports.getDataStoreHeaderNamespace = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genSharedPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.identifierName = exports.constRef = exports.forwardDeclareClass = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.CppIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.genGetCurrentClockTime = exports.HAS_NATIVE_PRIMITIVE_TYPES = exports.STMT_TERM = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.BUCK_HEADER = exports.HEADER = exports.XRPA_NAMESPACE = exports.getXrpaTypes = exports.registerXrpaTypes = void 0;
-exports.declareVar = exports.ifEquals = exports.ifAllBitsAreSet = exports.ifAnyBitIsSet = exports.applyTemplateParams = exports.genConvertIntToBool = exports.genConvertBoolToInt = exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genPassthroughMethodBind = exports.genMethodBind = exports.genMethodCall = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = exports.genFieldGetter = exports.genReferencePtrToID = void 0;
+exports.genFieldGetter = exports.genReferencePtrToID = exports.getNullValue = exports.genEnumDynamicConversion = exports.genEnumDefinition = exports.sanitizeEnumNames = exports.genReadWriteValueFunctions = exports.genDynSizeOfValue = exports.genWriteValue = exports.genReadValue = exports.genClassSourceDefinition = exports.genClassHeaderDefinition = exports.genClassDefinition = exports.genMessageDispatch = exports.genEventHandlerCall = exports.genEventHandlerType = exports.makeObjectAccessor = exports.getTypesHeaderNamespace = exports.getTypesHeaderName = exports.getDataStoreClass = exports.getDataStoreHeaderNamespace = exports.getDataStoreHeaderName = exports.getDataStoreName = exports.reinterpretValue = exports.genPointer = exports.genSharedPointer = exports.genDeclaration = exports.genMultiValue = exports.genPrimitiveValue = exports.methodMember = exports.privateMember = exports.identifierName = exports.constRef = exports.forwardDeclareClass = exports.nsExtract = exports.nsJoin = exports.nsQualify = exports.genCommentLines = exports.CppIncludeAggregator = exports.DEFAULT_INTERFACE_PTR_TYPE = exports.genGetCurrentClockTime = exports.HAS_NATIVE_PRIMITIVE_TYPES = exports.STMT_TERM = exports.PRIMITIVE_INTRINSICS = exports.UNIT_TRANSFORMER = exports.BUCK_HEADER = exports.HEADER = exports.XRPA_NAMESPACE = exports.getXrpaTypes = exports.registerXrpaTypes = void 0;
+exports.declareVar = exports.ifEquals = exports.ifAllBitsAreSet = exports.ifAnyBitIsSet = exports.applyTemplateParams = exports.genConvertIntToBool = exports.genConvertBoolToInt = exports.genObjectPtrType = exports.genCreateObject = exports.genNonNullCheck = exports.genPassthroughMethodBind = exports.genMethodBind = exports.genMethodCall = exports.genDerefMethodCall = exports.genDeref = exports.genRuntimeGuid = exports.injectGeneratedTag = exports.genFieldChangedCheck = exports.genFieldSetter = void 0;
 const xrpa_utils_1 = require("@xrpa/xrpa-utils");
 const assert_1 = __importDefault(require("assert"));
 const TypeDefinition_1 = require("../../shared/TypeDefinition");
@@ -415,7 +415,8 @@ function makeObjectAccessor(params) {
     }
 }
 exports.makeObjectAccessor = makeObjectAccessor;
-function genEventHandlerType(paramTypes) {
+function genEventHandlerType(paramTypes, includes) {
+    includes?.addFile({ filename: "<functional>" });
     return `std::function<void(${paramTypes.join(", ")})>`;
 }
 exports.genEventHandlerType = genEventHandlerType;
@@ -428,43 +429,10 @@ function genEventHandlerCall(handler, paramValues, handlerCanBeNull) {
     }
 }
 exports.genEventHandlerCall = genEventHandlerCall;
-function genMessageHandlerType(params) {
-    const paramTypes = [exports.PRIMITIVE_INTRINSICS.uint64.typename];
-    if (params.fieldType.hasFields()) {
-        paramTypes.push(params.fieldType.getReadAccessorType(params.namespace, params.includes));
-    }
-    return genEventHandlerType(paramTypes);
-}
-exports.genMessageHandlerType = genMessageHandlerType;
-function genOnMessageAccessor(classSpec, params) {
-    const handlerType = genMessageHandlerType({
-        namespace: classSpec.namespace,
-        includes: classSpec.includes,
-        fieldType: params.fieldType,
-    });
-    const msgHandler = params.genMsgHandler(params.fieldName);
-    classSpec.methods.push({
-        name: `on${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`,
-        parameters: [{
-                name: "handler",
-                type: handlerType,
-            }],
-        body: [
-            `${msgHandler} = handler;`,
-        ],
-    });
-    classSpec.members.push({
-        name: msgHandler,
-        type: handlerType,
-        initialValue: new TypeValue_1.CodeLiteralValue(module.exports, "nullptr"),
-        visibility: "private",
-    });
-}
-exports.genOnMessageAccessor = genOnMessageAccessor;
 function genMessageDispatch(params) {
     const msgHandler = params.genMsgHandler(params.fieldName);
     const handlerCanBeNull = msgHandler.indexOf(".") < 0;
-    const timestamp = params.timestampName ?? "timestamp";
+    const timestamp = params.timestampName ?? "msgTimestamp";
     const lines = [];
     let indentLevel = 0;
     if (handlerCanBeNull) {

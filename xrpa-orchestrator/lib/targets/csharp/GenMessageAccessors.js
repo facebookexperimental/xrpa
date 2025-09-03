@@ -50,9 +50,9 @@ const CsharpCodeGenImpl = __importStar(require("./CsharpCodeGenImpl"));
 const CsharpDatasetLibraryTypes_1 = require("./CsharpDatasetLibraryTypes");
 function genMessageParamInitializer(msgType) {
     const lines = [];
-    const msgFields = msgType.getStateFields();
-    for (const key in msgFields) {
-        lines.push(`message.Set${(0, xrpa_utils_1.upperFirst)(key)}(${key});`);
+    const paramNames = (0, GenMessageAccessorsShared_1.getMessageParamNames)(msgType);
+    for (const key in paramNames) {
+        lines.push(`message.Set${(0, xrpa_utils_1.upperFirst)(key)}(${paramNames[key]});`);
     }
     return lines;
 }
@@ -62,7 +62,7 @@ function genMessageSize(namespace, includes, msgType) {
     const msgFields = msgType.getStateFields();
     for (const key in msgFields) {
         const fieldType = msgFields[key].type;
-        const byteCount = fieldType.getRuntimeByteCount(key, namespace, includes);
+        const byteCount = fieldType.getRuntimeByteCount((0, GenMessageAccessorsShared_1.getMessageParamName)(key), namespace, includes);
         staticSize += byteCount[0];
         if (byteCount[1] !== null) {
             dynFieldSizes.push(byteCount[1]);
@@ -74,7 +74,7 @@ function genMessageSize(namespace, includes, msgType) {
 function genSendMessageBody(params) {
     const lines = [];
     if (params.proxyObj) {
-        const msgParams = Object.keys(params.fieldType.getStateFields());
+        const msgParams = Object.values((0, GenMessageAccessorsShared_1.getMessageParamNames)(params.fieldType));
         lines.push(`${params.proxyObj}?.Send${(0, xrpa_utils_1.upperFirst)(params.fieldName)}(${msgParams.join(", ")});`);
     }
     else {
@@ -123,7 +123,7 @@ function genMessageChannelDispatch(classSpec, params) {
                 name: "messageType",
                 type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.int32.typename,
             }, {
-                name: "timestamp",
+                name: "msgTimestamp",
                 type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
             }, {
                 name: "messageData",
@@ -145,7 +145,8 @@ function genMessageFieldAccessors(classSpec, params) {
     for (const fieldName in typeFields) {
         const fieldType = typeFields[fieldName];
         if (params.reconcilerDef.isInboundField(fieldName)) {
-            (0, CsharpCodeGenImpl_1.genOnMessageAccessor)(classSpec, {
+            (0, GenMessageAccessorsShared_1.genOnMessageAccessor)(classSpec, {
+                codegen: CsharpCodeGenImpl,
                 fieldName,
                 fieldType,
                 genMsgHandler: params.genMsgHandler,

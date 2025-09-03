@@ -82,18 +82,8 @@ export declare function makeObjectAccessor(params: {
     isMessageStruct: boolean;
     objectUuidType: string;
 }): string;
-export declare function genEventHandlerType(paramTypes: string[]): string;
+export declare function genEventHandlerType(paramTypes: string[], includes: IncludeAggregator | null): string;
 export declare function genEventHandlerCall(handler: string, paramValues: string[], handlerCanBeNull: boolean): string;
-export declare function genMessageHandlerType(params: {
-    namespace: string;
-    includes: IncludeAggregator | null;
-    fieldType: MessageDataTypeDefinition;
-}): string;
-export declare function genOnMessageAccessor(classSpec: ClassSpec, params: {
-    fieldName: string;
-    fieldType: MessageDataTypeDefinition;
-    genMsgHandler: (fieldName: string) => string;
-}): void;
 export declare function genMessageDispatch(params: {
     namespace: string;
     includes: IncludeAggregator | null;

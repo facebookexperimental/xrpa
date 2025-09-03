@@ -49,7 +49,7 @@ function paramsCountName(num) {
 }
 function genMessageDelegateDeclaration(ctx, includes, typeDef) {
     const params = [
-        `FDateTime, timestamp`,
+        `FDateTime, msgTimestamp`,
     ];
     if (typeDef) {
         const fields = typeDef.getStateFields();

@@ -239,7 +239,7 @@ function defaultFieldToMemberVar(fieldName) {
 }
 exports.defaultFieldToMemberVar = defaultFieldToMemberVar;
 function genChangeHandlerMethods(classSpec, isInboundType) {
-    const fieldsChangedHandlerType = (0, CsharpCodeGenImpl_1.genEventHandlerType)([CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename]);
+    const fieldsChangedHandlerType = (0, CsharpCodeGenImpl_1.genEventHandlerType)([CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename], classSpec.includes);
     classSpec.methods.push({
         name: "HandleXrpaFieldsChanged",
         parameters: [{
@@ -267,7 +267,7 @@ function genChangeHandlerMethods(classSpec, isInboundType) {
         visibility: "private",
     });
     if (isInboundType) {
-        const deleteHandlerType = (0, CsharpCodeGenImpl_1.genEventHandlerType)([]);
+        const deleteHandlerType = (0, CsharpCodeGenImpl_1.genEventHandlerType)([], classSpec.includes);
         classSpec.methods.push({
             name: "handleXrpaDelete",
             body: [(0, CsharpCodeGenImpl_1.genEventHandlerCall)("_xrpaDeleteHandler", [], true)],

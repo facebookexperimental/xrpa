@@ -53,6 +53,7 @@ const GenMessageAccessors_1 = require("../csharp/GenMessageAccessors");
 const GenDataStoreShared_1 = require("../shared/GenDataStoreShared");
 const CsharpDatasetLibraryTypes_1 = require("../csharp/CsharpDatasetLibraryTypes");
 const TypeValue_1 = require("../../shared/TypeValue");
+const GenMessageAccessorsShared_1 = require("../shared/GenMessageAccessorsShared");
 var IntrinsicProperty;
 (function (IntrinsicProperty) {
     IntrinsicProperty["position"] = "position";
@@ -86,17 +87,6 @@ function getComponentClassName(type, id) {
     return `${(0, xrpa_utils_1.filterToString)(id) ?? ""}${typeName}Component`;
 }
 exports.getComponentClassName = getComponentClassName;
-function getMessageDelegateName(namespace, includes, msgType) {
-    const paramTypes = [
-        CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename, // timestamp
-    ];
-    const fields = msgType.getStateFields();
-    for (const key in fields) {
-        const fieldType = fields[key].type;
-        paramTypes.push(fieldType.declareLocalParam(namespace, includes, ""));
-    }
-    return CsharpCodeGenImpl.genEventHandlerType(paramTypes);
-}
 function getFieldMemberName(reconcilerDef, fieldName) {
     return (0, xrpa_utils_1.filterToString)(reconcilerDef.fieldAccessorNameOverrides[fieldName]) ?? (0, xrpa_utils_1.upperFirst)(fieldName);
 }
@@ -214,7 +204,13 @@ function genUnitySendMessageAccessor(classSpec, params) {
 }
 exports.genUnitySendMessageAccessor = genUnitySendMessageAccessor;
 function genUnityMessageProxyDispatch(classSpec, params) {
-    const msgEventType = getMessageDelegateName(classSpec.namespace, classSpec.includes, params.fieldType);
+    const msgEventType = (0, GenMessageAccessorsShared_1.genMessageHandlerType)({
+        codegen: CsharpCodeGenImpl,
+        namespace: classSpec.namespace,
+        includes: classSpec.includes,
+        fieldType: params.fieldType,
+        expandMessageFields: true,
+    });
     const unityHandlerName = `On${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`;
     const unityDispatchName = `Dispatch${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`;
     const proxyHandlerName = `On${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`;
@@ -222,16 +218,13 @@ function genUnityMessageProxyDispatch(classSpec, params) {
         name: unityHandlerName,
         type: `event ${msgEventType}`,
     });
-    const parameters = [{
-            name: "timestamp",
-            type: CsharpCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
-        }];
-    if (params.fieldType.hasFields()) {
-        parameters.push({
-            name: "message",
-            type: params.fieldType.getReadAccessorType(classSpec.namespace, classSpec.includes),
-        });
-    }
+    const parameters = (0, GenMessageAccessorsShared_1.genMessageHandlerParams)({
+        codegen: CsharpCodeGenImpl,
+        namespace: classSpec.namespace,
+        includes: classSpec.includes,
+        fieldType: params.fieldType,
+        expandMessageFields: !params.dispatchMessageReader,
+    });
     classSpec.methods.push({
         name: unityDispatchName,
         parameters,
@@ -241,7 +234,7 @@ function genUnityMessageProxyDispatch(classSpec, params) {
             fieldName: params.fieldName,
             fieldType: params.fieldType,
             genMsgHandler: msg => `On${(0, xrpa_utils_1.upperFirst)(msg)}?.Invoke`,
-            msgDataToParams: convertMessageTypeToParams,
+            msgDataToParams: params.dispatchMessageReader ? convertMessageTypeToParams : (() => Object.values((0, GenMessageAccessorsShared_1.getMessageParamNames)(params.fieldType))),
             convertToReadAccessor: false,
         }),
         visibility: "private",
@@ -270,6 +263,7 @@ function genUnityMessageFieldAccessors(classSpec, params) {
                 fieldType,
                 proxyObj: params.proxyObj,
                 initializerLines: params.initializerLines,
+                dispatchMessageReader: true,
             });
         }
         if (params.reconcilerDef.isOutboundField(fieldName)) {

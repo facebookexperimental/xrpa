@@ -229,7 +229,7 @@ function defaultFieldToMemberVar(fieldName) {
 }
 exports.defaultFieldToMemberVar = defaultFieldToMemberVar;
 function genChangeHandlerMethods(classSpec, isInboundType) {
-    const fieldsChangedHandlerType = (0, PythonCodeGenImpl_1.genEventHandlerType)([PythonCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename]);
+    const fieldsChangedHandlerType = (0, PythonCodeGenImpl_1.genEventHandlerType)([PythonCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename], classSpec.includes);
     classSpec.methods.push({
         name: "handle_xrpa_fields_changed",
         parameters: [{
@@ -257,7 +257,7 @@ function genChangeHandlerMethods(classSpec, isInboundType) {
         visibility: "private",
     });
     if (isInboundType) {
-        const deleteHandlerType = (0, PythonCodeGenImpl_1.genEventHandlerType)([]);
+        const deleteHandlerType = (0, PythonCodeGenImpl_1.genEventHandlerType)([], classSpec.includes);
         classSpec.methods.push({
             name: "handle_xrpa_delete",
             body: [(0, PythonCodeGenImpl_1.genEventHandlerCall)("self._xrpa_delete_handler", [], true)],

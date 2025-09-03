@@ -127,18 +127,8 @@ export interface TargetCodeGenImpl {
         isMessageStruct: boolean;
         objectUuidType: string;
     }): string;
-    genEventHandlerType(paramTypes: string[]): string;
+    genEventHandlerType(paramTypes: string[], includes: IncludeAggregator | null): string;
     genEventHandlerCall(handler: string, paramValues: string[], handlerCanBeNull: boolean): string;
-    genMessageHandlerType(params: {
-        namespace: string;
-        includes: IncludeAggregator | null;
-        fieldType: MessageDataTypeDefinition;
-    }): string;
-    genOnMessageAccessor(classSpec: ClassSpec, params: {
-        fieldName: string;
-        fieldType: MessageDataTypeDefinition;
-        genMsgHandler: (msgName: string) => string;
-    }): void;
     genMessageDispatch(params: {
         namespace: string;
         includes: IncludeAggregator | null;

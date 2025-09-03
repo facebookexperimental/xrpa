@@ -268,7 +268,7 @@ function genUEMessageProxyDispatch(classSpec, params) {
         ],
     });
     const parameters = [{
-            name: "timestamp",
+            name: "msgTimestamp",
             type: CppCodeGenImpl_1.PRIMITIVE_INTRINSICS.uint64.typename,
         }];
     if (params.fieldType.hasFields()) {
@@ -290,7 +290,7 @@ function genUEMessageProxyDispatch(classSpec, params) {
             genMsgHandler: msg => `On${(0, xrpa_utils_1.upperFirst)(msg)}.Broadcast`,
             msgDataToParams: convertMessageTypeToParams,
             convertToReadAccessor: false,
-            timestampName: "FDateTime(timestamp)",
+            timestampName: "FDateTime(msgTimestamp)",
         }),
         visibility: "private",
         separateImplementation: true,

@@ -88,17 +88,12 @@ function getTargetInfo(ctx, codegen, connection, includes) {
         throw new Error(`Unsupported node: ${JSON.stringify(connection.targetNode)}`);
     }
 }
-function getMessageValues(fieldType) {
-    return Object.keys(fieldType.getAllFields()).map(msgField => {
-        return `msg${(0, xrpa_utils_1.upperFirst)(msgField)}`;
-    });
-}
 function onMessage(codegen, classSpec, params) {
     const dispatcherName = `dispatch${(0, xrpa_utils_1.upperFirst)(params.objVar)}${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`;
     const dispatcherBody = classSpec.getOrCreateMethod({
         name: dispatcherName,
         parameters: [{
-                name: "timestamp",
+                name: "msgTimestamp",
                 type: codegen.PRIMITIVE_INTRINSICS.uint64.typename,
             }, {
                 name: "msg",
@@ -110,16 +105,12 @@ function onMessage(codegen, classSpec, params) {
         params.initializersOut.push(`${codegen.genDerefMethodCall(params.objVar, `on${(0, xrpa_utils_1.upperFirst)(params.fieldName)}`, [
             codegen.genPassthroughMethodBind(dispatcherName, 2),
         ])};`);
-    }
-    if (params.needsMsgValues) {
         // fetch all message fields and store them in local variables
-        const varInitializers = getMessageValues(params.fieldType).map(varName => {
-            return codegen.declareVar(`${varName}`, "", codegen.genMethodCall("msg", `get${varName.slice(3)}`, []));
+        const msgParams = (0, GenMessageAccessorsShared_1.getMessageParamNames)(params.fieldType);
+        const varInitializers = Object.keys(msgParams).map(key => {
+            return codegen.declareVar(`${msgParams[key]}`, "", codegen.genMethodCall("msg", `get${(0, xrpa_utils_1.upperFirst)(key)}`, []));
         });
-        // check if the dispatcherBody already starts with the varInitializers and add them if not
-        if (dispatcherBody.length === 0 || dispatcherBody[0] !== varInitializers[0]) {
-            dispatcherBody.unshift(...varInitializers);
-        }
+        dispatcherBody.unshift(...varInitializers);
     }
     dispatcherBody.push(...params.code);
 }
@@ -168,10 +159,9 @@ function genBindMessageFieldValues(codegen, classSpec, params) {
         fieldName: params.srcFieldName,
         fieldType: srcFieldType,
         code: [
-            `${codegen.genDerefMethodCall(params.dstObjVar, codegen.methodMember(`send${(0, xrpa_utils_1.upperFirst)(params.dstFieldName)}`), getMessageValues(srcFieldType))};`,
+            `${codegen.genDerefMethodCall(params.dstObjVar, codegen.methodMember(`send${(0, xrpa_utils_1.upperFirst)(params.dstFieldName)}`), Object.values((0, GenMessageAccessorsShared_1.getMessageParamNames)(srcFieldType)))};`,
         ],
         initializersOut: params.initializersOut,
-        needsMsgValues: true,
     });
 }
 function genMessageOutputParameter(codegen, classSpec, params) {
@@ -187,10 +177,12 @@ function genMessageOutputParameter(codegen, classSpec, params) {
     }
     // TODO verify that the field types are compatible
     const memberName = paramToMemberName(codegen, params.paramName);
-    codegen.genOnMessageAccessor(classSpec, {
+    (0, GenMessageAccessorsShared_1.genOnMessageAccessor)(classSpec, {
+        codegen,
         fieldName: params.paramName,
         fieldType: params.paramType,
         genMsgHandler: () => memberName,
+        expandMessageFields: true,
     });
     const dispatchCode = codegen.genMessageDispatch({
         namespace: classSpec.namespace,
@@ -198,7 +190,7 @@ function genMessageOutputParameter(codegen, classSpec, params) {
         fieldName: params.paramName,
         fieldType: params.paramType,
         genMsgHandler: () => memberName,
-        msgDataToParams: () => ["msg"],
+        msgDataToParams: () => Object.values((0, GenMessageAccessorsShared_1.getMessageParamNames)(srcFieldType)),
         convertToReadAccessor: false,
     });
     onMessage(codegen, classSpec, {
@@ -207,7 +199,6 @@ function genMessageOutputParameter(codegen, classSpec, params) {
         fieldType: srcFieldType,
         code: dispatchCode,
         initializersOut: params.initializersOut,
-        needsMsgValues: false,
     });
 }
 function genBindSignalFieldValues(codegen, classSpec, params) {
@@ -365,11 +356,11 @@ function genStateOutputParameter(codegen, classSpec, params) {
     const fieldHandlerName = codegen.methodMember(`on${(0, xrpa_utils_1.upperFirst)(params.paramName)}Changed`);
     classSpec.members.push({
         name: fieldHandlerName,
-        type: codegen.genEventHandlerType([params.srcFieldType.getLocalType(classSpec.namespace, classSpec.includes)]),
+        type: codegen.genEventHandlerType([params.srcFieldType.getLocalType(classSpec.namespace, classSpec.includes)], classSpec.includes),
         initialValue: new TypeValue_1.CodeLiteralValue(codegen, codegen.getNullValue()),
     });
     const handlerName = codegen.privateMember("xrpaFieldsChangedHandler");
-    const handlerType = codegen.genEventHandlerType([codegen.PRIMITIVE_INTRINSICS.uint64.typename]);
+    const handlerType = codegen.genEventHandlerType([codegen.PRIMITIVE_INTRINSICS.uint64.typename], classSpec.includes);
     const body = classSpec.getOrCreateMethod({
         name: "onXrpaFieldsChanged",
         parameters: [{

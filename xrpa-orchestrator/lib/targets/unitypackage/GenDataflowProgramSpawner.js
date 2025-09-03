@@ -173,6 +173,7 @@ function genOutputParameterAccessors(ctx, classSpec, programDef, runInitializerL
                 fieldType,
                 proxyObj: (0, CsharpCodeGenImpl_1.privateMember)("currentObj"),
                 initializerLines: runInitializerLines,
+                dispatchMessageReader: false,
             });
         }
         else if ((0, TypeDefinition_1.typeIsStateData)(fieldType)) {

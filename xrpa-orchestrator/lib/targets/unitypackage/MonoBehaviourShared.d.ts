@@ -57,6 +57,7 @@ export declare function genUnityMessageProxyDispatch(classSpec: ClassSpec, param
     fieldType: MessageDataTypeDefinition;
     proxyObj: string;
     initializerLines: string[];
+    dispatchMessageReader: boolean;
 }): void;
 export declare function genUnityMessageFieldAccessors(classSpec: ClassSpec, params: {
     namespace: string;
