@@ -53,6 +53,7 @@ function createOpticalCharacterRecognitionInterface(width = 384, height = 384, b
                     image: ocrImage,
                 }),
                 triggerId: (0, xrpa_orchestrator_1.Count)(0, "Increment this value to trigger OCR processing"),
+                immediateMode: (0, xrpa_orchestrator_1.Boolean)(false, "Whether to use immediate mode (true) or triggered mode (false)"),
                 ocrResult: (0, xrpa_orchestrator_1.Output)(OcrResult),
             },
         }));
@@ -66,6 +67,7 @@ function OpticalCharacterRecognition(params) {
     if (params.triggerId) {
         dataflowNode.fieldValues.triggerId = params.triggerId;
     }
+    dataflowNode.fieldValues.immediateMode = params.immediateMode;
     return {
         ocrResult: (0, xrpa_orchestrator_1.ObjectField)(dataflowNode, "ocrResult"),
     };

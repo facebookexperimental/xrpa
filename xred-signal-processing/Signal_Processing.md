@@ -258,6 +258,13 @@ These functions generate signal waveforms which can be output to a device or fur
     * numChannels: `number` (optional, defaults to 1)
     * autoPlay: `boolean` (optional, defaults to true)
 * Returns: `ISignalNodeType`
+---
+`SignalStream()`
+* Streams a signal from an external source (ie xred-audio-input or xred-text-to-speech).
+* Parameters: [params]
+  * params: `{}`
+    * numChannels: `number`
+    * signal: `XrpaDataflowConnection`
 
 ### Signal Modifiers
 

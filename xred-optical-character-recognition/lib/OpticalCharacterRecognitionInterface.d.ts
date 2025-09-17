@@ -24,6 +24,7 @@ export declare const XredOpticalCharacterRecognitionInterface: import("@xrpa/xrp
 export declare function OpticalCharacterRecognition(params: {
     imageInput: XrpaDataflowConnection;
     triggerId?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"Count">>;
+    immediateMode?: XrpaDataflowConnection | XrpaProgramParam<XrpaDataType<"Boolean">> | boolean;
 }): {
     ocrResult: XrpaDataflowConnection;
 };

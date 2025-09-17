@@ -1,6 +1,6 @@
 {
   "name": "@xrpa/xred-tracking",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "description": "Tracking interface",
   "main": "lib/index.js",
   "files": [
@@ -9,6 +9,6 @@
   ],
   "license": "Apache-2.0",
   "peerDependencies": {
-    "@xrpa/xrpa-orchestrator": "1.13.0"
+    "@xrpa/xrpa-orchestrator": "1.14.0"
   }
 }

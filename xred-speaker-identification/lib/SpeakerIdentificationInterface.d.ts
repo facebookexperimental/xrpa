@@ -15,7 +15,7 @@
  */
 
 
-import { XrpaDataflowConnection, XrpaDataflowGraphNode, XrpaProgramParam } from "@xrpa/xrpa-orchestrator";
+import { XrpaDataflowConnection, XrpaProgramParam } from "@xrpa/xrpa-orchestrator";
 export declare const MAX_REFERENCE_SPEAKERS = 5;
 export declare const MAX_AUDIO_FILES_PER_SPEAKER = 3;
 export declare const XredSpeakerIdentificationInterface: import("@xrpa/xrpa-orchestrator").ProgramInterface;
@@ -24,10 +24,9 @@ export interface ReferenceSpeakerParams {
     speakerName: string;
     filePaths: string[];
 }
-export declare function ReferenceSpeakerSet(speakers: ReferenceSpeakerParams[]): XrpaDataflowGraphNode;
 export interface SpeakerIdentifierParams {
     audioSignal: XrpaDataflowConnection | XrpaProgramParam;
-    referenceSpeakerSet: XrpaDataflowGraphNode;
+    speakers: ReferenceSpeakerParams[];
 }
 export declare function SpeakerIdentifier(params: SpeakerIdentifierParams): {
     identifiedSpeakerId: XrpaDataflowConnection;
