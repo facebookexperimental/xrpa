@@ -74,7 +74,7 @@ std::vector<std::string> processCommandLine(int argc, char** argv) {
 
   // add the actual command line arguments
   for (int i = 1; i < argc; ++i) {
-    commandLineArgs.push_back(argv[i]);
+    commandLineArgs.emplace_back(argv[i]);
   }
 
   // reverse the order of the command line arguments for CLI11
