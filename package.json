@@ -7,7 +7,11 @@
     "repo_path": "arvr/libraries/xred/xrpa"
   },
   "workspaces": [
-    "core/*",
+    "core/internal-scripts",
+    "core/xrpa-file-utils",
+    "core/xrpa-llm-utils",
+    "core/xrpa-orchestrator",
+    "core/xrpa-utils",
     "modules/*",
     "demos/*"
   ],

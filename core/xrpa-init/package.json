@@ -5,9 +5,9 @@
   "main": "js/index.ts",
   "private": true,
   "scripts": {
-    "postinstall": "ts-node ./index.ts",
-    "update": "ts-node ./index.ts",
-    "codegen": "ts-node ./index.ts",
+    "postinstall": "ts-node ./js/index.ts",
+    "update": "ts-node ./js/index.ts",
+    "codegen": "ts-node ./js/index.ts",
     "watch": "nodemon --watch js --ext ts --exec 'yarn codegen'",
     "lint": "eslint --ext .ts,.tsx ./src",
     "ImageViewer": "node_modules/@xrpa/xred-debug/bin/ImageViewer.exe",

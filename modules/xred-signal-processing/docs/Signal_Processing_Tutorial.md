@@ -12,11 +12,11 @@ Xrpa is a framework which facilitates connecting disparate software components t
 
 From the root directory of your Unity project, run the following PowerShell commands to download the necessary configuration files for using Xrpa and the signal processing module:
 ```
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/facebookexperimental/xrpa/main/xrpa-init/package.json" -OutFile ./package.json
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/facebookexperimental/xrpa/main/xrpa-init/tsconfig.json" -OutFile ./tsconfig.json
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/facebookexperimental/xrpa/main/core/xrpa-init/package.json" -OutFile ./package.json
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/facebookexperimental/xrpa/main/core/xrpa-init/tsconfig.json" -OutFile ./tsconfig.json
 mkdir js
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/facebookexperimental/xrpa/main/xrpa-init/index.ts" -OutFile ./js/index.ts
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/facebookexperimental/xrpa/main/xrpa-init/TestEffect.ts" -OutFile ./js/TestEffect.ts
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/facebookexperimental/xrpa/main/core/xrpa-init/js/index.ts" -OutFile ./js/index.ts
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/facebookexperimental/xrpa/main/core/xrpa-init/js/TestEffect.ts" -OutFile ./js/TestEffect.ts
 Add-Content -Path .gitignore -Value "/node_modules/"
 ```
 
