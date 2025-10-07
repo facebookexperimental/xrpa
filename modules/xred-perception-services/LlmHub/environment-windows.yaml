@@ -1,0 +1,13 @@
+name: xred-llm-hub-windows
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - pillow
+      - requests
+      - llama_api_client
+      - huggingface_hub
+      - mcp

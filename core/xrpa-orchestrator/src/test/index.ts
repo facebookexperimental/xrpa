@@ -1,0 +1,41 @@
+/**
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+import { test1 } from './Test1';
+import { test2 } from './Test2';
+import { test3 } from './Test3';
+import { test4 } from './Test4';
+import { test5 } from './Test5';
+import { test6 } from './Test6';
+import { test7 } from './Test7';
+
+async function runCodegenTests() {
+  await test1();
+  await test2();
+  await test3();
+  await test4();
+  await test5();
+  await test6();
+  await test7();
+}
+
+runCodegenTests().catch((e) => {
+  console.error(e);
+  process.exit(1);
+}).then(() => {
+  process.exit(0);
+});

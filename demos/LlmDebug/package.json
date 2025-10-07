@@ -1,0 +1,32 @@
+{
+  "name": "xred-llm-debug",
+  "version": "1.14.0",
+  "description": "LLM module test",
+  "main": "scripts/index.ts",
+  "private": true,
+  "config": {
+    "repo_path": "arvr/libraries/xred/xrpa/demos/LlmDebug"
+  },
+  "scripts": {
+    "preinstall": "(node -e \"process.exit(process.platform === 'win32' ? 0 : 1)\") && ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules symlink) || echo no eden found) || ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules bind) || echo no eden found)",
+    "lint": "eslint --ext .ts,.tsx ./src",
+    "LlmDebug": "ts-node ./scripts/index.ts",
+    "CountryInfoMcp": "ts-node ./scripts/CountryInfoMcp.ts"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.3",
+    "@types/node": "18.11.18",
+    "@typescript-eslint/eslint-plugin": "^5.57.0",
+    "@typescript-eslint/parser": "^5.57.0",
+    "eslint": "8.32.0",
+    "eslint-plugin-import": "^2.27.5",
+    "ts-node": "^10.9.1"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.16.0",
+    "@xrpa/xred-perception-services": "^1.14.0",
+    "@xrpa/xrpa-orchestrator": "^1.14.0",
+    "express": "5.0.0",
+    "zod": "^3.23.8"
+  }
+}

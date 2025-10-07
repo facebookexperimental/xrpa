@@ -1,0 +1,32 @@
+{
+  "name": "@xrpa/xrpa-utils",
+  "version": "1.14.0",
+  "description": "Xrpa Utils",
+  "main": "lib/index.js",
+  "license": "Apache-2.0",
+  "files": [
+    "lib/**/*"
+  ],
+  "config": {
+    "repo_path": "arvr/libraries/xred/xrpa/core/xrpa-utils"
+  },
+  "scripts": {
+    "preinstall": "(node -e \"process.exit(process.platform === 'win32' ? 0 : 1)\") && ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules symlink) || echo no eden found) || ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules bind) || echo no eden found)",
+    "build": "tsc",
+    "lint": "eslint --ext .ts,.tsx ./js",
+    "test": "jest js/"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.1",
+    "@types/jest": "^29.5.1",
+    "@typescript-eslint/eslint-plugin": "^5.57.0",
+    "@typescript-eslint/parser": "^5.57.0",
+    "eslint": "8.32.0",
+    "eslint-plugin-import": "^2.27.5",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0"
+  },
+  "dependencies": {
+    "simply-immutable": "^2.1.1"
+  }
+}

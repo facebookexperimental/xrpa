@@ -8,12 +8,12 @@ Xrpa is a framework which facilitates connecting disparate software components t
 
 ## Signal Processing in Xrpa
 
-[API Documentation](xred-signal-processing/Signal_Processing.md)
-[Tutorials](xred-signal-processing/Signal_Processing_Tutorial.md)
+[API Documentation](modules/xred-signal-processing/docs/Signal_Processing.md)
+[Tutorials](modules/xred-signal-processing/docs/Signal_Processing_Tutorial.md)
 
 ## Object Tracking in Xrpa
 
-[Tutorial](xred-tracking/Tracking_Tutorial.md)
+[Tutorial](modules/xred-tracking/docs/Tracking_Tutorial.md)
 
 ## License
 Xrpa is Apache 2.0 licensed, as found in the LICENSE file.

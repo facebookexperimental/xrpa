@@ -1,0 +1,9 @@
+{
+  "name": "com.msi.sensorystimulus",
+  "version": "1.0.0",
+  "displayName": "SensoryStimulus",
+  "description": "SensoryStimulus Bindings",
+  "dependencies": {
+    "com.meta.xrpa": "1.0.0"
+  }
+}

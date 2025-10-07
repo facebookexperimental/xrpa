@@ -1,0 +1,50 @@
+{
+  "name": "@xrpa/xred-perception-services",
+  "version": "1.14.0",
+  "description": "Machine-perception service modules",
+  "main": "lib/index.js",
+  "files": [
+    "bin/**/*",
+    "lib/**/*"
+  ],
+  "license": "Apache-2.0",
+  "config": {
+    "repo_path": "arvr/libraries/xred/xrpa/modules/xred-perception-services"
+  },
+  "scripts": {
+    "preinstall": "(node -e \"process.exit(process.platform === 'win32' ? 0 : 1)\") && ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules symlink) || echo no eden found) || ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules bind) || echo no eden found)",
+    "build": "tsc && yarn cache-default-model",
+    "lint": "eslint --ext .ts,.tsx ./src",
+    "oss-publish": "tsc && ts-node ./scripts/publish.ts",
+    "ImageSelector": "ts-node ./scripts/ImageSelectorStandalone.ts",
+    "LlmHub": "ts-node ./scripts/LlmHubStandalone.ts",
+    "ObjectRecognition": "ts-node ./scripts/ObjectRecognitionStandalone.ts",
+    "ImageSelector:codegen": "ts-node ./scripts/ImageSelectorStandalone.ts --codegen-only",
+    "ImageSelector:build-only": "ts-node ./scripts/ImageSelectorStandalone.ts --build-only",
+    "ImageSelector:run-only": "ts-node ./scripts/ImageSelectorStandalone.ts --run-only",
+    "ImageSelector:codegen-and-build": "ts-node ./scripts/ImageSelectorStandalone.ts --codegen-and-build",
+    "LlmHub:codegen": "ts-node ./scripts/LlmHubStandalone.ts --codegen-only",
+    "LlmHub:run-only": "ts-node ./scripts/LlmHubStandalone.ts --run-only",
+    "ObjectRecognition:codegen": "ts-node ./scripts/ObjectRecognitionStandalone.ts --codegen-only",
+    "ObjectRecognition:run-only": "ts-node ./scripts/ObjectRecognitionStandalone.ts --run-only",
+    "cache-default-model": "ts-node ./scripts/LlmHubCacheModel.ts",
+    "test-mcp-tools": "ts-node ./scripts/TestMcpTools.ts"
+  },
+  "devDependencies": {
+    "@types/node": "18.11.18",
+    "@typescript-eslint/eslint-plugin": "^5.57.0",
+    "@typescript-eslint/parser": "^5.57.0",
+    "@xrpa/xrpa-orchestrator": "^1.14.0",
+    "eslint": "8.32.0",
+    "eslint-plugin-import": "^2.27.5",
+    "ts-node": "^10.9.1",
+    "xrpa-internal-scripts": "^1.14.0"
+  },
+  "peerDependencies": {
+    "@xrpa/xrpa-orchestrator": "^1.14.0"
+  },
+  "dependencies": {
+    "zod": "^3.21.4",
+    "zod-to-json-schema": "^3.24.5"
+  }
+}

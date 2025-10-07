@@ -1,0 +1,62 @@
+{
+  "name": "xrpa-workspace",
+  "version": "1.14.0",
+  "description": "XRPA Ecosystem Monorepo",
+  "private": true,
+  "config": {
+    "repo_path": "arvr/libraries/xred/xrpa"
+  },
+  "workspaces": [
+    "core/*",
+    "modules/*",
+    "demos/*"
+  ],
+  "scripts": {
+    "preinstall": "(node -e \"process.exit(process.platform === 'win32' ? 0 : 1)\") && ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules symlink) || echo no eden found) || ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules bind) || echo no eden found)",
+    "install:all": "yarn install",
+    "build:core": "yarn workspace @xrpa/xrpa-utils run build && yarn workspace @xrpa/xrpa-file-utils run build && yarn workspace xrpa-internal-scripts run build && yarn workspace @xrpa/xrpa-llm-utils run build && yarn workspace @xrpa/xrpa-orchestrator run build",
+    "build:modules": "yarn workspace @xrpa/xred-audio-input run build && yarn workspace @xrpa/xred-audio-transcription run build && yarn workspace @xrpa/xred-debug run build && yarn workspace @xrpa/xred-signal-output run build && yarn workspace @xrpa/xred-signal-processing run build && yarn workspace @xrpa/xred-device-input run build && yarn workspace @xrpa/xred-interaction run build && yarn workspace @xrpa/xred-optical-character-recognition run build && yarn workspace @xrpa/xred-perception-services run build && yarn workspace @xrpa/xred-sensor-input run build && yarn workspace @xrpa/xred-speaker-identification run build && yarn workspace @xrpa/xred-tactile-pressure run build && yarn workspace @xrpa/xred-text-to-speech run build && yarn workspace @xrpa/xred-tracking run build && yarn workspace @xrpa/xred-visual-emotion-detection run build",
+    "build:demos": "echo 'Demos do not require building - they are run directly with ts-node'",
+    "build": "yarn build:core && yarn build:modules",
+    "audio-input": "yarn workspace @xrpa/xred-audio-input run AudioInput",
+    "audio-transcription": "yarn workspace @xrpa/xred-audio-transcription run Transcription",
+    "debug": "yarn workspace @xrpa/xred-debug run ImageViewer",
+    "signal-output": "yarn workspace @xrpa/xred-signal-output run XredOutput",
+    "signal-processing": "yarn workspace @xrpa/xred-signal-processing run FbaProcessing",
+    "device-input": "yarn workspace @xrpa/xred-device-input run SmartController",
+    "interaction": "yarn workspace @xrpa/xred-interaction run ISDK",
+    "ocr": "yarn workspace @xrpa/xred-optical-character-recognition run OCR",
+    "perception-services:image-selector": "yarn workspace @xrpa/xred-perception-services run ImageSelector",
+    "perception-services:llm-hub": "yarn workspace @xrpa/xred-perception-services run LlmHub",
+    "perception-services:object-recognition": "yarn workspace @xrpa/xred-perception-services run ObjectRecognition",
+    "sensor-input:camera": "yarn workspace @xrpa/xred-sensor-input run Camera",
+    "sensor-input:aria": "yarn workspace @xrpa/xred-sensor-input run Aria",
+    "speaker-identification": "yarn workspace @xrpa/xred-speaker-identification run SpeakerIdentification",
+    "tactile-pressure": "yarn workspace @xrpa/xred-tactile-pressure run AgiosFtp",
+    "text-to-speech": "yarn workspace @xrpa/xred-text-to-speech run TextToSpeech",
+    "tracking:fiducials": "yarn workspace @xrpa/xred-tracking run Fiducials",
+    "tracking:optitrack": "yarn workspace @xrpa/xred-tracking run OptiTrack",
+    "tracking:pulsar-sto": "yarn workspace @xrpa/xred-tracking run PulsarSTO",
+    "tracking:quest": "yarn workspace @xrpa/xred-tracking run Quest",
+    "visual-emotion-detection": "yarn workspace @xrpa/xred-visual-emotion-detection run VisualEmotionDetection",
+    "lint": "yarn workspaces run lint",
+    "clean": "yarn workspaces run clean || true",
+    "test": "yarn workspaces run test || true",
+    "publish:all": "yarn build && echo 'Ready for OSS publishing!'",
+    "update-build-order": "ts-node scripts/update-build-order.ts --update",
+    "update-version-numbers": "ts-node scripts/update-version-numbers.ts"
+  },
+  "devDependencies": {
+    "@types/node": "18.11.18",
+    "@typescript-eslint/eslint-plugin": "^5.57.0",
+    "@typescript-eslint/parser": "^5.57.0",
+    "eslint": "8.32.0",
+    "eslint-plugin-import": "^2.27.5",
+    "ts-node": "^10.9.1",
+    "typescript": "5.0.4"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "yarn": ">=1.22.0"
+  }
+}

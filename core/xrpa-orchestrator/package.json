@@ -1,0 +1,45 @@
+{
+  "name": "@xrpa/xrpa-orchestrator",
+  "version": "1.14.2",
+  "description": "Xrpa Orchestrator",
+  "main": "lib/index.js",
+  "license": "Apache-2.0",
+  "config": {
+    "repo_path": "arvr/libraries/xred/xrpa/core/xrpa-orchestrator"
+  },
+  "files": [
+    "lib/**/*"
+  ],
+  "scripts": {
+    "preinstall": "(node -e \"process.exit(process.platform === 'win32' ? 0 : 1)\") && ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules symlink) || echo no eden found) || ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules bind) || echo no eden found)",
+    "copyCpp": "rimraf lib/runtime/cpp && copyfiles -u 3 \"../runtime/cpp/xrpa-runtime/**/*\" lib/runtime/cpp/",
+    "copyCs": "rimraf lib/runtime/cs && copyfiles -u 3 \"../runtime/cs/xrpa-runtime/**/*\" lib/runtime/cs/",
+    "copyPython": "rimraf lib/runtime/python && copyfiles -u 3 \"../runtime/python/xrpa_runtime/**/*\" lib/runtime/python/",
+    "copyUE": "rimraf lib/runtime/ue && copyfiles -u 3 \"../runtime/ue/xrpa-runtime/**/*\" lib/runtime/ue/",
+    "clean": "rimraf lib",
+    "build": "yarn clean && tsc && yarn copyCpp && yarn copyCs && yarn copyPython && yarn copyUE",
+    "lint": "eslint --ext .ts,.tsx ./src",
+    "codegentest": "ts-node src/test/index.ts",
+    "test": "jest src/"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.1",
+    "@types/jest": "^29.5.1",
+    "@types/node": "18.11.18",
+    "@typescript-eslint/eslint-plugin": "^5.57.0",
+    "@typescript-eslint/parser": "^5.57.0",
+    "copyfiles": "2.4.1",
+    "eslint": "8.32.0",
+    "eslint-plugin-import": "^2.27.5",
+    "jest": "^29.5.0",
+    "rimraf": "5.0.1",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.1"
+  },
+  "dependencies": {
+    "@xrpa/xrpa-file-utils": "^1.14.0",
+    "@xrpa/xrpa-utils": "^1.14.0",
+    "fs-extra": "^11.1.0",
+    "simply-immutable": "^2.1.1"
+  }
+}

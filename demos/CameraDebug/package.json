@@ -1,0 +1,29 @@
+{
+  "name": "xred-camera-debug",
+  "version": "1.14.0",
+  "description": "Camera module test",
+  "main": "scripts/index.ts",
+  "private": true,
+  "config": {
+    "repo_path": "arvr/libraries/xred/xrpa/demos/CameraDebug"
+  },
+  "scripts": {
+    "preinstall": "(node -e \"process.exit(process.platform === 'win32' ? 0 : 1)\") && ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules symlink) || echo no eden found) || ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules bind) || echo no eden found)",
+    "lint": "eslint --ext .ts,.tsx ./src",
+    "CameraDebug": "ts-node ./scripts/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "18.11.18",
+    "@typescript-eslint/eslint-plugin": "^5.57.0",
+    "@typescript-eslint/parser": "^5.57.0",
+    "eslint": "8.32.0",
+    "eslint-plugin-import": "^2.27.5",
+    "ts-node": "^10.9.1"
+  },
+  "dependencies": {
+    "@xrpa/xred-debug": "^1.14.0",
+    "@xrpa/xred-sensor-input": "^1.14.0",
+    "@xrpa/xred-visual-emotion-detection": "^1.14.0",
+    "@xrpa/xrpa-orchestrator": "^1.14.0"
+  }
+}

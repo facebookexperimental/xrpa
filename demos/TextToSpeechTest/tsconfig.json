@@ -1,0 +1,10 @@
+{
+  "extends": "../../core/xrpa-orchestrator/tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./lib",
+    "rootDir": "./scripts"
+  },
+  "include": [
+    "scripts/**/*"
+  ]
+}

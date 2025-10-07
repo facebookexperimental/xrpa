@@ -1,0 +1,10 @@
+name: xred-image-viewer
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - pyglet
+      - pillow

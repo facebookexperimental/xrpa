@@ -1,0 +1,53 @@
+{
+  "name": "@xrpa/xred-tracking",
+  "version": "1.14.0",
+  "description": "Tracking interface",
+  "main": "lib/index.js",
+  "files": [
+    "bin/**/*",
+    "lib/**/*"
+  ],
+  "license": "Apache-2.0",
+  "config": {
+    "repo_path": "arvr/libraries/xred/xrpa/modules/xred-tracking"
+  },
+  "scripts": {
+    "preinstall": "(node -e \"process.exit(process.platform === 'win32' ? 0 : 1)\") && ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules symlink) || echo no eden found) || ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules bind) || echo no eden found)",
+    "build": "tsc",
+    "lint": "eslint --ext .ts,.tsx ./src",
+    "oss-publish": "tsc && ts-node ./scripts/publish.ts",
+    "Fiducials": "ts-node ./scripts/FiducialsStandalone.ts",
+    "OptiTrack": "ts-node ./scripts/OptiTrackStandalone.ts",
+    "PulsarSTO": "ts-node ./scripts/PulsarSTOStandalone.ts",
+    "Quest": "ts-node ./scripts/QuestStandalone.ts",
+    "Fiducials:codegen": "ts-node ./scripts/FiducialsStandalone.ts --codegen-only",
+    "Fiducials:build-only": "ts-node ./scripts/FiducialsStandalone.ts --build-only",
+    "Fiducials:run-only": "ts-node ./scripts/FiducialsStandalone.ts --run-only",
+    "Fiducials:codegen-and-build": "ts-node ./scripts/FiducialsStandalone.ts --codegen-and-build",
+    "OptiTrack:codegen": "ts-node ./scripts/OptiTrackStandalone.ts --codegen-only",
+    "OptiTrack:build-only": "ts-node ./scripts/OptiTrackStandalone.ts --build-only",
+    "OptiTrack:run-only": "ts-node ./scripts/OptiTrackStandalone.ts --run-only",
+    "OptiTrack:codegen-and-build": "ts-node ./scripts/OptiTrackStandalone.ts --codegen-and-build",
+    "PulsarSTO:codegen": "ts-node ./scripts/PulsarSTOStandalone.ts --codegen-only",
+    "PulsarSTO:build-only": "ts-node ./scripts/PulsarSTOStandalone.ts --build-only",
+    "PulsarSTO:run-only": "ts-node ./scripts/PulsarSTOStandalone.ts --run-only",
+    "PulsarSTO:codegen-and-build": "ts-node ./scripts/PulsarSTOStandalone.ts --codegen-and-build",
+    "Quest:codegen": "ts-node ./scripts/QuestStandalone.ts --codegen-only",
+    "Quest:build-only": "ts-node ./scripts/QuestStandalone.ts --build-only",
+    "Quest:run-only": "ts-node ./scripts/QuestStandalone.ts --run-only",
+    "Quest:codegen-and-build": "ts-node ./scripts/QuestStandalone.ts --codegen-and-build"
+  },
+  "devDependencies": {
+    "@types/node": "18.11.18",
+    "@typescript-eslint/eslint-plugin": "^5.57.0",
+    "@typescript-eslint/parser": "^5.57.0",
+    "@xrpa/xrpa-orchestrator": "^1.14.0",
+    "eslint": "8.32.0",
+    "eslint-plugin-import": "^2.27.5",
+    "ts-node": "^10.9.1",
+    "xrpa-internal-scripts": "^1.14.0"
+  },
+  "peerDependencies": {
+    "@xrpa/xrpa-orchestrator": "^1.14.0"
+  }
+}

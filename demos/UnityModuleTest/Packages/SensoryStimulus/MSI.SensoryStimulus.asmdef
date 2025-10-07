@@ -1,0 +1,13 @@
+{
+  "name": "MSI.SensoryStimulus",
+  "references": ["Xrpa"],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "precompiledReferences": [],
+  "defineConstraints": [],
+  "versionDefines": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "autoReferenced": true,
+  "noEngineReferences": false
+}

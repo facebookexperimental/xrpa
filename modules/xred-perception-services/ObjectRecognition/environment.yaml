@@ -1,0 +1,15 @@
+name: xred-object-recognition
+channels:
+  - conda-forge
+  - defaults
+  - pytorch
+dependencies:
+  - python=3.12
+  - pytorch
+  - torchvision
+  - torchaudio
+  - pip
+  - pip:
+      - transformers
+      - pillow
+      - opencv-python

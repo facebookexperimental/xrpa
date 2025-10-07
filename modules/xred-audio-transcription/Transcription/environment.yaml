@@ -1,0 +1,14 @@
+name: audio-transcription
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+    - numpy
+    - torch
+    - torchaudio
+    - transformers
+    - silero_vad
+    - soundfile
