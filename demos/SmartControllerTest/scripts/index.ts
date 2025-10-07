@@ -85,12 +85,9 @@ const SmartControllerTestModule = XrpaNativeCppProgram("SmartControllerTest", ap
   addSetting("ipAddress", String("", "IP address of the smart controller"));
 });
 
-async function main() {
-  const standalone = new CppStandalone(SmartControllerTestModule, path.join(apidir, "standalone"), path.join(apidir, "manifest.gen.json"));
-  await standalone.buckRunDebug();
-}
+const SmartControllerTestStandalone = new CppStandalone(SmartControllerTestModule, path.join(apidir, "standalone"), path.join(apidir, "manifest.gen.json"));
 
-main().catch((e) => {
+SmartControllerTestStandalone.smartExecute().catch((e) => {
   console.error(e);
   process.exit(1);
 }).then(() => {

@@ -70,12 +70,9 @@ const CameraDebugModule = XrpaNativeCppProgram("CameraDebug", apidir, () => {
   bindExternalProgram(CameraDebugProgram);
 });
 
-async function main() {
-  const standalone = new CppStandalone(CameraDebugModule, path.join(apidir, "standalone"), path.join(apidir, "manifest.gen.json"));
-  await standalone.buckRunDebug();
-}
+const CameraDebugStandalone = new CppStandalone(CameraDebugModule, path.join(apidir, "standalone"), path.join(apidir, "manifest.gen.json"));
 
-main().catch((e) => {
+CameraDebugStandalone.smartExecute().catch((e) => {
   console.error(e);
   process.exit(1);
 }).then(() => {

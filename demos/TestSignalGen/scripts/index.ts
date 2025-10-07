@@ -216,3 +216,10 @@ export const TestSignalGenModule = XrpaNativeCppProgram("TestSignalGen", apidir,
 });
 
 export const TestSignalGenStandalone = new CppStandalone(TestSignalGenModule, path.join(apidir, "standalone"), path.join(apidir, "manifest.gen.json"));
+
+TestSignalGenStandalone.smartExecute().catch((e) => {
+  console.error(e);
+  process.exit(1);
+}).then(() => {
+  process.exit(0);
+});

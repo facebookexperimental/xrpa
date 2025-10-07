@@ -60,9 +60,9 @@ export class CsharpModuleDefinition extends ModuleDefinition {
   }
 
   public doCodeGen(): FileWriter {
-     const fileWriter = new FileWriter();
+    const fileWriter = this.createFileWriter();
 
-     for (const storeDef of this.getDataStores()) {
+    for (const storeDef of this.getDataStores()) {
       // generate DS types
       genTypesDefinitions(fileWriter, this.outputDir, storeDef);
 

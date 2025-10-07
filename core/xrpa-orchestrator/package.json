@@ -17,9 +17,10 @@
     "copyPython": "rimraf lib/runtime/python && copyfiles -u 3 \"../runtime/python/xrpa_runtime/**/*\" lib/runtime/python/",
     "copyUE": "rimraf lib/runtime/ue && copyfiles -u 3 \"../runtime/ue/xrpa-runtime/**/*\" lib/runtime/ue/",
     "clean": "rimraf lib",
-    "build": "yarn clean && tsc && yarn copyCpp && yarn copyCs && yarn copyPython && yarn copyUE",
+    "tsc": "yarn clean && tsc && yarn copyCpp && yarn copyCs && yarn copyPython && yarn copyUE",
+    "codegen": "ts-node src/test/index.ts",
+    "build": "echo 'no-op'",
     "lint": "eslint --ext .ts,.tsx ./src",
-    "codegentest": "ts-node src/test/index.ts",
     "test": "jest src/"
   },
   "devDependencies": {

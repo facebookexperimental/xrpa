@@ -59,6 +59,7 @@ export abstract class ModuleDefinition implements CodeGen {
   private dataflowPrograms: Record<string, DataflowProgramDefinition> = {};
 
   readonly ObjectUuid: StructType;
+  private codeGenDeps: CodeGen[] = [];
 
   constructor(
     readonly codegen: TargetCodeGenImpl,
@@ -296,4 +297,16 @@ export abstract class ModuleDefinition implements CodeGen {
   }
 
   public abstract doCodeGen(): FileWriter;
+
+  public addCodeGenDependency(codeGen: CodeGen): void {
+    this.codeGenDeps.push(codeGen);
+  }
+
+  protected createFileWriter(): FileWriter {
+    const fileWriter = new FileWriter();
+    for (const codeGen of this.codeGenDeps) {
+      fileWriter.merge(codeGen.doCodeGen());
+    }
+    return fileWriter;
+  }
 }

@@ -23,7 +23,8 @@ import { CppModuleDefinition } from "./CppModuleDefinition";
 import { genStandaloneBuck, genStandaloneCpp } from "./GenStandaloneCpp";
 
 export class CppStandalone implements CodeGen {
-  private readonly resourceFilenames: string[] = [];
+  private resourceFilenames: string[] = [];
+  private codeGenDeps: CodeGen[] = [];
 
   constructor(
     readonly moduleDef: CppModuleDefinition,
@@ -33,6 +34,9 @@ export class CppStandalone implements CodeGen {
 
   public doCodeGen(): FileWriter {
     const fileWriter = this.moduleDef.doCodeGen();
+    for (const codeGen of this.codeGenDeps) {
+      fileWriter.merge(codeGen.doCodeGen());
+    }
 
     // generate standalone wrapper files
     genStandaloneCpp(fileWriter, this.standaloneDir, this.moduleDef);
@@ -43,6 +47,10 @@ export class CppStandalone implements CodeGen {
     }
 
     return fileWriter;
+  }
+
+  public addCodeGenDependency(codeGen: CodeGen): void {
+    this.codeGenDeps.push(codeGen);
   }
 
   public addResourceFile(filename: string): void {
@@ -73,6 +81,44 @@ export class CppStandalone implements CodeGen {
     }
 
     return buckMode;
+  }
+
+  public isSupportedPlatform(): boolean {
+    const buckDef = this.moduleDef.buckDef;
+    if (!buckDef) {
+      return false;
+    }
+    if (process.platform == "win32") {
+      return Boolean(buckDef.modes.windows);
+    } else if (process.platform == "darwin") {
+      return Boolean(buckDef.modes.macos);
+    }
+    return false;
+  }
+
+  public async smartExecute(): Promise<void> {
+    const args = process.argv.slice(2);
+    if (args.includes('--codegen')) {
+      await this.doCodeGen().finalize(this.manifestFilename);
+    }
+
+    if (!this.isSupportedPlatform()) {
+      return;
+    }
+
+    if (args.includes('--run')) {
+      await buckRun({
+        mode: this.getBuckMode("debug"),
+        target: await this.getStandaloneTarget(),
+        resourceFilenames: this.resourceFilenames,
+      });
+    } else if (args.includes('--build')) {
+      await buckBuild({
+        mode: this.getBuckMode("debug"),
+        target: await this.getStandaloneTarget(),
+        resourceFilenames: this.resourceFilenames,
+      });
+    }
   }
 
   public async buckRunDebug(): Promise<void> {

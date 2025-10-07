@@ -120,10 +120,14 @@ export async function buckBuild(params: {
   mode: string;
   target: string;
   resourceFilenames?: string[];
-  dstPath: string;
+  dstPath?: string;
 }) {
   try {
     const outputPath = await buckBuildAndPrep(params);
+
+    if (!params.dstPath) {
+      return;
+    }
 
     // copy executables and dlls to dstPath
     const filenames: string[] = [];

@@ -19,7 +19,6 @@ import path from "path";
 import {
   bindExternalProgram,
   OvrCoordinateSystem,
-  runInCondaEnvironment,
   useCoordinateSystem,
   XrpaPythonApplication,
 } from "@xrpa/xrpa-orchestrator";
@@ -28,22 +27,16 @@ import { XredSignalOutputInterface } from "@xrpa/xred-signal-output";
 
 const outdir = path.join(__dirname, "..");
 
-const PythonSignalGen = XrpaPythonApplication("PythonSignalGen", outdir, () => {
+const PythonSignalGen = XrpaPythonApplication("PythonSignalGen", {
+  codegenDir: outdir,
+  condaEnvFile: path.join(outdir, "environment.yaml"),
+  pythonEntryPoint: path.join(outdir, "main.py"),
+}, () => {
   useCoordinateSystem(OvrCoordinateSystem);
   bindExternalProgram(XredSignalOutputInterface);
 });
 
-async function main() {
-  const filesToWrite = PythonSignalGen.doCodeGen();
-  await filesToWrite.finalize(path.join(outdir, "manifest.gen.json"));
-
-  await runInCondaEnvironment(
-    path.join(outdir, "environment.yaml"),
-    path.join(outdir, "main.py"),
-  );
-}
-
-main().catch((e) => {
+PythonSignalGen.smartExecute().catch((e) => {
   console.error(e);
   process.exit(1);
 }).then(() => {

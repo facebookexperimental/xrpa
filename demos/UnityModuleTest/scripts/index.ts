@@ -38,7 +38,7 @@ import {
   XrpaPythonApplication,
 } from "@xrpa/xrpa-orchestrator";
 
-const outdir = path.join(__dirname, "..", "..");
+const outdir = path.join(__dirname, "..");
 
 const SensoryStimulusInterface = XrpaProgramInterface("MSI.SensoryStimulus", path.join(__dirname, "../package.json"), () => {
   useCoordinateSystem(UnityCoordinateSystem);
@@ -83,18 +83,18 @@ const UnityStimulusPackage = XrpaNativeUnityProgram("SensoryStimulus", outdir, (
   setProgramInterface(SensoryStimulusInterface);
 });
 
-const UnityModuleTest = XrpaPythonApplication("UnityModuleTest", outdir, () => {
+const UnityModuleTest = XrpaPythonApplication("UnityModuleTest", {
+  codegenDir: outdir,
+  condaEnvFile: path.join(outdir, "environment.yaml"),
+  pythonEntryPoint: path.join(outdir, "main.py"),
+}, () => {
   useCoordinateSystem(OvrCoordinateSystem);
   bindExternalProgram(SensoryStimulusInterface);
 });
 
-async function main() {
-  const filesToWrite = UnityStimulusPackage.doCodeGen();
-  filesToWrite.merge(UnityModuleTest.doCodeGen());
-  await filesToWrite.finalize(path.join(__dirname, "..", "manifest.gen.json"));
-}
+UnityModuleTest.addCodeGenDependency(UnityStimulusPackage);
 
-main().catch((e) => {
+UnityModuleTest.smartExecute().catch((e) => {
   console.error(e);
   process.exit(1);
 }).then(() => {

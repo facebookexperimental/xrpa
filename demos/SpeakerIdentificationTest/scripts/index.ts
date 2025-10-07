@@ -107,7 +107,7 @@ const SpeakerIdentificationTestStandalone = new CppStandalone(
 );
 
 if (require.main === module) {
-  SpeakerIdentificationTestStandalone.buckRunDebug().catch((e) => {
+  SpeakerIdentificationTestStandalone.smartExecute().catch((e) => {
     console.error(e);
     process.exit(1);
   }).then(() => {

@@ -85,7 +85,7 @@ export class CppModuleDefinition extends ModuleDefinition {
   }
 
   public doCodeGen(): FileWriter {
-    const fileWriter = new FileWriter();
+    const fileWriter = this.createFileWriter();
 
     fileWriter.copyFolderContents(
       getRuntimeSrcPath("cpp"),

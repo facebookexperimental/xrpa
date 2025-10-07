@@ -77,12 +77,9 @@ const AudioInputTestModule = XrpaNativeCppProgram("AudioInputTest", apidir, () =
   bindExternalProgram(AudioInputTestProgram);
 });
 
-async function main() {
-  const standalone = new CppStandalone(AudioInputTestModule, path.join(apidir, "standalone"), path.join(apidir, "manifest.gen.json"));
-  await standalone.buckRunDebug();
-}
+const AudioInputTestStandalone = new CppStandalone(AudioInputTestModule, path.join(apidir, "standalone"), path.join(apidir, "manifest.gen.json"));
 
-main().catch((e) => {
+AudioInputTestStandalone.smartExecute().catch((e) => {
   console.error(e);
   process.exit(1);
 }).then(() => {

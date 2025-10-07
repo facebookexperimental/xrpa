@@ -60,7 +60,7 @@ export class UnityPackageModuleDefinition extends CsharpModuleDefinition {
   }
 
   public doCodeGen(): FileWriter {
-    const fileWriter = new FileWriter();
+    const fileWriter = this.createFileWriter();
 
     const packagesDir = path.join(this.projectRoot, "Packages");
 

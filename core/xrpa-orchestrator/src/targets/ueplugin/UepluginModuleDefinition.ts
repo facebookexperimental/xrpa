@@ -90,7 +90,7 @@ export class UepluginModuleDefinition extends CppModuleDefinition {
   }
 
   public doCodeGen(): FileWriter {
-    const fileWriter = new FileWriter();
+    const fileWriter = this.createFileWriter();
 
     const pluginsDir = path.join(this.projectRoot, "Plugins");
 

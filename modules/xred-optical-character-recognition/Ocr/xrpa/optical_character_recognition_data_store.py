@@ -182,11 +182,11 @@ class ReconciledOpticalCharacterRecognition(xrpa_runtime.reconciler.data_store_i
     message.set_success(success)
     message.set_error_message(error_message)
 
-  def process_ds_message(self, message_type: int, timestamp: int, message_data: xrpa_runtime.utils.memory_accessor.MemoryAccessor) -> None:
+  def process_ds_message(self, message_type: int, msg_timestamp: int, message_data: xrpa_runtime.utils.memory_accessor.MemoryAccessor) -> None:
     if message_type == 0:
       if self._image_input_message_handler is not None:
         message = ImageInputReader(message_data)
-        self._image_input_message_handler(timestamp, message)
+        self._image_input_message_handler(msg_timestamp, message)
 
   def write_ds_changes(self, accessor: xrpa_runtime.transport.transport_stream_accessor.TransportStreamAccessor) -> None:
     pass

@@ -8,19 +8,14 @@
     "bin/**/*",
     "lib/**/*"
   ],
-  "config": {
-    "repo_path": "arvr/libraries/xred/xrpa/modules/xred-signal-output"
-  },
   "scripts": {
-    "preinstall": "(node -e \"process.exit(process.platform === 'win32' ? 0 : 1)\") && ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules symlink) || echo no eden found) || ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules bind) || echo no eden found)",
-    "build": "tsc",
+    "tsc": "tsc",
+    "codegen": "ts-node ./scripts/XredOutputStandalone.ts --codegen",
+    "build": "ts-node ./scripts/XredOutputStandalone.ts --codegen --build",
     "lint": "eslint --ext .ts,.tsx ./src",
     "oss-publish": "tsc && ts-node ./scripts/publish.ts",
-    "XredOutput": "ts-node ./scripts/XredOutputStandalone.ts",
-    "codegen": "ts-node ./scripts/XredOutputStandalone.ts --codegen-only",
-    "build-only": "ts-node ./scripts/XredOutputStandalone.ts --build-only",
-    "run-only": "ts-node ./scripts/XredOutputStandalone.ts --run-only",
-    "codegen-and-build": "ts-node ./scripts/XredOutputStandalone.ts --codegen-and-build"
+    "XredOutput": "ts-node ./scripts/XredOutputStandalone.ts --codegen --run",
+    "XredOutput:run-only": "ts-node ./scripts/XredOutputStandalone.ts --run"
   },
   "devDependencies": {
     "@types/node": "18.11.18",

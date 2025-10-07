@@ -190,12 +190,36 @@ export function XrpaNativePythonProgram(name: string, outputDir: string, callbac
   return ret;
 }
 
-export function XrpaPythonApplication(name: string, outputDir: string, callback: (ctx: NativeProgramContext) => void) {
-  return new PythonApplication(XrpaNativePythonProgram(name, outputDir, callback));
+export function XrpaPythonApplication(
+  name: string,
+  params: {
+    codegenDir: string;
+    condaEnvFile: string;
+    pythonEntryPoint: string;
+  },
+  callback: (ctx: NativeProgramContext) => void,
+) {
+  return new PythonApplication(
+    XrpaNativePythonProgram(name, params.codegenDir, callback),
+    params.condaEnvFile,
+    params.pythonEntryPoint,
+  );
 }
 
-export function XrpaPythonStandalone(name: string, outputDir: string, callback: (ctx: NativeProgramContext) => void) {
-  return new PythonStandalone(XrpaNativePythonProgram(name, outputDir, callback));
+export function XrpaPythonStandalone(
+  name: string,
+  params: {
+    codegenDir: string;
+    condaEnvFile: string;
+    pythonEntryPoint: string;
+  },
+  callback: (ctx: NativeProgramContext) => void,
+) {
+  return new PythonStandalone(
+    XrpaNativePythonProgram(name, params.codegenDir, callback),
+    params.condaEnvFile,
+    params.pythonEntryPoint,
+  );
 }
 
 async function runInCondaEnvironmentInternal(yamlPath: string, cwd: string, args: string[]) {

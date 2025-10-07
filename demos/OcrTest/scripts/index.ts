@@ -88,12 +88,9 @@ const OcrTestModule = XrpaNativeCppProgram("OcrTest", apidir, () => {
   bindExternalProgram(OcrTestProgram);
 });
 
-async function main() {
-  const standalone = new CppStandalone(OcrTestModule, path.join(apidir, "standalone"), path.join(apidir, "manifest.gen.json"));
-  await standalone.buckRunDebug();
-}
+const OcrTestStandalone = new CppStandalone(OcrTestModule, path.join(apidir, "standalone"), path.join(apidir, "manifest.gen.json"));
 
-main().catch((e) => {
+OcrTestStandalone.smartExecute().catch((e) => {
   console.error(e);
   process.exit(1);
 }).then(() => {

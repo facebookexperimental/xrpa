@@ -53,79 +53,11 @@ export const CameraModule = XrpaNativeCppProgram("Camera", apidir, () => {
 
 export const CameraStandalone = new CppStandalone(CameraModule, path.join(apidir, "standalone"), path.join(apidir, "manifest.gen.json"));
 
-// Separate functions for each phase
-export async function doCodegen() {
-  await CameraStandalone.doCodeGen().finalize(CameraStandalone.manifestFilename);
-}
-
-export async function doBuild() {
-  const { runProcess } = await import("@xrpa/xrpa-file-utils");
-  const mode = CameraStandalone.getBuckMode("debug");
-  const target = await CameraStandalone.getStandaloneTarget();
-
-  await runProcess({
-    filename: "buck2",
-    args: ["build", mode, target],
-    onLineReceived: line => console.log(line),
-  });
-}
-
-export async function doRun() {
-  const { buckRun } = await import("@xrpa/xrpa-file-utils");
-
-  await buckRun({
-    mode: CameraStandalone.getBuckMode("debug"),
-    target: await CameraStandalone.getStandaloneTarget(),
-    resourceFilenames: (CameraStandalone as any).resourceFilenames || [],
-  });
-}
-
-export async function doCodegenAndBuild() {
-  await doCodegen();
-  await doBuild();
-}
-
-export async function runStandalone() {
-  await CameraStandalone.buckRunDebug();
-}
-
 if (require.main === module) {
-  const args = process.argv.slice(2);
-
-  if (args.includes('--codegen-only')) {
-    doCodegen().catch((e) => {
-      console.error(e);
-      process.exit(1);
-    }).then(() => {
-      process.exit(0);
-    });
-  } else if (args.includes('--build-only')) {
-    doBuild().catch((e) => {
-      console.error(e);
-      process.exit(1);
-    }).then(() => {
-      process.exit(0);
-    });
-  } else if (args.includes('--run-only')) {
-    doRun().catch((e) => {
-      console.error(e);
-      process.exit(1);
-    }).then(() => {
-      process.exit(0);
-    });
-  } else if (args.includes('--codegen-and-build')) {
-    doCodegenAndBuild().catch((e) => {
-      console.error(e);
-      process.exit(1);
-    }).then(() => {
-      process.exit(0);
-    });
-  } else {
-    runStandalone().catch((e) => {
-      console.error(e);
-      process.exit(1);
-    }).then(() => {
-      process.exit(0);
-    });
-  }
+  CameraStandalone.smartExecute().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  }).then(() => {
+    process.exit(0);
+  });
 }

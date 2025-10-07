@@ -1,7 +1,7 @@
 {
-  "name": "xred-audio-input-test",
+  "name": "xred-unity-module-test",
   "version": "1.14.0",
-  "description": "AudioInput module test",
+  "description": "Unity Module Test",
   "main": "scripts/index.ts",
   "private": true,
   "scripts": {
@@ -20,9 +20,6 @@
     "ts-node": "^10.9.1"
   },
   "dependencies": {
-    "@xrpa/xred-audio-input": "^1.14.0",
-    "@xrpa/xred-device-input": "^1.14.0",
-    "@xrpa/xrpa-orchestrator": "^1.14.0",
-    "@xrpa/xred-signal-processing": "^1.14.0"
+    "@xrpa/xrpa-orchestrator": "^1.14.0"
   }
 }

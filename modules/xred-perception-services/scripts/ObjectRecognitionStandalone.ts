@@ -17,7 +17,6 @@
 import path from "path";
 import {
   XrpaPythonStandalone,
-  runInCondaEnvironment,
   setProgramInterface,
 } from "@xrpa/xrpa-orchestrator";
 
@@ -25,50 +24,19 @@ import { XredObjectRecognitionInterface } from "../js/ObjectRecognitionInterface
 
 const apidir = path.join(__dirname, "..", "ObjectRecognition");
 
-const ObjectRecognitionModule = XrpaPythonStandalone("ObjectRecognition", apidir, () => {
+const ObjectRecognitionModule = XrpaPythonStandalone("ObjectRecognition", {
+  codegenDir: apidir,
+  condaEnvFile: path.join(apidir, "environment.yaml"),
+  pythonEntryPoint: path.join(apidir, "main.py"),
+}, () => {
   setProgramInterface(XredObjectRecognitionInterface);
 });
 
-export async function doCodegen() {
-  const filesToWrite = ObjectRecognitionModule.doCodeGen();
-  await filesToWrite.finalize(path.join(apidir, "manifest.gen.json"));
-}
-
-export async function doRun() {
-  await runInCondaEnvironment(
-    path.join(apidir, "environment.yaml"),
-    path.join(apidir, "main.py"),
-  );
-}
-
-export async function runStandalone() {
-  await doCodegen();
-  await doRun();
-}
-
 if (require.main === module) {
-  const args = process.argv.slice(2);
-
-  if (args.includes('--codegen-only')) {
-    doCodegen().catch((e) => {
-      console.error(e);
-      process.exit(1);
-    }).then(() => {
-      process.exit(0);
-    });
-  } else if (args.includes('--run-only')) {
-    doRun().catch((e) => {
-      console.error(e);
-      process.exit(1);
-    }).then(() => {
-      process.exit(0);
-    });
-  } else {
-    runStandalone().catch((e) => {
-      console.error(e);
-      process.exit(1);
-    }).then(() => {
-      process.exit(0);
-    });
-  }
+  ObjectRecognitionModule.smartExecute().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  }).then(() => {
+    process.exit(0);
+  });
 }

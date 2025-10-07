@@ -89,5 +89,4 @@ typings/
 out/
 
 jslib/
-
-secrets.txt
+lib/

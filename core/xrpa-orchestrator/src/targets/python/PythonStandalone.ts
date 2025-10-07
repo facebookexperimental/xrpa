@@ -16,19 +16,48 @@
 
 
 import { FileWriter } from "@xrpa/xrpa-file-utils";
+import path from "path";
 
+import { runInCondaEnvironment } from "../../ConvenienceWrappers";
 import { CodeGen } from "../../shared/CodeGen";
 import { PythonModuleDefinition } from "./PythonModuleDefinition";
 import { genApplicationInterfaceClass } from "./GenProgramInterfacesClass";
 
 export class PythonStandalone implements CodeGen {
-  constructor(readonly moduleDef: PythonModuleDefinition) { }
+  private codeGenDeps: CodeGen[] = [];
+
+  constructor(
+    readonly moduleDef: PythonModuleDefinition,
+    readonly condaEnvironmentPath: string,
+    readonly entryPointPath: string,
+    readonly backgroundTick = false,
+  ) {}
 
   public doCodeGen(): FileWriter {
     const fileWriter = this.moduleDef.doCodeGen();
+    for (const codeGen of this.codeGenDeps) {
+      fileWriter.merge(codeGen.doCodeGen());
+    }
 
-    genApplicationInterfaceClass(fileWriter, this.moduleDef.libDir, this.moduleDef, false);
+    genApplicationInterfaceClass(fileWriter, this.moduleDef.libDir, this.moduleDef, this.backgroundTick);
 
     return fileWriter;
+  }
+
+  public addCodeGenDependency(codeGen: CodeGen): void {
+    this.codeGenDeps.push(codeGen);
+  }
+
+  public async smartExecute(): Promise<void> {
+    const args = process.argv.slice(2);
+    if (args.includes('--codegen')) {
+      await this.doCodeGen().finalize(path.join(this.moduleDef.genOutputDir, "manifest.gen.json"));
+    }
+    if (args.includes('--run')) {
+      await runInCondaEnvironment(
+        this.condaEnvironmentPath,
+        this.entryPointPath,
+      );
+    }
   }
 }

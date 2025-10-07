@@ -8,17 +8,14 @@
     "lib/**/*"
   ],
   "license": "Apache-2.0",
-  "config": {
-    "repo_path": "arvr/libraries/xred/xrpa/modules/xred-visual-emotion-detection"
-  },
   "scripts": {
-    "preinstall": "(node -e \"process.exit(process.platform === 'win32' ? 0 : 1)\") && ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules symlink) || echo no eden found) || ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules bind) || echo no eden found)",
-    "build": "tsc",
+    "tsc": "tsc",
+    "codegen": "ts-node ./scripts/BlueskeyeStandalone.ts --codegen",
+    "build": "ts-node ./scripts/BlueskeyeStandalone.ts --codegen --build",
     "lint": "eslint --ext .ts,.tsx ./src",
     "oss-publish": "tsc && ts-node ./scripts/publish.ts",
-    "Blueskeye": "ts-node ./scripts/BlueskeyeStandalone.ts",
-    "codegen": "ts-node ./scripts/BlueskeyeStandalone.ts --codegen-only",
-    "run-only": "ts-node ./scripts/BlueskeyeStandalone.ts --run-only"
+    "Blueskeye": "ts-node ./scripts/BlueskeyeStandalone.ts --codegen --run",
+    "Blueskeye:run-only": "ts-node ./scripts/BlueskeyeStandalone.ts --run"
   },
   "devDependencies": {
     "@types/node": "18.11.18",

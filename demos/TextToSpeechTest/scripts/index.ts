@@ -76,12 +76,9 @@ const TextToSpeechTestModule = XrpaNativeCppProgram("TextToSpeechTest", apidir, 
   bindExternalProgram(TextToSpeechTestProgram);
 });
 
-async function main() {
-  const standalone = new CppStandalone(TextToSpeechTestModule, path.join(apidir, "standalone"), path.join(apidir, "manifest.gen.json"));
-  await standalone.buckRunDebug();
-}
+const TextToSpeechTestStandalone = new CppStandalone(TextToSpeechTestModule, path.join(apidir, "standalone"), path.join(apidir, "manifest.gen.json"));
 
-main().catch((e) => {
+TextToSpeechTestStandalone.smartExecute().catch((e) => {
   console.error(e);
   process.exit(1);
 }).then(() => {

@@ -87,7 +87,7 @@ class TestSignal3 {
     objSignalProcessingSignalDelay6_->setDelayTimeMs(250.f);
     objSignalProcessingSignalDelay6_->setNumChannels(2);
     objSignalProcessingSignalDelay6_->setNumOutputs(1);
-    objSignalProcessingSignalSourceFile0_->setFilePath("/Users/archanapradeep/fbsource/arvr/libraries/xred/xrpa/demos/TestSignalGen/assets/test.wav");
+    objSignalProcessingSignalSourceFile0_->setFilePath("/Users/conorwdickinson/fbsource/arvr/libraries/xred/xrpa/demos/TestSignalGen/assets/test.wav");
     objSignalProcessingSignalSourceFile0_->setAutoPlay(true);
     objSignalProcessingSignalSourceFile0_->setNumOutputs(1);
     objSignalProcessingSignalFeedback1_->setNumOutputs(1);

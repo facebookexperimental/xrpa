@@ -19,4 +19,5 @@ import { FileWriter } from "@xrpa/xrpa-file-utils";
 
 export interface CodeGen {
   doCodeGen(): FileWriter;
+  addCodeGenDependency(codeGen: CodeGen): void;
 }

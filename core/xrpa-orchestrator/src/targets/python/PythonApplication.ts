@@ -15,20 +15,15 @@
  */
 
 
-import { FileWriter } from "@xrpa/xrpa-file-utils";
-
-import { CodeGen } from "../../shared/CodeGen";
 import { PythonModuleDefinition } from "./PythonModuleDefinition";
-import { genApplicationInterfaceClass } from "./GenProgramInterfacesClass";
+import { PythonStandalone } from "./PythonStandalone";
 
-export class PythonApplication implements CodeGen {
-  constructor(readonly moduleDef: PythonModuleDefinition) { }
-
-  public doCodeGen(): FileWriter {
-    const fileWriter = this.moduleDef.doCodeGen();
-
-    genApplicationInterfaceClass(fileWriter, this.moduleDef.libDir, this.moduleDef, true);
-
-    return fileWriter;
+export class PythonApplication extends PythonStandalone {
+  constructor(
+    readonly moduleDef: PythonModuleDefinition,
+    readonly condaEnvironmentPath: string,
+    readonly entryPointPath: string,
+  ) {
+    super(moduleDef, condaEnvironmentPath, entryPointPath, true);
   }
 }

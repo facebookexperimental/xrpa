@@ -89,7 +89,7 @@ const LlmDebugModule = XrpaNativeCppProgram("LlmDebug", apidir, () => {
 const LlmDebugStandalone = new CppStandalone(LlmDebugModule, path.join(apidir, "standalone"), path.join(apidir, "manifest.gen.json"));
 
 if (require.main === module) {
-  LlmDebugStandalone.buckRunDebug().catch((e) => {
+  LlmDebugStandalone.smartExecute().catch((e) => {
     console.error(e);
     process.exit(1);
   }).then(() => {

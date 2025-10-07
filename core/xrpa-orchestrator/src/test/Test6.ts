@@ -54,7 +54,11 @@ const SensoryStimulusInterface = XrpaProgramInterface("MSI.SensoryStimulus", "",
   }));
 });
 
-const Test6App = XrpaPythonApplication("Test6", apidir, () => {
+const Test6App = XrpaPythonApplication("Test6", {
+  codegenDir: apidir,
+  condaEnvFile: "",
+  pythonEntryPoint: "",
+}, () => {
   useCoordinateSystem(OvrCoordinateSystem);
   bindExternalProgram(XredInteractionInterface);
   bindExternalProgram(SensoryStimulusInterface);

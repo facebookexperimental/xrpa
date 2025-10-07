@@ -8,17 +8,14 @@
     "lib/**/*"
   ],
   "license": "Apache-2.0",
-  "config": {
-    "repo_path": "arvr/libraries/xred/xrpa/modules/xred-text-to-speech"
-  },
   "scripts": {
-    "preinstall": "(node -e \"process.exit(process.platform === 'win32' ? 0 : 1)\") && ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules symlink) || echo no eden found) || ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules bind) || echo no eden found)",
-    "build": "tsc",
+    "tsc": "tsc",
+    "codegen": "ts-node ./scripts/TextToSpeechStandalone.ts --codegen",
+    "build": "ts-node ./scripts/TextToSpeechStandalone.ts --codegen --build",
     "lint": "eslint --ext .ts,.tsx ./src",
     "oss-publish": "tsc && ts-node ./scripts/publish.ts",
-    "TextToSpeech": "ts-node ./scripts/TextToSpeechStandalone.ts",
-    "codegen": "ts-node ./scripts/TextToSpeechStandalone.ts --codegen-only",
-    "run-only": "ts-node ./scripts/TextToSpeechStandalone.ts --run-only"
+    "TextToSpeech": "ts-node ./scripts/TextToSpeechStandalone.ts --codegen --run",
+    "TextToSpeech:run-only": "ts-node ./scripts/TextToSpeechStandalone.ts --run"
   },
   "devDependencies": {
     "@types/node": "18.11.18",

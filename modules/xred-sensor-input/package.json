@@ -8,24 +8,20 @@
     "lib/**/*"
   ],
   "license": "Apache-2.0",
-  "config": {
-    "repo_path": "arvr/libraries/xred/xrpa/modules/xred-sensor-input"
-  },
   "scripts": {
-    "preinstall": "(node -e \"process.exit(process.platform === 'win32' ? 0 : 1)\") && ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules symlink) || echo no eden found) || ((edenfsctl info . && eden redirect add $npm_package_config_repo_path/node_modules bind) || echo no eden found)",
-    "build": "tsc",
+    "tsc": "tsc",
+    "codegen": "yarn Aria:codegen && yarn Camera:codegen",
+    "build": "yarn Aria:build && yarn Camera:build",
     "lint": "eslint --ext .ts,.tsx ./src",
     "oss-publish": "tsc && ts-node ./scripts/publish.ts",
-    "Aria": "ts-node ./scripts/AriaStandalone.ts",
-    "Camera": "ts-node ./scripts/CameraStandalone.ts",
-    "Aria:codegen": "ts-node ./scripts/AriaStandalone.ts --codegen-only",
-    "Aria:build-only": "ts-node ./scripts/AriaStandalone.ts --build-only",
-    "Aria:run-only": "ts-node ./scripts/AriaStandalone.ts --run-only",
-    "Aria:codegen-and-build": "ts-node ./scripts/AriaStandalone.ts --codegen-and-build",
-    "Camera:codegen": "ts-node ./scripts/CameraStandalone.ts --codegen-only",
-    "Camera:build-only": "ts-node ./scripts/CameraStandalone.ts --build-only",
-    "Camera:run-only": "ts-node ./scripts/CameraStandalone.ts --run-only",
-    "Camera:codegen-and-build": "ts-node ./scripts/CameraStandalone.ts --codegen-and-build"
+    "Aria": "ts-node ./scripts/AriaStandalone.ts --codegen --run",
+    "Camera": "ts-node ./scripts/CameraStandalone.ts --codegen --run",
+    "Aria:codegen": "ts-node ./scripts/AriaStandalone.ts --codegen",
+    "Aria:build": "ts-node ./scripts/AriaStandalone.ts --codegen --build",
+    "Aria:run-only": "ts-node ./scripts/AriaStandalone.ts --run",
+    "Camera:codegen": "ts-node ./scripts/CameraStandalone.ts --codegen",
+    "Camera:build": "ts-node ./scripts/CameraStandalone.ts --codegen --build",
+    "Camera:run-only": "ts-node ./scripts/CameraStandalone.ts --run"
   },
   "devDependencies": {
     "@types/node": "18.11.18",

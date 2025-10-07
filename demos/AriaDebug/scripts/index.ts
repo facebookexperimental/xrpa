@@ -144,12 +144,9 @@ const AriaDebugModule = XrpaNativeCppProgram("AriaDebug", apidir, () => {
   addSetting("ipAddress", String("", "IP address of the Aria glasses, or empty to use USB"));
 });
 
-async function main() {
-  const standalone = new CppStandalone(AriaDebugModule, path.join(apidir, "standalone"), path.join(apidir, "manifest.gen.json"));
-  await standalone.buckRunDebug();
-}
+const AriaDebugStandalone = new CppStandalone(AriaDebugModule, path.join(apidir, "standalone"), path.join(apidir, "manifest.gen.json"));
 
-main().catch((e) => {
+AriaDebugStandalone.smartExecute().catch((e) => {
   console.error(e);
   process.exit(1);
 }).then(() => {

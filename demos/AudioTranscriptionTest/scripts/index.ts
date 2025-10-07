@@ -80,7 +80,7 @@ const AudioTranscriptionTestStandalone = new CppStandalone(
 );
 
 if (require.main === module) {
-  AudioTranscriptionTestStandalone.buckRunDebug().catch((e) => {
+  AudioTranscriptionTestStandalone.smartExecute().catch((e) => {
     console.error(e);
     process.exit(1);
   }).then(() => {
