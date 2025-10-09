@@ -73,6 +73,20 @@ export class FixedArrayType extends StructType {
     return hashData;
   }
 
+  public getLocalType(inNamespace: string, includes: IncludeAggregator|null): string {
+    if (!this.localArrayType) {
+      return super.getLocalType(inNamespace, includes);
+    }
+
+    // need to recompute the typename so the inner type is qualified
+    const typename = this.codegen.applyTemplateParams(this.localArrayType.typename, this.innerType.getLocalType(inNamespace, includes));
+    includes?.addFile({
+      filename: this.localType.headerFile,
+      typename,
+    });
+    return this.codegen.nsQualify(typename, inNamespace);
+  }
+
   public resetLocalVarToDefault(
     inNamespace: string,
     includes: IncludeAggregator|null,
