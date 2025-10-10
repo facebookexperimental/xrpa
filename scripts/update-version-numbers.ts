@@ -17,7 +17,7 @@
 import * as fs from "fs-extra";
 import * as path from "path";
 
-import { YarnWorkspaceBuildOrderGenerator } from "./update-build-order";
+import { YarnWorkspaceBuildOrderGenerator } from "./yarn-workspaces";
 
 function main() {
   const workspacePath = process.cwd();

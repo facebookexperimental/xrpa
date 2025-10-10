@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { execSync } from 'child_process';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
@@ -108,7 +109,7 @@ export class YarnWorkspaceBuildOrderGenerator {
           Object.keys(packageInfo.packageJson[depType]).forEach(depName => {
             if (this.packages.has(depName)) {
               deps.add(depName);
-              console.log(`  ${packageName} depends on ${depName}`);
+              // console.log(`  ${packageName} depends on ${depName}`);
             }
           });
         }
@@ -160,107 +161,18 @@ export class YarnWorkspaceBuildOrderGenerator {
   /**
    * Generate yarn workspace build commands in dependency order
    */
-  generateBuildCommands() {
-    console.log('⚙️  Generating build commands...\n');
-
+  executeCommand(command: string[]) {
     this.discoverPackages();
     this.buildDependencyGraph();
 
     const buildOrder = this.getTopologicalOrder();
-
-    // Separate core and modules based on directory structure
-    const corePackages = buildOrder.filter(name => {
-      const pkg = this.packages.get(name);
-      return pkg && pkg.path.startsWith('core/');
-    });
-
-    const modulePackages = buildOrder.filter(name => {
-      const pkg = this.packages.get(name);
-      return pkg && pkg.path.startsWith('modules/');
-    });
-
-    console.log('📋 Build Order Analysis:');
-    console.log('\n🏗️  Core packages (in dependency order):');
-    corePackages.forEach((name, i) => {
-      const pkg = this.packages.get(name);
-      pkg && console.log(`  ${i + 1}. ${name} (${pkg.path})`);
-    });
-
-    console.log('\n🔧 Module packages (in dependency order):');
-    modulePackages.forEach((name, i) => {
-      const pkg = this.packages.get(name);
-      pkg && console.log(`  ${i + 1}. ${name} (${pkg.path})`);
-    });
-
-    // Generate yarn workspace commands
-    const commands = {
-      'build:core': corePackages.map(name => `yarn workspace ${name} run build`).join(' && '),
-      'build:modules': modulePackages.map(name => `yarn workspace ${name} run build`).join(' && ')
-    };
-
-    console.log('\n🚀 Generated Commands:');
-    console.log(`\nbuild:core:`);
-    console.log(`${commands['build:core']}`);
-    console.log(`\nbuild:modules:`);
-    console.log(`${commands['build:modules']}`);
-
-    return {
-      buildOrder,
-      corePackages,
-      modulePackages,
-      commands
-    };
-  }
-
-  /**
-   * Update package.json with generated commands
-   */
-  updatePackageJson() {
-    const result = this.generateBuildCommands();
-    const packageJsonPath = path.join(this.rootPath, 'package.json');
-    const packageJson = fs.readJsonSync(packageJsonPath);
-
-    // Store original commands for comparison
-    const originalCore = packageJson.scripts['build:core'];
-    const originalModules = packageJson.scripts['build:modules'];
-
-    // Update the build commands
-    packageJson.scripts['build:core'] = result.commands['build:core'];
-    packageJson.scripts['build:modules'] = result.commands['build:modules'];
-
-    // Write back with proper formatting
-    fs.writeJsonSync(packageJsonPath, packageJson, { spaces: 2 });
-
-    console.log('\n✅ Updated package.json successfully!');
-
-    // Show what changed
-    if (originalCore !== result.commands['build:core']) {
-      console.log('\n📝 Changes made to build:core command');
-    } else {
-      console.log('\n📝 No changes needed for build:core (already correct)');
-    }
-
-    if (originalModules !== result.commands['build:modules']) {
-      console.log('📝 Changes made to build:modules command');
-    } else {
-      console.log('📝 No changes needed for build:modules (already correct)');
-    }
-
-    return result;
-  }
-
-  /**
-   * Add a convenient script to package.json for future updates
-   */
-  addUpdateScript() {
-    const packageJsonPath = path.join(this.rootPath, 'package.json');
-    const packageJson = fs.readJsonSync(packageJsonPath);
-
-    // Add the update script if it doesn't exist
-    if (!packageJson.scripts['update-build-order']) {
-      packageJson.scripts['update-build-order'] = 'node scripts/update-build-order.js --update';
-      fs.writeJsonSync(packageJsonPath, packageJson, { spaces: 2 });
-      console.log('\n➕ Added "update-build-order" script for future use');
+    for (const packageName of buildOrder) {
+      const packageInfo = this.packages.get(packageName);
+      if (packageInfo) {
+        const packagePath = path.join(this.rootPath, packageInfo.path);
+        console.log(`${packageName}> yarn ${command.join(' ')}`);
+        execSync(`yarn ${command.join(' ')}`, { stdio: 'inherit', cwd: packagePath });
+      }
     }
   }
 }
@@ -268,24 +180,17 @@ export class YarnWorkspaceBuildOrderGenerator {
 // Main execution
 function main() {
   const args = process.argv.slice(2);
-  const shouldUpdate = args.includes('--update');
+  if (args.length < 1) {
+    console.error('Usage: yarn-workspaces <command>');
+    process.exit(1);
+  }
   const workspacePath = process.cwd();
 
-  console.log('🚀 XRPA Workspace Build Order Generator\n');
   console.log(`📂 Working directory: ${workspacePath}\n`);
 
-  const generator = new YarnWorkspaceBuildOrderGenerator(workspacePath);
-
   try {
-    if (shouldUpdate) {
-      const result = generator.updatePackageJson();
-      generator.addUpdateScript();
-      console.log('\n🎉 Build order has been automatically updated!');
-      console.log('\n💡 Next time, you can run: yarn update-build-order');
-    } else {
-      generator.generateBuildCommands();
-      console.log('\n💡 To update package.json, run: node scripts/update-build-order.js --update');
-    }
+    const generator = new YarnWorkspaceBuildOrderGenerator(workspacePath);
+    generator.executeCommand(args);
   } catch (error) {
     console.error(`\n❌ Error: ${String(error)}`);
     process.exit(1);
