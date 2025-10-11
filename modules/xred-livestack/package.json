@@ -1,0 +1,34 @@
+{
+  "name": "@xrpa/xred-livestack",
+  "version": "1.14.0",
+  "description": "LiveStack interface",
+  "main": "lib/index.js",
+  "files": [
+    "bin/**/*",
+    "lib/**/*"
+  ],
+  "license": "Apache-2.0",
+  "scripts": {
+    "tsc": "tsc",
+    "codegen": "ts-node ./scripts/LiveStackStandalone.ts --codegen",
+    "build": "ts-node ./scripts/LiveStackStandalone.ts --codegen --build",
+    "lint": "eslint --ext .ts,.tsx ./src",
+    "oss-publish": "tsc && ts-node ./scripts/publish.ts",
+    "LiveStack": "ts-node ./scripts/LiveStackStandalone.ts --codegen --run",
+    "LiveStack:run-only": "ts-node ./scripts/LiveStackStandalone.ts --run",
+    "test": "ts-node ./scripts/TestLiveStack.ts"
+  },
+  "devDependencies": {
+    "@types/node": "18.11.18",
+    "@typescript-eslint/eslint-plugin": "^5.57.0",
+    "@typescript-eslint/parser": "^5.57.0",
+    "@xrpa/xrpa-orchestrator": "^1.14.0",
+    "eslint": "8.32.0",
+    "eslint-plugin-import": "^2.27.5",
+    "ts-node": "^10.9.1",
+    "xrpa-internal-scripts": "^1.14.0"
+  },
+  "peerDependencies": {
+    "@xrpa/xrpa-orchestrator": "^1.14.0"
+  }
+}

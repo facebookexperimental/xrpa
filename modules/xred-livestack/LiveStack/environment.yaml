@@ -1,0 +1,11 @@
+name: xred-livestack
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - numpy
+      - websockets
+      - zstandard
