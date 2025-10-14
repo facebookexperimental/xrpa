@@ -15,7 +15,7 @@
  */
 
 
-import { buckBuild, buckRootDir, buckRun, FileWriter } from "@xrpa/xrpa-file-utils";
+import { buckBuild, buckRootDir, buckRun, FileWriter, stripDebugAsserts } from "@xrpa/xrpa-file-utils";
 import path from "path";
 
 import { CodeGen } from "../../shared/CodeGen";
@@ -98,23 +98,32 @@ export class CppStandalone implements CodeGen {
 
   public async smartExecute(): Promise<void> {
     const args = process.argv.slice(2);
+    const isRelease = args.includes('--release');
+
     if (args.includes('--codegen')) {
       await this.doCodeGen().finalize(this.manifestFilename);
+
+      if (isRelease) {
+        const outputDir = path.dirname(this.manifestFilename);
+        await stripDebugAsserts(outputDir);
+      }
     }
 
     if (!this.isSupportedPlatform()) {
       return;
     }
 
+    const mode = isRelease ? "release" : "debug";
+
     if (args.includes('--run')) {
       await buckRun({
-        mode: this.getBuckMode("debug"),
+        mode: this.getBuckMode(mode),
         target: await this.getStandaloneTarget(),
         resourceFilenames: this.resourceFilenames,
       });
     } else if (args.includes('--build')) {
       await buckBuild({
-        mode: this.getBuckMode("debug"),
+        mode: this.getBuckMode(mode),
         target: await this.getStandaloneTarget(),
         resourceFilenames: this.resourceFilenames,
       });

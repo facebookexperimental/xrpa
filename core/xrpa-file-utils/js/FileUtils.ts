@@ -129,3 +129,45 @@ export async function recursiveDirScan(fullpath: string, filenames: string[]): P
     filenames.push(fullpath);
   }
 }
+
+export async function stripDebugAsserts(dirPath: string): Promise<void> {
+  console.log(`Stripping debug asserts from files in ${dirPath}...`);
+
+  const filenames: string[] = [];
+  await recursiveDirScan(dirPath, filenames);
+
+  const runtimeFiles = filenames.filter(file =>
+    file.endsWith('.cpp') ||
+    file.endsWith('.h') ||
+    file.endsWith('.cs') ||
+    file.endsWith('.py')
+  );
+
+  for (const file of runtimeFiles) {
+    let content = await fs.readFile(file, 'utf8');
+
+    // Strip C++ debug asserts
+    content = content.replace(/^\s*xrpaDebugBoundsAssert\([^)]*\);?\s*\n/gm, '');
+    content = content.replace(/^\s*xrpaDebugAssert\([^)]*\);?\s*\n/gm, '');
+
+    // Strip C# debug asserts
+    content = content.replace(/^\s*XrpaUtils\.BoundsAssert\([^)]*\);?\s*\n/gm, '');
+    content = content.replace(/^\s*XrpaUtils\.DebugAssert\([^)]*\);?\s*\n/gm, '');
+
+    // Strip Python debug asserts
+    content = content.replace(/^\s*xrpa_debug_bounds_assert\([^)]*\);?\s*\n/gm, '');
+    content = content.replace(/^\s*xrpa_debug_assert\([^)]*\);?\s*\n/gm, '');
+
+    // Strip multiline debug asserts (for longer assert statements that span multiple lines)
+    content = content.replace(/^\s*xrpaDebugBoundsAssert\([\s\S]*?\);?\s*\n/gm, '');
+    content = content.replace(/^\s*xrpaDebugAssert\([\s\S]*?\);?\s*\n/gm, '');
+    content = content.replace(/^\s*XrpaUtils\.BoundsAssert\([\s\S]*?\);?\s*\n/gm, '');
+    content = content.replace(/^\s*XrpaUtils\.DebugAssert\([\s\S]*?\);?\s*\n/gm, '');
+    content = content.replace(/^\s*xrpa_debug_bounds_assert\([\s\S]*?\);?\s*\n/gm, '');
+    content = content.replace(/^\s*xrpa_debug_assert\([\s\S]*?\);?\s*\n/gm, '');
+
+    await fs.writeFile(file, content, 'utf8');
+  }
+
+  console.log(`Finished stripping debug asserts from ${runtimeFiles.length} files.`);
+}

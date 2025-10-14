@@ -15,7 +15,7 @@
  */
 
 
-import { FileWriter } from "@xrpa/xrpa-file-utils";
+import { FileWriter, stripDebugAsserts } from "@xrpa/xrpa-file-utils";
 import path from "path";
 
 import { runInCondaEnvironment } from "../../ConvenienceWrappers";
@@ -50,8 +50,15 @@ export class PythonStandalone implements CodeGen {
 
   public async smartExecute(): Promise<void> {
     const args = process.argv.slice(2);
+    const isRelease = args.includes('--release');
+
     if (args.includes('--codegen')) {
       await this.doCodeGen().finalize(path.join(this.moduleDef.genOutputDir, "manifest.gen.json"));
+
+      if (isRelease) {
+        const outputDir = path.dirname(path.join(this.moduleDef.genOutputDir, "manifest.gen.json"));
+        await stripDebugAsserts(outputDir);
+      }
     }
     if (args.includes('--run')) {
       await runInCondaEnvironment(

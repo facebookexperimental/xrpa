@@ -20,7 +20,7 @@ import {
   setProgramInterface,
 } from "@xrpa/xrpa-orchestrator";
 
-import { XredAudioTranscriptionInterface } from "../js/AudioTranscriptionInterface";
+import { XredAudioTranscriptionInterface} from "../js/AudioTranscriptionInterface";
 
 const apidir = path.join(__dirname, "..", "Transcription");
 

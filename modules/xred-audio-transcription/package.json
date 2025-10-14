@@ -11,6 +11,7 @@
   "scripts": {
     "tsc": "tsc",
     "codegen": "ts-node ./scripts/TranscriptionStandalone.ts --codegen",
+    "codegen:release": "ts-node ./scripts/TranscriptionStandalone.ts --codegen --release",
     "build": "ts-node ./scripts/TranscriptionStandalone.ts --codegen --build",
     "lint": "eslint --ext .ts,.tsx ./src",
     "oss-publish": "tsc && ts-node ./scripts/publish.ts",
