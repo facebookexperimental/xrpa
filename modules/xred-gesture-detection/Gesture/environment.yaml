@@ -1,0 +1,10 @@
+name: gesture-detection
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - numpy<2
+  - pip:
+    - mediapipe

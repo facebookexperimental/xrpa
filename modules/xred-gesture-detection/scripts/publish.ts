@@ -18,9 +18,8 @@ import os from "os";
 import path from "path";
 import process from "process";
 import { buildCondaApplication } from "@xrpa/xrpa-orchestrator";
-import { publish } from "xrpa-internal-scripts";
 
-const OSS_PATH = path.join(__dirname, "..", "..", "..", "..", "..", "..", "libraries", "xred", "oss", "xrpa");
+const BIN_PATH = path.join(__dirname, "..", "bin");
 const platform = os.platform();
 const isWindows = platform === "win32";
 
@@ -28,18 +27,13 @@ function getPlatformConfig() {
   return {
     environmentFile: path.join(__dirname, "..", "Gesture", "environment.yaml"),
     outputExecutable: isWindows
-      ? path.join(OSS_PATH, "xred-gesture-detection", "bin", "Gesture.exe")
-      : path.join(OSS_PATH, "xred-gesture-detection", "bin", "Gesture"),
+      ? path.join(BIN_PATH, "Gesture.exe")
+      : path.join(BIN_PATH, "Gesture"),
   };
 }
 
 async function runPublish() {
   const config = getPlatformConfig();
-
-  await publish({
-    inputPath: path.join(__dirname, ".."),
-    outputPath: path.join(OSS_PATH, "xred-gesture-detection"),
-  });
 
   await buildCondaApplication(
     config.environmentFile,
