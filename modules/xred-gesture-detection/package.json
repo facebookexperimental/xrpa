@@ -10,12 +10,12 @@
   "license": "Apache-2.0",
   "scripts": {
     "tsc": "tsc",
-    "codegen": "ts-node ./scripts/.ts --codegen",
-    "build": "ts-node ./scripts/.ts --codegen --build",
+    "codegen": "ts-node ./scripts/GestureDetectionStandalone.ts --codegen",
+    "build": "ts-node ./scripts/GestureDetectionStandalone.ts --codegen --build",
     "lint": "eslint --ext .ts,.tsx ./src",
     "oss-publish": "tsc && ts-node ./scripts/publish.ts",
-    "Gesture": "tsc && ts-node ./scripts/.ts --codegen --run",
-    "Gesture:run-only": "ts-node ./scripts/.ts --run"
+    "Gesture": "tsc && ts-node ./scripts/GestureDetectionStandalone.ts --codegen --run",
+    "Gesture:run-only": "ts-node ./scripts/GestureDetectionStandalone.ts --run"
   },
   "devDependencies": {
     "@types/node": "18.11.18",

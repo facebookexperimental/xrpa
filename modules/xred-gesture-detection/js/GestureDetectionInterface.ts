@@ -50,10 +50,9 @@ export enum GestureType {
   Pinch = 8,
 }
 
-
 export function getGestureDetectionTypes(
-  width = 640,
-  height = 480,
+  width = 1920,
+  height = 1080,
   bytesPerPixel = 3
 ) {
   const gestureImage = Image("GestureImage", {

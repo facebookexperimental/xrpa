@@ -1,0 +1,28 @@
+{
+  "name": "xred-gesture-detection-test",
+  "version": "1.14.0",
+  "description": "Gesture Detection test",
+  "main": "scripts/index.ts",
+  "private": true,
+  "scripts": {
+    "tsc": "tsc",
+    "codegen": "ts-node ./scripts/index.ts --codegen",
+    "build": "ts-node ./scripts/index.ts --codegen --build",
+    "lint": "eslint --ext .ts,.tsx ./src",
+    "run": "ts-node ./scripts/index.ts --codegen --run"
+  },
+  "devDependencies": {
+    "@types/node": "18.11.18",
+    "@typescript-eslint/eslint-plugin": "^5.57.0",
+    "@typescript-eslint/parser": "^5.57.0",
+    "eslint": "8.32.0",
+    "eslint-plugin-import": "^2.27.5",
+    "ts-node": "^10.9.1"
+  },
+  "dependencies": {
+    "@xrpa/xrpa-orchestrator": "^1.14.0",
+    "@xrpa/xred-debug": "^1.14.0",
+    "@xrpa/xred-sensor-input": "^1.14.0",
+    "@xrpa/xred-gesture-detection": "^1.14.0"
+  }
+}
