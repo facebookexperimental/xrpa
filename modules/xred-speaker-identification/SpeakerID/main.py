@@ -354,8 +354,8 @@ class SpeakerIdentification(ReconciledSpeakerIdentifier):
             if best_similarity < lower_threshold:
                 self._results_queue.put(
                     {
-                        "speaker_id": "unknown",
-                        "speaker_name": "Unknown Speaker",
+                        "speaker_id": "",
+                        "speaker_name": "",
                         "confidence_score": 0,
                         "timestamp": buffer_timestamp,
                     }
@@ -386,8 +386,8 @@ class SpeakerIdentification(ReconciledSpeakerIdentifier):
                 else:
                     self._results_queue.put(
                         {
-                            "speaker_id": "unknown",
-                            "speaker_name": "Speaker Not Identifiable",
+                            "speaker_id": "",
+                            "speaker_name": "",
                             "confidence_score": 0,
                             "timestamp": buffer_timestamp,
                         }
