@@ -74,6 +74,7 @@ class SpeakerIdentification(ReconciledSpeakerIdentifier):
 
         self.on_signal_data = self._handle_audio_signal
         self.on_audio_signal(self)
+        self._logged_sample_rate_warning = False
 
     def _initialize_models(self):
         try:
@@ -161,6 +162,14 @@ class SpeakerIdentification(ReconciledSpeakerIdentifier):
                 frames_per_second = packet.get_frame_rate()
 
                 if frame_count <= 0 or num_channels <= 0 or frames_per_second <= 0:
+                    return
+
+                if frames_per_second != SAMPLE_RATE:
+                    if not self._logged_sample_rate_warning:
+                        self._logged_sample_rate_warning = True
+                        print(
+                            f"ERROR audio sample rate must be {str(SAMPLE_RATE)}, received {str(frames_per_second)}"
+                        )
                     return
 
                 channel_data = packet.access_channel_data("float")
