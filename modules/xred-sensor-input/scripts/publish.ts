@@ -16,21 +16,15 @@
 
 import path from "path";
 import process from "process";
-import { publish } from "xrpa-internal-scripts";
 
 import { AriaStandalone } from "./AriaStandalone";
 import { CameraStandalone } from "./CameraStandalone";
 
-const OSS_PATH = path.join(__dirname, "..", "..", "..", "..", "..", "..", "libraries", "xred", "oss", "xrpa");
+const BIN_PATH = path.join(__dirname, "..", "bin");
 
 async function runPublish() {
-  await publish({
-    inputPath: path.join(__dirname, ".."),
-    outputPath: path.join(OSS_PATH, "xred-sensor-input"),
-  });
-
-  await AriaStandalone.buckBuildRelease(path.join(OSS_PATH, "xred-sensor-input", "bin"));
-  await CameraStandalone.buckBuildRelease(path.join(OSS_PATH, "xred-sensor-input", "bin"));
+  await AriaStandalone.buckBuildRelease(BIN_PATH);
+  await CameraStandalone.buckBuildRelease(BIN_PATH);
 }
 
 if (require.main === module) {
