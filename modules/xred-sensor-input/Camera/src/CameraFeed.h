@@ -23,8 +23,8 @@
 
 #include <memory>
 
+#include "CameraMediaManager.h"
 #include "OceanSetup.h"
-#include "ocean/media/FrameMedium.h"
 
 class CameraFeed : public CameraDataStore::ReconciledCameraFeed {
  public:
@@ -55,6 +55,5 @@ class CameraFeed : public CameraDataStore::ReconciledCameraFeed {
   folly::MPMCQueue<ImageTypes::Image> rgbQueue_;
   ImageTypes::Image tempRgbImage_;
 
-  Ocean::Media::FrameMediumRef medium_;
-  Ocean::Media::FrameMedium::FrameCallbackScopedSubscription frameSubscription_;
+  CameraMediaManager::Subscription mediaSubscription_;
 };

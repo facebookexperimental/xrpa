@@ -18,9 +18,7 @@
 
 #include <xrpa-runtime/utils/StringUtils.h>
 
-#include "ocean/base/Base.h"
-#include "ocean/media/Manager.h"
-
+#include "CameraMediaManager.h"
 #include "ImageConversion.h"
 
 constexpr int QUEUE_SIZE_SECONDS = 1;
@@ -50,7 +48,6 @@ void CameraFeed::handleXrpaFieldsChanged(uint64_t fieldsChanged) {
     std::string cameraName = getCameraName();
     std::string mediumName;
 
-    // TODO find matching camera if cameraName is not empty
     if (cameraName.empty()) {
       mediumName = "LiveVideoId:0";
     } else {
@@ -66,16 +63,11 @@ void CameraFeed::handleXrpaFieldsChanged(uint64_t fieldsChanged) {
     }
 
     if (!mediumName.empty()) {
-      medium_ = Ocean::Media::Manager::get().newMedium(mediumName);
-      if (medium_) {
-        std::cout << "CameraFeed " << mediumName << " started streaming" << std::endl;
-        frameSubscription_ = medium_->addFrameCallback(
-            [this](const Ocean::Frame& frame, const Ocean::SharedAnyCamera& camera) {
-              float captureFrameRate = static_cast<float>(medium_->frameFrequency());
-              rgbQueue_.write(ImageUtils::convertOceanFrameToImage(frame, captureFrameRate));
-            });
-        medium_->start();
-      }
+      std::cout << "CameraFeed " << mediumName << " started streaming" << std::endl;
+      mediaSubscription_ = CameraMediaManager::getInstance().subscribe(
+          mediumName, [this](const Ocean::Frame& frame, float frameRate) {
+            rgbQueue_.write(ImageUtils::convertOceanFrameToImage(frame, frameRate));
+          });
     }
   }
 }
@@ -87,6 +79,5 @@ void CameraFeed::tick() {
 }
 
 void CameraFeed::shutdown() {
-  frameSubscription_.release();
-  medium_.release();
+  mediaSubscription_.release();
 }
