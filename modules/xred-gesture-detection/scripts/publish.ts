@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import assert from "assert";
+import fs from "fs-extra";
 import os from "os";
 import path from "path";
 import process from "process";
@@ -35,10 +37,19 @@ function getPlatformConfig() {
 async function runPublish() {
   const config = getPlatformConfig();
 
+  const taskFile = path.join(__dirname, "..", "Gesture", "gesture_recognizer.task");
+  assert(fs.existsSync(taskFile), "Task file does not exist: " + taskFile);
+
+
   await buildCondaApplication(
     config.environmentFile,
     path.join(__dirname, "..", "Gesture", "main.py"),
     config.outputExecutable,
+    {
+      dataFiles: [
+        taskFile,
+      ],
+    },
   );
 }
 

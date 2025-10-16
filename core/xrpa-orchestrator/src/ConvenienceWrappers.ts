@@ -286,6 +286,7 @@ export async function runInCondaEnvironment(yamlPath: string, filename: string) 
 export async function buildCondaApplication(yamlPath: string, filename: string, outname: string, options?: {
   hiddenImports?: string[];
   collectAll?: string[];
+  dataFiles?: string[];
 }) {
   const params = [
     "--onefile", filename,
@@ -300,6 +301,11 @@ export async function buildCondaApplication(yamlPath: string, filename: string, 
   }
   for (const mod of (options?.collectAll ?? [])) {
     params.push("--collect-all", mod);
+  }
+
+  const sep = os.platform() === "win32" ? ";" : ":";
+  for (const file of (options?.dataFiles ?? [])) {
+    params.push("--add-data", `${file}${sep}.`);
   }
 
   await runInCondaEnvironmentInternal(yamlPath, path.dirname(filename), ["pip", "install", "pyinstaller"]);

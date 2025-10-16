@@ -26,7 +26,20 @@ from xrpa.gesture_detection_data_store import (
 )
 from xrpa.gesture_detection_types import GestureType
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "gesture_recognizer.task")
+
+def get_resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except AttributeError:
+        # Development environment - use script directory
+        base_path = os.path.dirname(__file__)
+
+    return os.path.join(base_path, relative_path)
+
+
+MODEL_PATH = get_resource_path("gesture_recognizer.task")
 
 
 class GestureDetectionModule(ReconciledGestureDetection):

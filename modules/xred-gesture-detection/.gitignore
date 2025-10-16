@@ -91,3 +91,5 @@ out/
 /lib/
 
 /bin/
+
+/Gesture/gesture_recognizer.task
