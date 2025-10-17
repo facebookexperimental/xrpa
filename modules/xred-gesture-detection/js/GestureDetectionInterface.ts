@@ -24,6 +24,7 @@ import {
   Instantiate,
   isDataflowForeignObjectInstantiation,
   Message,
+  MessageRate,
   ObjectField,
   Output,
   ProgramInput,
@@ -67,8 +68,8 @@ export function getGestureDetectionTypes(
 }
 
 function createGestureDetectionInterface(
-  width = 640,
-  height = 480,
+  width = 1920,
+  height = 1080,
   bytesPerPixel = 3
 ) {
   return XrpaProgramInterface("Xred.GestureDetection", path.join(__dirname, "../package.json"), () => {
@@ -97,11 +98,11 @@ function createGestureDetectionInterface(
     ProgramInput("GestureDetection", Collection({
       maxCount: DEFAULT_GESTURE_DETECTION_MAX_COUNT,
       fields: {
-        imageInput: Message("ImageInput", {
+        imageInput: MessageRate(60, Message("ImageInput", {
           image: gestureImage,
-        }),
+        })),
 
-        gestureResult: Output(GestureResult),
+        gestureResult: Output(MessageRate(60, GestureResult)),
       },
     }));
   });

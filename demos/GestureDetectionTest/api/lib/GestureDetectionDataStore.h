@@ -263,7 +263,7 @@ class OutboundGestureDetectionReaderCollection : public Xrpa::ObjectCollection<G
 class GestureDetectionDataStore : public Xrpa::DataStoreReconciler {
  public:
   GestureDetectionDataStore(std::weak_ptr<Xrpa::TransportStream> inboundTransport, std::weak_ptr<Xrpa::TransportStream> outboundTransport)
-      : Xrpa::DataStoreReconciler(inboundTransport, outboundTransport, 2765989) {
+      : Xrpa::DataStoreReconciler(inboundTransport, outboundTransport, 37327176) {
     GestureDetection = std::make_shared<OutboundGestureDetectionReaderCollection>(this);
     registerCollection(GestureDetection);
   }

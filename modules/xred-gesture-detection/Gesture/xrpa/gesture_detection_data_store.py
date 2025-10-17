@@ -175,6 +175,6 @@ class InboundGestureDetectionReaderCollection(xrpa_runtime.reconciler.object_col
 # Data Store Implementation
 class GestureDetectionDataStore(xrpa_runtime.reconciler.data_store_reconciler.DataStoreReconciler):
   def __init__(self, inbound_transport: xrpa_runtime.transport.transport_stream.TransportStream, outbound_transport: xrpa_runtime.transport.transport_stream.TransportStream):
-    super().__init__(inbound_transport, outbound_transport, 2765989)
+    super().__init__(inbound_transport, outbound_transport, 37327176)
     self.GestureDetection = InboundGestureDetectionReaderCollection(self)
     self._register_collection(self.GestureDetection)

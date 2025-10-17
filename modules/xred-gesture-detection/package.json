@@ -1,6 +1,6 @@
 {
   "name": "@xrpa/xred-gesture-detection",
-  "version": "1.14.0",
+  "version": "1.14.1",
   "description": "GestureDetection interface",
   "main": "lib/index.js",
   "files": [

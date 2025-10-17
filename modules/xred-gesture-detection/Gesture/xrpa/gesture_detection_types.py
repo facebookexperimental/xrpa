@@ -20,7 +20,7 @@ import xrpa_runtime.utils.memory_accessor
 import xrpa_runtime.utils.xrpa_types
 
 class gesture_detection_data_store_config:
-  transport_config = xrpa_runtime.utils.xrpa_types.TransportConfig(xrpa_runtime.utils.xrpa_types.HashValue(0xdb2bbf0116fbc155, 0xe2be7c6bc83d0e4c, 0xa59d6397da51068f, 0x1ea0de6c70bbd785), 2766061)
+  transport_config = xrpa_runtime.utils.xrpa_types.TransportConfig(xrpa_runtime.utils.xrpa_types.HashValue(0x907439eacf9772c4, 0x412c10086fcb8071, 0x6cf7fe50be00b757, 0x7cdb8afb3e5e3b79), 37327248)
 
 class ImageFormat(enum.Enum):
   RGB8 = 0

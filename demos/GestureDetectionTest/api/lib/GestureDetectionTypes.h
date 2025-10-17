@@ -29,8 +29,8 @@ namespace GestureDetectionDataStore {
 
 static inline Xrpa::TransportConfig GenTransportConfig() {
   Xrpa::TransportConfig config;
-  config.schemaHash = Xrpa::HashValue(0x459e126948357655, 0xea9a7f66022f9412, 0x8c58d26ec8185297, 0x3114e70e5654b754);
-  config.changelogByteCount = 2766061;
+  config.schemaHash = Xrpa::HashValue(0x5fb90a100b5082e1, 0xb47656ca4efe090e, 0x60abeb3a204d325a, 0x61bbf53392ff9308);
+  config.changelogByteCount = 37327248;
   return config;
 }
 
