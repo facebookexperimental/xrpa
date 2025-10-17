@@ -1,6 +1,6 @@
 {
   "name": "@xrpa/xred-visual-emotion-detection",
-  "version": "1.14.0",
+  "version": "1.14.3",
   "description": "VisualEmotionDetection interface",
   "main": "lib/index.js",
   "files": [
