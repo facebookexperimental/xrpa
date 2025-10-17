@@ -38,7 +38,7 @@ class CameraDebugProgram {
     destroyObjects();
   }
 
-  void onEmotionResult(std::function<void(uint64_t, std::chrono::nanoseconds, VisualEmotionDetectionDataStore::EmotionType, bool, float)> handler) {
+  void onEmotionResult(std::function<void(uint64_t, std::chrono::nanoseconds, VisualEmotionDetectionDataStore::EmotionType, bool, float, float, float)> handler) {
     paramEmotionResult_ = handler;
   }
 
@@ -52,8 +52,10 @@ class CameraDebugProgram {
     auto emotion = msg.getEmotion();
     auto faceDetected = msg.getFaceDetected();
     auto confidence = msg.getConfidence();
+    auto valence = msg.getValence();
+    auto arousal = msg.getArousal();
     if (paramEmotionResult_) {
-      paramEmotionResult_(msgTimestamp, timestamp, emotion, faceDetected, confidence);
+      paramEmotionResult_(msgTimestamp, timestamp, emotion, faceDetected, confidence, valence, arousal);
     }
   }
 
@@ -92,7 +94,7 @@ class CameraDebugProgram {
   std::shared_ptr<CameraDataStore::CameraDataStore> datastoreCamera_;
   std::shared_ptr<ImageViewerDataStore::ImageViewerDataStore> datastoreImageViewer_;
   std::shared_ptr<VisualEmotionDetectionDataStore::VisualEmotionDetectionDataStore> datastoreVisualEmotionDetection_;
-  std::function<void(uint64_t, std::chrono::nanoseconds, VisualEmotionDetectionDataStore::EmotionType, bool, float)> paramEmotionResult_ = nullptr;
+  std::function<void(uint64_t, std::chrono::nanoseconds, VisualEmotionDetectionDataStore::EmotionType, bool, float, float, float)> paramEmotionResult_ = nullptr;
   std::shared_ptr<CameraDataStore::OutboundCameraFeed> objCameraCameraFeed0_;
   std::shared_ptr<VisualEmotionDetectionDataStore::OutboundVisualEmotionDetection> objVisualEmotionDetectionVisualEmotionDetection2_;
   std::shared_ptr<ImageViewerDataStore::OutboundImageWindow> objImageViewerImageWindow1_;

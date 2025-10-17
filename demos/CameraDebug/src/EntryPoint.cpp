@@ -32,11 +32,14 @@ void EntryPoint(CameraDebugModule* moduleData) {
                                    std::chrono::nanoseconds imgTimestamp,
                                    VisualEmotionDetectionDataStore::EmotionType emotion,
                                    bool faceDetected,
-                                   float confidence) {
+                                   float confidence,
+                                   float valence,
+                                   float arousal) {
     std::cout << "[EmotionDetection] Timestamp: " << timestamp
               << ", Emotion: " << static_cast<int>(emotion)
               << ", Face Detected: " << (faceDetected ? "true" : "false")
-              << ", Confidence: " << confidence << std::endl;
+              << ", Confidence: " << confidence << ", Valence: " << valence
+              << ", Arousal: " << arousal << std::endl;
   });
 
   std::cout << "[CameraDebug] Emotion result handler set up" << std::endl;

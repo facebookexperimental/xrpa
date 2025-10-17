@@ -29,8 +29,8 @@ namespace VisualEmotionDetectionDataStore {
 
 static inline Xrpa::TransportConfig GenTransportConfig() {
   Xrpa::TransportConfig config;
-  config.schemaHash = Xrpa::HashValue(0x43ea623191ee8ef9, 0xae7541be32ef82b1, 0x7ef43b1ae39854c7, 0xccd9d136ee4283d9);
-  config.changelogByteCount = 24884204;
+  config.schemaHash = Xrpa::HashValue(0xc000b2e31ea312c7, 0x7b3982f7deaadb74, 0x0f93585057e28be9, 0xa32f97dd9c710b3b);
+  config.changelogByteCount = 24884228;
   return config;
 }
 

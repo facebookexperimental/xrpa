@@ -88,6 +88,14 @@ class EmotionResultReader : public Xrpa::ObjectAccessorInterface {
     return DSScalar::readValue(memAccessor_, readOffset_);
   }
 
+  float getValence() {
+    return DSScalar::readValue(memAccessor_, readOffset_);
+  }
+
+  float getArousal() {
+    return DSScalar::readValue(memAccessor_, readOffset_);
+  }
+
  private:
   Xrpa::MemoryOffset readOffset_;
 };
@@ -111,6 +119,14 @@ class EmotionResultWriter : public EmotionResultReader {
   }
 
   void setConfidence(float value) {
+    DSScalar::writeValue(value, memAccessor_, writeOffset_);
+  }
+
+  void setValence(float value) {
+    DSScalar::writeValue(value, memAccessor_, writeOffset_);
+  }
+
+  void setArousal(float value) {
     DSScalar::writeValue(value, memAccessor_, writeOffset_);
   }
 
@@ -291,7 +307,7 @@ class OutboundVisualEmotionDetectionReaderCollection : public Xrpa::ObjectCollec
 class VisualEmotionDetectionDataStore : public Xrpa::DataStoreReconciler {
  public:
   VisualEmotionDetectionDataStore(std::weak_ptr<Xrpa::TransportStream> inboundTransport, std::weak_ptr<Xrpa::TransportStream> outboundTransport)
-      : Xrpa::DataStoreReconciler(inboundTransport, outboundTransport, 24883620) {
+      : Xrpa::DataStoreReconciler(inboundTransport, outboundTransport, 24883644) {
     VisualEmotionDetection = std::make_shared<OutboundVisualEmotionDetectionReaderCollection>(this);
     registerCollection(VisualEmotionDetection);
   }

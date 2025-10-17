@@ -96,6 +96,8 @@ function createVisualEmotionDetectionInterface(
           emotion: EmotionTypeEnum,
           faceDetected: Boolean,
           confidence: Scalar,
+          valence: Scalar,
+          arousal: Scalar,
         })),
       },
     }));
