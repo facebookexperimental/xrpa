@@ -75,9 +75,6 @@ class GestureDetectionModule(ReconciledGestureDetection):
     def _send_result(self, gesture_result):
         try:
             gesture_enum = GestureType(gesture_result["gestureType"])
-            print(
-                f"[GestureDetection]: Converted gesture {gesture_result['gestureType']} to enum: {gesture_enum}"
-            )
 
             self.send_gesture_result(
                 gesture_result["timestamp"],
@@ -86,7 +83,6 @@ class GestureDetectionModule(ReconciledGestureDetection):
                 gesture_result["handDetected"],
                 gesture_result["errorMessage"],
             )
-            print("[GestureDetection]: Successfully sent gesture result to XRPA")
         except Exception as e:
             print(f"[GestureDetection]: Error sending gesture result: {e}")
             traceback.print_exc()

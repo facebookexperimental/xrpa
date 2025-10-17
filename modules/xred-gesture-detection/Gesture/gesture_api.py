@@ -104,9 +104,6 @@ class GestureAPI:
                 "confidence": confidence,
                 "errorMessage": "",
             }
-            print(
-                f"[GestureAPI]: Detected gesture type: {gesture_type_id} with confidence: {confidence:.2f}"
-            )
         else:
             self._latest_result = {
                 "gestureType": 0,
