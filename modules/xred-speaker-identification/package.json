@@ -1,6 +1,6 @@
 {
   "name": "@xrpa/xred-speaker-identification",
-  "version": "1.14.0",
+  "version": "1.14.1",
   "description": "Speaker Identification Interface",
   "main": "lib/index.js",
   "files": [

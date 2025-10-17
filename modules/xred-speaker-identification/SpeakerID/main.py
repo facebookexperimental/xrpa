@@ -35,6 +35,8 @@ TICK_RATE = 30
 SAMPLE_RATE = 16000
 BUFFER_SIZE_SECONDS = 3.0
 MIN_AUDIO_LENGTH = 1.0
+MAX_MANUAL_RECORDING_SECONDS = 60.0
+MAX_MANUAL_BUFFER_SIZE = int(SAMPLE_RATE * MAX_MANUAL_RECORDING_SECONDS)
 
 
 class SpeakerIdentification(ReconciledSpeakerIdentifier):
@@ -57,6 +59,12 @@ class SpeakerIdentification(ReconciledSpeakerIdentifier):
 
         self._speakers_by_id = {}
 
+        self._manual_recording_lock = threading.Lock()
+        self._is_manual_recording = False
+        self._manual_recording_chunks = []
+        self._manual_recording_samples_count = 0
+        self._manual_recording_timestamp = 0
+
         self._model_init_thread = threading.Thread(target=self._initialize_models)
         self._model_init_thread.daemon = True
         self._model_init_thread.start()
@@ -75,6 +83,9 @@ class SpeakerIdentification(ReconciledSpeakerIdentifier):
         self.on_signal_data = self._handle_audio_signal
         self.on_audio_signal(self)
         self._logged_sample_rate_warning = False
+
+        # Track previous state for manual recording to detect changes
+        self._prev_manual_recording_enabled = False
 
     def _initialize_models(self):
         try:
@@ -150,7 +161,44 @@ class SpeakerIdentification(ReconciledSpeakerIdentifier):
             if self._worker_thread.is_alive():
                 self._worker_thread.join(timeout=1.0)
 
-    def on_signal_data(self, timestamp: int, mem_accessor):
+    def _handle_manual_recording_buffer(self, audio_data: np.ndarray) -> bool:
+        with self._manual_recording_lock:
+            if not self._is_manual_recording:
+                return False
+
+            new_sample_count = self._manual_recording_samples_count + len(audio_data)
+
+            if new_sample_count <= MAX_MANUAL_BUFFER_SIZE:
+                self._manual_recording_chunks.append(audio_data)
+                self._manual_recording_samples_count = new_sample_count
+                duration_seconds = new_sample_count / SAMPLE_RATE
+
+                # Check audio statistics to verify it's not silent
+                audio_min = np.min(audio_data)
+                audio_max = np.max(audio_data)
+                audio_rms = np.sqrt(np.mean(audio_data**2))
+
+                print(
+                    f"[SpeakerID MANUAL]: Buffering audio - added {len(audio_data)} samples, total: {new_sample_count} samples ({duration_seconds:.2f}s), RMS: {audio_rms:.4f}, range: [{audio_min:.4f}, {audio_max:.4f}]"
+                )
+                return True
+
+            print(
+                f"[SpeakerID]: Manual recording buffer full ({MAX_MANUAL_RECORDING_SECONDS}s max), auto-stopping and processing"
+            )
+            buffer = np.concatenate(self._manual_recording_chunks)
+            timestamp = self._manual_recording_timestamp
+            self._is_manual_recording = False
+            self._manual_recording_chunks = []
+            self._manual_recording_samples_count = 0
+
+        self._process_audio_buffer(buffer, timestamp)
+        self.set_error_message(
+            f"Recording auto-stopped after {MAX_MANUAL_RECORDING_SECONDS}s maximum duration"
+        )
+        return True
+
+    def _handle_audio_signal(self, timestamp: int, mem_accessor):
         try:
             if mem_accessor is None:
                 return
@@ -184,10 +232,20 @@ class SpeakerIdentification(ReconciledSpeakerIdentifier):
                         audio_data += temp_channel
                     audio_data /= num_channels
 
+                if self._handle_manual_recording_buffer(audio_data):
+                    return
+
                 try:
                     self._audio_data_queue.put((audio_data, timestamp), block=False)
+                    queue_size = self._audio_data_queue.qsize()
+                    if queue_size > 50:  # Log if queue is getting large
+                        print(
+                            f"[SpeakerID QUEUE]: Warning - audio queue size is {queue_size}"
+                        )
                 except queue.Full:
-                    pass
+                    print(
+                        f"[SpeakerID QUEUE]: Queue full ({self._audio_data_queue.maxsize}), dropping audio data"
+                    )
 
             except Exception as packet_error:
                 print(f"ERROR creating SignalPacket: {str(packet_error)}")
@@ -195,8 +253,6 @@ class SpeakerIdentification(ReconciledSpeakerIdentifier):
 
         except Exception as e:
             print(f"ERROR handling audio signal: {str(e)}")
-
-    _handle_audio_signal = on_signal_data
 
     def _process_audio(self):
         audio_buffer = np.array([], dtype=np.float32)
@@ -211,10 +267,22 @@ class SpeakerIdentification(ReconciledSpeakerIdentifier):
         is_speaking = False
         last_process_time = time.time()
 
+        print("[SpeakerID WORKER]: Started audio processing worker thread")
+        print(f"[SpeakerID WORKER]: Queue max size: {self._audio_data_queue.maxsize}")
+
         while not self._stop_worker:
             try:
+                queue_size = self._audio_data_queue.qsize()
+                if queue_size > 0:
+                    print(
+                        f"[SpeakerID WORKER]: Current queue size: {queue_size}, buffer size: {len(audio_buffer)} samples"
+                    )
+
                 try:
                     audio_data, timestamp = self._audio_data_queue.get(timeout=0.5)
+                    print(
+                        f"[SpeakerID WORKER]: Got audio data from queue - {len(audio_data)} samples, queue size now: {self._audio_data_queue.qsize()}"
+                    )
                 except queue.Empty:
                     current_time = time.time()
                     if (
@@ -222,7 +290,12 @@ class SpeakerIdentification(ReconciledSpeakerIdentifier):
                         and len(audio_buffer) >= min_buffer_size
                         and (current_time - last_process_time) > 3.0
                     ):
-                        self._process_audio_buffer(audio_buffer, buffer_timestamp)
+                        print(
+                            f"[SpeakerID WORKER]: Timeout - processing buffered audio ({len(audio_buffer)} samples)"
+                        )
+                        self._process_audio_buffer_internal(
+                            audio_buffer, buffer_timestamp
+                        )
                         audio_buffer = np.array([], dtype=np.float32)
                         is_speaking = False
                         speech_frames = 0
@@ -439,7 +512,68 @@ class SpeakerIdentification(ReconciledSpeakerIdentifier):
 
         return speakers_by_id
 
+    def _handle_manual_recording_enabled_changed(self, enabled):
+        """Handle changes to the manualRecordingEnabled boolean field"""
+        if enabled and not self._prev_manual_recording_enabled:
+            # Transition from false to true - start recording
+            with self._manual_recording_lock:
+                if self._is_manual_recording:
+                    print("[SpeakerID]: Already recording, ignoring")
+                    return
+
+                print(
+                    "[SpeakerID MANUAL]: Manual recording enabled - starting to buffer audio"
+                )
+                self._is_manual_recording = True
+                self._manual_recording_chunks = []
+                self._manual_recording_samples_count = 0
+                self._manual_recording_timestamp = int(time.time() * 1000)
+
+            self.set_identified_speaker_id("")
+            self.set_identified_speaker_name("")
+            self.set_confidence_score(0)
+            self.set_error_message("")
+
+        elif not enabled and self._prev_manual_recording_enabled:
+            # Transition from true to false - stop and process
+            with self._manual_recording_lock:
+                if not self._is_manual_recording:
+                    print("[SpeakerID MANUAL]: Not recording, ignoring")
+                    return
+
+                total_samples = self._manual_recording_samples_count
+                duration = total_samples / SAMPLE_RATE if total_samples > 0 else 0
+                print(
+                    f"[SpeakerID MANUAL]: Manual recording disabled - processing buffer with {total_samples} samples ({duration:.2f}s)"
+                )
+
+                chunks = self._manual_recording_chunks
+                recording_timestamp = self._manual_recording_timestamp
+
+                self._is_manual_recording = False
+                self._manual_recording_chunks = []
+                self._manual_recording_samples_count = 0
+
+            if len(chunks) > 0:
+                buffer = np.concatenate(chunks)
+                print(
+                    f"[SpeakerID MANUAL]: Concatenated buffer - shape: {buffer.shape}, dtype: {buffer.dtype}, RMS: {np.sqrt(np.mean(buffer**2)):.4f}"
+                )
+                print("[SpeakerID MANUAL]: Calling _process_audio_buffer...")
+                self._process_audio_buffer(buffer, recording_timestamp)
+                print("[SpeakerID MANUAL]: _process_audio_buffer completed")
+            else:
+                print("[SpeakerID MANUAL]: Manual recording buffer is empty")
+                self.set_error_message("No audio captured during recording")
+
+        self._prev_manual_recording_enabled = enabled
+
     def tick(self):
+        # Check for changes in manualRecordingEnabled field
+        current_enabled = self.get_manual_recording_enabled()
+        if current_enabled != self._prev_manual_recording_enabled:
+            self._handle_manual_recording_enabled_changed(current_enabled)
+
         self._speakers_by_id = self._get_speakers_by_id()
         try:
             while not self._results_queue.empty():

@@ -17,4 +17,4 @@
 import xrpa_runtime.utils.xrpa_types
 
 class speaker_identification_data_store_config:
-  transport_config = xrpa_runtime.utils.xrpa_types.TransportConfig(xrpa_runtime.utils.xrpa_types.HashValue(0x01a9ad881e446398, 0x65fd2d18ba0ed542, 0xb2a967cc3d6e0741, 0x67a0a674163a1a34), 96376)
+  transport_config = xrpa_runtime.utils.xrpa_types.TransportConfig(xrpa_runtime.utils.xrpa_types.HashValue(0x6c6a8ed3cff5bc9f, 0x54aec05656fde975, 0x6903b50d89be40c4, 0x75a9b4f5521de0ac), 96384)

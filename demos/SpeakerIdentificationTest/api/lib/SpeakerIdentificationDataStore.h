@@ -47,6 +47,11 @@ class SpeakerIdentifierReader : public Xrpa::ObjectAccessorInterface {
 
   explicit SpeakerIdentifierReader(const Xrpa::MemoryAccessor& memAccessor) : Xrpa::ObjectAccessorInterface(memAccessor) {}
 
+  // Enable manual recording mode - set true to start, false to stop and process
+  bool getManualRecordingEnabled() {
+    return (memAccessor_.readValue<int32_t>(readOffset_) == 1 ? true : false);
+  }
+
   // ID of the identified speaker, empty if no match
   std::string getIdentifiedSpeakerId() {
     return memAccessor_.readValue<std::string>(readOffset_);
@@ -67,20 +72,24 @@ class SpeakerIdentifierReader : public Xrpa::ObjectAccessorInterface {
     return memAccessor_.readValue<std::string>(readOffset_);
   }
 
-  inline bool checkIdentifiedSpeakerIdChanged(uint64_t fieldsChanged) const {
+  inline bool checkManualRecordingEnabledChanged(uint64_t fieldsChanged) const {
     return fieldsChanged & 1;
   }
 
-  inline bool checkIdentifiedSpeakerNameChanged(uint64_t fieldsChanged) const {
+  inline bool checkIdentifiedSpeakerIdChanged(uint64_t fieldsChanged) const {
     return fieldsChanged & 2;
   }
 
-  inline bool checkConfidenceScoreChanged(uint64_t fieldsChanged) const {
+  inline bool checkIdentifiedSpeakerNameChanged(uint64_t fieldsChanged) const {
     return fieldsChanged & 4;
   }
 
-  inline bool checkErrorMessageChanged(uint64_t fieldsChanged) const {
+  inline bool checkConfidenceScoreChanged(uint64_t fieldsChanged) const {
     return fieldsChanged & 8;
+  }
+
+  inline bool checkErrorMessageChanged(uint64_t fieldsChanged) const {
+    return fieldsChanged & 16;
   }
 
  private:
@@ -106,6 +115,10 @@ class SpeakerIdentifierWriter : public SpeakerIdentifierReader {
     changeEvent.setObjectId(id);
     changeEvent.setFieldsChanged(fieldsChanged);
     return SpeakerIdentifierWriter(changeEvent.accessChangeData());
+  }
+
+  void setManualRecordingEnabled(bool value) {
+    memAccessor_.writeValue<int32_t>((value ? 1 : 0), writeOffset_);
   }
 
   void setIdentifiedSpeakerId(const std::string& value) {
@@ -285,11 +298,30 @@ class OutboundSpeakerIdentifier : public Xrpa::DataStoreObject {
     xrpaFieldsChangedHandler_ = handler;
   }
 
+  bool getManualRecordingEnabled() const {
+    return localManualRecordingEnabled_;
+  }
+
+  void setManualRecordingEnabled(bool manualRecordingEnabled) {
+    localManualRecordingEnabled_ = manualRecordingEnabled;
+    if ((changeBits_ & 1) == 0) {
+      changeBits_ |= 1;
+      changeByteCount_ += 4;
+    }
+    if (collection_) {
+      if (!hasNotifiedNeedsWrite_) {
+        collection_->notifyObjectNeedsWrite(getXrpaId());
+        hasNotifiedNeedsWrite_ = true;
+      }
+      collection_->setDirty(getXrpaId(), 1);
+    }
+  }
+
   void writeDSChanges(Xrpa::TransportStreamAccessor* accessor) {
     SpeakerIdentifierWriter objAccessor;
     if (!createWritten_) {
-      changeBits_ = 0;
-      changeByteCount_ = 0;
+      changeBits_ = 1;
+      changeByteCount_ = 4;
       objAccessor = SpeakerIdentifierWriter::create(accessor, getCollectionId(), getXrpaId(), changeByteCount_, createTimestamp_);
       createWritten_ = true;
     } else if (changeBits_ != 0) {
@@ -298,6 +330,9 @@ class OutboundSpeakerIdentifier : public Xrpa::DataStoreObject {
     if (objAccessor.isNull()) {
       return;
     }
+    if (changeBits_ & 1) {
+      objAccessor.setManualRecordingEnabled(localManualRecordingEnabled_);
+    }
     changeBits_ = 0;
     changeByteCount_ = 0;
     hasNotifiedNeedsWrite_ = false;
@@ -305,8 +340,8 @@ class OutboundSpeakerIdentifier : public Xrpa::DataStoreObject {
 
   uint64_t prepDSFullUpdate() {
     createWritten_ = false;
-    changeBits_ = 0;
-    changeByteCount_ = 0;
+    changeBits_ = 1;
+    changeByteCount_ = 4;
     return createTimestamp_;
   }
 
@@ -342,20 +377,24 @@ class OutboundSpeakerIdentifier : public Xrpa::DataStoreObject {
     return localErrorMessage_;
   }
 
-  inline bool checkIdentifiedSpeakerIdChanged(uint64_t fieldsChanged) const {
+  inline bool checkManualRecordingEnabledChanged(uint64_t fieldsChanged) const {
     return fieldsChanged & 1;
   }
 
-  inline bool checkIdentifiedSpeakerNameChanged(uint64_t fieldsChanged) const {
+  inline bool checkIdentifiedSpeakerIdChanged(uint64_t fieldsChanged) const {
     return fieldsChanged & 2;
   }
 
-  inline bool checkConfidenceScoreChanged(uint64_t fieldsChanged) const {
+  inline bool checkIdentifiedSpeakerNameChanged(uint64_t fieldsChanged) const {
     return fieldsChanged & 4;
   }
 
-  inline bool checkErrorMessageChanged(uint64_t fieldsChanged) const {
+  inline bool checkConfidenceScoreChanged(uint64_t fieldsChanged) const {
     return fieldsChanged & 8;
+  }
+
+  inline bool checkErrorMessageChanged(uint64_t fieldsChanged) const {
+    return fieldsChanged & 16;
   }
 
   template <typename SampleType>
@@ -383,6 +422,9 @@ class OutboundSpeakerIdentifier : public Xrpa::DataStoreObject {
   virtual void handleXrpaFieldsChanged(uint64_t fieldsChanged) {
     if (xrpaFieldsChangedHandler_) { xrpaFieldsChangedHandler_(fieldsChanged); }
   }
+
+  // Enable manual recording mode - set true to start, false to stop and process
+  bool localManualRecordingEnabled_ = false;
 
   uint64_t createTimestamp_;
   uint64_t changeBits_ = 0;
@@ -696,7 +738,7 @@ class OutboundReferenceSpeakerAudioFile : public Xrpa::DataStoreObject {
 // Object Collections
 class OutboundSpeakerIdentifierReaderCollection : public Xrpa::ObjectCollection<SpeakerIdentifierReader, std::shared_ptr<OutboundSpeakerIdentifier>> {
  public:
-  explicit OutboundSpeakerIdentifierReaderCollection(Xrpa::DataStoreReconciler* reconciler) : Xrpa::ObjectCollection<SpeakerIdentifierReader, std::shared_ptr<OutboundSpeakerIdentifier>>(reconciler, 0, 15, 0, true) {}
+  explicit OutboundSpeakerIdentifierReaderCollection(Xrpa::DataStoreReconciler* reconciler) : Xrpa::ObjectCollection<SpeakerIdentifierReader, std::shared_ptr<OutboundSpeakerIdentifier>>(reconciler, 0, 30, 0, true) {}
 
   void addObject(std::shared_ptr<OutboundSpeakerIdentifier> obj) {
     addObjectInternal(obj);

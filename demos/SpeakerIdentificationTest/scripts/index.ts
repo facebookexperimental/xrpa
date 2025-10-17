@@ -36,6 +36,7 @@ const apidir = path.join(__dirname, "..", "api");
 const SpeakerIdentificationTestProgram = XrpaDataflowProgram("SpeakerIdentificationTestProgram", () => {
   const audioInput = InputFromSystemAudio({
     frameRate: 16000,
+    numChannels: 1,
   });
 
   const identifier = SpeakerIdentifier({

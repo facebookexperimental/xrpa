@@ -36,7 +36,7 @@
     "perception-services:object-recognition": "yarn workspace @xrpa/xred-perception-services run ObjectRecognition",
     "sensor-input:camera": "yarn workspace @xrpa/xred-sensor-input run Camera",
     "sensor-input:aria": "yarn workspace @xrpa/xred-sensor-input run Aria",
-    "speaker-identification": "yarn workspace @xrpa/xred-speaker-identification run SpeakerIdentification",
+    "speaker-identification": "yarn workspace @xrpa/xred-speaker-identification run SpeakerID",
     "tactile-pressure": "yarn workspace @xrpa/xred-tactile-pressure run AgiosFtp",
     "text-to-speech": "yarn workspace @xrpa/xred-text-to-speech run TextToSpeech",
     "tracking:fiducials": "yarn workspace @xrpa/xred-tracking run Fiducials",

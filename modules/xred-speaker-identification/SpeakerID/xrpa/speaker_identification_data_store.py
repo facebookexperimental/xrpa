@@ -31,6 +31,10 @@ class SpeakerIdentifierReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterf
     super().__init__(mem_accessor)
     self._read_offset = xrpa_runtime.utils.memory_accessor.MemoryOffset()
 
+  # Enable manual recording mode - set true to start, false to stop and process
+  def get_manual_recording_enabled(self) -> bool:
+    return (self._mem_accessor.read_int(self._read_offset) == 1)
+
   # ID of the identified speaker, empty if no match
   def get_identified_speaker_id(self) -> str:
     return self._mem_accessor.read_str(self._read_offset)
@@ -47,17 +51,20 @@ class SpeakerIdentifierReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterf
   def get_error_message(self) -> str:
     return self._mem_accessor.read_str(self._read_offset)
 
-  def check_identified_speaker_id_changed(self, fields_changed: int) -> bool:
+  def check_manual_recording_enabled_changed(self, fields_changed: int) -> bool:
     return (fields_changed & 1) != 0
 
-  def check_identified_speaker_name_changed(self, fields_changed: int) -> bool:
+  def check_identified_speaker_id_changed(self, fields_changed: int) -> bool:
     return (fields_changed & 2) != 0
 
-  def check_confidence_score_changed(self, fields_changed: int) -> bool:
+  def check_identified_speaker_name_changed(self, fields_changed: int) -> bool:
     return (fields_changed & 4) != 0
 
-  def check_error_message_changed(self, fields_changed: int) -> bool:
+  def check_confidence_score_changed(self, fields_changed: int) -> bool:
     return (fields_changed & 8) != 0
+
+  def check_error_message_changed(self, fields_changed: int) -> bool:
+    return (fields_changed & 16) != 0
 
 class SpeakerIdentifierWriter(SpeakerIdentifierReader):
   def __init__(self, mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor):
@@ -78,6 +85,9 @@ class SpeakerIdentifierWriter(SpeakerIdentifierReader):
     change_event.set_object_id(id)
     change_event.set_fields_changed(fields_changed)
     return SpeakerIdentifierWriter(change_event.access_change_data())
+
+  def set_manual_recording_enabled(self, value: bool) -> None:
+    self._mem_accessor.write_int((1 if value is True else 0), self._write_offset)
 
   def set_identified_speaker_id(self, value: str) -> None:
     self._mem_accessor.write_str(value, self._write_offset)
@@ -213,6 +223,7 @@ class ReconciledSpeakerIdentifier(xrpa_runtime.reconciler.data_store_interfaces.
     self._local_error_message = ""
     self._change_bits = 0
     self._change_byte_count = 0
+    self._local_manual_recording_enabled = False
     self._audio_signal_signal_handler = None
 
   def _handle_xrpa_fields_changed(self, fields_changed: int) -> None:
@@ -232,78 +243,86 @@ class ReconciledSpeakerIdentifier(xrpa_runtime.reconciler.data_store_interfaces.
 
   def set_identified_speaker_id(self, identified_speaker_id: str) -> None:
     self._local_identified_speaker_id = identified_speaker_id
-    if (self._change_bits & 1) == 0:
-      self._change_bits |= 1
+    if (self._change_bits & 2) == 0:
+      self._change_bits |= 2
       self._change_byte_count += 4
     self._change_byte_count += xrpa_runtime.utils.memory_accessor.MemoryAccessor.dyn_size_of_str(self._local_identified_speaker_id)
     if self._collection is not None:
       if not self._has_notified_needs_write:
         self._collection.notify_object_needs_write(self.get_xrpa_id())
         self._has_notified_needs_write = True
-      self._collection.set_dirty(self.get_xrpa_id(), 1)
+      self._collection.set_dirty(self.get_xrpa_id(), 2)
 
   def get_identified_speaker_name(self) -> str:
     return self._local_identified_speaker_name
 
   def set_identified_speaker_name(self, identified_speaker_name: str) -> None:
     self._local_identified_speaker_name = identified_speaker_name
-    if (self._change_bits & 2) == 0:
-      self._change_bits |= 2
+    if (self._change_bits & 4) == 0:
+      self._change_bits |= 4
       self._change_byte_count += 4
     self._change_byte_count += xrpa_runtime.utils.memory_accessor.MemoryAccessor.dyn_size_of_str(self._local_identified_speaker_name)
     if self._collection is not None:
       if not self._has_notified_needs_write:
         self._collection.notify_object_needs_write(self.get_xrpa_id())
         self._has_notified_needs_write = True
-      self._collection.set_dirty(self.get_xrpa_id(), 2)
+      self._collection.set_dirty(self.get_xrpa_id(), 4)
 
   def get_confidence_score(self) -> int:
     return self._local_confidence_score
 
   def set_confidence_score(self, confidence_score: int) -> None:
     self._local_confidence_score = confidence_score
-    if (self._change_bits & 4) == 0:
-      self._change_bits |= 4
-      self._change_byte_count += 4
-    if self._collection is not None:
-      if not self._has_notified_needs_write:
-        self._collection.notify_object_needs_write(self.get_xrpa_id())
-        self._has_notified_needs_write = True
-      self._collection.set_dirty(self.get_xrpa_id(), 4)
-
-  def get_error_message(self) -> str:
-    return self._local_error_message
-
-  def set_error_message(self, error_message: str) -> None:
-    self._local_error_message = error_message
     if (self._change_bits & 8) == 0:
       self._change_bits |= 8
       self._change_byte_count += 4
-    self._change_byte_count += xrpa_runtime.utils.memory_accessor.MemoryAccessor.dyn_size_of_str(self._local_error_message)
     if self._collection is not None:
       if not self._has_notified_needs_write:
         self._collection.notify_object_needs_write(self.get_xrpa_id())
         self._has_notified_needs_write = True
       self._collection.set_dirty(self.get_xrpa_id(), 8)
 
+  def get_error_message(self) -> str:
+    return self._local_error_message
+
+  def set_error_message(self, error_message: str) -> None:
+    self._local_error_message = error_message
+    if (self._change_bits & 16) == 0:
+      self._change_bits |= 16
+      self._change_byte_count += 4
+    self._change_byte_count += xrpa_runtime.utils.memory_accessor.MemoryAccessor.dyn_size_of_str(self._local_error_message)
+    if self._collection is not None:
+      if not self._has_notified_needs_write:
+        self._collection.notify_object_needs_write(self.get_xrpa_id())
+        self._has_notified_needs_write = True
+      self._collection.set_dirty(self.get_xrpa_id(), 16)
+
   def process_ds_update(self, value: SpeakerIdentifierReader, fields_changed: int) -> None:
+    if value.check_manual_recording_enabled_changed(fields_changed):
+      self._local_manual_recording_enabled = value.get_manual_recording_enabled()
     self._handle_xrpa_fields_changed(fields_changed)
 
   @staticmethod
   def create(id: xrpa_runtime.utils.xrpa_types.ObjectUuid, obj: SpeakerIdentifierReader, collection: xrpa_runtime.reconciler.data_store_interfaces.IObjectCollection) -> "ReconciledSpeakerIdentifier":
     return ReconciledSpeakerIdentifier(id, collection)
 
-  def check_identified_speaker_id_changed(self, fields_changed: int) -> bool:
+  def get_manual_recording_enabled(self) -> bool:
+    return self._local_manual_recording_enabled
+
+  def check_manual_recording_enabled_changed(self, fields_changed: int) -> bool:
     return (fields_changed & 1) != 0
 
-  def check_identified_speaker_name_changed(self, fields_changed: int) -> bool:
+  def check_identified_speaker_id_changed(self, fields_changed: int) -> bool:
     return (fields_changed & 2) != 0
 
-  def check_confidence_score_changed(self, fields_changed: int) -> bool:
+  def check_identified_speaker_name_changed(self, fields_changed: int) -> bool:
     return (fields_changed & 4) != 0
 
-  def check_error_message_changed(self, fields_changed: int) -> bool:
+  def check_confidence_score_changed(self, fields_changed: int) -> bool:
     return (fields_changed & 8) != 0
+
+  def check_error_message_changed(self, fields_changed: int) -> bool:
+    return (fields_changed & 16) != 0
 
   def on_audio_signal(self, handler: xrpa_runtime.signals.inbound_signal_data.InboundSignalDataInterface) -> None:
     self._audio_signal_signal_handler = handler
@@ -319,20 +338,20 @@ class ReconciledSpeakerIdentifier(xrpa_runtime.reconciler.data_store_interfaces.
     obj_accessor = SpeakerIdentifierWriter.update(accessor, self.get_collection_id(), self.get_xrpa_id(), self._change_bits, self._change_byte_count)
     if obj_accessor is None or obj_accessor.is_null():
       return
-    if (self._change_bits & 1) != 0:
-      obj_accessor.set_identified_speaker_id(self._local_identified_speaker_id)
     if (self._change_bits & 2) != 0:
-      obj_accessor.set_identified_speaker_name(self._local_identified_speaker_name)
+      obj_accessor.set_identified_speaker_id(self._local_identified_speaker_id)
     if (self._change_bits & 4) != 0:
-      obj_accessor.set_confidence_score(self._local_confidence_score)
+      obj_accessor.set_identified_speaker_name(self._local_identified_speaker_name)
     if (self._change_bits & 8) != 0:
+      obj_accessor.set_confidence_score(self._local_confidence_score)
+    if (self._change_bits & 16) != 0:
       obj_accessor.set_error_message(self._local_error_message)
     self._change_bits = 0
     self._change_byte_count = 0
     self._has_notified_needs_write = False
 
   def prep_ds_full_update(self) -> int:
-    self._change_bits = 15
+    self._change_bits = 30
     self._change_byte_count = xrpa_runtime.utils.memory_accessor.MemoryAccessor.dyn_size_of_str(self._local_identified_speaker_id) + xrpa_runtime.utils.memory_accessor.MemoryAccessor.dyn_size_of_str(self._local_identified_speaker_name) + xrpa_runtime.utils.memory_accessor.MemoryAccessor.dyn_size_of_str(self._local_error_message) + 16
     return 1
 
@@ -461,7 +480,7 @@ class ReconciledReferenceSpeakerAudioFile(xrpa_runtime.reconciler.data_store_int
 # Object Collections
 class InboundSpeakerIdentifierReaderCollection(xrpa_runtime.reconciler.object_collection.ObjectCollection[SpeakerIdentifierReader, ReconciledSpeakerIdentifier]):
   def __init__(self, reconciler: xrpa_runtime.reconciler.data_store_reconciler.DataStoreReconciler):
-    super().__init__(SpeakerIdentifierReader, reconciler, 0, 0, 0, False)
+    super().__init__(SpeakerIdentifierReader, reconciler, 0, 1, 0, False)
     self._set_create_delegate_internal(ReconciledSpeakerIdentifier.create)
 
   def set_create_delegate(self, create_delegate: typing.Callable[[xrpa_runtime.utils.xrpa_types.ObjectUuid, SpeakerIdentifierReader, xrpa_runtime.reconciler.data_store_interfaces.IObjectCollection], ReconciledSpeakerIdentifier]) -> None:

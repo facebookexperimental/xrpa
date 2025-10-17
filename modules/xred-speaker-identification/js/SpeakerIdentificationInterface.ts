@@ -17,9 +17,11 @@
 
 import {
   bindExternalProgram,
+  Boolean,
   Collection,
   Count,
   GameComponentOwner,
+  Input,
   Instantiate,
   isDataflowForeignObjectInstantiation,
   ObjectField,
@@ -44,6 +46,8 @@ export const XredSpeakerIdentificationInterface = XrpaProgramInterface("Xred.Spe
     maxCount: 1,
     fields: {
       audioSignal: Signal,
+
+      manualRecordingEnabled: Input(Boolean(false, "Enable manual recording mode - set true to start, false to stop and process")),
 
       identifiedSpeakerId: Output(String("", "ID of the identified speaker, empty if no match")),
       identifiedSpeakerName: Output(String("", "Name of the identified speaker, empty if no match")),
@@ -79,6 +83,7 @@ export interface ReferenceSpeakerParams {
 
 export interface SpeakerIdentifierParams {
   audioSignal: XrpaDataflowConnection | XrpaProgramParam;
+  manualRecordingEnabled?: XrpaDataflowConnection | XrpaProgramParam;
   speakers: ReferenceSpeakerParams[];
 }
 
@@ -92,6 +97,7 @@ export function SpeakerIdentifier(params: SpeakerIdentifierParams) {
 
   identifierNode.fieldValues = {
     audioSignal: params.audioSignal,
+    manualRecordingEnabled: params.manualRecordingEnabled,
   };
 
   for (const speakerConfig of params.speakers) {

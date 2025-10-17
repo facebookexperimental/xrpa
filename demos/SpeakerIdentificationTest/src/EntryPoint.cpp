@@ -17,6 +17,7 @@
 #include <lib/SpeakerIdentificationTestModule.h>
 #include <lib/SpeakerIdentificationTestProgram.h>
 
+#include <chrono>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -75,10 +76,40 @@ void EntryPoint(SpeakerIdentificationTestModule* moduleData) {
   std::cout << "[SpeakerIdentificationTest] Callbacks set up successfully" << std::endl;
   std::cout << "[SpeakerIdentificationTest] Starting main loop..." << std::endl;
   std::cout << "[SpeakerIdentificationTest] Listening for audio from microphone..." << std::endl;
-  std::cout << "[SpeakerIdentificationTest] Press Ctrl+C to exit." << std::endl;
+  std::cout << "\n=== TESTING MANUAL RECORDING WITH BOOLEAN FLAG ===" << std::endl;
+  std::cout << "Will enable manual recording in 3 seconds (set to true)" << std::endl;
+  std::cout << "Then disable after 5 seconds (set to false to process)" << std::endl;
+
+  auto startTime = std::chrono::steady_clock::now();
+  bool startedRecording = false;
+  bool stoppedRecording = false;
 
   try {
-    moduleData->run(100, [&]() {});
+    moduleData->run(100, [&]() {
+      auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+                         std::chrono::steady_clock::now() - startTime)
+                         .count();
+
+      if (!startedRecording && elapsed >= 3) {
+        std::cout << "\n>>> ENABLING MANUAL RECORDING (setManualRecordingEnabled(true)) <<<"
+                  << std::endl;
+        // Access all speaker identifier objects in the collection
+        for (auto obj : *moduleData->speakerIdentificationDataStore->SpeakerIdentifier) {
+          obj->setManualRecordingEnabled(true);
+        }
+        startedRecording = true;
+      }
+
+      if (startedRecording && !stoppedRecording && elapsed >= 30) {
+        std::cout
+            << "\n>>> DISABLING MANUAL RECORDING (setManualRecordingEnabled(false)) - PROCESSING... <<<"
+            << std::endl;
+        for (auto obj : *moduleData->speakerIdentificationDataStore->SpeakerIdentifier) {
+          obj->setManualRecordingEnabled(false);
+        }
+        stoppedRecording = true;
+      }
+    });
   } catch (const std::exception& e) {
     std::cerr << "[SpeakerIdentificationTest] EXCEPTION: " << e.what() << std::endl;
   } catch (...) {
