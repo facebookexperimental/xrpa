@@ -45,6 +45,12 @@ namespace Xrpa
             int framesPerSecond,
             int framesPerPacket) where SampleType : unmanaged
         {
+            if (source == null)
+            {
+                _signalSource = null;
+                return;
+            }
+
             // wrapper lambda for the type cast
             _signalSource = (packet) =>
             {
@@ -60,6 +66,12 @@ namespace Xrpa
             int framesPerSecond,
             int framesPerPacket) where SampleType : unmanaged
         {
+            if (ringBuffer == null)
+            {
+                _signalSource = null;
+                return;
+            }
+
             _signalSource = (packet) =>
             {
                 packet.AccessChannelData<SampleType>().ConsumeFromRingBuffer(ringBuffer);

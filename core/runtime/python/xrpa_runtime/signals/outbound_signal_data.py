@@ -59,7 +59,10 @@ class OutboundSignalData:
         frames_per_packet: int,
         type_name: str,
     ) -> None:
-        if isinstance(source, SignalRingBuffer):
+        if source is None:
+            self._signal_source = None
+            return
+        elif isinstance(source, SignalRingBuffer):
 
             def signal_source_rb_wrapper(packet: SignalPacket) -> None:
                 channel_data = packet.access_channel_data(type_name)

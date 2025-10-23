@@ -36,6 +36,11 @@ class OutboundSignalData {
       int32_t numChannels,
       int32_t framesPerSecond,
       int32_t framesPerPacket) {
+    if (!source) {
+      signalSource_ = nullptr;
+      return;
+    }
+
     // wrapper lambda for the type cast, =(
     signalSource_ = [source, this](SignalPacket& packet) {
       source(packet.accessChannelData<T>(), framesPerSecond_, curReadPos_);
@@ -50,6 +55,11 @@ class OutboundSignalData {
       int32_t numChannels,
       int32_t framesPerSecond,
       int32_t framesPerPacket) {
+    if (!ringBuffer) {
+      signalSource_ = nullptr;
+      return;
+    }
+
     signalSource_ = [ringBuffer](SignalPacket& packet) {
       packet.accessChannelData<T>().consumeFromRingBuffer(ringBuffer);
     };

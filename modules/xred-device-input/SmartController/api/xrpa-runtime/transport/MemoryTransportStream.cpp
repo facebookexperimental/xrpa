@@ -74,10 +74,11 @@ bool MemoryTransportStream::initializeMemory(bool didCreate) {
   }
 
   if (didCreate) {
-    return mutex_->lockAndExecute(INIT_TIMEOUT.count(), [&]() {
-      MemoryTransportStreamAccessor streamAccessor{accessMemory()};
-      streamAccessor.initialize(config_);
-    });
+    return mutex_->lockAndExecute(
+        std::chrono::duration_cast<std::chrono::milliseconds>(INIT_TIMEOUT).count(), [&]() {
+          MemoryTransportStreamAccessor streamAccessor{accessMemory()};
+          streamAccessor.initialize(config_);
+        });
   }
 
   // lock-free version check against the transport header
