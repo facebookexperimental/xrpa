@@ -96,6 +96,15 @@ class GestureResultReader : public Xrpa::ObjectAccessorInterface {
     return memAccessor_.readValue<std::string>(readOffset_);
   }
 
+  MotionDirection getMotionDirection() {
+    return static_cast<MotionDirection>(memAccessor_.readValue<uint32_t>(readOffset_));
+  }
+
+  // Distance/magnitude of motion (0.0 = no movement, 1.0 = significant movement)
+  float getMotionOffset() {
+    return DSScalar::readValue(memAccessor_, readOffset_);
+  }
+
  private:
   Xrpa::MemoryOffset readOffset_;
 };
@@ -124,6 +133,14 @@ class GestureResultWriter : public GestureResultReader {
 
   void setErrorMessage(const std::string& value) {
     memAccessor_.writeValue<std::string>(value, writeOffset_);
+  }
+
+  void setMotionDirection(MotionDirection value) {
+    memAccessor_.writeValue<uint32_t>(static_cast<uint32_t>(value), writeOffset_);
+  }
+
+  void setMotionOffset(float value) {
+    DSScalar::writeValue(value, memAccessor_, writeOffset_);
   }
 
  private:
@@ -263,7 +280,7 @@ class OutboundGestureDetectionReaderCollection : public Xrpa::ObjectCollection<G
 class GestureDetectionDataStore : public Xrpa::DataStoreReconciler {
  public:
   GestureDetectionDataStore(std::weak_ptr<Xrpa::TransportStream> inboundTransport, std::weak_ptr<Xrpa::TransportStream> outboundTransport)
-      : Xrpa::DataStoreReconciler(inboundTransport, outboundTransport, 37327176) {
+      : Xrpa::DataStoreReconciler(inboundTransport, outboundTransport, 37327224) {
     GestureDetection = std::make_shared<OutboundGestureDetectionReaderCollection>(this);
     registerCollection(GestureDetection);
   }

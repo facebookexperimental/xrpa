@@ -24,7 +24,7 @@ from xrpa.gesture_detection_data_store import (
     ImageInputReader,
     ReconciledGestureDetection,
 )
-from xrpa.gesture_detection_types import GestureType
+from xrpa.gesture_detection_types import GestureType, MotionDirection
 
 
 def get_resource_path(relative_path):
@@ -75,6 +75,12 @@ class GestureDetectionModule(ReconciledGestureDetection):
     def _send_result(self, gesture_result):
         try:
             gesture_enum = GestureType(gesture_result["gestureType"])
+            motion_enum = MotionDirection(gesture_result["motionDirection"])
+
+            print(
+                f"[GestureDetection]: Sending gesture: {gesture_enum.name}, "
+                f"motion: {motion_enum.name}, offset: {gesture_result['motionOffset']:.2f}"
+            )
 
             self.send_gesture_result(
                 gesture_result["timestamp"],
@@ -82,6 +88,8 @@ class GestureDetectionModule(ReconciledGestureDetection):
                 gesture_result["confidence"],
                 gesture_result["handDetected"],
                 gesture_result["errorMessage"],
+                motion_enum,
+                gesture_result["motionOffset"],
             )
         except Exception as e:
             print(f"[GestureDetection]: Error sending gesture result: {e}")

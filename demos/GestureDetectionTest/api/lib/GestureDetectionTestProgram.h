@@ -38,7 +38,7 @@ class GestureDetectionTestProgram {
     destroyObjects();
   }
 
-  void onGestureResult(std::function<void(uint64_t, std::chrono::nanoseconds, GestureDetectionDataStore::GestureType, float, bool, const std::string&)> handler) {
+  void onGestureResult(std::function<void(uint64_t, std::chrono::nanoseconds, GestureDetectionDataStore::GestureType, float, bool, const std::string&, GestureDetectionDataStore::MotionDirection, float)> handler) {
     paramGestureResult_ = handler;
   }
 
@@ -53,8 +53,10 @@ class GestureDetectionTestProgram {
     auto confidence = msg.getConfidence();
     auto handDetected = msg.getHandDetected();
     auto errorMessage = msg.getErrorMessage();
+    auto motionDirection = msg.getMotionDirection();
+    auto motionOffset = msg.getMotionOffset();
     if (paramGestureResult_) {
-      paramGestureResult_(msgTimestamp, timestamp, gestureType, confidence, handDetected, errorMessage);
+      paramGestureResult_(msgTimestamp, timestamp, gestureType, confidence, handDetected, errorMessage, motionDirection, motionOffset);
     }
   }
 
@@ -92,7 +94,7 @@ class GestureDetectionTestProgram {
   std::shared_ptr<CameraDataStore::CameraDataStore> datastoreCamera_;
   std::shared_ptr<GestureDetectionDataStore::GestureDetectionDataStore> datastoreGestureDetection_;
   std::shared_ptr<ImageViewerDataStore::ImageViewerDataStore> datastoreImageViewer_;
-  std::function<void(uint64_t, std::chrono::nanoseconds, GestureDetectionDataStore::GestureType, float, bool, const std::string&)> paramGestureResult_ = nullptr;
+  std::function<void(uint64_t, std::chrono::nanoseconds, GestureDetectionDataStore::GestureType, float, bool, const std::string&, GestureDetectionDataStore::MotionDirection, float)> paramGestureResult_ = nullptr;
   std::shared_ptr<CameraDataStore::OutboundCameraFeed> objCameraCameraFeed0_;
   std::shared_ptr<GestureDetectionDataStore::OutboundGestureDetection> objGestureDetectionGestureDetection2_;
   std::shared_ptr<ImageViewerDataStore::OutboundImageWindow> objImageViewerImageWindow1_;

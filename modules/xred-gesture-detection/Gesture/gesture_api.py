@@ -15,22 +15,111 @@
 import io
 import os
 import time
+from collections import deque
+from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 import mediapipe as mp
 import numpy as np
 from PIL import Image
 
-from xrpa.gesture_detection_types import GestureType
+from xrpa.gesture_detection_types import GestureType, MotionDirection
+
+
+@dataclass
+class LandmarkPosition:
+    x: float
+    y: float
+    timestamp_ms: int
+
+
+@dataclass
+class MotionResult:
+    direction: MotionDirection
+    speed: float
+    is_active: bool
+    confidence: float
+
+
+class MotionDetector:
+    def __init__(self, history_size: int = 10, sensitivity: float = 0.02):
+        self.history_size = history_size
+        self.sensitivity = sensitivity
+        self.position_history = deque(maxlen=history_size)
+
+    def add_position(self, x: float, y: float, timestamp_ms: int) -> None:
+        position = LandmarkPosition(x, y, timestamp_ms)
+        self.position_history.append(position)
+
+    def detect_motion(self) -> MotionResult:
+        if len(self.position_history) < 3:
+            return MotionResult(
+                direction=MotionDirection.Static,
+                speed=0.0,
+                is_active=False,
+                confidence=0.0,
+            )
+
+        recent_positions = list(self.position_history)[-5:]
+
+        start_pos = recent_positions[0]
+        end_pos = recent_positions[-1]
+        delta_x = end_pos.x - start_pos.x
+        delta_y = end_pos.y - start_pos.y
+
+        movement_magnitude = np.sqrt(delta_x**2 + delta_y**2)
+
+        time_diff_ms = end_pos.timestamp_ms - start_pos.timestamp_ms
+        speed = movement_magnitude / max(time_diff_ms, 1) * 1000
+        normalized_speed = min(speed / 500, 1.0)
+
+        if movement_magnitude < self.sensitivity:
+            return MotionResult(
+                direction=MotionDirection.Static,
+                speed=0.0,
+                is_active=False,
+                confidence=0.0,
+            )
+
+        if abs(delta_x) > abs(delta_y):
+            direction = MotionDirection.Left if delta_x > 0 else MotionDirection.Right
+            confidence = abs(delta_x) / movement_magnitude
+        else:
+            direction = MotionDirection.Up if delta_y < 0 else MotionDirection.Down
+            confidence = abs(delta_y) / movement_magnitude
+
+        return MotionResult(
+            direction=direction,
+            speed=normalized_speed,
+            is_active=True,
+            confidence=confidence,
+        )
+
+    def reset(self) -> None:
+        self.position_history.clear()
 
 
 class GestureAPI:
+    GESTURE_KEY_LANDMARKS = {
+        GestureType.PointingUp.value: 8,  # Index finger tip
+        GestureType.OpenPalm.value: 9,  # Middle finger MCP joint
+        GestureType.ClosedFist.value: 9,  # Middle finger MCP joint
+        GestureType.Victory.value: 12,  # Middle finger tip
+        GestureType.ThumbUp.value: 4,  # Thumb tip
+        GestureType.ThumbDown.value: 4,  # Thumb tip
+        GestureType.ILoveYou.value: 8,  # Index finger tip
+        GestureType.Pinch.value: 8,  # Index finger tip
+    }
+
     def __init__(self, model_path: Optional[str] = None):
         self._model_path = model_path
         self._recognizer = None
         self._initialized = False
         self._latest_result = None
         self._frame_timestamp_ms = 0
+
+        self._motion_detector = MotionDetector(history_size=10, sensitivity=0.02)
+        self._current_gesture_type = GestureType.None_.value
 
     def set_model_path(self, model_path: str) -> None:
         self._model_path = model_path
@@ -78,6 +167,46 @@ class GestureAPI:
 
             traceback.print_exc()
 
+    def _get_key_landmark_for_gesture(self, gesture_type: int) -> int:
+        return self.GESTURE_KEY_LANDMARKS.get(gesture_type, 9)
+
+    def _calculate_motion_offset(self, result, gesture_type: int) -> float:
+        if not result or not result.hand_landmarks or len(result.hand_landmarks) == 0:
+            return 0.0
+
+        hand_landmarks = result.hand_landmarks[0]
+        landmark_idx = self._get_key_landmark_for_gesture(gesture_type)
+        landmark_pos = hand_landmarks[landmark_idx]
+
+        displacement_x = landmark_pos.x - 0.5
+        displacement_y = landmark_pos.y - 0.5
+        max_displacement = max(abs(displacement_x), abs(displacement_y))
+
+        return min(max_displacement / 0.5, 1.0)
+
+    def _update_motion_tracking(
+        self, result, gesture_type: int, timestamp_ms: int
+    ) -> MotionResult:
+        if gesture_type != self._current_gesture_type:
+            self._motion_detector.reset()
+            self._current_gesture_type = gesture_type
+
+        if not result or not result.hand_landmarks or len(result.hand_landmarks) == 0:
+            return MotionResult(
+                direction=MotionDirection.Static,
+                speed=0.0,
+                is_active=False,
+                confidence=0.0,
+            )
+
+        hand_landmarks = result.hand_landmarks[0]
+        landmark_idx = self._get_key_landmark_for_gesture(gesture_type)
+
+        landmark_pos = hand_landmarks[landmark_idx]
+        self._motion_detector.add_position(landmark_pos.x, landmark_pos.y, timestamp_ms)
+
+        return self._motion_detector.detect_motion()
+
     def _result_callback(self, result, output_image: mp.Image, timestamp_ms: int):
         if result and result.gestures:
             gesture_category = result.gestures[0][0]
@@ -95,21 +224,37 @@ class GestureAPI:
                 gesture_type_id = GestureType.Pinch.value
                 confidence = pinch_confidence
             else:
-                # Map MediaPipe gesture name to integer
                 gesture_type_id = self._map_gesture_name_to_int(gesture_name)
+
+            motion_result = self._update_motion_tracking(
+                result, gesture_type_id, timestamp_ms
+            )
+
+            motion_offset = self._calculate_motion_offset(result, gesture_type_id)
 
             self._latest_result = {
                 "gestureType": gesture_type_id,
                 "handDetected": True,
                 "confidence": confidence,
                 "errorMessage": "",
+                "motionDirection": motion_result.direction.value,
+                "motionOffset": motion_offset,
             }
+            print(
+                f"[GestureAPI]: Gesture: {gesture_type_id} (conf: {confidence:.2f}), "
+                f"Motion: {motion_result.direction.name} (offset: {motion_offset:.2f}, active: {motion_result.is_active})"
+            )
         else:
+            self._motion_detector.reset()
+            self._current_gesture_type = GestureType.None_.value
+
             self._latest_result = {
                 "gestureType": 0,
                 "handDetected": False,
                 "confidence": 0.0,
                 "errorMessage": "",
+                "motionDirection": MotionDirection.Static.value,
+                "motionOffset": 0.0,
             }
 
     def detect_gesture(self, image) -> Dict[str, Any]:
@@ -178,6 +323,8 @@ class GestureAPI:
             "handDetected": hand_detected,
             "confidence": confidence,
             "errorMessage": error,
+            "motionDirection": MotionDirection.Static.value,
+            "motionOffset": 0.0,
         }
 
     def _decode_image_bytes(self, image) -> np.ndarray:
@@ -198,9 +345,7 @@ class GestureAPI:
                 elif image.orientation.value == 3:
                     pil_image = pil_image.rotate(180, expand=True)
 
-            rgb_array = np.array(pil_image)
-
-            return rgb_array
+            return np.array(pil_image)
 
         except Exception as e:
             raise ValueError(f"Failed to decode image data: {e}")

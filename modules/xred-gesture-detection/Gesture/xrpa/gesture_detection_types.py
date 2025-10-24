@@ -20,7 +20,7 @@ import xrpa_runtime.utils.memory_accessor
 import xrpa_runtime.utils.xrpa_types
 
 class gesture_detection_data_store_config:
-  transport_config = xrpa_runtime.utils.xrpa_types.TransportConfig(xrpa_runtime.utils.xrpa_types.HashValue(0x907439eacf9772c4, 0x412c10086fcb8071, 0x6cf7fe50be00b757, 0x7cdb8afb3e5e3b79), 37327248)
+  transport_config = xrpa_runtime.utils.xrpa_types.TransportConfig(xrpa_runtime.utils.xrpa_types.HashValue(0x61aa1cf873aaf74c, 0x514c23f6d31e701d, 0x29b9f041d06819a8, 0x562ec8a5cbb52dae), 37327296)
 
 class ImageFormat(enum.Enum):
   RGB8 = 0
@@ -48,6 +48,13 @@ class GestureType(enum.Enum):
   Victory = 6
   ILoveYou = 7
   Pinch = 8
+
+class MotionDirection(enum.Enum):
+  Static = 0
+  Up = 1
+  Down = 2
+  Left = 3
+  Right = 4
 
 @dataclasses.dataclass
 class GestureImage:

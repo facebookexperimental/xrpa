@@ -33,7 +33,9 @@ void EntryPoint(GestureDetectionTestProgramModule* moduleData) {
                                   GestureDetectionDataStore::GestureType gesture,
                                   float confidence,
                                   bool handDetected,
-                                  const std::string& errorMessage) {
+                                  const std::string& errorMessage,
+                                  GestureDetectionDataStore::MotionDirection motionDirection,
+                                  float motionOffset) {
     std::cout << "[GestureDetection] Timestamp: " << timestamp
               << ", Gesture: " << static_cast<int>(gesture)
               << ", Hand Detected: " << (handDetected ? "true" : "false")
@@ -41,6 +43,7 @@ void EntryPoint(GestureDetectionTestProgramModule* moduleData) {
     if (!errorMessage.empty()) {
       std::cout << ", Error: " << errorMessage;
     }
+    std::cout << ", Motion: " << static_cast<int>(motionDirection) << ", Offset: " << motionOffset;
     std::cout << std::endl;
   });
 

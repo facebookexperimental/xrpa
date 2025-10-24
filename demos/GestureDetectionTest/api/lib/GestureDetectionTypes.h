@@ -29,8 +29,8 @@ namespace GestureDetectionDataStore {
 
 static inline Xrpa::TransportConfig GenTransportConfig() {
   Xrpa::TransportConfig config;
-  config.schemaHash = Xrpa::HashValue(0x5fb90a100b5082e1, 0xb47656ca4efe090e, 0x60abeb3a204d325a, 0x61bbf53392ff9308);
-  config.changelogByteCount = 37327248;
+  config.schemaHash = Xrpa::HashValue(0xd9eb3acecf94627e, 0x1966b591f5dabbed, 0x405a6fde24f0070d, 0xfce40300e85376a4);
+  config.changelogByteCount = 37327296;
   return config;
 }
 
@@ -46,6 +46,14 @@ enum class GestureType: uint32_t {
   Victory = 6,
   ILoveYou = 7,
   Pinch = 8,
+};
+
+enum class MotionDirection: uint32_t {
+  Static = 0,
+  Up = 1,
+  Down = 2,
+  Left = 3,
+  Right = 4,
 };
 
 class DSScalar {

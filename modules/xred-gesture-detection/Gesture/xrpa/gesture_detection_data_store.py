@@ -65,6 +65,13 @@ class GestureResultReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterface)
   def get_error_message(self) -> str:
     return self._mem_accessor.read_str(self._read_offset)
 
+  def get_motion_direction(self) -> xrpa.gesture_detection_types.MotionDirection:
+    return xrpa.gesture_detection_types.MotionDirection(self._mem_accessor.read_int(self._read_offset))
+
+  # Distance/magnitude of motion (0.0 = no movement, 1.0 = significant movement)
+  def get_motion_offset(self) -> float:
+    return xrpa.gesture_detection_types.DSScalar.read_value(self._mem_accessor, self._read_offset)
+
 class GestureResultWriter(GestureResultReader):
   def __init__(self, mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor):
     super().__init__(mem_accessor)
@@ -84,6 +91,12 @@ class GestureResultWriter(GestureResultReader):
 
   def set_error_message(self, value: str) -> None:
     self._mem_accessor.write_str(value, self._write_offset)
+
+  def set_motion_direction(self, value: xrpa.gesture_detection_types.MotionDirection) -> None:
+    self._mem_accessor.write_int(value.value, self._write_offset)
+
+  def set_motion_offset(self, value: float) -> None:
+    xrpa.gesture_detection_types.DSScalar.write_value(value, self._mem_accessor, self._write_offset)
 
 class GestureDetectionReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterface):
   def __init__(self, mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor):
@@ -140,16 +153,18 @@ class ReconciledGestureDetection(xrpa_runtime.reconciler.data_store_interfaces.D
   def on_image_input(self, handler: typing.Callable[[int, ImageInputReader], None]) -> None:
     self._image_input_message_handler = handler
 
-  def send_gesture_result(self, timestamp: int, gesture_type: xrpa.gesture_detection_types.GestureType, confidence: float, hand_detected: bool, error_message: str) -> None:
+  def send_gesture_result(self, timestamp: int, gesture_type: xrpa.gesture_detection_types.GestureType, confidence: float, hand_detected: bool, error_message: str, motion_direction: xrpa.gesture_detection_types.MotionDirection, motion_offset: float) -> None:
     message = GestureResultWriter(self._collection.send_message(
         self.get_xrpa_id(),
         1,
-        xrpa_runtime.utils.memory_accessor.MemoryAccessor.dyn_size_of_str(error_message) + 24))
+        xrpa_runtime.utils.memory_accessor.MemoryAccessor.dyn_size_of_str(error_message) + 32))
     message.set_timestamp(timestamp)
     message.set_gesture_type(gesture_type)
     message.set_confidence(confidence)
     message.set_hand_detected(hand_detected)
     message.set_error_message(error_message)
+    message.set_motion_direction(motion_direction)
+    message.set_motion_offset(motion_offset)
 
   def process_ds_message(self, message_type: int, msg_timestamp: int, message_data: xrpa_runtime.utils.memory_accessor.MemoryAccessor) -> None:
     if message_type == 0:
@@ -175,6 +190,6 @@ class InboundGestureDetectionReaderCollection(xrpa_runtime.reconciler.object_col
 # Data Store Implementation
 class GestureDetectionDataStore(xrpa_runtime.reconciler.data_store_reconciler.DataStoreReconciler):
   def __init__(self, inbound_transport: xrpa_runtime.transport.transport_stream.TransportStream, outbound_transport: xrpa_runtime.transport.transport_stream.TransportStream):
-    super().__init__(inbound_transport, outbound_transport, 37327176)
+    super().__init__(inbound_transport, outbound_transport, 37327224)
     self.GestureDetection = InboundGestureDetectionReaderCollection(self)
     self._register_collection(self.GestureDetection)

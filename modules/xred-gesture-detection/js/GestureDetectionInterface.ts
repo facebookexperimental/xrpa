@@ -51,6 +51,14 @@ export enum GestureType {
   Pinch = 8,
 }
 
+export enum MotionDirection {
+  Static = 0,
+  Up = 1,
+  Down = 2,
+  Left = 3,
+  Right = 4,
+}
+
 export function getGestureDetectionTypes(
   width = 1920,
   height = 1080,
@@ -85,6 +93,14 @@ function createGestureDetectionInterface(
       "Pinch"
     ]);
 
+    const MotionDirectionEnum = Enum("MotionDirection", [
+      "Static",
+      "Up",
+      "Down",
+      "Left",
+      "Right"
+    ]);
+
     const { gestureImage } = getGestureDetectionTypes(width, height, bytesPerPixel);
 
     const GestureResult = Message("GestureResult", {
@@ -93,6 +109,8 @@ function createGestureDetectionInterface(
       confidence: Scalar(0.0, "Confidence score for the detected gesture (0.0 - 1.0)"),
       handDetected: Boolean(false, "Whether a hand was detected in the frame"),
       errorMessage: String("", "Error message if gesture processing failed"),
+      motionDirection: MotionDirectionEnum,
+      motionOffset: Scalar(0.0, "Distance/magnitude of motion (0.0 = no movement, 1.0 = significant movement)"),
     });
 
     ProgramInput("GestureDetection", Collection({
