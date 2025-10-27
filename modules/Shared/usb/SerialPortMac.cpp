@@ -196,7 +196,7 @@ HandleContainer openSerialPort(const SerialPortInfo& portInfo, int baudRate) {
   }
 
   // Configure the serial port
-  struct termios options {};
+  struct termios options{};
   if (tcgetattr(fd, &options) != 0) {
     std::cout << "Failed to get attributes for " << portInfo.devicePath_ << std::endl;
     close(fd);

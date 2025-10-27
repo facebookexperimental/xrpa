@@ -602,9 +602,10 @@ void BleGattEventHandlerWin32::notify(BLUETOOTH_GATT_VALUE_CHANGED_EVENT* eventD
   if (eventData->CharacteristicValue->DataSize == 0) {
     return;
   }
-  onEvent_(std::vector<uint8_t>(
-      eventData->CharacteristicValue->Data,
-      eventData->CharacteristicValue->Data + eventData->CharacteristicValue->DataSize));
+  onEvent_(
+      std::vector<uint8_t>(
+          eventData->CharacteristicValue->Data,
+          eventData->CharacteristicValue->Data + eventData->CharacteristicValue->DataSize));
 }
 
 #endif
