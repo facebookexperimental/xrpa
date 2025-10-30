@@ -16,23 +16,17 @@
 
 import path from "path";
 import process from "process";
-import { publish } from "xrpa-internal-scripts";
 
 import { SmartControllerStandalone } from "./SmartControllerStandalone";
 
-const OSS_PATH = path.join(__dirname, "..", "..", "..", "..", "..", "..", "libraries", "xred", "oss", "xrpa");
+const BIN_DIR = path.join(__dirname, "..", "bin");
 
-async function runPublish() {
-  await publish({
-    inputPath: path.join(__dirname, ".."),
-    outputPath: path.join(OSS_PATH, "xred-device-input"),
-  });
-
-  await SmartControllerStandalone.buckBuildRelease(path.join(OSS_PATH, "xred-device-input", "bin"));
+async function releaseBuild() {
+  await SmartControllerStandalone.buckBuildRelease(BIN_DIR);
 }
 
 if (require.main === module) {
-  runPublish().catch(err => {
+  releaseBuild().catch(err => {
     console.error(err);
     process.exit(1);
   }).then(() => {

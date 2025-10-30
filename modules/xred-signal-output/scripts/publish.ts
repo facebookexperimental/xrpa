@@ -16,23 +16,17 @@
 
 import path from "path";
 import process from "process";
-import { publish } from "xrpa-internal-scripts";
 
 import { XredOutputStandalone } from "./XredOutputModule";
 
-const OSS_PATH = path.join(__dirname, "..", "..", "..", "..", "..", "..", "libraries", "xred", "oss", "xrpa");
+const BIN_DIR = path.join(__dirname, "..", "bin");
 
-async function runPublish() {
-  await publish({
-    inputPath: path.join(__dirname, ".."),
-    outputPath: path.join(OSS_PATH, "xred-signal-output"),
-  });
-
-  await XredOutputStandalone.buckBuildRelease(path.join(OSS_PATH, "xred-signal-output", "bin"));
+async function releaseBuild() {
+  await XredOutputStandalone.buckBuildRelease(BIN_DIR);
 }
 
 if (require.main === module) {
-  runPublish().catch(err => {
+  releaseBuild().catch(err => {
     console.error(err);
     process.exit(1);
   }).then(() => {

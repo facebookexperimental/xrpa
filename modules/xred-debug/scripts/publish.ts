@@ -14,25 +14,37 @@
  * limitations under the License.
  */
 
+import os from "os";
 import path from "path";
 import process from "process";
-import { publish } from "xrpa-internal-scripts";
+import { buildCondaApplication } from "@xrpa/xrpa-orchestrator";
 
-import { ImageViewerStandalone } from "./ImageViewerStandalone";
+const BIN_DIR = path.join(__dirname, "..", "bin");
 
-const OSS_PATH = path.join(__dirname, "..", "..", "..", "..", "..", "..", "libraries", "xred", "oss", "xrpa");
+const platform = os.platform();
+const isWindows = platform === "win32";
 
-async function runPublish() {
-  await publish({
-    inputPath: path.join(__dirname, ".."),
-    outputPath: path.join(OSS_PATH, "xred-debug"),
-  });
+function getPlatformConfig() {
+  return {
+    environmentFile: path.join(__dirname, "..", "ImageViewer", "environment.yaml"),
+    outputExecutable: isWindows
+      ? path.join(BIN_DIR, "ImageViewer.exe")
+      : path.join(BIN_DIR, "ImageViewer"),
+  };
+}
 
-  await ImageViewerStandalone.buckBuildRelease(path.join(OSS_PATH, "xred-debug", "bin"));
+async function releaseBuild() {
+  const config = getPlatformConfig();
+
+  await buildCondaApplication(
+    config.environmentFile,
+    path.join(__dirname, "..", "ImageViewer", "main.py"),
+    config.outputExecutable,
+  );
 }
 
 if (require.main === module) {
-  runPublish().catch(err => {
+  releaseBuild().catch(err => {
     console.error(err);
     process.exit(1);
   }).then(() => {

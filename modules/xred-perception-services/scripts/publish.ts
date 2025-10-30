@@ -18,12 +18,12 @@ import os from "os";
 import path from "path";
 import process from "process";
 import { buildCondaApplication } from "@xrpa/xrpa-orchestrator";
-import { publish } from "xrpa-internal-scripts";
 import { ImageSelectorStandalone } from "./ImageSelectorStandalone";
 
-const OSS_PATH = path.join(__dirname, "..", "..", "..", "..", "..", "..", "libraries", "xred", "oss", "xrpa");
 const platform = os.platform();
 const isWindows = platform === "win32";
+
+const BIN_DIR = path.join(__dirname, "..", "bin");
 
 function getPlatformConfig() {
   return {
@@ -31,20 +31,15 @@ function getPlatformConfig() {
       ? path.join(__dirname, "..", "LlmHub", "environment-windows.yaml")
       : path.join(__dirname, "..", "LlmHub", "environment.yaml"),
     outputExecutable: isWindows
-      ? path.join(OSS_PATH, "xred-perception-services", "bin", "LlmHub.exe")
-      : path.join(OSS_PATH, "xred-perception-services", "bin", "LlmHub"),
+      ? path.join(BIN_DIR, "LlmHub.exe")
+      : path.join(BIN_DIR, "LlmHub"),
   };
 }
 
-async function runPublish() {
+async function releaseBuild() {
   const config = getPlatformConfig();
 
-  await publish({
-    inputPath: path.join(__dirname, ".."),
-    outputPath: path.join(OSS_PATH, "xred-perception-services"),
-  });
-
-  ImageSelectorStandalone.buckBuildRelease(path.join(OSS_PATH, "xred-perception-services", "bin"));
+  await ImageSelectorStandalone.buckBuildRelease(BIN_DIR);
 
   await buildCondaApplication(
     config.environmentFile,
@@ -57,7 +52,7 @@ async function runPublish() {
 }
 
 if (require.main === module) {
-  runPublish().catch(err => {
+  releaseBuild().catch(err => {
     console.error(err);
     process.exit(1);
   }).then(() => {

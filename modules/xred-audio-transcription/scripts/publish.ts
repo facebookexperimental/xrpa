@@ -18,9 +18,9 @@ import os from "os";
 import path from "path";
 import process from "process";
 import { buildCondaApplication } from "@xrpa/xrpa-orchestrator";
-import { publish } from "xrpa-internal-scripts";
 
-const OSS_PATH = path.join(__dirname, "..", "..", "..", "..", "..", "..", "libraries", "xred", "oss", "xrpa");
+const BIN_DIR = path.join(__dirname, "..", "bin");
+
 const platform = os.platform();
 const isWindows = platform === "win32";
 
@@ -28,18 +28,13 @@ function getPlatformConfig() {
   return {
     environmentFile: path.join(__dirname, "..", "Transcription", "environment.yaml"),
     outputExecutable: isWindows
-      ? path.join(OSS_PATH, "xred-audio-transcription", "bin", "Transcription.exe")
-      : path.join(OSS_PATH, "xred-audio-transcription", "bin", "Transcription"),
+      ? path.join(BIN_DIR, "Transcription.exe")
+      : path.join(BIN_DIR, "Transcription"),
   };
 }
 
-async function runPublish() {
+async function releaseBuild() {
   const config = getPlatformConfig();
-
-  await publish({
-    inputPath: path.join(__dirname, ".."),
-    outputPath: path.join(OSS_PATH, "xred-audio-transcription"),
-  });
 
   await buildCondaApplication(
     config.environmentFile,
@@ -49,7 +44,7 @@ async function runPublish() {
 }
 
 if (require.main === module) {
-  runPublish().catch(err => {
+  releaseBuild().catch(err => {
     console.error(err);
     process.exit(1);
   }).then(() => {

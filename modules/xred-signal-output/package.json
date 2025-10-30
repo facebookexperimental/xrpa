@@ -24,8 +24,7 @@
     "@xrpa/xrpa-orchestrator": "^1.14.0",
     "eslint": "8.32.0",
     "eslint-plugin-import": "^2.27.5",
-    "ts-node": "^10.9.1",
-    "xrpa-internal-scripts": "^1.14.0"
+    "ts-node": "^10.9.1"
   },
   "peerDependencies": {
     "@xrpa/xrpa-orchestrator": "^1.14.0"
