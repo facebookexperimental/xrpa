@@ -3,6 +3,7 @@
   "version": "1.14.0",
   "description": "XRPA Ecosystem Monorepo",
   "private": true,
+  "type": "module",
   "config": {
     "repo_path": "arvr/libraries/xred/xrpa"
   },
@@ -57,7 +58,8 @@
     "eslint": "8.32.0",
     "eslint-plugin-import": "^2.27.5",
     "ts-node": "^10.9.1",
-    "typescript": "5.0.4"
+    "typescript": "5.0.4",
+    "tsx": "^4.19.3"
   },
   "engines": {
     "node": ">=18.0.0",
