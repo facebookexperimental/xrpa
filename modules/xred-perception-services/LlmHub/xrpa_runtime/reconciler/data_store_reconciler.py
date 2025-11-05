@@ -100,7 +100,10 @@ class DataStoreReconciler:
             return
 
         # non-blocking check for inbound changes
-        if not self._inbound_transport_iter.needs_processing():
+        if (
+            not self._inbound_transport_iter.needs_processing()
+            and not self._inbound_transport.needs_heartbeat()
+        ):
             return
 
         did_lock = self._inbound_transport.transact(
@@ -123,7 +126,11 @@ class DataStoreReconciler:
             or self._pending_outbound_full_update
             or len(self._pending_writes) > 0
         )
-        if not has_outbound_messages and not has_outbound_changes:
+        if (
+            not has_outbound_messages
+            and not has_outbound_changes
+            and not self._outbound_transport.needs_heartbeat()
+        ):
             return
 
         if self._outbound_transport is None:

@@ -40,6 +40,8 @@ class MemoryTransportStream : public TransportStream {
 
   std::unique_ptr<TransportStreamIterator> createIterator() override;
 
+  bool needsHeartbeat() override;
+
  protected:
   friend class MemoryTransportStreamIterator;
 

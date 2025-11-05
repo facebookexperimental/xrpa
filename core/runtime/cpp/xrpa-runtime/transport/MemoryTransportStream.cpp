@@ -19,12 +19,19 @@
 #include <xrpa-runtime/transport/MemoryTransportStreamAccessor.h>
 #include <xrpa-runtime/transport/MemoryTransportStreamIterator.h>
 #include <xrpa-runtime/utils/TimeUtils.h>
+#include <iostream>
 
 namespace Xrpa {
 
 using namespace std::chrono_literals;
 
 static constexpr auto INIT_TIMEOUT = 5s;
+
+static constexpr auto TRANSPORT_HEARTBEAT_INTERVAL =
+    std::chrono::duration_cast<std::chrono::microseconds>(1s);
+static constexpr auto TRANSPORT_EXPIRE_TIME =
+    std::chrono::duration_cast<std::chrono::microseconds>(20s);
+
 MemoryTransportStream::MemoryTransportStream(const std::string& name, const TransportConfig& config)
     : name_(name), config_(config), memSize_(MemoryTransportStreamAccessor::getMemSize(config)) {
 #ifdef WIN32
@@ -60,11 +67,18 @@ bool MemoryTransportStream::transact(
         }};
 
     func(&transportAccessor);
+    streamAccessor.setLastUpdateTimestamp();
   });
 }
 
 std::unique_ptr<TransportStreamIterator> MemoryTransportStream::createIterator() {
   return std::make_unique<MemoryTransportStreamIterator>(this);
+}
+
+bool MemoryTransportStream::needsHeartbeat() {
+  // lock-free version check against the transport header
+  MemoryTransportStreamAccessor streamAccessor{accessMemory()};
+  return streamAccessor.getLastUpdateAgeMicroseconds() > TRANSPORT_HEARTBEAT_INTERVAL.count();
 }
 
 bool MemoryTransportStream::initializeMemory(bool didCreate) {
@@ -83,9 +97,23 @@ bool MemoryTransportStream::initializeMemory(bool didCreate) {
   // lock-free version check against the transport header
   MemoryTransportStreamAccessor streamAccessor{accessMemory()};
 
-  // TODO log a warning on version mismatch? it isn't a hard failure but it will be
-  // confusing without a log message
-  return streamAccessor.versionCheck(config_);
+  if (!streamAccessor.versionCheck(config_)) {
+    std::cerr << "MemoryTransportStream::initializeMemory: version check failed" << std::endl;
+    return false;
+  }
+
+  if (streamAccessor.getLastUpdateAgeMicroseconds() > TRANSPORT_EXPIRE_TIME.count()) {
+    // re-initialize the transport memory if it has expired
+    std::cout << "MemoryTransportStream::initializeMemory: transport memory expired, reinitializing"
+              << std::endl;
+    return mutex_->lockAndExecute(
+        std::chrono::duration_cast<std::chrono::milliseconds>(INIT_TIMEOUT).count(), [&]() {
+          MemoryTransportStreamAccessor streamAccessor{accessMemory()};
+          streamAccessor.initialize(config_);
+        });
+  }
+
+  return true;
 }
 
 } // namespace Xrpa

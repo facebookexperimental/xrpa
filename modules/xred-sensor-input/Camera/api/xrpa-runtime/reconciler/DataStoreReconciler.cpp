@@ -69,7 +69,7 @@ void DataStoreReconciler::tickInbound() {
   }
 
   // non-blocking check for inbound changes
-  if (!inboundTransportIterator_->needsProcessing()) {
+  if (!inboundTransportIterator_->needsProcessing() && !inboundTransport->needsHeartbeat()) {
     return;
   }
 
@@ -98,7 +98,7 @@ void DataStoreReconciler::tickOutbound() {
   bool bHasOutboundChanges =
       requestInboundFullUpdate_ || pendingOutboundFullUpdate_ || !pendingWrites_.empty();
 
-  if (!bHasOutboundChanges && !bHasOutboundMessages) {
+  if (!bHasOutboundChanges && !bHasOutboundMessages && !outboundTransport->needsHeartbeat()) {
     return;
   }
 

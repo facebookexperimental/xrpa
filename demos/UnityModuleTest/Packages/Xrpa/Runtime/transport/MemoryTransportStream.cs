@@ -22,6 +22,11 @@ using System.Runtime.InteropServices;
 
 namespace Xrpa
 {
+    public static class TransportConstants
+    {
+        public const long TRANSPORT_HEARTBEAT_INTERVAL = 1_000_000; // 1 second in microseconds
+        public const long TRANSPORT_EXPIRE_TIME = 20_000_000; // 20 seconds in microseconds
+    }
     public abstract class MemoryTransportStream : TransportStream
     {
         public MemoryTransportStream(string name, TransportConfig config)
@@ -72,12 +77,24 @@ namespace Xrpa
                     return eventMem;
                 });
                 func(transportAccessor);
+                streamAccessor.SetLastUpdateTimestamp();
             });
         }
 
         public override TransportStreamIterator CreateIterator()
         {
             return new MemoryTransportStreamIterator(this);
+        }
+
+        public override bool NeedsHeartbeat()
+        {
+            bool ret = false;
+            UnsafeAccessMemory(memAccessor =>
+            {
+                MemoryTransportStreamAccessor streamAccessor = new(memAccessor);
+                ret = streamAccessor.GetLastUpdateAgeMicroseconds() > TransportConstants.TRANSPORT_HEARTBEAT_INTERVAL;
+            });
+            return ret;
         }
 
         public abstract bool UnsafeAccessMemory(System.Action<MemoryAccessor> func);
@@ -112,15 +129,37 @@ namespace Xrpa
             }
 
             // lock-free version check against the transport metadata
-            bool ret = false;
+            bool versionValid = false;
             UnsafeAccessMemory(memAccessor =>
             {
                 MemoryTransportStreamAccessor streamAccessor = new(memAccessor);
-                ret = streamAccessor.VersionCheck(_config);
-                // TODO log a warning on version mismatch? it isn't a hard failure but it will be
-                // confusing without a log message
+                versionValid = streamAccessor.VersionCheck(_config);
             });
-            return ret;
+
+            if (!versionValid)
+            {
+                Console.WriteLine("MemoryTransportStream.InitializeMemory: version check failed");
+                return false;
+            }
+
+            bool expired = false;
+            UnsafeAccessMemory(memAccessor =>
+            {
+                MemoryTransportStreamAccessor streamAccessor = new(memAccessor);
+                expired = streamAccessor.GetLastUpdateAgeMicroseconds() > TransportConstants.TRANSPORT_EXPIRE_TIME;
+            });
+
+            if (expired)
+            {
+                Console.WriteLine("MemoryTransportStream.InitializeMemory: transport memory expired, reinitializing");
+                return Lock(5000, memAccessor =>
+                {
+                    MemoryTransportStreamAccessor streamAccessor = new(memAccessor);
+                    streamAccessor.Initialize(_config);
+                });
+            }
+
+            return true;
         }
 
         protected string _name;

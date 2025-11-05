@@ -31,6 +31,7 @@ namespace Xrpa
         public abstract void Dispose();
         public abstract bool Transact(int timeoutMS, System.Action<TransportStreamAccessor> func);
         public abstract TransportStreamIterator CreateIterator();
+        public abstract bool NeedsHeartbeat();
     }
 
 }

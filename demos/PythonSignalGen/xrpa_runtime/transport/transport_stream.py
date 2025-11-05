@@ -45,3 +45,7 @@ class TransportStream(ABC):
     @abstractmethod
     def create_iterator(self) -> TransportStreamIterator:
         pass
+
+    @abstractmethod
+    def needs_heartbeat(self) -> bool:
+        pass

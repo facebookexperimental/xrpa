@@ -43,6 +43,8 @@ class TransportStream {
       std::function<void(TransportStreamAccessor*)> func) = 0;
 
   virtual std::unique_ptr<TransportStreamIterator> createIterator() = 0;
+
+  virtual bool needsHeartbeat() = 0;
 };
 
 } // namespace Xrpa

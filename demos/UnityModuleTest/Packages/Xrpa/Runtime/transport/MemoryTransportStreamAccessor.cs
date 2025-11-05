@@ -21,9 +21,9 @@ namespace Xrpa
 
     public class MemoryTransportStreamAccessor
     {
-        public static readonly int DS_SIZE = 52;
+        public static readonly int DS_SIZE = 56;
 
-        private const int TRANSPORT_VERSION = 8; // conorwdickinson: unidirectional transport, no object store
+        private const int TRANSPORT_VERSION = 9; // conorwdickinson: heartbeat and expiration
 
         private MemoryAccessor _memSource;
         private MemoryAccessor _memAccessor;
@@ -99,6 +99,20 @@ namespace Xrpa
             }
         }
 
+        public ulong GetLastUpdateAgeMicroseconds()
+        {
+            var offset = new MemoryOffset(52);
+            return TimeUtils.GetCurrentClockTimeMicroseconds() - BaseTimestamp -
+                _memAccessor.ReadUint(offset);
+        }
+
+        public void SetLastUpdateTimestamp()
+        {
+            var offset = new MemoryOffset(52);
+            _memAccessor.WriteUint(
+                (uint)(TimeUtils.GetCurrentClockTimeMicroseconds() - BaseTimestamp), offset);
+        }
+
         public PlacedRingBuffer GetChangelog()
         {
             return new PlacedRingBuffer(_memSource, DS_SIZE);
@@ -126,6 +140,7 @@ namespace Xrpa
             // set this last as it tells anyone accessing the header
             // without a mutex lock that the header is not yet initialized
             BaseTimestamp = TimeUtils.GetCurrentClockTimeMicroseconds();
+            SetLastUpdateTimestamp();
         }
 
         public bool VersionCheck(TransportConfig config)

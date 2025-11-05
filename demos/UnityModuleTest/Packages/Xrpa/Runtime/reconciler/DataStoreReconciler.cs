@@ -80,7 +80,7 @@ namespace Xrpa
             }
 
             // non-blocking check for inbound changes
-            if (!_inboundTransportIter.NeedsProcessing())
+            if (!_inboundTransportIter.NeedsProcessing() && !_inboundTransport.NeedsHeartbeat())
             {
                 return;
             }
@@ -109,7 +109,7 @@ namespace Xrpa
             bool bHasOutboundMessages = _outboundMessages != null && _outboundMessagesIterator.HasNext(_outboundMessages);
             bool bHasOutboundChanges =
                 _requestInboundFullUpdate || _pendingOutboundFullUpdate || _pendingWrites.Count > 0;
-            if (!bHasOutboundChanges && !bHasOutboundMessages)
+            if (!bHasOutboundChanges && !bHasOutboundMessages && !_outboundTransport.NeedsHeartbeat())
             {
                 return;
             }

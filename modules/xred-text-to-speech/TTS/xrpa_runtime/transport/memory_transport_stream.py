@@ -40,6 +40,10 @@ from xrpa_runtime.utils.placed_ring_buffer import (
 )
 from xrpa_runtime.utils.xrpa_types import TransportConfig
 
+# Transport constants
+TRANSPORT_HEARTBEAT_INTERVAL = 1_000_000  # 1 second in microseconds
+TRANSPORT_EXPIRE_TIME = 20_000_000  # 20 seconds in microseconds
+
 
 # helper classes
 
@@ -118,11 +122,26 @@ class MemoryTransportStream(TransportStream):
                 base_timestamp, iter_data, event_allocator
             )
             transact_func(transport_accessor)
+            stream_accessor.set_last_update_timestamp()
 
         self._lock(timeoutMS, transact_locked)
 
     def create_iterator(self) -> TransportStreamIterator:
         return MemoryTransportStreamIterator(self)
+
+    def needs_heartbeat(self) -> bool:
+        ret = False
+
+        def lock_free_check(mem_accessor: MemoryAccessor):
+            nonlocal ret
+            stream_accessor = MemoryTransportStreamAccessor(mem_accessor)
+            ret = (
+                stream_accessor.get_last_update_age_microseconds()
+                > TRANSPORT_HEARTBEAT_INTERVAL
+            )
+
+        self._unsafe_access_memory(lock_free_check)
+        return ret
 
     def _lock(self, timeoutMS: int, lock_func: Callable[[], MemoryAccessor]) -> bool:
         if self._mutex.try_lock(timeoutMS):
@@ -147,12 +166,40 @@ class MemoryTransportStream(TransportStream):
             return self._lock(5000, initialize_created_memory)
 
         # lock-free version check against the transport metadata
-        ret = False
+        version_valid = False
 
         def lock_free_version_check(mem_accessor: MemoryAccessor):
-            nonlocal ret
+            nonlocal version_valid
             stream_accessor = MemoryTransportStreamAccessor(mem_accessor)
-            ret = stream_accessor.version_check(self._config)
+            version_valid = stream_accessor.version_check(self._config)
 
         self._unsafe_access_memory(lock_free_version_check)
-        return ret
+
+        if not version_valid:
+            print("MemoryTransportStream._initialize_memory: version check failed")
+            return False
+
+        expired = False
+
+        def check_expiration(mem_accessor: MemoryAccessor):
+            nonlocal expired
+            stream_accessor = MemoryTransportStreamAccessor(mem_accessor)
+            expired = (
+                stream_accessor.get_last_update_age_microseconds()
+                > TRANSPORT_EXPIRE_TIME
+            )
+
+        self._unsafe_access_memory(check_expiration)
+
+        if expired:
+            print(
+                "MemoryTransportStream._initialize_memory: transport memory expired, reinitializing"
+            )
+
+            def reinitialize_memory(mem_accessor: MemoryAccessor):
+                stream_accessor = MemoryTransportStreamAccessor(mem_accessor)
+                stream_accessor.initialize(self._config)
+
+            return self._lock(5000, reinitialize_memory)
+
+        return True

@@ -25,9 +25,8 @@ namespace Xrpa {
 
 class MemoryTransportStreamAccessor : public ObjectAccessorInterface {
  public:
-  static constexpr int32_t BYTE_COUNT = 52;
-  static constexpr int32_t TRANSPORT_VERSION =
-      8; // conorwdickinson: unidirectional transport, no object store
+  static constexpr int32_t BYTE_COUNT = 56;
+  static constexpr int32_t TRANSPORT_VERSION = 9; // conorwdickinson: heartbeat and expiration
 
   static int32_t getMemSize(const TransportConfig& config) {
     return BYTE_COUNT + PlacedRingBuffer::getMemSize(config.changelogByteCount);
@@ -85,6 +84,25 @@ class MemoryTransportStreamAccessor : public ObjectAccessorInterface {
     memAccessor_.writeValue<int32_t>(id, offset);
   }
 
+  // returns the time in microseconds since the last update
+  uint64_t getLastUpdateAgeMicroseconds() {
+    // stored value is in milliseconds, offset from baseTimestamp
+    auto offset = MemoryOffset(52);
+    auto current_elapsed_us = getCurrentClockTimeMicroseconds() - getBaseTimestamp();
+    auto last_elapsed_ms = memAccessor_.readValue<uint32_t>(offset);
+    auto last_elapsed_us = static_cast<uint64_t>(last_elapsed_ms) * 1000;
+    return current_elapsed_us - last_elapsed_us;
+  }
+
+  // sets the last update timestamp to the current time
+  void setLastUpdateTimestamp() {
+    // stored value is in milliseconds, offset from baseTimestamp
+    auto offset = MemoryOffset(52);
+    auto elapsed_us = getCurrentClockTimeMicroseconds() - getBaseTimestamp();
+    auto elapsed_ms = static_cast<uint32_t>(elapsed_us / 1000);
+    memAccessor_.writeValue<uint32_t>(elapsed_ms, offset);
+  }
+
   PlacedRingBuffer* getChangelog() {
     return static_cast<PlacedRingBuffer*>(memAccessor_.getRawPointer(BYTE_COUNT, 0));
   }
@@ -109,6 +127,7 @@ class MemoryTransportStreamAccessor : public ObjectAccessorInterface {
     // set this last as it tells anyone accessing the header
     // without a mutex lock that the header is not yet initialized
     setBaseTimestamp(getCurrentClockTimeMicroseconds());
+    setLastUpdateTimestamp();
   }
 
   bool versionCheck(const TransportConfig& config) {

@@ -21,8 +21,8 @@ from xrpa_runtime.utils.xrpa_types import HashValue, TransportConfig
 
 
 class MemoryTransportStreamAccessor:
-    DS_SIZE = 52
-    TRANSPORT_VERSION = 8  # conorwdickinson: unidirectional transport, no object store
+    DS_SIZE = 56
+    TRANSPORT_VERSION = 9  # conorwdickinson: heartbeat and expiration
 
     def __init__(self, source: MemoryAccessor):
         self._mem_source = source
@@ -68,6 +68,21 @@ class MemoryTransportStreamAccessor:
     def last_changelog_id(self, value: int):
         self._mem_accessor.write_int(value, MemoryOffset(48))
 
+    def get_last_update_age_microseconds(self) -> int:
+        offset = MemoryOffset(52)
+        return (
+            TimeUtils.get_current_clock_time_microseconds()
+            - self.base_timestamp
+            - self._mem_accessor.read_uint(offset)
+        )
+
+    def set_last_update_timestamp(self):
+        offset = MemoryOffset(52)
+        self._mem_accessor.write_uint(
+            TimeUtils.get_current_clock_time_microseconds() - self.base_timestamp,
+            offset,
+        )
+
     def get_changelog(self) -> PlacedRingBuffer:
         return PlacedRingBuffer(self._mem_source, MemoryTransportStreamAccessor.DS_SIZE)
 
@@ -92,6 +107,7 @@ class MemoryTransportStreamAccessor:
         # set this last as it tells anyone accessing the header
         # without a mutex lock that the header is not yet initialized
         self.base_timestamp = TimeUtils.get_current_clock_time_microseconds()
+        self.set_last_update_timestamp()
 
     def version_check(self, config: TransportConfig) -> bool:
         return (
