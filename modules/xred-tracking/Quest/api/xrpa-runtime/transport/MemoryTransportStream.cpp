@@ -82,36 +82,73 @@ bool MemoryTransportStream::needsHeartbeat() {
   return streamAccessor.getLastUpdateAgeMicroseconds() > TRANSPORT_HEARTBEAT_INTERVAL.count();
 }
 
+bool MemoryTransportStream::initializeMemoryOnCreate() {
+  return mutex_->lockAndExecute(
+      std::chrono::duration_cast<std::chrono::milliseconds>(INIT_TIMEOUT).count(), [&]() {
+        MemoryTransportStreamAccessor streamAccessor{accessMemory()};
+        streamAccessor.initialize(config_);
+      });
+}
+
 bool MemoryTransportStream::initializeMemory(bool didCreate) {
   if (memBuffer_ == nullptr || mutex_ == nullptr) {
     return false;
   }
 
   if (didCreate) {
-    return mutex_->lockAndExecute(
-        std::chrono::duration_cast<std::chrono::milliseconds>(INIT_TIMEOUT).count(), [&]() {
-          MemoryTransportStreamAccessor streamAccessor{accessMemory()};
-          streamAccessor.initialize(config_);
-        });
+    return initializeMemoryOnCreate();
   }
 
   // lock-free version check against the transport header
   MemoryTransportStreamAccessor streamAccessor{accessMemory()};
 
-  if (!streamAccessor.versionCheck(config_)) {
-    std::cerr << "MemoryTransportStream::initializeMemory: version check failed" << std::endl;
+  if (!streamAccessor.isInitialized()) {
+    std::cerr << "MemoryTransportStream(" << name_ << ")::initializeMemory: memory not available\n"
+              << std::flush;
     return false;
   }
 
-  if (streamAccessor.getLastUpdateAgeMicroseconds() > TRANSPORT_EXPIRE_TIME.count()) {
-    // re-initialize the transport memory if it has expired
-    std::cout << "MemoryTransportStream::initializeMemory: transport memory expired, reinitializing"
-              << std::endl;
-    return mutex_->lockAndExecute(
+  if (streamAccessor.getBaseTimestamp() == 0) {
+    // another process could be initializing the memory, so wait for it to finish
+    mutex_->lockAndExecute(
         std::chrono::duration_cast<std::chrono::milliseconds>(INIT_TIMEOUT).count(), [&]() {
-          MemoryTransportStreamAccessor streamAccessor{accessMemory()};
-          streamAccessor.initialize(config_);
+          // no-op, just needed to wait for the other process to finish initializing the memory
         });
+    if (streamAccessor.getBaseTimestamp() == 0) {
+      // if the memory is still not initialized after the timeout, then re-initialize it
+      return initializeMemoryOnCreate();
+    }
+  }
+
+  auto transportVersion = streamAccessor.getTransportVersion();
+  if (transportVersion < 9) {
+    // no heartbeat to check, so re-initialize the transport memory
+    std::cout << "MemoryTransportStream(" << name_
+              << ")::initializeMemory: transport version too old, reinitializing\n"
+              << std::flush;
+    return initializeMemoryOnCreate();
+  }
+
+  // check if the transport memory has expired
+  if (streamAccessor.getLastUpdateAgeMicroseconds() > TRANSPORT_EXPIRE_TIME.count()) {
+    std::cout << "MemoryTransportStream(" << name_
+              << ")::initializeMemory: transport memory expired, reinitializing\n"
+              << std::flush;
+    return initializeMemoryOnCreate();
+  }
+
+  if (transportVersion != MemoryTransportStreamAccessor::TRANSPORT_VERSION) {
+    // transport version mismatch, but the memory is in use, so error out
+    std::cerr << "MemoryTransportStream(" << name_ << ")::initializeMemory: version check failed\n"
+              << std::flush;
+    return false;
+  }
+
+  if (streamAccessor.getSchemaHash() != config_.schemaHash) {
+    // schema hash mismatch, but the memory is in use, so error out
+    std::cerr << "MemoryTransportStream(" << name_ << ")::initializeMemory: schema hash mismatch\n"
+              << std::flush;
+    return false;
   }
 
   return true;

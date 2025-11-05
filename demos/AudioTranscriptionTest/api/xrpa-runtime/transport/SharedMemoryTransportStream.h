@@ -26,8 +26,10 @@ class SharedMemoryTransportStream : public MemoryTransportStream {
   SharedMemoryTransportStream(const std::string& name, const TransportConfig& config);
   ~SharedMemoryTransportStream() override;
 
-#if defined(WIN32)
  private:
+  void shutdown();
+
+#if defined(WIN32)
   void* memHandle_ = nullptr;
 #endif
 };

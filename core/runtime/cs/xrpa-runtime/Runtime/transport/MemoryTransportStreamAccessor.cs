@@ -22,7 +22,7 @@ namespace Xrpa
     {
         public static readonly int DS_SIZE = 56;
 
-        private const int TRANSPORT_VERSION = 9; // conorwdickinson: heartbeat and expiration
+        public const int TRANSPORT_VERSION = 9; // conorwdickinson: heartbeat and expiration
 
         private MemoryAccessor _memSource;
         private MemoryAccessor _memAccessor;
@@ -112,6 +112,11 @@ namespace Xrpa
                 (uint)(TimeUtils.GetCurrentClockTimeMicroseconds() - BaseTimestamp), offset);
         }
 
+        public bool IsInitialized()
+        {
+            return !_memAccessor.IsNull();
+        }
+
         public PlacedRingBuffer GetChangelog()
         {
             return new PlacedRingBuffer(_memSource, DS_SIZE);
@@ -140,11 +145,6 @@ namespace Xrpa
             // without a mutex lock that the header is not yet initialized
             BaseTimestamp = TimeUtils.GetCurrentClockTimeMicroseconds();
             SetLastUpdateTimestamp();
-        }
-
-        public bool VersionCheck(TransportConfig config)
-        {
-            return BaseTimestamp != 0 && TransportVersion == TRANSPORT_VERSION && SchemaHash == config.SchemaHash;
         }
     }
 

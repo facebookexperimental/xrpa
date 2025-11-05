@@ -88,10 +88,16 @@ SharedMemoryTransportStream::SharedMemoryTransportStream(
   close(fd);
 #endif
 
-  initializeMemory(didCreate);
+  if (!initializeMemory(didCreate)) {
+    shutdown();
+  }
 }
 
 SharedMemoryTransportStream::~SharedMemoryTransportStream() {
+  shutdown();
+}
+
+void SharedMemoryTransportStream::shutdown() {
 #if defined(WIN32)
   if (memBuffer_ != nullptr) {
     UnmapViewOfFile(memBuffer_);

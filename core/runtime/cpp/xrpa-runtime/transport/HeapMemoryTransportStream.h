@@ -26,14 +26,19 @@ class HeapMemoryTransportStream : public MemoryTransportStream {
       : MemoryTransportStream(name, config) {
     memoryIsOwned_ = true;
     memBuffer_ = static_cast<unsigned char*>(malloc(memSize_));
-    initializeMemory(true);
+    if (!initializeMemory(true)) {
+      free(memBuffer_);
+      memBuffer_ = nullptr;
+    }
   }
 
   HeapMemoryTransportStream(const std::string& name, const TransportConfig& config, void* memBuffer)
       : MemoryTransportStream(name, config) {
     memoryIsOwned_ = false;
     memBuffer_ = static_cast<unsigned char*>(memBuffer);
-    initializeMemory(false);
+    if (!initializeMemory(false)) {
+      memBuffer_ = nullptr;
+    }
   }
 
   ~HeapMemoryTransportStream() override {

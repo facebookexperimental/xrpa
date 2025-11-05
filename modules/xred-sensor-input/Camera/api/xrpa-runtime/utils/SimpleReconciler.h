@@ -84,8 +84,9 @@ class SimpleReconciler {
  public:
   SimpleReconciler() : accessor_(this) {}
 
-  void reconcile(std::function<void(SimpleReconcilerAccessor<KeyType, ReconciledType>& accessor)>
-                     reconcileFunc) {
+  void reconcile(
+      std::function<void(SimpleReconcilerAccessor<KeyType, ReconciledType>& accessor)>
+          reconcileFunc) {
     accessor_.preReconcile();
     reconcileFunc(accessor_);
     accessor_.postReconcile();

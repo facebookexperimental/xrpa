@@ -156,50 +156,109 @@ class MemoryTransportStream(TransportStream):
     def _unsafe_access_memory(self, access_func: Callable[[], MemoryAccessor]) -> bool:
         pass
 
+    def _initialize_memory_on_create(self) -> bool:
+        def initialize_created_memory(mem_accessor: MemoryAccessor):
+            stream_accessor = MemoryTransportStreamAccessor(mem_accessor)
+            stream_accessor.initialize(self._config)
+
+        return self._lock(5000, initialize_created_memory)
+
     def _initialize_memory(self, did_create: bool):
         if did_create:
+            return self._initialize_memory_on_create()
 
-            def initialize_created_memory(mem_accessor: MemoryAccessor):
-                stream_accessor = MemoryTransportStreamAccessor(mem_accessor)
-                stream_accessor.initialize(self._config)
+        # lock-free version check against the transport header
+        is_initialized = False
 
-            return self._lock(5000, initialize_created_memory)
-
-        # lock-free version check against the transport metadata
-        version_valid = False
-
-        def lock_free_version_check(mem_accessor: MemoryAccessor):
-            nonlocal version_valid
+        def check_initialized(mem_accessor: MemoryAccessor):
+            nonlocal is_initialized
             stream_accessor = MemoryTransportStreamAccessor(mem_accessor)
-            version_valid = stream_accessor.version_check(self._config)
+            is_initialized = stream_accessor.is_initialized()
 
-        self._unsafe_access_memory(lock_free_version_check)
+        self._unsafe_access_memory(check_initialized)
 
-        if not version_valid:
-            print("MemoryTransportStream._initialize_memory: version check failed")
+        if not is_initialized:
+            print(
+                f"MemoryTransportStream({self._name})._initialize_memory: memory not available"
+            )
             return False
 
-        expired = False
+        base_timestamp = 0
 
-        def check_expiration(mem_accessor: MemoryAccessor):
-            nonlocal expired
+        def get_base_timestamp(mem_accessor: MemoryAccessor):
+            nonlocal base_timestamp
             stream_accessor = MemoryTransportStreamAccessor(mem_accessor)
-            expired = (
-                stream_accessor.get_last_update_age_microseconds()
-                > TRANSPORT_EXPIRE_TIME
-            )
+            base_timestamp = stream_accessor.base_timestamp
 
-        self._unsafe_access_memory(check_expiration)
+        self._unsafe_access_memory(get_base_timestamp)
 
-        if expired:
+        if base_timestamp == 0:
+            # another process could be initializing the memory, so wait for it to finish
+            def wait_for_init(mem_accessor: MemoryAccessor):
+                pass
+
+            self._lock(5000, wait_for_init)
+
+            self._unsafe_access_memory(get_base_timestamp)
+            if base_timestamp == 0:
+                # if the memory is still not initialized after the timeout, then re-initialize it
+                return self._initialize_memory_on_create()
+
+        transport_version = 0
+
+        def get_transport_version(mem_accessor: MemoryAccessor):
+            nonlocal transport_version
+            stream_accessor = MemoryTransportStreamAccessor(mem_accessor)
+            transport_version = stream_accessor.transport_version
+
+        self._unsafe_access_memory(get_transport_version)
+
+        if transport_version < 9:
+            # no heartbeat to check, so re-initialize the transport memory
             print(
-                "MemoryTransportStream._initialize_memory: transport memory expired, reinitializing"
+                f"MemoryTransportStream({self._name})._initialize_memory: transport version too old, reinitializing"
+            )
+            return self._initialize_memory_on_create()
+
+        # check if the transport memory has expired
+        last_update_age_microseconds = 0
+
+        def get_last_update_age(mem_accessor: MemoryAccessor):
+            nonlocal last_update_age_microseconds
+            stream_accessor = MemoryTransportStreamAccessor(mem_accessor)
+            last_update_age_microseconds = (
+                stream_accessor.get_last_update_age_microseconds()
             )
 
-            def reinitialize_memory(mem_accessor: MemoryAccessor):
-                stream_accessor = MemoryTransportStreamAccessor(mem_accessor)
-                stream_accessor.initialize(self._config)
+        self._unsafe_access_memory(get_last_update_age)
 
-            return self._lock(5000, reinitialize_memory)
+        if last_update_age_microseconds > TRANSPORT_EXPIRE_TIME:
+            print(
+                f"MemoryTransportStream({self._name})._initialize_memory: transport memory expired, reinitializing"
+            )
+            return self._initialize_memory_on_create()
+
+        if transport_version != MemoryTransportStreamAccessor.TRANSPORT_VERSION:
+            # transport version mismatch, but the memory is in use, so error out
+            print(
+                f"MemoryTransportStream({self._name})._initialize_memory: version check failed"
+            )
+            return False
+
+        schema_hash = None
+
+        def get_schema_hash(mem_accessor: MemoryAccessor):
+            nonlocal schema_hash
+            stream_accessor = MemoryTransportStreamAccessor(mem_accessor)
+            schema_hash = stream_accessor.schema_hash
+
+        self._unsafe_access_memory(get_schema_hash)
+
+        if schema_hash != self._config.schema_hash:
+            # schema hash mismatch, but the memory is in use, so error out
+            print(
+                f"MemoryTransportStream({self._name})._initialize_memory: schema hash mismatch"
+            )
+            return False
 
         return True

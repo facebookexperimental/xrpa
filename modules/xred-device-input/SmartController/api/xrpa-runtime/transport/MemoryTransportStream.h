@@ -58,6 +58,9 @@ class MemoryTransportStream : public TransportStream {
   }
 
   bool initializeMemory(bool didCreate);
+
+ private:
+  bool initializeMemoryOnCreate();
 };
 
 } // namespace Xrpa

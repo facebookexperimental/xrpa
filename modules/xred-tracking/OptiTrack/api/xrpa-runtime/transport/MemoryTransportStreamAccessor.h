@@ -131,12 +131,8 @@ class MemoryTransportStreamAccessor : public ObjectAccessorInterface {
     setLastUpdateTimestamp();
   }
 
-  bool versionCheck(const TransportConfig& config) {
-    if (memAccessor_.isNull()) {
-      return false;
-    }
-    return getBaseTimestamp() != 0 && getTransportVersion() == TRANSPORT_VERSION &&
-        getSchemaHash() == config.schemaHash;
+  bool isInitialized() {
+    return !memAccessor_.isNull();
   }
 };
 

@@ -82,6 +82,9 @@ class MemoryTransportStreamAccessor:
             offset,
         )
 
+    def is_initialized(self) -> bool:
+        return not self._mem_accessor.is_null()
+
     def get_changelog(self) -> PlacedRingBuffer:
         return PlacedRingBuffer(self._mem_source, MemoryTransportStreamAccessor.DS_SIZE)
 
@@ -107,11 +110,3 @@ class MemoryTransportStreamAccessor:
         # without a mutex lock that the header is not yet initialized
         self.base_timestamp = TimeUtils.get_current_clock_time_microseconds()
         self.set_last_update_timestamp()
-
-    def version_check(self, config: TransportConfig) -> bool:
-        return (
-            self.base_timestamp != 0
-            and self.transport_version
-            == MemoryTransportStreamAccessor.TRANSPORT_VERSION
-            and self.schema_hash == config.schema_hash
-        )

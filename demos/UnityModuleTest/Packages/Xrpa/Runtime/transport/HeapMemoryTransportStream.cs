@@ -25,14 +25,21 @@ namespace Xrpa
         {
             _memoryBlock = new(_memSize);
             _memoryPtr = (System.IntPtr)0;
-            InitializeMemory(true);
+            if (!InitializeMemory(true))
+            {
+                _memoryBlock.Dispose();
+                _memoryBlock = null;
+            }
         }
 
         public HeapMemoryTransportStream(string name, TransportConfig config, System.IntPtr memoryPtr) : base(name, config)
         {
             _memoryBlock = null;
             _memoryPtr = memoryPtr;
-            InitializeMemory(false);
+            if (!InitializeMemory(false))
+            {
+                _memoryPtr = (System.IntPtr)0;
+            }
         }
 
         public override void Dispose()

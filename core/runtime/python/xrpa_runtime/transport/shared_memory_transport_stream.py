@@ -103,9 +103,13 @@ class SharedMemoryTransportStream(MemoryTransportStream):
                     print(f"Failed to open shared memory file {file_path}: {e}")
 
         if self._shared_memory is not None:
-            self._initialize_memory(did_create)
+            if not self._initialize_memory(did_create):
+                self._shutdown()
 
     def __del__(self) -> None:
+        self._shutdown()
+
+    def _shutdown(self) -> None:
         if self._shared_memory is not None:
             self._shared_memory.close()
             self._shared_memory = None

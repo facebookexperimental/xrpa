@@ -147,11 +147,20 @@ namespace Xrpa
             if (_memFile != null)
             {
                 _memView = _memFile.memFile.CreateViewAccessor(0, _memSize, MemoryMappedFileAccess.ReadWrite);
-                InitializeMemory(_memFile.didCreate);
+                if (!InitializeMemory(_memFile.didCreate))
+                {
+                    Shutdown();
+                }
             }
         }
 
         public override void Dispose()
+        {
+            Shutdown();
+            base.Dispose();
+        }
+
+        private void Shutdown()
         {
             if (_memView != null)
             {
@@ -163,8 +172,6 @@ namespace Xrpa
                 _memFile.Dispose();
                 _memFile = null;
             }
-
-            base.Dispose();
         }
 
         public override bool UnsafeAccessMemory(System.Action<MemoryAccessor> func)

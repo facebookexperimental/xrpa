@@ -99,6 +99,15 @@ namespace Xrpa
 
         public abstract bool UnsafeAccessMemory(System.Action<MemoryAccessor> func);
 
+        private bool InitializeMemoryOnCreate()
+        {
+            return Lock(5000, memAccessor =>
+            {
+                MemoryTransportStreamAccessor streamAccessor = new(memAccessor);
+                streamAccessor.Initialize(_config);
+            });
+        }
+
         private bool Lock(int timeoutMS, System.Action<MemoryAccessor> func)
         {
             if (!_mutex.LockWait(timeoutMS))
@@ -121,42 +130,96 @@ namespace Xrpa
         {
             if (didCreate)
             {
-                return Lock(5000, memAccessor =>
-                {
-                    MemoryTransportStreamAccessor streamAccessor = new(memAccessor);
-                    streamAccessor.Initialize(_config);
-                });
+                return InitializeMemoryOnCreate();
             }
 
-            // lock-free version check against the transport metadata
-            bool versionValid = false;
+            // lock-free version check against the transport header
+            bool isInitialized = false;
             UnsafeAccessMemory(memAccessor =>
             {
                 MemoryTransportStreamAccessor streamAccessor = new(memAccessor);
-                versionValid = streamAccessor.VersionCheck(_config);
+                isInitialized = streamAccessor.IsInitialized();
             });
 
-            if (!versionValid)
+            if (!isInitialized)
             {
-                Console.WriteLine("MemoryTransportStream.InitializeMemory: version check failed");
+                Console.WriteLine("MemoryTransportStream(" + _name + ").InitializeMemory: memory not available");
                 return false;
             }
 
-            bool expired = false;
+            ulong baseTimestamp = 0;
             UnsafeAccessMemory(memAccessor =>
             {
                 MemoryTransportStreamAccessor streamAccessor = new(memAccessor);
-                expired = streamAccessor.GetLastUpdateAgeMicroseconds() > TransportConstants.TRANSPORT_EXPIRE_TIME;
+                baseTimestamp = streamAccessor.BaseTimestamp;
             });
 
-            if (expired)
+            if (baseTimestamp == 0)
             {
-                Console.WriteLine("MemoryTransportStream.InitializeMemory: transport memory expired, reinitializing");
-                return Lock(5000, memAccessor =>
+                // another process could be initializing the memory, so wait for it to finish
+                Lock(5000, memAccessor =>
+                {
+                    // no-op, just needed to wait for the other process to finish initializing the memory
+                });
+                UnsafeAccessMemory(memAccessor =>
                 {
                     MemoryTransportStreamAccessor streamAccessor = new(memAccessor);
-                    streamAccessor.Initialize(_config);
+                    baseTimestamp = streamAccessor.BaseTimestamp;
                 });
+                if (baseTimestamp == 0)
+                {
+                    // if the memory is still not initialized after the timeout, then re-initialize it
+                    return InitializeMemoryOnCreate();
+                }
+            }
+
+            int transportVersion = 0;
+            UnsafeAccessMemory(memAccessor =>
+            {
+                MemoryTransportStreamAccessor streamAccessor = new(memAccessor);
+                transportVersion = streamAccessor.TransportVersion;
+            });
+
+            if (transportVersion < 9)
+            {
+                // no heartbeat to check, so re-initialize the transport memory
+                Console.WriteLine("MemoryTransportStream(" + _name + ").InitializeMemory: transport version too old, reinitializing");
+                return InitializeMemoryOnCreate();
+            }
+
+            // check if the transport memory has expired
+            ulong lastUpdateAgeMicroseconds = 0;
+            UnsafeAccessMemory(memAccessor =>
+            {
+                MemoryTransportStreamAccessor streamAccessor = new(memAccessor);
+                lastUpdateAgeMicroseconds = streamAccessor.GetLastUpdateAgeMicroseconds();
+            });
+
+            if (lastUpdateAgeMicroseconds > TransportConstants.TRANSPORT_EXPIRE_TIME)
+            {
+                Console.WriteLine("MemoryTransportStream(" + _name + ").InitializeMemory: transport memory expired, reinitializing");
+                return InitializeMemoryOnCreate();
+            }
+
+            if (transportVersion != MemoryTransportStreamAccessor.TRANSPORT_VERSION)
+            {
+                // transport version mismatch, but the memory is in use, so error out
+                Console.WriteLine("MemoryTransportStream(" + _name + ").InitializeMemory: version check failed");
+                return false;
+            }
+
+            HashValue schemaHash = new();
+            UnsafeAccessMemory(memAccessor =>
+            {
+                MemoryTransportStreamAccessor streamAccessor = new(memAccessor);
+                schemaHash = streamAccessor.SchemaHash;
+            });
+
+            if (schemaHash != _config.SchemaHash)
+            {
+                // schema hash mismatch, but the memory is in use, so error out
+                Console.WriteLine("MemoryTransportStream(" + _name + ").InitializeMemory: schema hash mismatch");
+                return false;
             }
 
             return true;
