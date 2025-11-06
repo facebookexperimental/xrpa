@@ -3,7 +3,6 @@
   "version": "1.14.0",
   "description": "XRPA Ecosystem Monorepo",
   "private": true,
-  "type": "module",
   "config": {
     "repo_path": "arvr/libraries/xred/xrpa"
   },
