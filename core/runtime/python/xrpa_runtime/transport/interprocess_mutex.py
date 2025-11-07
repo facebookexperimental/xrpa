@@ -138,7 +138,6 @@ class MacOsInterprocessMutex(InterprocessMutex):
                 self._is_locked = True
                 return True
         except BlockingIOError:
-            print("Error locking file")
             return False
         except Exception as ex:
             print(f"Error locking file: {ex}")
