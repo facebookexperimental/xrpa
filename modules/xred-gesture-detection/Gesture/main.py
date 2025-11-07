@@ -47,6 +47,7 @@ class GestureDetectionModule(ReconciledGestureDetection):
         super().__init__(id, collection)
         self._api = GestureAPI()
         self._api.set_model_path(MODEL_PATH)
+        self._last_gesture_enum = None
         self.on_image_input(self._handle_image_input)
 
     def _handle_image_input(self, timestamp, data: ImageInputReader):
@@ -77,10 +78,12 @@ class GestureDetectionModule(ReconciledGestureDetection):
             gesture_enum = GestureType(gesture_result["gestureType"])
             motion_enum = MotionDirection(gesture_result["motionDirection"])
 
-            print(
-                f"[GestureDetection]: Sending gesture: {gesture_enum.name}, "
-                f"motion: {motion_enum.name}, offset: {gesture_result['motionOffset']:.2f}"
-            )
+            if gesture_enum != self._last_gesture_enum:
+                print(
+                    f"[GestureDetection]: Sending gesture: {gesture_enum.name}, "
+                    f"motion: {motion_enum.name}, offset: {gesture_result['motionOffset']:.2f}"
+                )
+                self._last_gesture_enum = gesture_enum
 
             self.send_gesture_result(
                 gesture_result["timestamp"],
