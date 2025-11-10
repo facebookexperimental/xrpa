@@ -12,16 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import io
 import queue
 import sys
 import threading
 
 import pyglet
-from PIL import Image
+from PIL import Image as PilImage
 from xrpa.image_viewer_application_interface import ImageViewerApplicationInterface
 from xrpa.image_viewer_data_store import ReconciledImageWindow
-from xrpa.image_viewer_types import ImageFormat
+from xrpa_runtime.utils.image_utils import convert_to_pil
 
 FRAME_RATE = 120
 
@@ -57,47 +56,16 @@ class ImageDebugWindow(pyglet.window.Window):
 
         self._update_sprite_scale()
 
-    def update_image(self, image_data):
-        if not hasattr(image_data, "data") or len(image_data.data) == 0:
-            return
-
+    def update_image(self, pil_image):
         try:
-            pil_image = self._convert_to_pil(image_data)
-            if pil_image:
-                pil_image = pil_image.transpose(Image.FLIP_LEFT_RIGHT)
-                self.original_image_size = (pil_image.width, pil_image.height)
-                self.image_sprite = self._create_sprite(pil_image)
-                self._update_sprite_scale()
+            pil_image = pil_image.transpose(PilImage.FLIP_LEFT_RIGHT)
+            self.original_image_size = (pil_image.width, pil_image.height)
+            self.image_sprite = self._create_sprite(pil_image)
+            self._update_sprite_scale()
         except Exception as e:
             print(f"Error processing image: {e}")
 
-    def _convert_to_pil(self, image_data):
-        if hasattr(image_data, "encoding") and "Jpeg" in str(image_data.encoding):
-            return Image.open(io.BytesIO(image_data.data)).convert("RGBA")
-
-        if not (hasattr(image_data, "width") and hasattr(image_data, "height")):
-            return None
-
-        width, height, data = image_data.width, image_data.height, image_data.data
-        format = getattr(image_data, "format", None)
-
-        if format == ImageFormat.RGB8:
-            return Image.frombytes("RGB", (width, height), data).convert("RGBA")
-        elif format == ImageFormat.BGR8:
-            rgb_data = bytearray(data)
-            for i in range(0, len(rgb_data), 3):
-                rgb_data[i], rgb_data[i + 2] = rgb_data[i + 2], rgb_data[i]
-            return Image.frombytes("RGB", (width, height), bytes(rgb_data)).convert(
-                "RGBA"
-            )
-        elif format == ImageFormat.RGBA8:
-            return Image.frombytes("RGBA", (width, height), data)
-        elif format == ImageFormat.Y8:
-            return Image.frombytes("L", (width, height), data).convert("RGBA")
-        else:
-            return Image.frombytes("RGB", (width, height), data).convert("RGBA")
-
-    def _create_sprite(self, pil_image):
+    def _create_sprite(self, pil_image: PilImage):
         image_bytes = pil_image.tobytes()
         pyglet_image = pyglet.image.ImageData(
             pil_image.width,
@@ -136,9 +104,14 @@ class ImageWindow(ReconciledImageWindow):
         self.window_id = str(id)
         self.on_image(
             lambda _, image: _image_updates.put(
-                (self.window_id, self.get_name(), image.get_image())
+                (
+                    self.window_id,
+                    self.get_name(),
+                    convert_to_pil(image.get_image(), "RGBA"),
+                )
             )
         )
+        self.on_xrpa_delete(self.close)
 
     def close(self):
         _window_requests.put(("close", self.window_id, None))
@@ -159,38 +132,17 @@ def _handle_window_requests():
 def _handle_image_updates():
     try:
         while True:
-            window_id, window_name, image_data = _image_updates.get_nowait()
+            window_id, window_name, pil_image = _image_updates.get_nowait()
 
-            if (
-                window_id not in _active_windows
-                and hasattr(image_data, "data")
-                and len(image_data.data) > 0
-            ):
-                width, height = _get_image_dimensions(image_data)
-                if width and height:
-                    _active_windows[window_id] = ImageDebugWindow(
-                        window_name, width, height
-                    )
+            if window_id not in _active_windows and pil_image is not None:
+                _active_windows[window_id] = ImageDebugWindow(
+                    window_name, pil_image.width, pil_image.height
+                )
 
             if window_id in _active_windows:
-                _active_windows[window_id].update_image(image_data)
+                _active_windows[window_id].update_image(pil_image)
     except queue.Empty:
         pass
-
-
-def _get_image_dimensions(image_data):
-    try:
-        if hasattr(image_data, "encoding") and "Jpeg" in str(image_data.encoding):
-            pil_image = Image.open(io.BytesIO(image_data.data))
-            return pil_image.width, pil_image.height
-
-        if hasattr(image_data, "width") and hasattr(image_data, "height"):
-            return image_data.width, image_data.height
-
-    except Exception as e:
-        print(f"Error getting image dimensions: {e}")
-
-    return None, None
 
 
 def _process_requests(dt):

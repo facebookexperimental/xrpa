@@ -23,6 +23,7 @@ import xrpa_runtime.reconciler.object_collection
 import xrpa_runtime.reconciler.object_collection_index
 import xrpa_runtime.transport.transport_stream
 import xrpa_runtime.transport.transport_stream_accessor
+import xrpa_runtime.utils.image_types
 import xrpa_runtime.utils.memory_accessor
 import xrpa_runtime.utils.xrpa_types
 
@@ -302,7 +303,7 @@ class RgbImageFeedReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterface):
     super().__init__(mem_accessor)
     self._read_offset = xrpa_runtime.utils.memory_accessor.MemoryOffset()
 
-  def get_image(self) -> xrpa.llm_hub_types.RgbImage:
+  def get_image(self) -> xrpa_runtime.utils.image_types.Image:
     return xrpa.llm_hub_types.DSRgbImage.read_value(self._mem_accessor, self._read_offset)
 
 class RgbImageFeedWriter(RgbImageFeedReader):
@@ -310,7 +311,7 @@ class RgbImageFeedWriter(RgbImageFeedReader):
     super().__init__(mem_accessor)
     self._write_offset = xrpa_runtime.utils.memory_accessor.MemoryOffset()
 
-  def set_image(self, value: xrpa.llm_hub_types.RgbImage) -> None:
+  def set_image(self, value: xrpa_runtime.utils.image_types.Image) -> None:
     xrpa.llm_hub_types.DSRgbImage.write_value(value, self._mem_accessor, self._write_offset)
 
 class LlmTriggeredQueryReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterface):

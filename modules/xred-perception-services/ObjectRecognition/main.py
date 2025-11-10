@@ -16,17 +16,17 @@ import sys
 import threading
 
 import cv2
-import numpy as np
 import torch
 
 import xrpa_runtime.utils.xrpa_module
-from PIL import Image
+from PIL import Image as PilImage
 from transformers import AutoImageProcessor, DeformableDetrForObjectDetection
 from xrpa.object_recognition_application_interface import (
     ObjectRecognitionApplicationInterface,
 )
 from xrpa.object_recognition_data_store import ReconciledObjectRecognition
-from xrpa.object_recognition_types import ImageOrientation, ImageRgbImage
+from xrpa_runtime.utils.image_types import Image as XrpaImage
+from xrpa_runtime.utils.image_utils import convert_to_pil
 
 
 # Device configuration
@@ -40,10 +40,7 @@ model = DeformableDetrForObjectDetection.from_pretrained(
 )
 
 
-def run_object_detection(image_bgr):
-    image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-    image = Image.fromarray(image_rgb)
-
+def run_object_detection(image: PilImage):
     inputs = processor(images=image, return_tensors="pt")
     outputs = model(**inputs)
 
@@ -66,45 +63,17 @@ class ObjectRecognition(ReconciledObjectRecognition):
         self._last_image = None
         self.on_rgb_image(lambda _, reader: self.set_image(reader.get_image()))
 
-    def set_image(self, image: ImageRgbImage):
+    def set_image(self, image: XrpaImage):
         self._last_image = image
 
     def tick(self):
         if self._last_image is None:
             return
 
-        # decompress the jpeg image data
-        jpeg_np = np.frombuffer(self._last_image.data, dtype=np.uint8)
-        bgr_frame = cv2.imdecode(jpeg_np, cv2.IMREAD_COLOR)
-
-        # rotate the image to the correct orientation
-        if self._last_image.orientation == ImageOrientation.RotatedCW:
-            bgr_frame = cv2.rotate(bgr_frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
-        elif self._last_image.orientation == ImageOrientation.RotatedCCW:
-            bgr_frame = cv2.rotate(bgr_frame, cv2.ROTATE_90_CLOCKWISE)
-        elif self._last_image.orientation == ImageOrientation.Rotated180:
-            bgr_frame = cv2.rotate(bgr_frame, cv2.ROTATE_180)
+        pil_image = convert_to_pil(self._last_image)
 
         # run the object detection model
-        results = run_object_detection(bgr_frame)
-
-        for label, box in results:
-            x_min, y_min, x_max, y_max = box
-
-            # Draw the bounding box and label on the image
-            cv2.rectangle(bgr_frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
-            cv2.putText(
-                bgr_frame,
-                label,
-                (x_min, y_min - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.5,
-                (0, 255, 0),
-                2,
-            )
-
-        # ==== Show output ====
-        cv2.imshow("Object Detection", bgr_frame)
+        run_object_detection(pil_image)
 
         # clear the image var so it does not get processed again
         self._last_image = None

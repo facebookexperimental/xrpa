@@ -15,55 +15,12 @@
 # @generated
 
 import dataclasses
-import enum
+import xrpa_runtime.utils.image_types
 import xrpa_runtime.utils.memory_accessor
 import xrpa_runtime.utils.xrpa_types
 
 class optical_character_recognition_data_store_config:
   transport_config = xrpa_runtime.utils.xrpa_types.TransportConfig(xrpa_runtime.utils.xrpa_types.HashValue(0xddc12e3e60abf442, 0xa6eb3a6d1cbfa21c, 0x7581888cd74823c5, 0xb39ff02010f6b0c6), 5316500)
-
-class ImageFormat(enum.Enum):
-  RGB8 = 0
-  BGR8 = 1
-  RGBA8 = 2
-  Y8 = 3
-
-class ImageEncoding(enum.Enum):
-  Raw = 0
-  Jpeg = 1
-
-class ImageOrientation(enum.Enum):
-  Oriented = 0
-  RotatedCW = 1
-  RotatedCCW = 2
-  Rotated180 = 3
-
-@dataclasses.dataclass
-class OcrImage:
-
-  # Image width
-  width: int
-
-  # Image height
-  height: int
-  format: ImageFormat
-  encoding: ImageEncoding
-  orientation: ImageOrientation
-
-  # Image gain
-  gain: float
-
-  # Image exposure duration, if available
-  exposure_duration: int
-
-  # Capture timestamp, if available
-  timestamp: int
-
-  # Capture frame rate, if available
-  capture_frame_rate: float
-
-  # Image data
-  data: bytearray
 
 @dataclasses.dataclass
 class DSScalar:
@@ -79,7 +36,7 @@ class DSScalar:
 @dataclasses.dataclass
 class DSOcrImage:
   @staticmethod
-  def read_value(mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor, offset: xrpa_runtime.utils.memory_accessor.MemoryOffset) -> OcrImage:
+  def read_value(mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor, offset: xrpa_runtime.utils.memory_accessor.MemoryOffset) -> xrpa_runtime.utils.image_types.Image:
     width = mem_accessor.read_int(offset)
     height = mem_accessor.read_int(offset)
     format = mem_accessor.read_int(offset)
@@ -90,10 +47,10 @@ class DSOcrImage:
     timestamp = mem_accessor.read_ulong(offset)
     captureFrameRate = DSScalar.read_value(mem_accessor, offset)
     data = mem_accessor.read_bytearray(offset)
-    return OcrImage(width, height, ImageFormat(format), ImageEncoding(encoding), ImageOrientation(orientation), gain, exposureDuration, timestamp, captureFrameRate, data)
+    return xrpa_runtime.utils.image_types.Image(width, height, xrpa_runtime.utils.image_types.ImageFormat(format), xrpa_runtime.utils.image_types.ImageEncoding(encoding), xrpa_runtime.utils.image_types.ImageOrientation(orientation), gain, exposureDuration, timestamp, captureFrameRate, data)
 
   @staticmethod
-  def write_value(val: OcrImage, mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor, offset: xrpa_runtime.utils.memory_accessor.MemoryOffset) -> None:
+  def write_value(val: xrpa_runtime.utils.image_types.Image, mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor, offset: xrpa_runtime.utils.memory_accessor.MemoryOffset) -> None:
     mem_accessor.write_int(val.width, offset)
     mem_accessor.write_int(val.height, offset)
     mem_accessor.write_int(val.format.value, offset)
@@ -106,5 +63,5 @@ class DSOcrImage:
     mem_accessor.write_bytearray(val.data, offset)
 
   @staticmethod
-  def dyn_size_of_value(val: OcrImage) -> int:
+  def dyn_size_of_value(val: xrpa_runtime.utils.image_types.Image) -> int:
     return xrpa_runtime.utils.memory_accessor.MemoryAccessor.dyn_size_of_bytearray(val.data)

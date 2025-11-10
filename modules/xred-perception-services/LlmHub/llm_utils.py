@@ -29,19 +29,15 @@ import requests
 
 from llama_api_client import LlamaAPIClient
 from mcp_client import get_mcp_tool_set, McpToolSet
-from PIL import Image
+from xrpa.llm_hub_types import ApiProvider, ModelSizeHint
+from xrpa_runtime.utils.image_types import Image as XrpaImage
+from xrpa_runtime.utils.image_utils import convert_to_pil
 
 # Check if we're on macOS (MLX only works on macOS)
 MLX_AVAILABLE = platform.system() == "Darwin"
 if not MLX_AVAILABLE:
     print("[LlmHub]: MLX not supported on this platform")
 
-from xrpa.llm_hub_types import (
-    ApiProvider,
-    ImageEncoding,
-    ImageOrientation,
-    ModelSizeHint,
-)
 
 _metagen_url = "https://graph.facebook.com/v22.0/chat_stream_completions"
 _max_retries = 5
@@ -54,26 +50,12 @@ def jpeg_bytes_to_base64(jpeg_bytearray: bytearray | bytes):
     return base64.b64encode(jpeg_bytearray).decode("utf-8")
 
 
-def image_to_jpeg_bytes(image) -> Optional[bytes]:
-    if image is None:
+def image_to_jpeg_bytes(image: XrpaImage) -> Optional[bytes]:
+    pil_image = convert_to_pil(image)
+    if pil_image is None:
         return None
 
-    if image.encoding == ImageEncoding.Raw:
-        pil_image = Image.frombytes("RGB", (image.width, image.height), image.data)
-    else:
-        # decompress the jpeg image data and convert to RGB format
-        pil_image = Image.open(io.BytesIO(image.data))
-        pil_image = pil_image.convert("RGB")
-
-    # Rotate the image to the correct orientation
-    if image.orientation == ImageOrientation.RotatedCW:
-        pil_image = pil_image.rotate(-90, expand=True)
-    elif image.orientation == ImageOrientation.RotatedCCW:
-        pil_image = pil_image.rotate(90, expand=True)
-    elif image.orientation == ImageOrientation.Rotated180:
-        pil_image = pil_image.rotate(180, expand=True)
-
-    # Encode the image as JPEG and then convert to a base64 string
+    # Encode the image as JPEG
     buffered = io.BytesIO()
     pil_image.save(buffered, format="JPEG")
     return buffered.getvalue()

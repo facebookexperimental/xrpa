@@ -22,6 +22,7 @@ import xrpa_runtime.reconciler.data_store_reconciler
 import xrpa_runtime.reconciler.object_collection
 import xrpa_runtime.transport.transport_stream
 import xrpa_runtime.transport.transport_stream_accessor
+import xrpa_runtime.utils.image_types
 import xrpa_runtime.utils.memory_accessor
 import xrpa_runtime.utils.xrpa_types
 
@@ -30,7 +31,7 @@ class ImageReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterface):
     super().__init__(mem_accessor)
     self._read_offset = xrpa_runtime.utils.memory_accessor.MemoryOffset()
 
-  def get_image(self) -> xrpa.image_viewer_types.InputImage:
+  def get_image(self) -> xrpa_runtime.utils.image_types.Image:
     return xrpa.image_viewer_types.DSInputImage.read_value(self._mem_accessor, self._read_offset)
 
 class ImageWriter(ImageReader):
@@ -38,7 +39,7 @@ class ImageWriter(ImageReader):
     super().__init__(mem_accessor)
     self._write_offset = xrpa_runtime.utils.memory_accessor.MemoryOffset()
 
-  def set_image(self, value: xrpa.image_viewer_types.InputImage) -> None:
+  def set_image(self, value: xrpa_runtime.utils.image_types.Image) -> None:
     xrpa.image_viewer_types.DSInputImage.write_value(value, self._mem_accessor, self._write_offset)
 
 class ImageWindowReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterface):

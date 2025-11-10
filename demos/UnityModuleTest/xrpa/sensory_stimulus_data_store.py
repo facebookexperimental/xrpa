@@ -24,6 +24,7 @@ import xrpa_runtime.reconciler.data_store_reconciler
 import xrpa_runtime.reconciler.object_collection
 import xrpa_runtime.transport.transport_stream
 import xrpa_runtime.transport.transport_stream_accessor
+import xrpa_runtime.utils.image_types
 import xrpa_runtime.utils.memory_accessor
 import xrpa_runtime.utils.time_utils
 import xrpa_runtime.utils.xrpa_types
@@ -85,7 +86,7 @@ class DisplayReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterface):
     super().__init__(mem_accessor)
     self._read_offset = xrpa_runtime.utils.memory_accessor.MemoryOffset()
 
-  def get_image(self) -> xrpa.sensory_stimulus_types.Image:
+  def get_image(self) -> xrpa_runtime.utils.image_types.Image:
     return xrpa.sensory_stimulus_types.DSImage.read_value(self._mem_accessor, self._read_offset)
 
 class DisplayWriter(DisplayReader):
@@ -93,7 +94,7 @@ class DisplayWriter(DisplayReader):
     super().__init__(mem_accessor)
     self._write_offset = xrpa_runtime.utils.memory_accessor.MemoryOffset()
 
-  def set_image(self, value: xrpa.sensory_stimulus_types.Image) -> None:
+  def set_image(self, value: xrpa_runtime.utils.image_types.Image) -> None:
     xrpa.sensory_stimulus_types.DSImage.write_value(value, self._mem_accessor, self._write_offset)
 
 class PsychoPyWindowReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterface):
@@ -269,7 +270,7 @@ class OutboundPsychoPyWindow(xrpa_runtime.reconciler.data_store_interfaces.DataS
   def process_ds_update(self, value: PsychoPyWindowReader, fields_changed: int) -> None:
     self._handle_xrpa_fields_changed(fields_changed)
 
-  def send_display(self, image: xrpa.sensory_stimulus_types.Image) -> None:
+  def send_display(self, image: xrpa_runtime.utils.image_types.Image) -> None:
     message = DisplayWriter(self._collection.send_message(
         self.get_xrpa_id(),
         0,
@@ -280,12 +281,12 @@ class OutboundPsychoPyWindow(xrpa_runtime.reconciler.data_store_interfaces.DataS
     jpeg_data = io.BytesIO()
     pil_image.save(jpeg_data, format='JPEG')
     jpeg_data.seek(0)
-    image_data = xrpa.sensory_stimulus_types.Image(
+    image_data = xrpa_runtime.utils.image_types.Image(
       pil_image.width,
       pil_image.height,
-      xrpa.sensory_stimulus_types.ImageFormat.RGB8,
-      xrpa.sensory_stimulus_types.ImageEncoding.Jpeg,
-      xrpa.sensory_stimulus_types.ImageOrientation.Oriented,
+      xrpa_runtime.utils.image_types.ImageFormat.RGB8,
+      xrpa_runtime.utils.image_types.ImageEncoding.Jpeg,
+      xrpa_runtime.utils.image_types.ImageOrientation.Oriented,
       1.0,
       0,
       xrpa_runtime.utils.time_utils.TimeUtils.get_current_clock_time_microseconds(),

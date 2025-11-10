@@ -22,6 +22,7 @@ import xrpa_runtime.reconciler.data_store_reconciler
 import xrpa_runtime.reconciler.object_collection
 import xrpa_runtime.transport.transport_stream
 import xrpa_runtime.transport.transport_stream_accessor
+import xrpa_runtime.utils.image_types
 import xrpa_runtime.utils.memory_accessor
 import xrpa_runtime.utils.xrpa_types
 
@@ -30,7 +31,7 @@ class RgbImageRgbImageReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterfa
     super().__init__(mem_accessor)
     self._read_offset = xrpa_runtime.utils.memory_accessor.MemoryOffset()
 
-  def get_image(self) -> xrpa.object_recognition_types.ImageRgbImage:
+  def get_image(self) -> xrpa_runtime.utils.image_types.Image:
     return xrpa.object_recognition_types.DSImageRgbImage.read_value(self._mem_accessor, self._read_offset)
 
 class RgbImageRgbImageWriter(RgbImageRgbImageReader):
@@ -38,7 +39,7 @@ class RgbImageRgbImageWriter(RgbImageRgbImageReader):
     super().__init__(mem_accessor)
     self._write_offset = xrpa_runtime.utils.memory_accessor.MemoryOffset()
 
-  def set_image(self, value: xrpa.object_recognition_types.ImageRgbImage) -> None:
+  def set_image(self, value: xrpa_runtime.utils.image_types.Image) -> None:
     xrpa.object_recognition_types.DSImageRgbImage.write_value(value, self._mem_accessor, self._write_offset)
 
 class ObjectDetectionReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterface):

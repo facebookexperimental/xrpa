@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import io
 import os
 import time
 from collections import deque
@@ -21,9 +20,10 @@ from typing import Any, Dict, Optional
 
 import mediapipe as mp
 import numpy as np
-from PIL import Image
 
 from xrpa.gesture_detection_types import GestureType, MotionDirection
+from xrpa_runtime.utils.image_types import Image as XrpaImage
+from xrpa_runtime.utils.image_utils import convert_to_pil
 
 
 @dataclass
@@ -257,7 +257,7 @@ class GestureAPI:
                 "motionOffset": 0.0,
             }
 
-    def detect_gesture(self, image) -> Dict[str, Any]:
+    def detect_gesture(self, image: XrpaImage) -> Dict[str, Any]:
         self._ensure_api_initialized()
         self._validate_image_input(image)
 
@@ -265,6 +265,14 @@ class GestureAPI:
 
         try:
             image_array = self._decode_image_bytes(image)
+            if image_array is None:
+                return self._create_gesture_result(
+                    timestamp,
+                    gesture_type=0,
+                    hand_detected=False,
+                    confidence=0.0,
+                    error="Failed to decode image",
+                )
 
             timestamp_ms = int(timestamp / 1000)
             self._frame_timestamp_ms = timestamp_ms
@@ -305,7 +313,7 @@ class GestureAPI:
             else:
                 raise RuntimeError("API not initialized. Please set model path first.")
 
-    def _validate_image_input(self, image) -> None:
+    def _validate_image_input(self, image: XrpaImage) -> None:
         if not image or not hasattr(image, "data") or not image.data:
             raise ValueError("Image data cannot be empty")
 
@@ -327,25 +335,10 @@ class GestureAPI:
             "motionOffset": 0.0,
         }
 
-    def _decode_image_bytes(self, image) -> np.ndarray:
+    def _decode_image_bytes(self, image: XrpaImage) -> Optional[np.ndarray]:
         try:
-            if hasattr(image, "encoding") and image.encoding.value == 0:
-                pil_image = Image.frombytes(
-                    "RGB", (image.width, image.height), image.data
-                )
-            else:
-                pil_image = Image.open(io.BytesIO(image.data))
-                pil_image = pil_image.convert("RGB")
-
-            if hasattr(image, "orientation"):
-                if image.orientation.value == 1:
-                    pil_image = pil_image.rotate(-90, expand=True)
-                elif image.orientation.value == 2:
-                    pil_image = pil_image.rotate(90, expand=True)
-                elif image.orientation.value == 3:
-                    pil_image = pil_image.rotate(180, expand=True)
-
-            return np.array(pil_image)
+            pil_image = convert_to_pil(image, "RGB")
+            return np.array(pil_image) if pil_image is not None else None
 
         except Exception as e:
             raise ValueError(f"Failed to decode image data: {e}")

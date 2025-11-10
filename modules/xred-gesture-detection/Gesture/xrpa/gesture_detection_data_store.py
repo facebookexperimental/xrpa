@@ -22,6 +22,7 @@ import xrpa_runtime.reconciler.data_store_reconciler
 import xrpa_runtime.reconciler.object_collection
 import xrpa_runtime.transport.transport_stream
 import xrpa_runtime.transport.transport_stream_accessor
+import xrpa_runtime.utils.image_types
 import xrpa_runtime.utils.memory_accessor
 import xrpa_runtime.utils.xrpa_types
 
@@ -30,7 +31,7 @@ class ImageInputReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterface):
     super().__init__(mem_accessor)
     self._read_offset = xrpa_runtime.utils.memory_accessor.MemoryOffset()
 
-  def get_image(self) -> xrpa.gesture_detection_types.GestureImage:
+  def get_image(self) -> xrpa_runtime.utils.image_types.Image:
     return xrpa.gesture_detection_types.DSGestureImage.read_value(self._mem_accessor, self._read_offset)
 
 class ImageInputWriter(ImageInputReader):
@@ -38,7 +39,7 @@ class ImageInputWriter(ImageInputReader):
     super().__init__(mem_accessor)
     self._write_offset = xrpa_runtime.utils.memory_accessor.MemoryOffset()
 
-  def set_image(self, value: xrpa.gesture_detection_types.GestureImage) -> None:
+  def set_image(self, value: xrpa_runtime.utils.image_types.Image) -> None:
     xrpa.gesture_detection_types.DSGestureImage.write_value(value, self._mem_accessor, self._write_offset)
 
 class GestureResultReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterface):

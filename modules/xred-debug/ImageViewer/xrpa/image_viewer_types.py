@@ -15,55 +15,12 @@
 # @generated
 
 import dataclasses
-import enum
+import xrpa_runtime.utils.image_types
 import xrpa_runtime.utils.memory_accessor
 import xrpa_runtime.utils.xrpa_types
 
 class image_viewer_data_store_config:
   transport_config = xrpa_runtime.utils.xrpa_types.TransportConfig(xrpa_runtime.utils.xrpa_types.HashValue(0xb489eef7285a25fd, 0xb2f10c3f4cdaf387, 0x155b86c19c24ac97, 0x20ec17cf1d5df170), 76806680)
-
-class ImageFormat(enum.Enum):
-  RGB8 = 0
-  BGR8 = 1
-  RGBA8 = 2
-  Y8 = 3
-
-class ImageEncoding(enum.Enum):
-  Raw = 0
-  Jpeg = 1
-
-class ImageOrientation(enum.Enum):
-  Oriented = 0
-  RotatedCW = 1
-  RotatedCCW = 2
-  Rotated180 = 3
-
-@dataclasses.dataclass
-class InputImage:
-
-  # Image width
-  width: int
-
-  # Image height
-  height: int
-  format: ImageFormat
-  encoding: ImageEncoding
-  orientation: ImageOrientation
-
-  # Image gain
-  gain: float
-
-  # Image exposure duration, if available
-  exposure_duration: int
-
-  # Capture timestamp, if available
-  timestamp: int
-
-  # Capture frame rate, if available
-  capture_frame_rate: float
-
-  # Image data
-  data: bytearray
 
 @dataclasses.dataclass
 class DSScalar:
@@ -79,7 +36,7 @@ class DSScalar:
 @dataclasses.dataclass
 class DSInputImage:
   @staticmethod
-  def read_value(mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor, offset: xrpa_runtime.utils.memory_accessor.MemoryOffset) -> InputImage:
+  def read_value(mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor, offset: xrpa_runtime.utils.memory_accessor.MemoryOffset) -> xrpa_runtime.utils.image_types.Image:
     width = mem_accessor.read_int(offset)
     height = mem_accessor.read_int(offset)
     format = mem_accessor.read_int(offset)
@@ -90,10 +47,10 @@ class DSInputImage:
     timestamp = mem_accessor.read_ulong(offset)
     captureFrameRate = DSScalar.read_value(mem_accessor, offset)
     data = mem_accessor.read_bytearray(offset)
-    return InputImage(width, height, ImageFormat(format), ImageEncoding(encoding), ImageOrientation(orientation), gain, exposureDuration, timestamp, captureFrameRate, data)
+    return xrpa_runtime.utils.image_types.Image(width, height, xrpa_runtime.utils.image_types.ImageFormat(format), xrpa_runtime.utils.image_types.ImageEncoding(encoding), xrpa_runtime.utils.image_types.ImageOrientation(orientation), gain, exposureDuration, timestamp, captureFrameRate, data)
 
   @staticmethod
-  def write_value(val: InputImage, mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor, offset: xrpa_runtime.utils.memory_accessor.MemoryOffset) -> None:
+  def write_value(val: xrpa_runtime.utils.image_types.Image, mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor, offset: xrpa_runtime.utils.memory_accessor.MemoryOffset) -> None:
     mem_accessor.write_int(val.width, offset)
     mem_accessor.write_int(val.height, offset)
     mem_accessor.write_int(val.format.value, offset)
@@ -106,5 +63,5 @@ class DSInputImage:
     mem_accessor.write_bytearray(val.data, offset)
 
   @staticmethod
-  def dyn_size_of_value(val: InputImage) -> int:
+  def dyn_size_of_value(val: xrpa_runtime.utils.image_types.Image) -> int:
     return xrpa_runtime.utils.memory_accessor.MemoryAccessor.dyn_size_of_bytearray(val.data)

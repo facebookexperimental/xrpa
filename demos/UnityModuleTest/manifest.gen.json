@@ -66,6 +66,8 @@
   "xrpa_runtime/transport/transport_stream_accessor.py",
   "xrpa_runtime/utils/__init__.py",
   "xrpa_runtime/utils/allocated_memory.py",
+  "xrpa_runtime/utils/image_types.py",
+  "xrpa_runtime/utils/image_utils.py",
   "xrpa_runtime/utils/memory_accessor.py",
   "xrpa_runtime/utils/placed_ring_buffer.py",
   "xrpa_runtime/utils/string_embedding.py",

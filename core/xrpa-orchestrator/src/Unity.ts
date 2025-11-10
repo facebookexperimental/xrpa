@@ -20,10 +20,10 @@ import path from "path";
 
 import { Distance2, Distance3, EulerAngles, Quaternion, Scale2, Scale3, UnitVector2, UnitVector3, Vector2, Vector3, useCoordinateSystem } from "./Coordinates";
 import { COMPONENT_BASE_CLASS, GameEngineConfig } from "./GameEngine";
-import { ColorLinear, ColorSRGBA, IS_IMAGE_TYPE, String } from "./InterfaceTypes";
+import { ColorLinear, ColorSRGBA, String } from "./InterfaceTypes";
 import { NativeProgramContext } from "./NativeProgram";
 import { bindProgramInterfaceToModule } from "./ProgramInterfaceConverter";
-import { RuntimeEnvironmentContext, getDataMap, mapArrays, mapInterfaceType, mapType } from "./RuntimeEnvironment";
+import { RuntimeEnvironmentContext, getDataMap, mapArrays, mapType } from "./RuntimeEnvironment";
 import { PropertyCondition } from "./XrpaLanguage";
 
 import { AngularUnitType, CoordAxis, CoordinateSystemDef, SpatialUnitType } from "./shared/CoordinateTransformer";
@@ -33,7 +33,7 @@ import { ArrayTypeSpec } from "./shared/TypeDefinition";
 import { IntrinsicProperty } from "./targets/unitypackage/MonoBehaviourShared";
 import { UnityPackageModuleDefinition } from "./targets/unitypackage/UnityPackageModuleDefinition";
 import { PackageInfo } from "./targets/unitypackage/GenPackage";
-import { ProgramInterface } from "./ProgramInterface";
+import { mapImageTypes } from "./ConvenienceWrappers";
 
 export const UnityCoordinateSystem: CoordinateSystemDef = {
   up: CoordAxis.posY,
@@ -61,43 +61,13 @@ export const IfUnity: PropertyCondition = {
   expectedValue: "MonoBehaviour",
 };
 
-function mapCsInterfaceImageTypes(programInterface: ProgramInterface) {
-  let hasImageTypes = false;
-  for (const name in programInterface.namedTypes) {
-    const type = programInterface.namedTypes[name];
-    if (type.properties[IS_IMAGE_TYPE] === true) {
-      mapInterfaceType(programInterface, type.name, {
-        typename: "Xrpa.Image",
-      });
-      hasImageTypes = true;
-    }
-  }
-
-  if (hasImageTypes) {
-    mapInterfaceType(programInterface, "ImageFormat", {
-      typename: "Xrpa.ImageFormat",
-    });
-    mapInterfaceType(programInterface, "ImageEncoding", {
-      typename: "Xrpa.ImageEncoding",
-    });
-    mapInterfaceType(programInterface, "ImageOrientation", {
-      typename: "Xrpa.ImageOrientation",
-    });
-  }
-}
-
 function mapCsImageTypes<T extends UnityRuntimeContext>(ctx: T) {
-  const programInterfaces = (ctx as unknown as Record<string, unknown>).programInterfaces;
-  if (Array.isArray(programInterfaces)) {
-    for (const programInterface of programInterfaces) {
-      mapCsInterfaceImageTypes(programInterface);
-    }
-  }
-
-  for (const key in ctx.externalProgramInterfaces) {
-    const programInterface = ctx.externalProgramInterfaces[key].programInterface;
-    mapCsInterfaceImageTypes(programInterface);
-  }
+  mapImageTypes(ctx, {
+    Image: { typename: "Xrpa.Image" },
+    ImageFormat: { typename: "Xrpa.ImageFormat" },
+    ImageEncoding: { typename: "Xrpa.ImageEncoding" },
+    ImageOrientation: { typename: "Xrpa.ImageOrientation" },
+  });
 }
 
 function runUnityContext<T extends UnityRuntimeContext>(ctx: T, callback: (ctx: T) => void) {

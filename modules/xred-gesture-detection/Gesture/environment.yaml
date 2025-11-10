@@ -7,4 +7,5 @@ dependencies:
   - pip
   - numpy<2
   - pip:
-    - mediapipe
+      - mediapipe
+      - pillow

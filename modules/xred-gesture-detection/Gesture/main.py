@@ -25,6 +25,7 @@ from xrpa.gesture_detection_data_store import (
     ReconciledGestureDetection,
 )
 from xrpa.gesture_detection_types import GestureType, MotionDirection
+from xrpa_runtime.utils.image_types import Image as XrpaImage
 
 
 def get_resource_path(relative_path):
@@ -66,7 +67,7 @@ class GestureDetectionModule(ReconciledGestureDetection):
             print(f"[GestureDetection]: Error processing gesture detection: {e}")
             traceback.print_exc()
 
-    def _validate_image(self, image) -> bool:
+    def _validate_image(self, image: XrpaImage) -> bool:
         if image is None:
             return False
         if not hasattr(image, "data") or not image.data:

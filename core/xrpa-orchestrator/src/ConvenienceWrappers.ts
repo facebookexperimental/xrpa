@@ -25,15 +25,17 @@ import crypto from "crypto"
 import { IS_IMAGE_TYPE } from "./InterfaceTypes";
 import { NativeProgramContext, applyNativeProgramContext, getNativeProgramContext } from "./NativeProgram";
 import { ProgramInterface } from "./ProgramInterface";
-import { getDataMap, mapArrays, mapInterfaceType } from "./RuntimeEnvironment";
+import { ExternalProgramInterfaceContext, getDataMap, mapArrays, mapInterfaceType } from "./RuntimeEnvironment";
 
 import { AngularUnitType, CoordAxis, CoordinateSystemDef, SpatialUnitType } from "./shared/CoordinateTransformer";
+import { TypeSpec } from "./shared/TargetCodeGen";
 import { ArrayTypeSpec, TypeMap } from "./shared/TypeDefinition";
 
 import { CppModuleDefinition, ModuleBuckConfig } from "./targets/cpp/CppModuleDefinition";
 import { PythonApplication } from "./targets/python/PythonApplication";
 import { PythonModuleDefinition } from "./targets/python/PythonModuleDefinition";
 import { PythonStandalone } from "./targets/python/PythonStandalone";
+import * as PythonCodeGenImpl from "./targets/python/PythonCodeGenImpl";
 
 export function withHeader<T extends Record<string, string>>(headerFile: string, types: T): TypeMap {
   const ret: TypeMap = {};
@@ -98,51 +100,78 @@ export function addBuckDependency(dep: string) {
   }
 }
 
-function mapCppInterfaceImageTypes(programInterface: ProgramInterface, usingBuck: boolean) {
+interface ImageTypeMapping {
+  Image: TypeSpec;
+  ImageFormat: TypeSpec;
+  ImageEncoding: TypeSpec;
+  ImageOrientation: TypeSpec;
+  buckDep?: string;
+}
+
+function mapInterfaceImageTypes(imageTypes: ImageTypeMapping, programInterface: ProgramInterface, usingBuck: boolean) {
   let hasImageTypes = false;
   for (const name in programInterface.namedTypes) {
     const type = programInterface.namedTypes[name];
     if (type.properties[IS_IMAGE_TYPE] === true) {
-      mapInterfaceType(programInterface, type.name, {
-        typename: "ImageTypes::Image",
-        headerFile: "<ImageTypes.h>",
-      });
+      mapInterfaceType(programInterface, type.name, imageTypes.Image);
       hasImageTypes = true;
     }
   }
 
   if (hasImageTypes) {
-    mapInterfaceType(programInterface, "ImageFormat", {
-      typename: "ImageTypes::Format",
-      headerFile: "<ImageTypes.h>",
-    });
-    mapInterfaceType(programInterface, "ImageEncoding", {
-      typename: "ImageTypes::Encoding",
-      headerFile: "<ImageTypes.h>",
-    });
-    mapInterfaceType(programInterface, "ImageOrientation", {
-      typename: "ImageTypes::Orientation",
-      headerFile: "<ImageTypes.h>",
-    });
+    mapInterfaceType(programInterface, "ImageFormat", imageTypes.ImageFormat);
+    mapInterfaceType(programInterface, "ImageEncoding", imageTypes.ImageEncoding);
+    mapInterfaceType(programInterface, "ImageOrientation", imageTypes.ImageOrientation);
 
-    if (usingBuck) {
-      addBuckDependency("//arvr/libraries/xred/xrpa/modules/Shared/image:ImageTypes");
+    if (usingBuck && imageTypes.buckDep) {
+      addBuckDependency(imageTypes.buckDep);
     }
   }
 }
 
-function mapCppImageTypes() {
-  const ctx = getNativeProgramContext();
-  const usingBuck = getBuckConfig(ctx) != undefined;
+interface MappableContext {
+  programInterface?: ProgramInterface;
+  programInterfaces?: ProgramInterface[];
+  externalProgramInterfaces: Record<string, ExternalProgramInterfaceContext>;
+}
 
-  for (const programInterface of ctx.programInterfaces) {
-    mapCppInterfaceImageTypes(programInterface, usingBuck);
+export function mapImageTypes(ctx: MappableContext, imageTypes: ImageTypeMapping, usingBuck = false) {
+  if (ctx.programInterface) {
+    mapInterfaceImageTypes(imageTypes, ctx.programInterface, usingBuck);
+  }
+
+  if (ctx.programInterfaces) {
+    for (const programInterface of ctx.programInterfaces) {
+      mapInterfaceImageTypes(imageTypes, programInterface, usingBuck);
+    }
   }
 
   for (const key in ctx.externalProgramInterfaces) {
     const programInterface = ctx.externalProgramInterfaces[key].programInterface;
-    mapCppInterfaceImageTypes(programInterface, usingBuck);
+    mapInterfaceImageTypes(imageTypes, programInterface, usingBuck);
   }
+}
+
+function mapCppImageTypes(ctx: NativeProgramContext) {
+  mapImageTypes(ctx, {
+    Image: {
+      typename: "ImageTypes::Image",
+      headerFile: "<ImageTypes.h>",
+    },
+    ImageFormat: {
+      typename: "ImageTypes::Format",
+      headerFile: "<ImageTypes.h>",
+    },
+    ImageEncoding: {
+      typename: "ImageTypes::Encoding",
+      headerFile: "<ImageTypes.h>",
+    },
+    ImageOrientation: {
+      typename: "ImageTypes::Orientation",
+      headerFile: "<ImageTypes.h>",
+    },
+    buckDep: "//arvr/libraries/xred/xrpa/modules/Shared/image:ImageTypes",
+  }, getBuckConfig(ctx) != undefined);
 }
 
 export function XrpaNativeCppProgram(name: string, outputDir: string, callback: (ctx: NativeProgramContext) => void) {
@@ -170,6 +199,19 @@ export function XrpaNativeCppProgram(name: string, outputDir: string, callback: 
   return ret;
 }
 
+function pythonTypeSpec(name: string): TypeSpec {
+  return { typename: name, headerFile: PythonCodeGenImpl.nsExtract(name) };
+}
+
+function mapPythonImageTypes(ctx: NativeProgramContext) {
+  mapImageTypes(ctx, {
+    Image: pythonTypeSpec("xrpa_runtime.utils.image_types.Image"),
+    ImageFormat: pythonTypeSpec("xrpa_runtime.utils.image_types.ImageFormat"),
+    ImageEncoding: pythonTypeSpec("xrpa_runtime.utils.image_types.ImageEncoding"),
+    ImageOrientation: pythonTypeSpec("xrpa_runtime.utils.image_types.ImageOrientation"),
+  });
+}
+
 export function XrpaNativePythonProgram(name: string, outputDir: string, callback: (ctx: NativeProgramContext) => void) {
   const ctx: NativeProgramContext = {
     __isRuntimeEnvironmentContext: true,
@@ -182,6 +224,8 @@ export function XrpaNativePythonProgram(name: string, outputDir: string, callbac
   runInContext(ctx, callback, () => {
     mapArrays(PythonListType);
   });
+
+  runInContext(ctx, mapPythonImageTypes);
 
   const datamap = getDataMap(ctx);
 

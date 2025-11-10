@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import io
 import sys
 import threading
 import time
@@ -21,12 +20,13 @@ import traceback
 import easyocr
 import numpy as np
 import xrpa_runtime.utils.xrpa_module
-from PIL import Image
+from PIL import Image as PilImage
 from xrpa.ocr_application_interface import OcrApplicationInterface
 from xrpa.optical_character_recognition_data_store import (
     ImageInputReader,
     ReconciledOpticalCharacterRecognition,
 )
+from xrpa_runtime.utils.image_utils import convert_to_pil
 
 
 class EasyOCROpticalCharacterRecognition(ReconciledOpticalCharacterRecognition):
@@ -82,17 +82,19 @@ class EasyOCROpticalCharacterRecognition(ReconciledOpticalCharacterRecognition):
                 if self._waiting_for_fresh_image:
                     print("[EasyOCR]: Fresh image received - processing now")
                 self._waiting_for_fresh_image = False
-                self._process_image(image.data, timestamp)
+                pil_image = convert_to_pil(image)
+                if pil_image is not None:
+                    self._process_image(pil_image, timestamp)
 
         except Exception as e:
             print(f"[EasyOCR]: Error in _handle_image_input: {e}")
             traceback.print_exc()
             self._send_error_result(str(e))
 
-    def _process_image(self, image_data: bytes, timestamp):
+    def _process_image(self, pil_image: PilImage, timestamp):
         try:
             print(f"[EasyOCR]: Processing image at timestamp {timestamp}")
-            ocr_result = self._recognize_text(image_data)
+            ocr_result = self._recognize_text(pil_image)
             self._send_result(ocr_result, timestamp)
 
         except Exception as e:
@@ -100,11 +102,10 @@ class EasyOCROpticalCharacterRecognition(ReconciledOpticalCharacterRecognition):
             traceback.print_exc()
             self._send_error_result(str(e))
 
-    def _recognize_text(self, image_data: bytes):
+    def _recognize_text(self, pil_image: PilImage):
         print("[EasyOCR]: *** STARTING OCR RECOGNITION ***")
         sys.stdout.flush()
         try:
-            pil_image = Image.open(io.BytesIO(image_data)).convert("RGB")
             print(f"[EasyOCR]: Processing image with size: {pil_image.size}")
 
             img_array = np.array(pil_image)
