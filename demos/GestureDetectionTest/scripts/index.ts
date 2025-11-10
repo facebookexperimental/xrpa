@@ -36,7 +36,7 @@ const apidir = path.join(__dirname, "..", "api");
 const GestureDetectionTestProgram = XrpaDataflowProgram("GestureDetectionTestProgram", () => {
   const cameraFeed = CameraFeed({});
 
-  ImageWindow({ windowTitle: "Camera", image: cameraFeed.cameraImage });
+  ImageWindow({ windowTitle: "Camera", image: cameraFeed.cameraImage, flipHorizontal: true });
 
   const gestureDetection = GestureDetection({
     imageInput: cameraFeed.cameraImage,

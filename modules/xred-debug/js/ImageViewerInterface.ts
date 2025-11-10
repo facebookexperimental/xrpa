@@ -17,6 +17,7 @@
 
 import {
   bindExternalProgram,
+  Boolean,
   Collection,
   Image,
   Instantiate,
@@ -36,6 +37,7 @@ export const XredImageViewerInterface = XrpaProgramInterface("Xred.ImageViewer",
     maxCount: 10,
     fields: {
       name: String,
+      flipHorizontal: Boolean(false, "Flips the image display for self-facing cameras"),
       image: MessageRate(10, Message({
         image: Image("InputImage", {
           expectedWidth: 1600,
@@ -47,7 +49,7 @@ export const XredImageViewerInterface = XrpaProgramInterface("Xred.ImageViewer",
   }));
 });
 
-export function ImageWindow(params: { windowTitle: string, image: XrpaDataflowConnection }) {
+export function ImageWindow(params: { windowTitle: string, image: XrpaDataflowConnection, flipHorizontal?: boolean }) {
   const dataflowNode = Instantiate(
     [bindExternalProgram(XredImageViewerInterface), "ImageWindow"],
     {},
@@ -55,4 +57,5 @@ export function ImageWindow(params: { windowTitle: string, image: XrpaDataflowCo
   assert(isDataflowForeignObjectInstantiation(dataflowNode));
   dataflowNode.fieldValues.name = params.windowTitle;
   dataflowNode.fieldValues.image = params.image;
+  dataflowNode.fieldValues.flipHorizontal = params.flipHorizontal;
 }

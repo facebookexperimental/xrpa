@@ -29,8 +29,8 @@ namespace ImageViewerDataStore {
 
 static inline Xrpa::TransportConfig GenTransportConfig() {
   Xrpa::TransportConfig config;
-  config.schemaHash = Xrpa::HashValue(0xb489eef7285a25fd, 0xb2f10c3f4cdaf387, 0x155b86c19c24ac97, 0x20ec17cf1d5df170);
-  config.changelogByteCount = 76806680;
+  config.schemaHash = Xrpa::HashValue(0x9c85b32398f008f4, 0x22b167decbb9628c, 0x0c526c96d74a7ded, 0x65e2b48462b88170);
+  config.changelogByteCount = 76806760;
   return config;
 }
 

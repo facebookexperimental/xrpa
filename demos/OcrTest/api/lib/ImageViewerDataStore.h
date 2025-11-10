@@ -75,8 +75,17 @@ class ImageWindowReader : public Xrpa::ObjectAccessorInterface {
     return memAccessor_.readValue<std::string>(readOffset_);
   }
 
+  // Flips the image display for self-facing cameras
+  bool getFlipHorizontal() {
+    return (memAccessor_.readValue<int32_t>(readOffset_) == 1 ? true : false);
+  }
+
   inline bool checkNameChanged(uint64_t fieldsChanged) const {
     return fieldsChanged & 1;
+  }
+
+  inline bool checkFlipHorizontalChanged(uint64_t fieldsChanged) const {
+    return fieldsChanged & 2;
   }
 
  private:
@@ -106,6 +115,10 @@ class ImageWindowWriter : public ImageWindowReader {
 
   void setName(const std::string& value) {
     memAccessor_.writeValue<std::string>(value, writeOffset_);
+  }
+
+  void setFlipHorizontal(bool value) {
+    memAccessor_.writeValue<int32_t>((value ? 1 : 0), writeOffset_);
   }
 
  private:
@@ -141,11 +154,30 @@ class OutboundImageWindow : public Xrpa::DataStoreObject {
     }
   }
 
+  bool getFlipHorizontal() const {
+    return localFlipHorizontal_;
+  }
+
+  void setFlipHorizontal(bool flipHorizontal) {
+    localFlipHorizontal_ = flipHorizontal;
+    if ((changeBits_ & 2) == 0) {
+      changeBits_ |= 2;
+      changeByteCount_ += 4;
+    }
+    if (collection_) {
+      if (!hasNotifiedNeedsWrite_) {
+        collection_->notifyObjectNeedsWrite(getXrpaId());
+        hasNotifiedNeedsWrite_ = true;
+      }
+      collection_->setDirty(getXrpaId(), 2);
+    }
+  }
+
   void writeDSChanges(Xrpa::TransportStreamAccessor* accessor) {
     ImageWindowWriter objAccessor;
     if (!createWritten_) {
-      changeBits_ = 1;
-      changeByteCount_ = Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localName_) + 4;
+      changeBits_ = 3;
+      changeByteCount_ = Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localName_) + 8;
       objAccessor = ImageWindowWriter::create(accessor, getCollectionId(), getXrpaId(), changeByteCount_, createTimestamp_);
       createWritten_ = true;
     } else if (changeBits_ != 0) {
@@ -157,6 +189,9 @@ class OutboundImageWindow : public Xrpa::DataStoreObject {
     if (changeBits_ & 1) {
       objAccessor.setName(localName_);
     }
+    if (changeBits_ & 2) {
+      objAccessor.setFlipHorizontal(localFlipHorizontal_);
+    }
     changeBits_ = 0;
     changeByteCount_ = 0;
     hasNotifiedNeedsWrite_ = false;
@@ -164,8 +199,8 @@ class OutboundImageWindow : public Xrpa::DataStoreObject {
 
   uint64_t prepDSFullUpdate() {
     createWritten_ = false;
-    changeBits_ = 1;
-    changeByteCount_ = Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localName_) + 4;
+    changeBits_ = 3;
+    changeByteCount_ = Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localName_) + 8;
     return createTimestamp_;
   }
 
@@ -177,10 +212,14 @@ class OutboundImageWindow : public Xrpa::DataStoreObject {
     return fieldsChanged & 1;
   }
 
+  inline bool checkFlipHorizontalChanged(uint64_t fieldsChanged) const {
+    return fieldsChanged & 2;
+  }
+
   void sendImage(const ImageTypes::Image& image) {
     auto message = ImageWriter(collection_->sendMessage(
         getXrpaId(),
-        1,
+        2,
         DSInputImage::dynSizeOfValue(image) + 48));
     message.setImage(image);
   }
@@ -194,6 +233,10 @@ class OutboundImageWindow : public Xrpa::DataStoreObject {
   }
 
   std::string localName_ = "";
+
+  // Flips the image display for self-facing cameras
+  bool localFlipHorizontal_ = false;
+
   uint64_t createTimestamp_;
   uint64_t changeBits_ = 0;
   int32_t changeByteCount_ = 0;

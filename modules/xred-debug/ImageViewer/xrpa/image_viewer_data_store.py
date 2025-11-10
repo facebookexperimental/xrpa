@@ -50,8 +50,15 @@ class ImageWindowReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterface):
   def get_name(self) -> str:
     return self._mem_accessor.read_str(self._read_offset)
 
+  # Flips the image display for self-facing cameras
+  def get_flip_horizontal(self) -> bool:
+    return (self._mem_accessor.read_int(self._read_offset) == 1)
+
   def check_name_changed(self, fields_changed: int) -> bool:
     return (fields_changed & 1) != 0
+
+  def check_flip_horizontal_changed(self, fields_changed: int) -> bool:
+    return (fields_changed & 2) != 0
 
 class ImageWindowWriter(ImageWindowReader):
   def __init__(self, mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor):
@@ -76,6 +83,9 @@ class ImageWindowWriter(ImageWindowReader):
   def set_name(self, value: str) -> None:
     self._mem_accessor.write_str(value, self._write_offset)
 
+  def set_flip_horizontal(self, value: bool) -> None:
+    self._mem_accessor.write_int((1 if value is True else 0), self._write_offset)
+
 # Reconciled Types
 class ReconciledImageWindow(xrpa_runtime.reconciler.data_store_interfaces.DataStoreObject, xrpa_runtime.reconciler.data_store_interfaces.IDataStoreObjectAccessor[ImageWindowReader]):
   def __init__(self, id: xrpa_runtime.utils.xrpa_types.ObjectUuid, collection: xrpa_runtime.reconciler.data_store_interfaces.IObjectCollection):
@@ -83,6 +93,7 @@ class ReconciledImageWindow(xrpa_runtime.reconciler.data_store_interfaces.DataSt
     self._xrpa_fields_changed_handler = None
     self._xrpa_delete_handler = None
     self._local_name = ""
+    self._local_flip_horizontal = False
     self._image_message_handler = None
 
   def _handle_xrpa_fields_changed(self, fields_changed: int) -> None:
@@ -100,6 +111,8 @@ class ReconciledImageWindow(xrpa_runtime.reconciler.data_store_interfaces.DataSt
   def process_ds_update(self, value: ImageWindowReader, fields_changed: int) -> None:
     if value.check_name_changed(fields_changed):
       self._local_name = value.get_name()
+    if value.check_flip_horizontal_changed(fields_changed):
+      self._local_flip_horizontal = value.get_flip_horizontal()
     self._handle_xrpa_fields_changed(fields_changed)
 
   @staticmethod
@@ -109,14 +122,20 @@ class ReconciledImageWindow(xrpa_runtime.reconciler.data_store_interfaces.DataSt
   def get_name(self) -> str:
     return self._local_name
 
+  def get_flip_horizontal(self) -> bool:
+    return self._local_flip_horizontal
+
   def check_name_changed(self, fields_changed: int) -> bool:
     return (fields_changed & 1) != 0
+
+  def check_flip_horizontal_changed(self, fields_changed: int) -> bool:
+    return (fields_changed & 2) != 0
 
   def on_image(self, handler: typing.Callable[[int, ImageReader], None]) -> None:
     self._image_message_handler = handler
 
   def process_ds_message(self, message_type: int, msg_timestamp: int, message_data: xrpa_runtime.utils.memory_accessor.MemoryAccessor) -> None:
-    if message_type == 1:
+    if message_type == 2:
       if self._image_message_handler is not None:
         message = ImageReader(message_data)
         self._image_message_handler(msg_timestamp, message)
@@ -130,7 +149,7 @@ class ReconciledImageWindow(xrpa_runtime.reconciler.data_store_interfaces.DataSt
 # Object Collections
 class InboundImageWindowReaderCollection(xrpa_runtime.reconciler.object_collection.ObjectCollection[ImageWindowReader, ReconciledImageWindow]):
   def __init__(self, reconciler: xrpa_runtime.reconciler.data_store_reconciler.DataStoreReconciler):
-    super().__init__(ImageWindowReader, reconciler, 0, 1, 0, False)
+    super().__init__(ImageWindowReader, reconciler, 0, 3, 0, False)
     self._set_create_delegate_internal(ReconciledImageWindow.create)
 
   def set_create_delegate(self, create_delegate: typing.Callable[[xrpa_runtime.utils.xrpa_types.ObjectUuid, ImageWindowReader, xrpa_runtime.reconciler.data_store_interfaces.IObjectCollection], ReconciledImageWindow]) -> None:

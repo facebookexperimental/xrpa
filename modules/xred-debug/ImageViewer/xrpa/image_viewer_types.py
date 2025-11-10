@@ -20,7 +20,7 @@ import xrpa_runtime.utils.memory_accessor
 import xrpa_runtime.utils.xrpa_types
 
 class image_viewer_data_store_config:
-  transport_config = xrpa_runtime.utils.xrpa_types.TransportConfig(xrpa_runtime.utils.xrpa_types.HashValue(0xb489eef7285a25fd, 0xb2f10c3f4cdaf387, 0x155b86c19c24ac97, 0x20ec17cf1d5df170), 76806680)
+  transport_config = xrpa_runtime.utils.xrpa_types.TransportConfig(xrpa_runtime.utils.xrpa_types.HashValue(0x9c85b32398f008f4, 0x22b167decbb9628c, 0x0c526c96d74a7ded, 0x65e2b48462b88170), 76806760)
 
 @dataclasses.dataclass
 class DSScalar:

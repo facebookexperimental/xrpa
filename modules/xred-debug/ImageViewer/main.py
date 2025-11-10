@@ -58,7 +58,6 @@ class ImageDebugWindow(pyglet.window.Window):
 
     def update_image(self, pil_image):
         try:
-            pil_image = pil_image.transpose(PilImage.FLIP_LEFT_RIGHT)
             self.original_image_size = (pil_image.width, pil_image.height)
             self.image_sprite = self._create_sprite(pil_image)
             self._update_sprite_scale()
@@ -107,6 +106,7 @@ class ImageWindow(ReconciledImageWindow):
                 (
                     self.window_id,
                     self.get_name(),
+                    self.get_flip_horizontal(),
                     convert_to_pil(image.get_image(), "RGBA"),
                 )
             )
@@ -132,7 +132,12 @@ def _handle_window_requests():
 def _handle_image_updates():
     try:
         while True:
-            window_id, window_name, pil_image = _image_updates.get_nowait()
+            window_id, window_name, flip_horizontal, pil_image = (
+                _image_updates.get_nowait()
+            )
+
+            if flip_horizontal:
+                pil_image = pil_image.transpose(PilImage.FLIP_LEFT_RIGHT)
 
             if window_id not in _active_windows and pil_image is not None:
                 _active_windows[window_id] = ImageDebugWindow(

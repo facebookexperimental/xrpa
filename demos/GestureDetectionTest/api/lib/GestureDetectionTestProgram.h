@@ -73,6 +73,7 @@ class GestureDetectionTestProgram {
     objCameraCameraFeed0_->setCameraName("");
     objCameraCameraFeed0_->onCameraImage([this](auto p0, auto p1) { dispatchObjCameraCameraFeed0_CameraImage(p0, p1); });
     objImageViewerImageWindow1_->setName("Camera");
+    objImageViewerImageWindow1_->setFlipHorizontal(true);
     objGestureDetectionGestureDetection2_->onGestureResult([this](auto p0, auto p1) { dispatchObjGestureDetectionGestureDetection2_GestureResult(p0, p1); });
   }
 
