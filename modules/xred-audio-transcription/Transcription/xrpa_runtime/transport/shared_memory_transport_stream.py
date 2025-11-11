@@ -22,43 +22,59 @@ from multiprocessing.shared_memory import SharedMemory
 from typing import Callable
 
 from xrpa_runtime.transport.memory_transport_stream import MemoryTransportStream
+from xrpa_runtime.transport.memory_transport_stream_accessor import (
+    MemoryTransportStreamAccessor,
+)
 from xrpa_runtime.utils.memory_accessor import MemoryAccessor
 from xrpa_runtime.utils.xrpa_types import TransportConfig
 
 
+def _format_shared_memory_name(base_name: str, config: TransportConfig) -> str:
+    hash_prefix = config.schema_hash.Value0 & 0xFFFFFFFF
+
+    version_hex = f"{MemoryTransportStreamAccessor.TRANSPORT_VERSION:x}"
+    hash_hex = f"{hash_prefix:08x}"
+
+    return f"{base_name}_v{version_hex}_{hash_hex}"
+
+
 class SharedMemoryTransportStream(MemoryTransportStream):
     def __init__(self, name: str, config: TransportConfig) -> None:
-        MemoryTransportStream.__init__(self, name, config)
+        MemoryTransportStream.__init__(
+            self, _format_shared_memory_name(name, config), config
+        )
 
         did_create = False
         self._shared_memory = None
 
         if sys.platform == "win32":
             try:
-                self._shared_memory = SharedMemory(name, True, self._mem_size)
+                self._shared_memory = SharedMemory(self._name, True, self._mem_size)
                 did_create = True
-                print(f"Created shared memory file {name} with size {self._mem_size}")
+                print(
+                    f"Created shared memory file {self._name} with size {self._mem_size}"
+                )
             except FileExistsError:
                 try:
-                    self._shared_memory = SharedMemory(name)
+                    self._shared_memory = SharedMemory(self._name)
                     print(
-                        f"Opened existing shared memory file {name} with size {self._mem_size}"
+                        f"Opened existing shared memory file {self._name} with size {self._mem_size}"
                     )
                 except FileNotFoundError:
-                    print(f"Failed to open shared memory file {name}")
+                    print(f"Failed to open shared memory file {self._name}")
             except FileNotFoundError:
                 try:
-                    self._shared_memory = SharedMemory(name)
+                    self._shared_memory = SharedMemory(self._name)
                     print(
-                        f"Opened existing shared memory file {name} with size {self._mem_size}"
+                        f"Opened existing shared memory file {self._name} with size {self._mem_size}"
                     )
                 except FileNotFoundError:
-                    print(f"Failed to create or open shared memory file {name}")
+                    print(f"Failed to create or open shared memory file {self._name}")
         elif platform.system() == "Darwin":
             self._fd = None
             temp_path = "/tmp/xrpa/"
             os.makedirs(temp_path, exist_ok=True)
-            file_path = f"{temp_path}{name}"
+            file_path = f"{temp_path}{self._name}"
 
             try:
                 # Try to open existing file first

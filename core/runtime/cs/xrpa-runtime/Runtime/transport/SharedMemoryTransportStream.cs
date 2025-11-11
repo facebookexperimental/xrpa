@@ -129,15 +129,21 @@ namespace Xrpa
 
     unsafe public class SharedMemoryTransportStream : MemoryTransportStream
     {
-        public SharedMemoryTransportStream(string name, TransportConfig config) : base(name, config)
+        private static string FormatSharedMemoryName(string baseName, TransportConfig config)
+        {
+            uint hashPrefix = (uint)(config.SchemaHash.Value0 & 0xFFFFFFFF);
+            return $"{baseName}_v{MemoryTransportStreamAccessor.TRANSPORT_VERSION:x}_{hashPrefix:x8}";
+        }
+
+        public SharedMemoryTransportStream(string name, TransportConfig config) : base(FormatSharedMemoryName(name, config), config)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                _memFile = new WindowsSharedMemoryFile(name, _memSize);
+                _memFile = new WindowsSharedMemoryFile(_name, _memSize);
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                _memFile = new MacOsSharedMemoryFile(name, _memSize);
+                _memFile = new MacOsSharedMemoryFile(_name, _memSize);
             }
             else
             {

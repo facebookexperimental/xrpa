@@ -17,6 +17,11 @@
 
 #include <xrpa-runtime/transport/SharedMemoryTransportStream.h>
 
+#include <iomanip>
+#include <sstream>
+
+#include <xrpa-runtime/transport/MemoryTransportStreamAccessor.h>
+
 #if defined(WIN32)
 #include <Windows.h>
 #ifdef TEXT
@@ -36,10 +41,19 @@
 
 namespace Xrpa {
 
+std::string formatSharedMemoryName(const std::string& baseName, const TransportConfig& config) {
+  auto hashPrefix = static_cast<uint32_t>(config.schemaHash.value0 & 0xFFFFFFFF);
+
+  std::stringstream ss;
+  ss << baseName << "_v" << std::hex << MemoryTransportStreamAccessor::TRANSPORT_VERSION << "_"
+     << std::setfill('0') << std::setw(8) << hashPrefix;
+  return ss.str();
+}
+
 SharedMemoryTransportStream::SharedMemoryTransportStream(
     const std::string& name,
     const TransportConfig& config)
-    : MemoryTransportStream(name, config) {
+    : MemoryTransportStream(formatSharedMemoryName(name, config), config) {
   bool didCreate = false;
 #if defined(WIN32)
   // open the shared memory file if it already exists
@@ -62,10 +76,10 @@ SharedMemoryTransportStream::SharedMemoryTransportStream(
   // map the shared memory file to memory
   memBuffer_ = (unsigned char*)MapViewOfFile(memHandle_, FILE_MAP_ALL_ACCESS, 0, 0, memSize_);
 #elif defined(__APPLE__)
-  std::string filePath = "/tmp/xrpa/" + name;
+  std::string filePath = "/tmp/xrpa/" + name_;
   int fd = open(filePath.c_str(), O_RDWR | O_CREAT, 0666);
   if (fd != -1) {
-    struct stat st;
+    struct stat st{};
     fstat(fd, &st);
     didCreate = (st.st_size == 0);
     if (didCreate) {
