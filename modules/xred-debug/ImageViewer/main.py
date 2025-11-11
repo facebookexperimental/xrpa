@@ -41,6 +41,12 @@ class ImageDebugWindow(pyglet.window.Window):
         self.image_sprite = None
         self.original_image_size = None
 
+    def on_close(self):
+        # Ensure proper cleanup when window is closed
+        self.image_sprite = None
+        self.original_image_size = None
+        super().on_close()
+
     def on_draw(self):
         self.clear()
         if hasattr(self, "image_sprite") and self.image_sprite:
@@ -123,8 +129,13 @@ def _handle_window_requests():
             action, window_id, _ = _window_requests.get_nowait()
             if action == "close":
                 if window_id in _active_windows:
-                    _active_windows[window_id].close()
+                    window = _active_windows[window_id]
+                    # Close the window and remove reference
+                    window.close()
+                    # Remove from active windows immediately
                     del _active_windows[window_id]
+                    # Explicitly delete the window object to ensure cleanup
+                    del window
     except queue.Empty:
         pass
 
@@ -194,6 +205,13 @@ def main():
     print("Press Enter to shut down")
 
     threading.Thread(target=_run_module, args=(module,), daemon=True).start()
+
+    # Create a hidden window to prevent pyglet from auto-exiting when all
+    # visible windows are closed. This allows the application to continue
+    # running and create new windows as image data arrives.
+    # Keep reference to prevent garbage collection - unused but necessary
+    _keep_alive_window = pyglet.window.Window(width=1, height=1, visible=False)  # noqa: F841
+
     pyglet.clock.schedule_interval(_process_requests, 1.0 / FRAME_RATE)
     pyglet.app.run()
 
