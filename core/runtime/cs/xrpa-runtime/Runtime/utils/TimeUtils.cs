@@ -21,7 +21,7 @@ namespace Xrpa
     public class TimeUtils
     {
         private static long TicksPerMicrosecond = System.TimeSpan.TicksPerMillisecond / 1000;
-        private static long TicksPerNanosecond = System.TimeSpan.TicksPerMillisecond / 1000000;
+        private static long NanosecondsPerTick = 1000000 / System.TimeSpan.TicksPerMillisecond;
         private static long UnixEpochStart = (new System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc)).Ticks;
 
         public static ulong GetCurrentClockTimeMicroseconds()
@@ -31,7 +31,7 @@ namespace Xrpa
 
         public static ulong GetCurrentClockTimeNanoseconds()
         {
-            return (ulong)((System.DateTime.UtcNow.Ticks - UnixEpochStart) / TicksPerNanosecond);
+            return (ulong)((System.DateTime.UtcNow.Ticks - UnixEpochStart) * NanosecondsPerTick);
         }
     }
 

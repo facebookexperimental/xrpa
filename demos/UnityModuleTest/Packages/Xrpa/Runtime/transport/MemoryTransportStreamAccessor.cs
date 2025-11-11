@@ -101,16 +101,21 @@ namespace Xrpa
 
         public ulong GetLastUpdateAgeMicroseconds()
         {
+            // stored value is in milliseconds, offset from baseTimestamp
             var offset = new MemoryOffset(52);
-            return TimeUtils.GetCurrentClockTimeMicroseconds() - BaseTimestamp -
-                _memAccessor.ReadUint(offset);
+            var currentElapsedUs = TimeUtils.GetCurrentClockTimeMicroseconds() - BaseTimestamp;
+            var lastElapsedMs = _memAccessor.ReadUint(offset);
+            var lastElapsedUs = (ulong)lastElapsedMs * 1000;
+            return currentElapsedUs - lastElapsedUs;
         }
 
         public void SetLastUpdateTimestamp()
         {
+            // stored value is in milliseconds, offset from baseTimestamp
             var offset = new MemoryOffset(52);
-            _memAccessor.WriteUint(
-                (uint)(TimeUtils.GetCurrentClockTimeMicroseconds() - BaseTimestamp), offset);
+            var elapsedUs = TimeUtils.GetCurrentClockTimeMicroseconds() - BaseTimestamp;
+            var elapsedMs = (uint)(elapsedUs / 1000);
+            _memAccessor.WriteUint(elapsedMs, offset);
         }
 
         public bool IsInitialized()

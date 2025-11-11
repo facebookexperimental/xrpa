@@ -69,19 +69,23 @@ class MemoryTransportStreamAccessor:
         self._mem_accessor.write_int(value, MemoryOffset(48))
 
     def get_last_update_age_microseconds(self) -> int:
+        # stored value is in milliseconds, offset from baseTimestamp
         offset = MemoryOffset(52)
-        return (
-            TimeUtils.get_current_clock_time_microseconds()
-            - self.base_timestamp
-            - self._mem_accessor.read_uint(offset)
+        current_elapsed_us = (
+            TimeUtils.get_current_clock_time_microseconds() - self.base_timestamp
         )
+        last_elapsed_ms = self._mem_accessor.read_uint(offset)
+        last_elapsed_us = last_elapsed_ms * 1000
+        return current_elapsed_us - last_elapsed_us
 
     def set_last_update_timestamp(self):
+        # stored value is in milliseconds, offset from baseTimestamp
         offset = MemoryOffset(52)
-        self._mem_accessor.write_uint(
-            TimeUtils.get_current_clock_time_microseconds() - self.base_timestamp,
-            offset,
+        elapsed_us = (
+            TimeUtils.get_current_clock_time_microseconds() - self.base_timestamp
         )
+        elapsed_ms = elapsed_us // 1000
+        self._mem_accessor.write_uint(elapsed_ms, offset)
 
     def is_initialized(self) -> bool:
         return not self._mem_accessor.is_null()
