@@ -32,7 +32,7 @@ function genMessageParamInitializer(
 ): string[] {
   const lines: string[] = [];
 
-  const paramNames = getMessageParamNames(msgType);
+  const paramNames = getMessageParamNames(CppCodeGenImpl, msgType);
   for (const key in paramNames) {
     lines.push(`message.set${upperFirst(key)}(${paramNames[key]});`);
   }
@@ -47,7 +47,7 @@ function genMessageSize(namespace: string, includes: IncludeAggregator | null, m
   const msgFields = msgType.getStateFields();
   for (const key in msgFields) {
     const fieldType = msgFields[key].type;
-    const byteCount = fieldType.getRuntimeByteCount(getMessageParamName(key), namespace, includes);
+    const byteCount = fieldType.getRuntimeByteCount(getMessageParamName(CppCodeGenImpl, key), namespace, includes);
     staticSize += byteCount[0];
     if (byteCount[1] !== null) {
       dynFieldSizes.push(byteCount[1]);
@@ -69,7 +69,7 @@ function genSendMessageBody(params: {
   const lines: string[] = [];
 
   if (params.proxyObj) {
-    const msgParams = Object.values(getMessageParamNames(params.fieldType));
+    const msgParams = Object.values(getMessageParamNames(CppCodeGenImpl, params.fieldType));
     lines.push(`if (${params.proxyObj}) { ${params.proxyObj}->send${upperFirst(params.fieldName)}(${msgParams.join(", ")}); }`);
   } else {
     const messageType = params.typeDef.getFieldIndex(params.fieldName);
@@ -107,7 +107,7 @@ export function genSendMessageAccessor(classSpec: ClassSpec, params: {
   classSpec.methods.push({
     name: params.name ?? `send${upperFirst(params.fieldName)}`,
     decorations: params.decorations,
-    parameters: genMessageMethodParams({ ...params, namespace: classSpec.namespace, includes: classSpec.includes }),
+    parameters: genMessageMethodParams({ ...params, codegen: CppCodeGenImpl, namespace: classSpec.namespace, includes: classSpec.includes }),
     body: includes => genSendMessageBody({ ...params, namespace: classSpec.namespace, includes }),
     separateImplementation: params.separateImplementation,
   });

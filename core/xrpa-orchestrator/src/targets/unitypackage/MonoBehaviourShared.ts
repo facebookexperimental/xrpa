@@ -270,7 +270,7 @@ export function genUnityMessageProxyDispatch(classSpec: ClassSpec, params: {
       fieldName: params.fieldName,
       fieldType: params.fieldType,
       genMsgHandler: msg => `On${upperFirst(msg)}?.Invoke`,
-      msgDataToParams: params.dispatchMessageReader ? convertMessageTypeToParams : (() => Object.values(getMessageParamNames(params.fieldType))),
+      msgDataToParams: params.dispatchMessageReader ? convertMessageTypeToParams : (() => Object.values(getMessageParamNames(CsharpCodeGenImpl, params.fieldType))),
       convertToReadAccessor: false,
     }),
     visibility: "private",

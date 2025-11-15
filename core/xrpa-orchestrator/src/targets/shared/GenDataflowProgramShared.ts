@@ -69,8 +69,8 @@ function objToMemberName(codegen: TargetCodeGenImpl, objName: string): string {
   return codegen.privateMember(`obj${upperFirst(objName)}`);
 }
 
-function storeToVarName(storeName: string): string {
-  return `datastore${upperFirst(storeName)}`;
+function storeToVarName(codegen: TargetCodeGenImpl, storeName: string): string {
+  return codegen.identifierName(`datastore${upperFirst(storeName)}`);
 }
 
 interface ObjectInfo {
@@ -156,13 +156,13 @@ function onMessage(codegen: TargetCodeGenImpl, classSpec: ClassSpec, params: {
 
   if (dispatcherBody.length === 0) {
     params.initializersOut.push(
-      `${codegen.genDerefMethodCall(params.objVar, `on${upperFirst(params.fieldName)}`, [
-        codegen.genPassthroughMethodBind(dispatcherName, 2),
-      ])};`,
+      `${codegen.genDerefMethodCall(codegen.genDeref("", params.objVar), `on${upperFirst(params.fieldName)}`, [
+        codegen.genPassthroughMethodBind(codegen.genDeref("", codegen.methodMember(dispatcherName, "private")), 2),
+      ])}` + codegen.STMT_TERM,
     );
 
     // fetch all message fields and store them in local variables
-    const msgParams = getMessageParamNames(params.fieldType);
+    const msgParams = getMessageParamNames(codegen, params.fieldType);
     const varInitializers = Object.keys(msgParams).map(key => {
       return codegen.declareVar(`${msgParams[key]}`, "", codegen.genMethodCall("msg", `get${upperFirst(key)}`, []));
     });
@@ -188,8 +188,8 @@ function onSignal(codegen: TargetCodeGenImpl, classSpec: ClassSpec, params: {
     });
 
     params.initializersOut.push(
-      `${signalForwarder} = ${codegen.genCreateObject(codegen.getXrpaTypes().InboundSignalForwarder.getLocalType(classSpec.namespace, classSpec.includes), [])};`,
-      `${codegen.genDerefMethodCall(params.objVar, `on${upperFirst(params.fieldName)}`, [signalForwarder])};`,
+      `${codegen.genDeref("", signalForwarder)} = ${codegen.genCreateObject(codegen.getXrpaTypes().InboundSignalForwarder.getLocalType(classSpec.namespace, classSpec.includes), [])}` + codegen.STMT_TERM,
+      `${codegen.genDerefMethodCall(codegen.genDeref("", params.objVar), `on${upperFirst(params.fieldName)}`, [codegen.genDeref("", signalForwarder)])}` + codegen.STMT_TERM,
     );
   }
 
@@ -214,14 +214,14 @@ function onFieldChanged(codegen: TargetCodeGenImpl, classSpec: ClassSpec, params
 
   if (dispatcherBody.length === 0) {
     params.initializersOut.push(
-      `${codegen.genDerefMethodCall(params.objVar, "onXrpaFieldsChanged", [
-        codegen.genPassthroughMethodBind(dispatcherName, 1),
-      ])};`,
+      `${codegen.genDerefMethodCall(codegen.genDeref("", params.objVar), "onXrpaFieldsChanged", [
+        codegen.genPassthroughMethodBind(codegen.genDeref("", codegen.methodMember(dispatcherName, "private")), 1),
+      ])}` + codegen.STMT_TERM,
     );
   }
 
   dispatcherBody.push(
-    ...codegen.ifAnyBitIsSet("fieldsChanged", params.bitMask, params.code),
+    ...codegen.ifAnyBitIsSet(codegen.identifierName("fieldsChanged"), params.bitMask, params.code),
   );
 }
 
@@ -254,7 +254,7 @@ function genBindMessageFieldValues(codegen: TargetCodeGenImpl, classSpec: ClassS
     fieldType: srcFieldType,
 
     code: [
-      `${codegen.genDerefMethodCall(params.dstObjVar, codegen.methodMember(`send${upperFirst(params.dstFieldName)}`), Object.values(getMessageParamNames(srcFieldType)))};`,
+      `${codegen.genDerefMethodCall(codegen.genDeref("", params.dstObjVar), codegen.methodMember(`send${upperFirst(params.dstFieldName)}`), Object.values(getMessageParamNames(codegen, srcFieldType)))}` + codegen.STMT_TERM,
     ],
     initializersOut: params.initializersOut,
   });
@@ -300,7 +300,7 @@ function genMessageOutputParameter(codegen: TargetCodeGenImpl, classSpec: ClassS
     fieldName: params.paramName,
     fieldType: params.paramType,
     genMsgHandler: () => memberName,
-    msgDataToParams: () => Object.values(getMessageParamNames(srcFieldType)),
+    msgDataToParams: () => Object.values(getMessageParamNames(codegen, srcFieldType)),
     convertToReadAccessor: false,
   });
 
@@ -341,7 +341,7 @@ function genBindSignalFieldValues(codegen: TargetCodeGenImpl, classSpec: ClassSp
   });
 
   params.initializersOut.push(
-    `${codegen.genDerefMethodCall(params.dstObjVar, codegen.applyTemplateParams(`set${upperFirst(params.dstFieldName)}Forwarder`, codegen.PRIMITIVE_INTRINSICS.float32.typename), [signalForwarder])};`,
+    `${codegen.genDerefMethodCall(params.dstObjVar, codegen.applyTemplateParams(`set${upperFirst(params.dstFieldName)}Forwarder`, codegen.PRIMITIVE_INTRINSICS.float32.typename), [signalForwarder])}` + codegen.STMT_TERM,
   );
 }
 
@@ -394,21 +394,21 @@ function genBindStateFieldValues(codegen: TargetCodeGenImpl, classSpec: ClassSpe
 
   const setterName = params.dstIsStringEmbedding ? "setEmbeddingValue" : `set${upperFirst(params.dstFieldName)}`;
   const sourceValues = [
-    codegen.genDerefMethodCall(params.srcObjVar, `get${upperFirst(params.srcFieldName)}`, []),
+    codegen.genDerefMethodCall(codegen.genDeref("", params.srcObjVar), `get${upperFirst(params.srcFieldName)}`, []),
   ];
   if (params.dstIsStringEmbedding) {
-    sourceValues.unshift(`"${params.dstFieldName}"`);
+    sourceValues.unshift(`"${codegen.genDeref("", params.dstFieldName)}"`);
   }
 
   params.initializersOut.push(
-    `${codegen.genDerefMethodCall(params.dstObjVar, codegen.methodMember(setterName), sourceValues)};`,
+    `${codegen.genDerefMethodCall(codegen.genDeref("", params.dstObjVar), codegen.methodMember(setterName), sourceValues)}` + codegen.STMT_TERM,
   )
 
   onFieldChanged(codegen, classSpec, {
     objVar: params.srcObjVar,
     bitMask: params.srcBitMask,
     code: [
-      `${codegen.genDerefMethodCall(params.dstObjVar, codegen.methodMember(setterName), sourceValues)};`,
+      `${codegen.genDerefMethodCall(codegen.genDeref("", params.dstObjVar), codegen.methodMember(setterName), sourceValues)}` + codegen.STMT_TERM,
     ],
     initializersOut: params.initializersOut,
   });
@@ -422,6 +422,7 @@ function genMessageInputParameter(codegen: TargetCodeGenImpl, classSpec: ClassSp
   inputDef: DataflowInput,
 }) {
   const msgParams = genMessageMethodParams({
+    codegen,
     namespace: classSpec.namespace,
     includes: classSpec.includes,
     fieldType: params.paramType,
@@ -435,12 +436,10 @@ function genMessageInputParameter(codegen: TargetCodeGenImpl, classSpec: ClassSp
       // send the message on all connected datastore objects
       ...mapAndCollapse(params.inputDef.connections, connection => {
         assert(isDataflowForeignObjectInstantiation(connection.targetNode));
-        const objMemberName = objToMemberName(codegen, connection.targetNode.name);
-        return [
-          `if (${codegen.genNonNullCheck(objMemberName)}) {`,
-          `  ${codegen.genDerefMethodCall(objMemberName, `send${upperFirst(connection.targetPort)}`, msgParamNames)};`,
-          `}`,
-        ];
+        const objMemberName = codegen.genDeref("", objToMemberName(codegen, connection.targetNode.name));
+        return codegen.conditional(codegen.genNonNullCheck(objMemberName), [
+          codegen.genDerefMethodCall(objMemberName, `send${upperFirst(connection.targetPort)}`, msgParamNames) + codegen.STMT_TERM,
+        ]);
       }),
     ],
     visibility: "public",
@@ -463,7 +462,7 @@ function genStateInputParameter(codegen: TargetCodeGenImpl, classSpec: ClassSpec
     apiname: codegen.XRPA_NAMESPACE,
     fieldName: params.paramName,
     fieldType: params.paramType,
-    fieldToMemberVar: () => memberName,
+    fieldToMemberVar: () => codegen.genDeref("", memberName),
     convertToLocal: false,
     description: params.inputParamsStruct.getAllFields()[params.paramName].description,
     visibility: "public",
@@ -478,23 +477,19 @@ function genStateInputParameter(codegen: TargetCodeGenImpl, classSpec: ClassSpec
     }],
     body: () => [
       // set the local member value
-      `${memberName} = ${params.paramName};`,
+      `${codegen.genDeref("", memberName)} = ${params.paramName}` + codegen.STMT_TERM,
 
       // set the field value on connected datastore objects
       ...mapAndCollapse(params.inputDef.connections, connection => {
-        const objMemberName = objToMemberName(codegen, connection.targetNode.name);
+        const objMemberName = codegen.genDeref("", objToMemberName(codegen, connection.targetNode.name));
         if (isDataflowForeignObjectInstantiation(connection.targetNode)) {
-          return [
-            `if (${codegen.genNonNullCheck(objMemberName)}) {`,
-            `  ${codegen.genDerefMethodCall(objMemberName, `set${upperFirst(connection.targetPort)}`, [params.paramName])};`,
-            `}`,
-          ];
+          return codegen.conditional(codegen.genNonNullCheck(objMemberName), [
+            codegen.genDerefMethodCall(objMemberName, `set${upperFirst(connection.targetPort)}`, [params.paramName]) + codegen.STMT_TERM,
+          ]);
         } else if (isDataflowStringEmbedding(connection.targetNode)) {
-          return [
-            `if (${codegen.genNonNullCheck(objMemberName)}) {`,
-            `  ${codegen.genDerefMethodCall(objMemberName, "setEmbeddingValue", [`"${connection.targetPort}"`, params.paramName])};`,
-            `}`,
-          ];
+          return codegen.conditional(codegen.genNonNullCheck(objMemberName), [
+            codegen.genDerefMethodCall(objMemberName, "setEmbeddingValue", [`"${connection.targetPort}"`, params.paramName]) + codegen.STMT_TERM,
+          ]);
         } else {
           throw new Error(`Unsupported input connection type: ${JSON.stringify(connection.targetNode)}`);
         }
@@ -534,7 +529,7 @@ function genStateOutputParameter(codegen: TargetCodeGenImpl, classSpec: ClassSpe
     apiname: codegen.XRPA_NAMESPACE,
     fieldName: params.paramName,
     fieldType: params.paramType,
-    fieldToMemberVar: () => memberName,
+    fieldToMemberVar: () => codegen.genDeref("", memberName),
     convertToLocal: false,
     description: params.outputParamsStruct.getAllFields()[params.paramName].description,
     visibility: "public",
@@ -559,7 +554,7 @@ function genStateOutputParameter(codegen: TargetCodeGenImpl, classSpec: ClassSpe
     }],
   });
   if (body.length === 0) {
-    body.push(`${handlerName} = handler;`);
+    body.push(`${codegen.genDeref("", handlerName)} = handler` + codegen.STMT_TERM);
 
     classSpec.members.push({
       name: handlerName,
@@ -574,9 +569,9 @@ function genStateOutputParameter(codegen: TargetCodeGenImpl, classSpec: ClassSpe
     bitMask: params.srcBitMask,
     initializersOut: params.initializersOut,
     code: [
-      `${memberName} = ${codegen.genDerefMethodCall(params.srcObjVar, `get${upperFirst(params.srcFieldName)}`, [])};`,
-      codegen.genEventHandlerCall(handlerName, [`${paramBitMask}`], true),
-      codegen.genEventHandlerCall(fieldHandlerName, [memberName], true),
+      `${codegen.genDeref("", memberName)} = ${codegen.genDerefMethodCall(codegen.genDeref("", params.srcObjVar), `get${upperFirst(params.srcFieldName)}`, [])}` + codegen.STMT_TERM,
+      codegen.genEventHandlerCall(codegen.genDeref("", handlerName), [`${paramBitMask}`], true),
+      codegen.genEventHandlerCall(codegen.genDeref("", fieldHandlerName), [codegen.genDeref("", memberName)], true),
     ],
   });
 }
@@ -692,11 +687,11 @@ function genForeignObjectInstantiation(
 ) {
   const { objVarName } = getObjectInfo(ctx, codegen, graphNode, classSpec.includes);
   const reconcilerDef = getReconcilerDefForNode(ctx.moduleDef, graphNode);
-  const storeMemberName = codegen.privateMember(storeToVarName(reconcilerDef.storeDef.apiname));
+  const storeMemberName = codegen.genDeref("", codegen.privateMember(storeToVarName(codegen, reconcilerDef.storeDef.apiname)));
 
   // create object
   createLines.push(
-    `${objVarName} = ${codegen.genDerefMethodCall(codegen.genDeref(storeMemberName, reconcilerDef.type.getName()), "createObject", [])};`,
+    `${codegen.genDeref("", objVarName)} = ${codegen.genDerefMethodCall(codegen.genDeref(storeMemberName, reconcilerDef.type.getName()), "createObject", [])}` + codegen.STMT_TERM,
   );
 
   // set field values
@@ -759,9 +754,10 @@ function genForeignObjectInstantiation(
 
     let value: string | number | undefined = undefined;
     if (isDataflowGraphNode(fieldValue)) {
-      value = codegen.genDerefMethodCall(getObjectInfo(ctx, codegen, fieldValue, classSpec.includes).objVarName, "getXrpaId", []);
+      const objVarName = getObjectInfo(ctx, codegen, fieldValue, classSpec.includes).objVarName;
+      value = codegen.genDerefMethodCall(codegen.genDeref("", objVarName), "getXrpaId", []);
     } else if (isXrpaProgramParam(fieldValue)) {
-      value = paramToMemberName(codegen, fieldValue.name);
+      value = codegen.genDeref("", paramToMemberName(codegen, fieldValue.name));
     } else if (fieldValue !== undefined) {
       const fieldType = reconcilerDef.type.getAllFields()[fieldName].type;
       const fieldTypeName = fieldType.getLocalType(ctx.namespace, classSpec.includes);
@@ -775,7 +771,7 @@ function genForeignObjectInstantiation(
     }
     if (typeIsStateData(fields[fieldName].type)) {
       updateLines.push(
-        `${codegen.genDerefMethodCall(objVarName, `set${upperFirst(fieldName)}`, [value.toString()])};`,
+        `${codegen.genDerefMethodCall(codegen.genDeref("", objVarName), `set${upperFirst(fieldName)}`, [value.toString()])}` + codegen.STMT_TERM,
       );
     }
   }
@@ -793,14 +789,14 @@ function genStringEmbedding(
 
   // create object
   createLines.push(
-    `${objVarName} = ${codegen.genCreateObject(objType, [codegen.genPrimitiveValue(codegen.PRIMITIVE_INTRINSICS.string.typename, graphNode.value)])};`,
+    `${codegen.genDeref("", objVarName)} = ${codegen.genCreateObject(objType, [codegen.genPrimitiveValue(codegen.PRIMITIVE_INTRINSICS.string.typename, graphNode.value)])}` + codegen.STMT_TERM,
   );
 
   // set initial embedding values from params
   for (const paramName of graphNode.embeddedParams) {
-    const embeddingKey = `{{{param:${paramName}}}`;
+    const embeddingKey = `{{{param:${paramName}}}}`;
     updateLines.push(
-      `${codegen.genDerefMethodCall(objVarName, "setEmbeddingValue", [`"${embeddingKey}"`, paramToMemberName(codegen, paramName)])};`,
+      `${codegen.genDerefMethodCall(codegen.genDeref("", objVarName), "setEmbeddingValue", [`"${embeddingKey}"`, codegen.genDeref("", paramToMemberName(codegen, paramName))])}` + codegen.STMT_TERM,
     );
   }
 
@@ -850,11 +846,9 @@ function genCreateObjectsBody(
     // if a message has no fields then the handler only takes the timestamp as a parameter; otherwise it takes the message reader as well
     const paramCount = targetInfo.fieldSpec.type.hasFields() ? 2 : 1;
 
-    updateLines.push(
-      `if (${codegen.genNonNullCheck(targetInfo.objVarName)}) {`,
-      `  ${codegen.genDerefMethodCall(targetInfo.objVarName, `on${upperFirst(connection.targetPort)}`, [codegen.genMethodBind("", "terminate", {}, paramCount)])};`,
-      `}`,
-    );
+    updateLines.push(...codegen.conditional(codegen.genNonNullCheck(codegen.genDeref("", targetInfo.objVarName)), [
+      codegen.genDerefMethodCall(codegen.genDeref("", targetInfo.objVarName), `on${upperFirst(connection.targetPort)}`, [codegen.genMethodBind("", "terminate", {}, paramCount)]) + codegen.STMT_TERM,
+    ]));
   }
 
   return createLines.concat(updateLines).concat(initializerLines);
@@ -873,20 +867,16 @@ function genDestroyObjectsBody(
     if (isDataflowForeignObjectInstantiation(graphNode)) {
       const reconcilerDef = getReconcilerDefForNode(ctx.moduleDef, graphNode);
       const storeDef = reconcilerDef.storeDef;
-      const storeMemberName = codegen.privateMember(storeToVarName(storeDef.apiname));
-      const objId = codegen.genDerefMethodCall(objVarName, "getXrpaId", []);
-      lines.unshift(
-        `if (${codegen.genNonNullCheck(objVarName)}) {`,
-        `  ${codegen.genDerefMethodCall(codegen.genDeref(storeMemberName, reconcilerDef.type.getName()), "removeObject", [objId])};`,
-        `  ${objVarName} = ${codegen.getNullValue()};`,
-        `}`,
-      );
+      const storeMemberName = codegen.genDeref("", codegen.privateMember(storeToVarName(codegen, storeDef.apiname)));
+      const objId = codegen.genDerefMethodCall(codegen.genDeref("", objVarName), "getXrpaId", []);
+      lines.unshift(...codegen.conditional(codegen.genNonNullCheck(codegen.genDeref("", objVarName)), [
+        codegen.genDerefMethodCall(codegen.genDeref(storeMemberName, reconcilerDef.type.getName()), "removeObject", [objId]) + codegen.STMT_TERM,
+        `${codegen.genDeref("", objVarName)} = ${codegen.getNullValue()}` + codegen.STMT_TERM,
+      ]));
     } else if (isDataflowStringEmbedding(graphNode)) {
-      lines.unshift(
-        `if (${codegen.genNonNullCheck(objVarName)}) {`,
-        `  ${objVarName} = ${codegen.getNullValue()};`,
-        `}`,
-      );
+      lines.unshift(...codegen.conditional(codegen.genNonNullCheck(codegen.genDeref("", objVarName)), [
+        `${codegen.genDeref("", objVarName)} = ${codegen.getNullValue()}` + codegen.STMT_TERM,
+      ]));
     } else {
       throw new Error(`Unsupported node: ${JSON.stringify(graphNode)}`);
     }
@@ -917,7 +907,7 @@ export function genDataflowProgramClassSpec(
     const storeDef = ctx.moduleDef.getDataStore(storeName);
     const dataStoreClassName = codegen.getDataStoreClass(storeDef.apiname, classSpec.namespace, classSpec.includes);
     const storePtrType = codegen.genObjectPtrType(dataStoreClassName);
-    const storeVarName = storeToVarName(storeDef.apiname);
+    const storeVarName = storeToVarName(codegen, storeDef.apiname);
 
     classSpec.members.push({
       name: storeVarName,
@@ -937,12 +927,12 @@ export function genDataflowProgramClassSpec(
     parameters: constructorParams,
     memberInitializers,
     body: () => [
-      `${codegen.genDerefMethodCall("", "createObjects", [])};`,
+      `${codegen.genDerefMethodCall("", codegen.methodMember("createObjects", "private"), [])}` + codegen.STMT_TERM,
     ],
   });
 
   classSpec.destructorBody = () => [
-    `${codegen.genDerefMethodCall("", "destroyObjects", [])};`,
+    `${codegen.genDerefMethodCall("", codegen.methodMember("destroyObjects", "private"), [])}` + codegen.STMT_TERM,
   ];
 
   // parameter accessors
@@ -975,7 +965,7 @@ export function genDataflowProgramClassSpec(
   classSpec.methods.push({
     name: "terminate",
     body: () => [
-      `${codegen.genDerefMethodCall("", "destroyObjects", [])};`,
+      `${codegen.genDerefMethodCall("", codegen.methodMember("destroyObjects", "private"), [])}` + codegen.STMT_TERM,
     ],
     visibility: "public",
   });

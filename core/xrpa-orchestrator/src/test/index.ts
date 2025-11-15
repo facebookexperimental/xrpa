@@ -22,6 +22,7 @@ import { test4 } from './Test4';
 import { test5 } from './Test5';
 import { test6 } from './Test6';
 import { test7 } from './Test7';
+import { test8 } from './Test8';
 
 async function runCodegenTests() {
   await test1();
@@ -31,6 +32,7 @@ async function runCodegenTests() {
   await test5();
   await test6();
   await test7();
+  await test8();
 }
 
 runCodegenTests().catch((e) => {

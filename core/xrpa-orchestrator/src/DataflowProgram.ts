@@ -237,7 +237,7 @@ export function XrpaDataflowProgram(name: string, callback: (ctx: DataflowProgra
       }
       for (let idx = 0; idx < graphNode.embeddedParams.length; ++idx) {
         const paramName = graphNode.embeddedParams[idx];
-        const fieldName = `{{{param:${paramName}}}`;
+        const fieldName = `{{{param:${paramName}}}}`;
         const key = [paramName, graphNode.name, fieldName];
         paramConnections[key.join("/")] = [paramName, ObjectField(graphNode, fieldName)];
       }

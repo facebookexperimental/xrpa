@@ -32,7 +32,7 @@ function genMessageParamInitializer(
 ): string[] {
   const lines: string[] = [];
 
-  const paramNames = getMessageParamNames(msgType);
+  const paramNames = getMessageParamNames(CsharpCodeGenImpl, msgType);
   for (const key in paramNames) {
     lines.push(`message.Set${upperFirst(key)}(${paramNames[key]});`);
   }
@@ -47,7 +47,7 @@ function genMessageSize(namespace: string, includes: IncludeAggregator | null, m
   const msgFields = msgType.getStateFields();
   for (const key in msgFields) {
     const fieldType = msgFields[key].type;
-    const byteCount = fieldType.getRuntimeByteCount(getMessageParamName(key), namespace, includes);
+    const byteCount = fieldType.getRuntimeByteCount(getMessageParamName(CsharpCodeGenImpl, key), namespace, includes);
     staticSize += byteCount[0];
     if (byteCount[1] !== null) {
       dynFieldSizes.push(byteCount[1]);
@@ -69,7 +69,7 @@ function genSendMessageBody(params: {
   const lines: string[] = [];
 
   if (params.proxyObj) {
-    const msgParams = Object.values(getMessageParamNames(params.fieldType));
+    const msgParams = Object.values(getMessageParamNames(CsharpCodeGenImpl, params.fieldType));
     lines.push(`${params.proxyObj}?.Send${upperFirst(params.fieldName)}(${msgParams.join(", ")});`)
   } else {
     const messageType = params.typeDef.getFieldIndex(params.fieldName);
@@ -104,7 +104,7 @@ export function genSendMessageAccessor(classSpec: ClassSpec, params: {
 }): void {
   classSpec.methods.push({
     name: params.name ?? `Send${upperFirst(params.fieldName)}`,
-    parameters: genMessageMethodParams({ ...params, namespace: classSpec.namespace, includes: classSpec.includes }),
+    parameters: genMessageMethodParams({ ...params, codegen: CsharpCodeGenImpl, namespace: classSpec.namespace, includes: classSpec.includes }),
     body: includes => genSendMessageBody({ ...params, namespace: classSpec.namespace, includes }),
   });
 }

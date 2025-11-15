@@ -22,23 +22,24 @@ import { TargetCodeGenImpl } from "../../shared/TargetCodeGen";
 import { MessageDataTypeDefinition } from "../../shared/TypeDefinition";
 import { CodeLiteralValue } from "../../shared/TypeValue";
 
-export function getMessageParamName(fieldName: string): string {
-  return fieldName;
+export function getMessageParamName(codegen: TargetCodeGenImpl, fieldName: string): string {
+  return codegen.identifierName(fieldName);
 }
 
-export function getMessageParamNames(fieldType: MessageDataTypeDefinition): Record<string, string> {
+export function getMessageParamNames(codegen: TargetCodeGenImpl, fieldType: MessageDataTypeDefinition): Record<string, string> {
   const paramNames: Record<string, string> = {};
   const msgFields = fieldType.getStateFields();
   for (const key in msgFields) {
-    paramNames[key] = getMessageParamName(key);
+    paramNames[key] = getMessageParamName(codegen, key);
   }
   return paramNames;
 }
 
 export function genMessageMethodParams(params: {
-  namespace: string,
-  includes: IncludeAggregator | null,
-  fieldType: MessageDataTypeDefinition,
+  codegen: TargetCodeGenImpl;
+  namespace: string;
+  includes: IncludeAggregator | null;
+  fieldType: MessageDataTypeDefinition;
 }): MethodParam[] {
   const methodParams: MethodParam[] = [];
 
@@ -46,7 +47,7 @@ export function genMessageMethodParams(params: {
   for (const key in msgFields) {
     const fieldType = msgFields[key].type;
     methodParams.push({
-      name: getMessageParamName(key),
+      name: getMessageParamName(params.codegen, key),
       type: fieldType,
     });
   }
@@ -72,7 +73,7 @@ export function genMessageHandlerParams(params: {
       for (const key in msgFields) {
         const fieldType = msgFields[key].type;
         handlerParams.push({
-          name: getMessageParamName(key),
+          name: getMessageParamName(params.codegen, key),
           type: fieldType.declareLocalParam(params.namespace, params.includes, ""),
         });
       }

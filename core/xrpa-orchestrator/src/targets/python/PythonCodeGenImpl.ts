@@ -222,7 +222,7 @@ export function methodMember(methodName: string, visibility: ClassVisibility = "
   if (visibility !== "public") {
     parts[parts.length - 1] = privateMember(parts[parts.length - 1]);
   } else {
-    parts[parts.length - 1] = identifierName(parts[parts.length - 1]);
+    parts[parts.length - 1] = identifierName(parts[parts.length - 1], true);
   }
   return parts.join(nsSep);
 }
@@ -1095,6 +1095,17 @@ export function ifEquals(value: string, value2: string, code: string[]): string[
   return [
     `if ${value} == ${value2}:`,
     ...indent(1, code),
+  ];
+}
+
+export function conditional(condition: string, code: string[], elseCode?: string[]): string[] {
+  return [
+    `if ${condition}:`,
+    ...indent(1, code),
+    ...(elseCode ? [
+      `else:`,
+      ...indent(1, elseCode),
+    ] : []),
   ];
 }
 

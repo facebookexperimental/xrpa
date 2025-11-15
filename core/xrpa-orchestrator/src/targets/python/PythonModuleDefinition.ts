@@ -15,7 +15,6 @@
  */
 
 
-import assert from "assert";
 import path from "path";
 import { FileWriter } from "@xrpa/xrpa-file-utils";
 
@@ -29,7 +28,7 @@ import { StructTypeDefinition } from "../../shared/TypeDefinition";
 import { GenDataStoreContext } from "../shared/GenDataStoreShared";
 import * as PythonCodeGenImpl from "./PythonCodeGenImpl";
 import { injectGeneratedTag } from "./PythonCodeGenImpl";
-// import { genDataflowProgram } from "./GenDataflowProgram";
+import { genDataflowProgram } from "./GenDataflowProgram";
 import { genDataStore } from "./GenDataStore";
 import { genProgramInterfacesClass } from "./GenProgramInterfacesClass";
 import { genTypesDefinitions } from "./GenTypesDefinitions";
@@ -100,8 +99,6 @@ export class PythonModuleDefinition extends ModuleDefinition {
 
     const dataflowPrograms = this.getDataflowPrograms();
     for (const name in dataflowPrograms) {
-      assert(false, `Python dataflow programs not yet supported (${name})`);
-      /*
       genDataflowProgram(
         {
           namespace: "xrpa",
@@ -111,7 +108,6 @@ export class PythonModuleDefinition extends ModuleDefinition {
         this.libDir,
         dataflowPrograms[name],
       );
-      */
     }
 
     return fileWriter;

@@ -99,7 +99,7 @@ export interface TargetCodeGenImpl {
 
   identifierName(name: string, maintainPrivateMarker?: boolean): string;
   privateMember(memberVarName: string): string;
-  methodMember(methodName: string): string;
+  methodMember(methodName: string, visibility?: ClassVisibility): string;
 
   genCommentLines(str?: string): string[];
 
@@ -244,6 +244,7 @@ export interface TargetCodeGenImpl {
   ifAnyBitIsSet(value: string, bitsValue: number, code: string[]): string[];
   ifAllBitsAreSet(value: string, bitsValue: number, code: string[]): string[];
   ifEquals(value: string, value2: string, code: string[]): string[];
+  conditional(condition: string, code: string[], elseCode?: string[]): string[];
 
   declareVar(varName: string, typename: string, initialValue: TypeValue): string;
 }

@@ -1249,6 +1249,18 @@ export function ifEquals(value: string, value2: string, code: string[]): string[
   ];
 }
 
+export function conditional(condition: string, code: string[], elseCode?: string[]): string[] {
+  return [
+    `if (${condition}) {`,
+    ...indent(1, code),
+    `}${elseCode ? ` else {` : ""}`,
+    ...(elseCode ? [
+      ...indent(1, elseCode),
+      `}`,
+    ] : []),
+  ];
+}
+
 export function declareVar(varName: string, typename: string, initialValue: TypeValue): string {
   typename = typename || "auto";
   return `${typename} ${varName} = ${initialValue};`;
