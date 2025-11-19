@@ -22,9 +22,9 @@
 #include "ocean/base/Base.h"
 #include "ocean/base/PluginManager.h"
 
-#include "ocean/io/CameraCalibrationManager.h"
 #include "ocean/io/Directory.h"
 #include "ocean/io/File.h"
+#include "ocean/io/LegacyCameraCalibrationManager.h"
 
 #include "ocean/media/Manager.h"
 #include "ocean/media/mediafoundation/MediaFoundation.h"
@@ -49,7 +49,8 @@ class OceanSetup {
     std::cout << "Searching for " << cameraCalibrationFile() << std::endl;
 
     if (cameraCalibrationFile.exists()) {
-      Ocean::IO::CameraCalibrationManager::get().registerCalibrationFile(cameraCalibrationFile());
+      Ocean::IO::LegacyCameraCalibrationManager::get().registerCalibrationFile(
+          cameraCalibrationFile());
       std::cout << "Loaded camera calibration file." << std::endl;
     }
 

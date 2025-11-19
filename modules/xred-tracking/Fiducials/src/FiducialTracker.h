@@ -31,7 +31,7 @@
 
 #include "ocean/cv/FrameConverter.h"
 
-#include "ocean/io/CameraCalibrationManager.h"
+#include "ocean/io/LegacyCameraCalibrationManager.h"
 
 #include "ocean/media/FrameMedium.h"
 #include "ocean/media/Manager.h"
@@ -60,7 +60,7 @@ class FiducialTracker {
         return false;
       }
       anyCamera_ = std::make_shared<Ocean::AnyCameraPinhole>(
-          Ocean::IO::CameraCalibrationManager::get().camera(
+          Ocean::IO::LegacyCameraCalibrationManager::get().camera(
               medium_->url(),
               frameRef->width(),
               frameRef->height(),
