@@ -279,6 +279,7 @@ async function runInCondaEnvironmentInternal(yamlPath: string, cwd: string, args
   const envList = JSON.parse(await runProcess({
     filename: "conda",
     args: ["env", "list", "--json"],
+    onLineReceived: console.log,
   }));
   const found = envList.envs.some((env: string) =>
     env.endsWith(envName) || path.basename(env) === envName
@@ -302,6 +303,7 @@ async function runInCondaEnvironmentInternal(yamlPath: string, cwd: string, args
       await runProcess({
         filename: "conda",
         args: ["env", "remove", "-n", envName, "-y"],
+        onLineReceived: console.log,
       });
     } else {
       console.log(`Creating conda environment from ${yamlPath}...`);
@@ -310,6 +312,7 @@ async function runInCondaEnvironmentInternal(yamlPath: string, cwd: string, args
     await runProcess({
       filename: "conda",
       args: ["env", "create", "-f", yamlPath],
+      onLineReceived: console.log,
     });
 
     await fs.writeFile(hashFilePath, yamlHash);
