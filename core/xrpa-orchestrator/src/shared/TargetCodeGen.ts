@@ -103,6 +103,8 @@ export interface TargetCodeGenImpl {
 
   genCommentLines(str?: string): string[];
 
+  genUnusedVariableProtection(variables: string[]): string[];
+
   genGetCurrentClockTime(includes: IncludeAggregator | null, inNanoseconds?: boolean): string;
 
   genPrimitiveValue(typename: string, value: string | boolean | number | null): string;

@@ -196,6 +196,10 @@ export function genCommentLines(str?: string): string[] {
   return genCommentLinesWithCommentMarker("//", str);
 }
 
+export function genUnusedVariableProtection(variables: string[]): string[] {
+  return variables.map(v => `(void)${v};`);
+}
+
 export function nsQualify(qualifiedName: string, inNamespace: string): string {
   const templateStartIdx = qualifiedName.indexOf("<");
   if (templateStartIdx >= 0) {

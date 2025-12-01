@@ -248,13 +248,24 @@ function genBindMessageFieldValues(codegen: TargetCodeGenImpl, classSpec: ClassS
 
   // TODO verify that the field types are compatible
 
+  // very simple attempt at matching up the message fields, just truncating the parameters if the count doesn't match
+  // this could be improved by doing type comparisons in the future
+  const srcMessageParams = Object.values(getMessageParamNames(codegen, srcFieldType));
+  const dstMessageParams = Object.values(getMessageParamNames(codegen, params.dstFieldType));
+  const paramCount = Math.min(srcMessageParams.length, dstMessageParams.length);
+
+  const paramsToUse = srcMessageParams.slice(0, paramCount);
+  const paramsUnused = srcMessageParams.slice(paramCount);
+  const unusedParamProtection = codegen.genUnusedVariableProtection(paramsUnused);
+
   onMessage(codegen, classSpec, {
     objVar: params.srcObjVar,
     fieldName: params.srcFieldName,
     fieldType: srcFieldType,
 
     code: [
-      `${codegen.genDerefMethodCall(codegen.genDeref("", params.dstObjVar), codegen.methodMember(`send${upperFirst(params.dstFieldName)}`), Object.values(getMessageParamNames(codegen, srcFieldType)))}` + codegen.STMT_TERM,
+      ...unusedParamProtection,
+      `${codegen.genDerefMethodCall(codegen.genDeref("", params.dstObjVar), codegen.methodMember(`send${upperFirst(params.dstFieldName)}`), paramsToUse)}` + codegen.STMT_TERM,
     ],
     initializersOut: params.initializersOut,
   });

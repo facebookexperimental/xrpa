@@ -173,6 +173,11 @@ export function genCommentLines(str?: string): string[] {
   return genCommentLinesWithCommentMarker("#", str);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function genUnusedVariableProtection(_variables: string[]): string[] {
+  return [];
+}
+
 function typenameToCode(typename: string): string {
   if (typename === "ulong") {
     return "int";
