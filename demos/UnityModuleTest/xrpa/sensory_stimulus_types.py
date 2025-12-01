@@ -106,11 +106,11 @@ class DSImage:
     encoding = mem_accessor.read_int(offset)
     orientation = mem_accessor.read_int(offset)
     gain = DSScalar.read_value(mem_accessor, offset)
-    exposureDuration = mem_accessor.read_ulong(offset)
+    exposure_duration = mem_accessor.read_ulong(offset)
     timestamp = mem_accessor.read_ulong(offset)
-    captureFrameRate = DSScalar.read_value(mem_accessor, offset)
+    capture_frame_rate = DSScalar.read_value(mem_accessor, offset)
     data = mem_accessor.read_bytearray(offset)
-    return xrpa_runtime.utils.image_types.Image(width, height, xrpa_runtime.utils.image_types.ImageFormat(format), xrpa_runtime.utils.image_types.ImageEncoding(encoding), xrpa_runtime.utils.image_types.ImageOrientation(orientation), gain, exposureDuration, timestamp, captureFrameRate, data)
+    return xrpa_runtime.utils.image_types.Image(width, height, xrpa_runtime.utils.image_types.ImageFormat(format), xrpa_runtime.utils.image_types.ImageEncoding(encoding), xrpa_runtime.utils.image_types.ImageOrientation(orientation), gain, exposure_duration, timestamp, capture_frame_rate, data)
 
   @staticmethod
   def write_value(val: xrpa_runtime.utils.image_types.Image, mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor, offset: xrpa_runtime.utils.memory_accessor.MemoryOffset) -> None:
@@ -122,7 +122,7 @@ class DSImage:
     DSScalar.write_value(val.gain, mem_accessor, offset)
     mem_accessor.write_ulong(val.exposure_duration, offset)
     mem_accessor.write_ulong(val.timestamp, offset)
-    DSScalar.write_value(val.captureFrameRate, mem_accessor, offset)
+    DSScalar.write_value(val.capture_frame_rate, mem_accessor, offset)
     mem_accessor.write_bytearray(val.data, offset)
 
   @staticmethod

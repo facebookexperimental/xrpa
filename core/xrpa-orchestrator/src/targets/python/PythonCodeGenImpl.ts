@@ -788,7 +788,7 @@ export function genReadWriteValueFunctions(classSpec: ClassSpec, params: {
       memAccessorVar: "mem_accessor",
       value: params.fieldsFromLocal[name],
     });
-    fieldReads.push(`${name} = ${readValue}`);
+    fieldReads.push(`${identifierName(name)} = ${readValue}`);
     fieldWrites.push(`${writeValue}`);
 
     if (field.typeSize.dynamicSizeEstimate) {

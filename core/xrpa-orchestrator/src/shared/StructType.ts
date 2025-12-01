@@ -264,12 +264,12 @@ export class StructType extends PrimitiveType implements StructTypeDefinition {
     const fieldMappings = getFieldMappings(this.getStateFields(), this.localType.fieldMap);
     for (const localFieldName in fieldMappings.fromLocal) {
       const dsFieldName = fieldMappings.fromLocal[localFieldName];
-      const val = localFieldName[0] === "[" ? `val${localFieldName}` : `val.${localFieldName}`;
+      const val = localFieldName[0] === "[" ? this.codegen.identifierName(`val${localFieldName}`) : `val.${this.codegen.identifierName(localFieldName)}`;
       fieldsFromLocal[dsFieldName] = fieldMappings.fields[dsFieldName].type.convertValueFromLocal(inNamespace, includes, val);
     }
     for (const dsFieldName in fieldMappings.toLocal) {
       const localFieldName = fieldMappings.toLocal[dsFieldName];
-      fieldsToLocal[localFieldName] = fieldMappings.fields[dsFieldName].type.convertValueToLocal(inNamespace, includes, dsFieldName);
+      fieldsToLocal[localFieldName] = fieldMappings.fields[dsFieldName].type.convertValueToLocal(inNamespace, includes, this.codegen.identifierName(dsFieldName));
     }
 
     return { fieldsFromLocal, fieldsToLocal };
