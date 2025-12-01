@@ -78,10 +78,10 @@ export const HEADER = [
 export const UNIT_TRANSFORMER: UnitTransformer = {
   angular: {
     radian: {
-      degree: [" * 180 / math.pi", 180 / Math.PI],
+      degree: [` * ${180 / Math.PI}`, 180 / Math.PI],
     },
     degree: {
-      radian: [" * math.pi / 180", Math.PI / 180],
+      radian: [` * ${Math.PI / 180}`, Math.PI / 180],
     },
   },
   spatial: {
