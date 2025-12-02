@@ -4,6 +4,8 @@
   "lib/CameraDebugModule.h",
   "lib/CameraDebugProgram.h",
   "lib/CameraTypes.h",
+  "lib/EyeTrackingDataStore.h",
+  "lib/EyeTrackingTypes.h",
   "lib/ImageViewerDataStore.h",
   "lib/ImageViewerTypes.h",
   "lib/VisualEmotionDetectionDataStore.h",

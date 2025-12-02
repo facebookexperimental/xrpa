@@ -1,0 +1,182 @@
+/*
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// @generated
+
+#pragma once
+
+#include <Eigen/Eigen>
+#include <ImageTypes.h>
+#include <chrono>
+#include <utility>
+#include <vector>
+#include <xrpa-runtime/utils/MemoryAccessor.h>
+#include <xrpa-runtime/utils/XrpaTypes.h>
+
+namespace EyeTrackingDataStore {
+
+static inline Xrpa::TransportConfig GenTransportConfig() {
+  Xrpa::TransportConfig config;
+  config.schemaHash = Xrpa::HashValue(0xc0501e465ab80a0b, 0xf695396386015ca8, 0xffa6f3230c250cbe, 0x5893636f9c85b315);
+  config.changelogByteCount = 34883200;
+  return config;
+}
+
+class EyeTrackingDeviceReader;
+
+enum class EyeEventType: uint32_t {
+  Blink = 0,
+  Fixation = 1,
+  Saccade = 2,
+  FixationOnset = 3,
+  SaccadeOnset = 4,
+};
+
+class DSScalar {
+ public:
+  static float readValue(const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+    float value = memAccessor.readValue<float>(offset);
+    return value;
+  }
+
+  static void writeValue(float val, const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+    memAccessor.writeValue<float>(val, offset);
+  }
+};
+
+class DSSceneImage {
+ public:
+  static ImageTypes::Image readValue(const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+    int32_t width = memAccessor.readValue<int32_t>(offset);
+    int32_t height = memAccessor.readValue<int32_t>(offset);
+    uint32_t format = memAccessor.readValue<uint32_t>(offset);
+    uint32_t encoding = memAccessor.readValue<uint32_t>(offset);
+    uint32_t orientation = memAccessor.readValue<uint32_t>(offset);
+    float gain = DSScalar::readValue(memAccessor, offset);
+    uint64_t exposureDuration = memAccessor.readValue<uint64_t>(offset);
+    uint64_t timestamp = memAccessor.readValue<uint64_t>(offset);
+    float captureFrameRate = DSScalar::readValue(memAccessor, offset);
+    std::vector<uint8_t> data = memAccessor.readValue<std::vector<uint8_t>>(offset);
+    return ImageTypes::Image{width, height, static_cast<ImageTypes::Format>(format), static_cast<ImageTypes::Encoding>(encoding), static_cast<ImageTypes::Orientation>(orientation), gain, Xrpa::reinterpretValue<std::chrono::nanoseconds, uint64_t>(exposureDuration), Xrpa::reinterpretValue<std::chrono::nanoseconds, uint64_t>(timestamp), captureFrameRate, std::move(data)};
+  }
+
+  static void writeValue(const ImageTypes::Image& val, const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+    memAccessor.writeValue<int32_t>(val.width, offset);
+    memAccessor.writeValue<int32_t>(val.height, offset);
+    memAccessor.writeValue<uint32_t>(static_cast<uint32_t>(val.format), offset);
+    memAccessor.writeValue<uint32_t>(static_cast<uint32_t>(val.encoding), offset);
+    memAccessor.writeValue<uint32_t>(static_cast<uint32_t>(val.orientation), offset);
+    DSScalar::writeValue(val.gain, memAccessor, offset);
+    memAccessor.writeValue<uint64_t>(Xrpa::reinterpretValue<uint64_t, std::chrono::nanoseconds>(val.exposureDuration), offset);
+    memAccessor.writeValue<uint64_t>(Xrpa::reinterpretValue<uint64_t, std::chrono::nanoseconds>(val.timestamp), offset);
+    DSScalar::writeValue(val.captureFrameRate, memAccessor, offset);
+    memAccessor.writeValue<std::vector<uint8_t>>(val.data, offset);
+  }
+
+  static int32_t dynSizeOfValue(const ImageTypes::Image& val) {
+    return Xrpa::MemoryAccessor::dynSizeOfValue<std::vector<uint8_t>>(val.data);
+  }
+};
+
+class DSVector2 {
+ public:
+  static Eigen::Vector2f readValue(const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+    float x = memAccessor.readValue<float>(offset);
+    float y = memAccessor.readValue<float>(offset);
+    return Eigen::Vector2f{x, y};
+  }
+
+  static void writeValue(Eigen::Vector2f val, const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+    memAccessor.writeValue<float>(val.x(), offset);
+    memAccessor.writeValue<float>(val.y(), offset);
+  }
+};
+
+class DSVector3 {
+ public:
+  static Eigen::Vector3f readValue(const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+    float x = memAccessor.readValue<float>(offset);
+    float y = memAccessor.readValue<float>(offset);
+    float z = memAccessor.readValue<float>(offset);
+    return Eigen::Vector3f{x, y, -z};
+  }
+
+  static void writeValue(const Eigen::Vector3f& val, const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+    memAccessor.writeValue<float>(val.x(), offset);
+    memAccessor.writeValue<float>(val.y(), offset);
+    memAccessor.writeValue<float>(-val.z(), offset);
+  }
+};
+
+class DSAngle {
+ public:
+  static float readValue(const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+    float value = memAccessor.readValue<float>(offset);
+    return value * 180.f / Xrpa::XrpaConstants::PI_CONST;
+  }
+
+  static void writeValue(float val, const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+    memAccessor.writeValue<float>(val * Xrpa::XrpaConstants::PI_CONST / 180.f, offset);
+  }
+};
+
+class DSQuaternion {
+ public:
+  static Eigen::Quaternionf readValue(const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+    float x = memAccessor.readValue<float>(offset);
+    float y = memAccessor.readValue<float>(offset);
+    float z = memAccessor.readValue<float>(offset);
+    float w = memAccessor.readValue<float>(offset);
+    return Eigen::Quaternionf{w, -x, -y, z};
+  }
+
+  static void writeValue(const Eigen::Quaternionf& val, const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+    memAccessor.writeValue<float>(-val.x(), offset);
+    memAccessor.writeValue<float>(-val.y(), offset);
+    memAccessor.writeValue<float>(val.z(), offset);
+    memAccessor.writeValue<float>(val.w(), offset);
+  }
+};
+
+class DSUnitVector3 {
+ public:
+  static Eigen::Vector3f readValue(const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+    float x = memAccessor.readValue<float>(offset);
+    float y = memAccessor.readValue<float>(offset);
+    float z = memAccessor.readValue<float>(offset);
+    return Eigen::Vector3f{x, y, -z};
+  }
+
+  static void writeValue(const Eigen::Vector3f& val, const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+    memAccessor.writeValue<float>(val.x(), offset);
+    memAccessor.writeValue<float>(val.y(), offset);
+    memAccessor.writeValue<float>(-val.z(), offset);
+  }
+};
+
+class DSDistance {
+ public:
+  static float readValue(const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+    float value = memAccessor.readValue<float>(offset);
+    return value;
+  }
+
+  static void writeValue(float val, const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+    memAccessor.writeValue<float>(val, offset);
+  }
+};
+
+} // namespace EyeTrackingDataStore

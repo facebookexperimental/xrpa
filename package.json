@@ -25,6 +25,7 @@
     "audio-input": "yarn workspace @xrpa/xred-audio-input run AudioInput",
     "audio-transcription": "yarn workspace @xrpa/xred-audio-transcription run Transcription",
     "debug": "yarn workspace @xrpa/xred-debug run ImageViewer",
+    "eye-tracking": "yarn workspace @xrpa/xred-eye-tracking run PupilNeon",
     "signal-output": "yarn workspace @xrpa/xred-signal-output run XredOutput",
     "signal-processing": "yarn workspace @xrpa/xred-signal-processing run FbaProcessing",
     "device-input": "yarn workspace @xrpa/xred-device-input run SmartController",

@@ -19,6 +19,7 @@
 #pragma once
 
 #include "CameraDataStore.h"
+#include "EyeTrackingDataStore.h"
 #include "ImageViewerDataStore.h"
 #include "VisualEmotionDetectionDataStore.h"
 #include <memory>
@@ -27,10 +28,11 @@
 
 class CameraDebugModule : public Xrpa::XrpaModule {
  public:
-  CameraDebugModule(std::shared_ptr<Xrpa::TransportStream> CameraInboundTransport, std::shared_ptr<Xrpa::TransportStream> CameraOutboundTransport, std::shared_ptr<Xrpa::TransportStream> ImageViewerInboundTransport, std::shared_ptr<Xrpa::TransportStream> ImageViewerOutboundTransport, std::shared_ptr<Xrpa::TransportStream> VisualEmotionDetectionInboundTransport, std::shared_ptr<Xrpa::TransportStream> VisualEmotionDetectionOutboundTransport) {
+  CameraDebugModule(std::shared_ptr<Xrpa::TransportStream> CameraInboundTransport, std::shared_ptr<Xrpa::TransportStream> CameraOutboundTransport, std::shared_ptr<Xrpa::TransportStream> ImageViewerInboundTransport, std::shared_ptr<Xrpa::TransportStream> ImageViewerOutboundTransport, std::shared_ptr<Xrpa::TransportStream> VisualEmotionDetectionInboundTransport, std::shared_ptr<Xrpa::TransportStream> VisualEmotionDetectionOutboundTransport, std::shared_ptr<Xrpa::TransportStream> EyeTrackingInboundTransport, std::shared_ptr<Xrpa::TransportStream> EyeTrackingOutboundTransport) {
     cameraDataStore = std::make_shared<CameraDataStore::CameraDataStore>(CameraInboundTransport, CameraOutboundTransport);
     imageViewerDataStore = std::make_shared<ImageViewerDataStore::ImageViewerDataStore>(ImageViewerInboundTransport, ImageViewerOutboundTransport);
     visualEmotionDetectionDataStore = std::make_shared<VisualEmotionDetectionDataStore::VisualEmotionDetectionDataStore>(VisualEmotionDetectionInboundTransport, VisualEmotionDetectionOutboundTransport);
+    eyeTrackingDataStore = std::make_shared<EyeTrackingDataStore::EyeTrackingDataStore>(EyeTrackingInboundTransport, EyeTrackingOutboundTransport);
   }
 
   virtual ~CameraDebugModule() override {
@@ -40,11 +42,13 @@ class CameraDebugModule : public Xrpa::XrpaModule {
   std::shared_ptr<CameraDataStore::CameraDataStore> cameraDataStore;
   std::shared_ptr<ImageViewerDataStore::ImageViewerDataStore> imageViewerDataStore;
   std::shared_ptr<VisualEmotionDetectionDataStore::VisualEmotionDetectionDataStore> visualEmotionDetectionDataStore;
+  std::shared_ptr<EyeTrackingDataStore::EyeTrackingDataStore> eyeTrackingDataStore;
 
   virtual void shutdown() override {
     cameraDataStore->shutdown();
     imageViewerDataStore->shutdown();
     visualEmotionDetectionDataStore->shutdown();
+    eyeTrackingDataStore->shutdown();
   }
 
  protected:
@@ -52,11 +56,13 @@ class CameraDebugModule : public Xrpa::XrpaModule {
     cameraDataStore->tickInbound();
     imageViewerDataStore->tickInbound();
     visualEmotionDetectionDataStore->tickInbound();
+    eyeTrackingDataStore->tickInbound();
   }
 
   virtual void tickOutputs() override {
     cameraDataStore->tickOutbound();
     imageViewerDataStore->tickOutbound();
     visualEmotionDetectionDataStore->tickOutbound();
+    eyeTrackingDataStore->tickOutbound();
   }
 };

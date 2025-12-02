@@ -1,0 +1,33 @@
+{
+  "name": "@xrpa/xred-eye-tracking",
+  "version": "1.14.0",
+  "description": "EyeTracking interface for Pupil Labs Neon hardware",
+  "main": "lib/index.js",
+  "files": [
+    "bin/**/*",
+    "lib/**/*"
+  ],
+  "license": "Apache-2.0",
+  "scripts": {
+    "tsc": "tsc",
+    "codegen": "ts-node ./scripts/PupilNeonStandalone.ts --codegen",
+    "codegen:release": "ts-node ./scripts/PupilNeonStandalone.ts --codegen --release",
+    "build": "ts-node ./scripts/PupilNeonStandalone.ts --codegen --build",
+    "lint": "eslint --ext .ts,.tsx ./src",
+    "oss-publish": "tsc && ts-node ./scripts/publish.ts",
+    "PupilNeon": "tsc && ts-node ./scripts/PupilNeonStandalone.ts --codegen --run",
+    "PupilNeon:run-only": "ts-node ./scripts/PupilNeonStandalone.ts --run"
+  },
+  "devDependencies": {
+    "@types/node": "18.11.18",
+    "@typescript-eslint/eslint-plugin": "^5.57.0",
+    "@typescript-eslint/parser": "^5.57.0",
+    "@xrpa/xrpa-orchestrator": "^1.14.0",
+    "eslint": "8.32.0",
+    "eslint-plugin-import": "^2.27.5",
+    "ts-node": "^10.9.1"
+  },
+  "peerDependencies": {
+    "@xrpa/xrpa-orchestrator": "^1.14.0"
+  }
+}

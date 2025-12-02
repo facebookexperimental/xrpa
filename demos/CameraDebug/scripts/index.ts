@@ -28,6 +28,7 @@ import {
   XrpaNativeCppProgram,
 } from "@xrpa/xrpa-orchestrator";
 import { ImageWindow } from "@xrpa/xred-debug";
+import { EyeTrackingDevice } from "@xrpa/xred-eye-tracking";
 import { CameraFeed } from "@xrpa/xred-sensor-input";
 import { VisualEmotionDetection } from "@xrpa/xred-visual-emotion-detection"
 
@@ -44,6 +45,13 @@ const CameraDebugProgram = XrpaDataflowProgram("CameraDebugProgram", () => {
   });
 
   ProgramOutput("emotionResult", emotionDetection.emotionResult);
+
+  const eyeTracker = EyeTrackingDevice({
+    deviceAddress: "192.168.68.78",
+    streamSceneCamera: true,
+  });
+
+  ImageWindow({ windowTitle: "EyeTracker", image: eyeTracker.sceneCamera });
 });
 
 //////////////////////////////////////////////////////////////////////////////

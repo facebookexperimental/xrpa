@@ -1,0 +1,13 @@
+name: pupil-neon
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - pip
+  - numpy
+  - pip:
+    - pupil-labs-realtime-api
+    - av
+    - opencv-python
+    - zeroconf

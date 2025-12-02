@@ -22,6 +22,7 @@ void EntryPoint(CameraDebugModule* moduleData) {
   std::cout << "[CameraDebug] Starting CameraDebug program..." << std::endl;
   auto debugProgram = std::make_shared<XrpaDataflowPrograms::CameraDebugProgram>(
       moduleData->cameraDataStore,
+      moduleData->eyeTrackingDataStore,
       moduleData->imageViewerDataStore,
       moduleData->visualEmotionDetectionDataStore);
 

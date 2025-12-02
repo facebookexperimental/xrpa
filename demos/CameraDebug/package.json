@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@xrpa/xred-debug": "^1.14.0",
+    "@xrpa/xred-eye-tracking": "^1.14.0",
     "@xrpa/xred-sensor-input": "^1.14.0",
     "@xrpa/xred-visual-emotion-detection": "^1.14.0",
     "@xrpa/xrpa-orchestrator": "^1.14.0"

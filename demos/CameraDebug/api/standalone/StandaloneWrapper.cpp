@@ -20,6 +20,7 @@
 
 #include <lib/CameraDebugModule.h>
 #include <lib/CameraTypes.h>
+#include <lib/EyeTrackingTypes.h>
 #include <lib/ImageViewerTypes.h>
 #include <lib/VisualEmotionDetectionTypes.h>
 #include <memory>
@@ -36,6 +37,8 @@ int RunStandalone(int argc, char** argv) {
   std::shared_ptr<Xrpa::TransportStream> ImageViewerOutboundTransport;
   std::shared_ptr<Xrpa::TransportStream> VisualEmotionDetectionInboundTransport;
   std::shared_ptr<Xrpa::TransportStream> VisualEmotionDetectionOutboundTransport;
+  std::shared_ptr<Xrpa::TransportStream> EyeTrackingInboundTransport;
+  std::shared_ptr<Xrpa::TransportStream> EyeTrackingOutboundTransport;
   {
     auto localCameraInboundTransport = std::make_shared<Xrpa::SharedMemoryTransportStream>("CameraOutput", CameraDataStore::GenTransportConfig());
     CameraInboundTransport = localCameraInboundTransport;
@@ -57,7 +60,14 @@ int RunStandalone(int argc, char** argv) {
     auto localVisualEmotionDetectionOutboundTransport = std::make_shared<Xrpa::SharedMemoryTransportStream>("VisualEmotionDetectionInput", VisualEmotionDetectionDataStore::GenTransportConfig());
     VisualEmotionDetectionOutboundTransport = localVisualEmotionDetectionOutboundTransport;
   }
-  auto moduleData = std::make_unique<CameraDebugModule>(CameraInboundTransport, CameraOutboundTransport, ImageViewerInboundTransport, ImageViewerOutboundTransport, VisualEmotionDetectionInboundTransport, VisualEmotionDetectionOutboundTransport);
+  {
+    auto localEyeTrackingInboundTransport = std::make_shared<Xrpa::SharedMemoryTransportStream>("EyeTrackingOutput", EyeTrackingDataStore::GenTransportConfig());
+    EyeTrackingInboundTransport = localEyeTrackingInboundTransport;
+
+    auto localEyeTrackingOutboundTransport = std::make_shared<Xrpa::SharedMemoryTransportStream>("EyeTrackingInput", EyeTrackingDataStore::GenTransportConfig());
+    EyeTrackingOutboundTransport = localEyeTrackingOutboundTransport;
+  }
+  auto moduleData = std::make_unique<CameraDebugModule>(CameraInboundTransport, CameraOutboundTransport, ImageViewerInboundTransport, ImageViewerOutboundTransport, VisualEmotionDetectionInboundTransport, VisualEmotionDetectionOutboundTransport, EyeTrackingInboundTransport, EyeTrackingOutboundTransport);
 
   std::thread dataThread(EntryPoint, moduleData.get());
   std::getchar();
