@@ -39,7 +39,7 @@ class TransportStream(ABC):
     @abstractmethod
     def transact(
         self, timeoutMS: int, transact_func: Callable[[TransportStreamAccessor], None]
-    ):
+    ) -> bool:
         pass
 
     @abstractmethod

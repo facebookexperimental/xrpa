@@ -104,7 +104,7 @@ class MemoryTransportStream(TransportStream):
 
     def transact(
         self, timeoutMS: int, transact_func: Callable[[TransportStreamAccessor], None]
-    ):
+    ) -> bool:
         def transact_locked(mem_accessor: MemoryAccessor):
             stream_accessor = MemoryTransportStreamAccessor(mem_accessor)
             changelog = stream_accessor.get_changelog()
@@ -124,7 +124,7 @@ class MemoryTransportStream(TransportStream):
             transact_func(transport_accessor)
             stream_accessor.set_last_update_timestamp()
 
-        self._lock(timeoutMS, transact_locked)
+        return self._lock(timeoutMS, transact_locked)
 
     def create_iterator(self) -> TransportStreamIterator:
         return MemoryTransportStreamIterator(self)
