@@ -26,6 +26,6 @@
     "@xrpa/xred-perception-services": "^1.14.0",
     "@xrpa/xrpa-orchestrator": "^1.14.0",
     "express": "5.0.0",
-    "zod": "^3.23.8"
+    "zod": "^4.0.0"
   }
 }

@@ -17,7 +17,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import express from "express";
-import { z } from "zod";
+import * as z from "zod/v4";
 
 const DEFAULT_PORT = 3120;
 
@@ -61,16 +61,18 @@ function createServer() {
     {
       title: "Country Information",
       description: "Get basic information about a country including capital city, population, and size.",
-      inputSchema: { country: z.string() },
+      inputSchema: {
+        country: z.string().describe("The name of the country to get information about")
+      },
     },
     async ({ country }) => {
-      const countryName = (country as string).toLowerCase();
+      const countryName = country.toLowerCase();
       console.log("get_country_info", country);
 
       if (!countryDatabase[countryName]) {
         return {
           content: [{
-            type: "text",
+            type: "text" as const,
             text: `Error: Country not found. Available countries: USA, France, Saudi Arabia`
           }],
           isError: true
@@ -78,7 +80,7 @@ function createServer() {
       }
 
       return {
-        content: [{ type: "text", text: JSON.stringify(countryDatabase[countryName], null, 2) }],
+        content: [{ type: "text" as const, text: JSON.stringify(countryDatabase[countryName], null, 2) }],
       };
     },
   );
