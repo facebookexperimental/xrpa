@@ -1,4 +1,4 @@
-name: gesture-detection
+name: xred-gesture-detection
 channels:
   - conda-forge
   - defaults

@@ -1,4 +1,4 @@
-name: audio-transcription
+name: xred-audio-transcription
 channels:
   - conda-forge
   - defaults

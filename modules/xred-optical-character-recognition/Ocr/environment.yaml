@@ -1,4 +1,4 @@
-name: optical-character-recognition
+name: xred-optical-character-recognition
 channels:
   - conda-forge
   - defaults

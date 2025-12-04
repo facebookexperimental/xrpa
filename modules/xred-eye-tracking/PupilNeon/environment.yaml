@@ -1,4 +1,4 @@
-name: pupil-neon
+name: xred-eye-tracking
 channels:
   - conda-forge
   - defaults

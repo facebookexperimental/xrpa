@@ -1,4 +1,4 @@
-name: xred-texttospeech-tts
+name: xred-text-to-speech
 channels:
   - conda-forge
   - pytorch
