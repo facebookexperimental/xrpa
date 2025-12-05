@@ -58,6 +58,8 @@ class MemoryTransportStream : public TransportStream {
 
   bool initializeMemory(bool didCreate);
 
+  virtual void flushWrites() {}
+
  private:
   bool initializeMemoryOnCreate();
 };

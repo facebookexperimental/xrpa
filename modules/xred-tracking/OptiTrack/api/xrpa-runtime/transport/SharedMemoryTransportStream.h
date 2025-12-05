@@ -26,6 +26,9 @@ class SharedMemoryTransportStream : public MemoryTransportStream {
   SharedMemoryTransportStream(const std::string& name, const TransportConfig& config);
   ~SharedMemoryTransportStream() override;
 
+ protected:
+  void flushWrites() override;
+
  private:
   void shutdown();
 

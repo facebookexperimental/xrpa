@@ -197,6 +197,26 @@ namespace Xrpa
             try
             {
                 func(new MemoryAccessor(bytePointer, 0, _memSize));
+
+                // DEBUG: Force memory synchronization to ensure writes are visible to other processes
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // Flush on Windows using FlushViewOfFile
+                    if (!FlushViewOfFile(bytePointer, (UIntPtr)_memSize))
+                    {
+                        Console.WriteLine($"[XRPA_DEBUG_MSYNC] FlushViewOfFile failed with error: {Marshal.GetLastWin32Error()}");
+                    }
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    // Flush on macOS using msync
+                    const int MS_SYNC = 0x0010;  // Synchronous flush
+                    if (msync(bytePointer, (UIntPtr)_memSize, MS_SYNC) != 0)
+                    {
+                        Console.WriteLine($"[XRPA_DEBUG_MSYNC] msync failed with error: {Marshal.GetLastWin32Error()}");
+                    }
+                }
+
                 return true;
             }
             finally
@@ -204,6 +224,13 @@ namespace Xrpa
                 _memView.SafeMemoryMappedViewHandle.ReleasePointer();
             }
         }
+
+        // P/Invoke declarations for memory synchronization
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool FlushViewOfFile(byte* lpBaseAddress, UIntPtr dwNumberOfBytesToFlush);
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int msync(byte* addr, UIntPtr len, int flags);
 
         private SharedMemoryFile _memFile;
         private MemoryMappedViewAccessor _memView;

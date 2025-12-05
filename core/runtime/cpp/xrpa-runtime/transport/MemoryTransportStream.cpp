@@ -68,6 +68,8 @@ bool MemoryTransportStream::transact(
 
     func(&transportAccessor);
     streamAccessor.setLastUpdateTimestamp();
+
+    flushWrites();
   });
 }
 

@@ -148,4 +148,32 @@ class SharedMemoryTransportStream(MemoryTransportStream):
             )
 
         access_func(mem_accessor)
+
+        # DEBUG: Force memory synchronization to ensure writes are visible to other processes
+        if sys.platform == "win32":
+            try:
+                import ctypes
+                import ctypes.wintypes
+
+                # Call FlushViewOfFile to flush writes on Windows
+                kernel32 = ctypes.windll.kernel32
+                # Get the buffer address from SharedMemory
+                buf_addr = ctypes.addressof(
+                    ctypes.c_char.from_buffer(self._shared_memory.buf)
+                )
+                result = kernel32.FlushViewOfFile(buf_addr, self._mem_size)
+                if result == 0:
+                    error_code = kernel32.GetLastError()
+                    print(
+                        f"[XRPA_DEBUG_MSYNC] FlushViewOfFile failed with error: {error_code}"
+                    )
+            except Exception as e:
+                print(f"[XRPA_DEBUG_MSYNC] Error calling FlushViewOfFile: {e}")
+        elif sys.platform == "darwin":
+            try:
+                # Use mmap's built-in flush() which internally calls msync with the correct address
+                self._shared_memory.flush()
+            except Exception as e:
+                print(f"[XRPA_DEBUG_MSYNC] Error calling mmap.flush(): {e}")
+
         return True

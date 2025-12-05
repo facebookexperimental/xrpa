@@ -17,6 +17,7 @@
 #include <xrpa-runtime/transport/SharedMemoryTransportStream.h>
 
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 #include <xrpa-runtime/transport/MemoryTransportStreamAccessor.h>
@@ -36,6 +37,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <cerrno>
 #endif
 
 namespace Xrpa {
@@ -126,6 +128,28 @@ void SharedMemoryTransportStream::shutdown() {
   if (memBuffer_ != nullptr) {
     munmap(memBuffer_, memSize_);
     memBuffer_ = nullptr;
+  }
+#endif
+}
+
+void SharedMemoryTransportStream::flushWrites() {
+  // Force memory synchronization to ensure writes are visible to other processes
+#if defined(WIN32)
+  if (memBuffer_ != nullptr) {
+    // FlushViewOfFile ensures writes are flushed to disk/shared memory
+    if (!FlushViewOfFile(memBuffer_, memSize_)) {
+      std::cerr << "[XRPA_DEBUG_MSYNC] FlushViewOfFile failed with error: " << GetLastError()
+                << "\n"
+                << std::flush;
+    }
+  }
+#elif defined(__APPLE__)
+  if (memBuffer_ != nullptr) {
+    // MS_SYNC (from sys/mman.h) = synchronous flush
+    if (msync(memBuffer_, memSize_, MS_SYNC) != 0) {
+      std::cerr << "[XRPA_DEBUG_MSYNC] msync failed with error: " << strerror(errno) << "\n"
+                << std::flush;
+    }
   }
 #endif
 }
