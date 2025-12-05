@@ -112,32 +112,56 @@ void WindowsInterprocessMutex::dispose() {
 
 #elif defined(__APPLE__)
 
-MacInterprocessMutex::MacInterprocessMutex(const std::string& name)
-    : fileDescriptor_(-1), isLocked_(false) {
+MacInterprocessMutex::MacInterprocessMutex(const std::string& name) : fileDescriptor_(-1) {
   const std::string tempPath = "/tmp/xrpa";
   lockFilePath_ = tempPath + "/" + name + ".lock";
 
-  try {
-    std::filesystem::create_directories(tempPath);
+  // Create the directory and touch the file to ensure it exists
+  std::filesystem::create_directories(tempPath);
 
-    fileDescriptor_ = open(lockFilePath_.c_str(), O_CREAT | O_RDWR, 0666);
-    if (fileDescriptor_ == -1) {
-      std::cerr << "Lock file creation failed: " << strerror(errno) << std::endl;
-      throw std::system_error(
-          errno, std::system_category(), "Could not create lock file at " + lockFilePath_);
-    }
-  } catch (const std::exception& ex) {
-    std::cerr << "Lock file creation failed: " << ex.what() << std::endl;
-    throw std::runtime_error("Could not create lock file: " + lockFilePath_);
+  // Create the lock file if it doesn't exist
+  int fd = open(lockFilePath_.c_str(), O_CREAT | O_RDWR, 0666);
+  if (fd == -1) {
+    std::cerr << "Lock file creation failed: " << strerror(errno) << "\n" << std::flush;
+    throw std::system_error(
+        errno, std::system_category(), "Could not create lock file at " + lockFilePath_);
   }
+  close(fd);
 }
 
 MacInterprocessMutex::~MacInterprocessMutex() {
   dispose();
 }
 
+bool MacInterprocessMutex::lock() {
+  if (fileDescriptor_ != -1) {
+    // Already locked
+    return true;
+  }
+
+  // Open the file fresh for this lock attempt
+  fileDescriptor_ = open(lockFilePath_.c_str(), O_RDWR);
+  if (fileDescriptor_ == -1) {
+    std::cerr << "Error opening lock file: " << strerror(errno) << "\n" << std::flush;
+    return false;
+  }
+
+  int result = flock(fileDescriptor_, LOCK_EX | LOCK_NB);
+  if (result == 0) {
+    return true;
+  } else {
+    if (errno != EWOULDBLOCK) {
+      std::cerr << "Error locking file: " << strerror(errno) << "\n" << std::flush;
+    }
+    // Close the file since we didn't get the lock
+    close(fileDescriptor_);
+    fileDescriptor_ = -1;
+    return false;
+  }
+}
+
 bool MacInterprocessMutex::lockAndExecute(int timeoutMS, std::function<void()> lockCallback) {
-  if (isLocked_) {
+  if (fileDescriptor_ != -1) {
     // Already locked by this instance
     try {
       lockCallback();
@@ -147,39 +171,25 @@ bool MacInterprocessMutex::lockAndExecute(int timeoutMS, std::function<void()> l
     }
   }
 
-  if (fileDescriptor_ == -1) {
-    return false;
-  }
-
   // Try to acquire the lock with timeout
   bool lockAcquired = false;
 
   if (timeoutMS <= 0) {
-    // Non-blocking attempt
-    int result = flock(fileDescriptor_, LOCK_EX | LOCK_NB);
-    if (result == 0) {
-      isLocked_ = true;
-      lockAcquired = true;
-    } else if (errno != EWOULDBLOCK) {
-      std::cerr << "Error locking file: " << strerror(errno) << std::endl;
-    }
+    lockAcquired = lock();
   } else {
-    // With timeout
     auto startTime = std::chrono::steady_clock::now();
     auto endTime = startTime + std::chrono::milliseconds(timeoutMS);
 
     do {
-      int result = flock(fileDescriptor_, LOCK_EX | LOCK_NB);
-      if (result == 0) {
-        isLocked_ = true;
+      if (lock()) {
         lockAcquired = true;
-        break;
-      } else if (errno != EWOULDBLOCK) {
-        std::cerr << "Error locking file: " << strerror(errno) << std::endl;
         break;
       }
 
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      // For longer timeouts, use polling with 1ms sleep to reduce CPU usage
+      if (timeoutMS >= 5) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      }
     } while (std::chrono::steady_clock::now() < endTime);
   }
 
@@ -198,27 +208,21 @@ bool MacInterprocessMutex::lockAndExecute(int timeoutMS, std::function<void()> l
 }
 
 void MacInterprocessMutex::unlock() {
-  if (!isLocked_) {
+  if (fileDescriptor_ == -1) {
     return;
   }
 
-  if (fileDescriptor_ != -1) {
-    int result = flock(fileDescriptor_, LOCK_UN);
-    isLocked_ = false;
-
-    if (result != 0) {
-      std::cerr << "Error unlocking file: " << strerror(errno) << std::endl;
-    }
+  int result = flock(fileDescriptor_, LOCK_UN);
+  if (result != 0) {
+    std::cerr << "Error unlocking file: " << strerror(errno) << "\n" << std::flush;
   }
+
+  close(fileDescriptor_);
+  fileDescriptor_ = -1;
 }
 
 void MacInterprocessMutex::dispose() {
   unlock();
-
-  if (fileDescriptor_ != -1) {
-    close(fileDescriptor_);
-    fileDescriptor_ = -1;
-  }
 }
 #endif
 

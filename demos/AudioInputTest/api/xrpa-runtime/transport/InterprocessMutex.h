@@ -72,9 +72,10 @@ class MacInterprocessMutex : public InterprocessMutex {
   bool lockAndExecute(int timeoutMS, std::function<void()> lockCallback) override;
 
  private:
+  bool lock();
+
   std::string lockFilePath_;
-  int fileDescriptor_ = -1;
-  bool isLocked_ = false;
+  int fileDescriptor_ = -1; // Only != -1 while locked
 };
 #endif // __APPLE__
 

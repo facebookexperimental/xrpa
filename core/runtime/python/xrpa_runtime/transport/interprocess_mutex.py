@@ -103,53 +103,66 @@ class MacOsInterprocessMutex(InterprocessMutex):
     def __init__(self, name: str):
         super().__init__(name)
         self._lock_file_path = f"/tmp/xrpa/{name}.lock"
-        self._is_locked = False
+        self._file = None  # Only non-None while locked
 
-        try:
-            os.makedirs(os.path.dirname(self._lock_file_path), exist_ok=True)
-            with open(self._lock_file_path, "w"):
-                pass
-        except OSError as ex:
-            print(f"Lock file creation failed: {ex}")
-            raise
+        # Create the directory and touch the file to ensure it exists
+        os.makedirs(os.path.dirname(self._lock_file_path), exist_ok=True)
+
+        # Create the lock file if it doesn't exist
+        if not os.path.exists(self._lock_file_path):
+            open(self._lock_file_path, "a").close()
 
     def close(self):
         self.release()
 
     def try_lock(self, timeoutMS: int) -> bool:
         if timeoutMS <= 0:
-            return self.lock()
-        start_time = time.time()
-        while True:
-            if self.lock():
-                return True
-            if time.time() - start_time > timeoutMS / 1000:
-                break
-            time.sleep(0.001)
-        return False
+            return self._lock()
 
-    def lock(self) -> bool:
-        if self._is_locked:
+        start_time = time.time()
+        timeout_seconds = timeoutMS / 1000
+
+        while True:
+            if self._lock():
+                return True
+            if time.time() - start_time >= timeout_seconds:
+                return False
+            # For longer timeouts, use polling with 1ms sleep to reduce CPU usage
+            if timeoutMS >= 5:
+                time.sleep(0.001)
+
+    def _lock(self) -> bool:
+        if self._file is not None:
+            # Already locked
             return True
 
         try:
-            with open(self._lock_file_path, "r+") as f:
-                fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                self._is_locked = True
-                return True
+            # Open the file fresh for this lock attempt
+            self._file = open(self._lock_file_path, "r+")
+
+            fcntl.flock(self._file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return True
         except BlockingIOError:
+            # Close the file since we didn't get the lock
+            if self._file is not None:
+                self._file.close()
+                self._file = None
             return False
         except Exception as ex:
             print(f"Error locking file: {ex}")
+            if self._file is not None:
+                self._file.close()
+                self._file = None
             return False
 
     def release(self):
-        if not self._is_locked:
+        if self._file is None:
             return
 
         try:
-            with open(self._lock_file_path, "r+") as f:
-                fcntl.flock(f, fcntl.LOCK_UN)
-                self._is_locked = False
+            fcntl.flock(self._file, fcntl.LOCK_UN)
         except Exception as ex:
             print(f"Error releasing file: {ex}")
+        finally:
+            self._file.close()
+            self._file = None

@@ -82,70 +82,78 @@ namespace Xrpa
         [DllImport("libc", SetLastError = true)]
         private static extern int flock(int fd, int operation);
 
+        // flock() operations
         private const int LOCK_EX = 2; // exclusive lock
         private const int LOCK_UN = 8; // unlock
         private const int LOCK_NB = 4; // non-blocking
 
+        // errno values
+        private const int EWOULDBLOCK = 35; // Resource temporarily unavailable (macOS)
+
         private string _lockFilePath;
-        private bool _isLocked = false;
+        private FileStream _lockFileStream; // Only non-null while locked
 
         public MacOsInterprocessMutex(string name)
         {
             const string tempPath = "/tmp/xrpa";
             _lockFilePath = Path.Combine(tempPath, $"{name}.lock");
 
-            try
-            {
-                Directory.CreateDirectory(tempPath);
+            // Create the directory and touch the file to ensure it exists
+            Directory.CreateDirectory(tempPath);
 
-                using (var fs = new FileStream(
-                    _lockFilePath,
-                    FileMode.OpenOrCreate,
-                    FileAccess.ReadWrite,
-                    FileShare.ReadWrite,
-                    4096))
-                {
-                    // nothing to do here, just need to open the file to create it
-                }
-            }
-            catch (IOException ex)
+            // Create the lock file if it doesn't exist
+            if (!File.Exists(_lockFilePath))
             {
-                Console.WriteLine($"Lock file creation failed: {ex.Message}");
-                throw new InvalidOperationException($"Could not create lock file at {_lockFilePath}", ex);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Lock file creation failed: {ex.Message}");
-                throw new InvalidOperationException($"Could not create lock file: {_lockFilePath}", ex);
+                File.Create(_lockFilePath).Dispose();
             }
         }
 
         private bool Lock()
         {
-            if (_isLocked)
+            if (_lockFileStream != null)
             {
                 return true;
             }
 
             try
             {
-                using (var fs = new FileStream(_lockFilePath, FileMode.OpenOrCreate))
+                // Open the file fresh for this lock attempt
+                _lockFileStream = new FileStream(
+                    _lockFilePath,
+                    FileMode.OpenOrCreate,
+                    FileAccess.ReadWrite,
+                    FileShare.ReadWrite);
+
+                int fd = _lockFileStream.SafeFileHandle.DangerousGetHandle().ToInt32();
+                int result = flock(fd, LOCK_EX | LOCK_NB);
+
+                if (result == 0)
                 {
-                    bool result = flock(fs.SafeFileHandle.DangerousGetHandle().ToInt32(), LOCK_EX | LOCK_NB) == 0;
-                    if (result)
+                    return true;
+                }
+                else
+                {
+                    int errorCode = Marshal.GetLastWin32Error();
+                    // Close the file stream since we didn't get the lock
+                    _lockFileStream.Dispose();
+                    _lockFileStream = null;
+
+                    // EWOULDBLOCK is expected when lock is held by another process
+                    if (errorCode != EWOULDBLOCK)
                     {
-                        _isLocked = true;
+                        Console.WriteLine($"Error locking file (fd={fd}): errno={errorCode}");
                     }
-                    else
-                    {
-                        Console.WriteLine($"Error locking file: {Marshal.GetLastWin32Error()}");
-                    }
-                    return result;
+                    return false;
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error locking file: {ex.Message}");
+                if (_lockFileStream != null)
+                {
+                    _lockFileStream.Dispose();
+                    _lockFileStream = null;
+                }
                 return false;
             }
         }
@@ -167,7 +175,11 @@ namespace Xrpa
                     return true;
                 }
 
-                Thread.Sleep(1);
+                // For longer timeouts, use polling with 1ms sleep to reduce CPU usage
+                if (timeoutMS >= 5)
+                {
+                    Thread.Sleep(1);
+                }
             } while (stopwatch.ElapsedMilliseconds < timeoutMS);
 
             return false;
@@ -175,28 +187,25 @@ namespace Xrpa
 
         public override void Unlock()
         {
-            if (!_isLocked)
+            if (_lockFileStream == null)
             {
                 return;
             }
 
             try
             {
-                using (var fs = new FileStream(_lockFilePath, FileMode.Open))
+                int fd = _lockFileStream.SafeFileHandle.DangerousGetHandle().ToInt32();
+                int result = flock(fd, LOCK_UN);
+
+                if (result != 0)
                 {
-                    bool result = flock(fs.SafeFileHandle.DangerousGetHandle().ToInt32(), LOCK_UN) == 0;
-                    _isLocked = false;
-                    if (!result)
-                    {
-                        Console.WriteLine($"Error unlocking file: {Marshal.GetLastWin32Error()}");
-                    }
-                    return;
+                    Console.WriteLine($"Error unlocking file (fd={fd}): errno={Marshal.GetLastWin32Error()}");
                 }
             }
-            catch (Exception ex)
+            finally
             {
-                Console.WriteLine($"Error unlocking file: {ex.Message}");
-                return;
+                _lockFileStream.Dispose();
+                _lockFileStream = null;
             }
         }
 
