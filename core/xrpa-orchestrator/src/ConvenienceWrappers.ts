@@ -270,25 +270,30 @@ async function runInCondaEnvironmentInternal(yamlPath: string, cwd: string, args
   const yamlContent = await fs.readFile(yamlPath, "utf8");
   const envName = yamlContent.split("\n")[0].split(" ")[1];
 
-  // Check if a pre-packaged environment exists at the expected location
-  const packagedEnvDir = path.join(os.tmpdir(), `conda-env-${envName}`);
-  try {
-    await fs.access(packagedEnvDir);
-    const pythonBin = os.platform() === "win32"
-      ? path.join(packagedEnvDir, "Scripts", "python.exe")
-      : path.join(packagedEnvDir, "bin", "python");
-    await fs.access(pythonBin, fs.constants.X_OK);
+  const possibleDirs = os.platform() === "win32"
+    ? [path.join(os.tmpdir(), `conda-env-${envName}`)]
+    : [path.join("/tmp", `conda-env-${envName}`)];
 
-    console.log(`Using pre-packaged conda environment at ${packagedEnvDir}`);
-    await runProcess({
-      filename: pythonBin,
-      args: args.slice(1),
-      cwd,
-      pipeStdout: true,
-    });
-    return;
-  } catch (error) {
-    console.log(`Pre-packaged environment not found at ${packagedEnvDir} or python binary not executable (${error}), using standard conda environment creation`);
+  for (const packagedEnvDir of possibleDirs) {
+    try {
+      await fs.access(packagedEnvDir);
+      const pythonBin = os.platform() === "win32"
+        ? path.join(packagedEnvDir, "Scripts", "python.exe")
+        : path.join(packagedEnvDir, "bin", "python");
+      await fs.access(pythonBin, fs.constants.X_OK);
+
+      console.log(`Using pre-packaged conda environment at ${packagedEnvDir}`);
+
+      await runProcess({
+        filename: pythonBin,
+        args: args.slice(1),
+        cwd,
+        pipeStdout: true,
+      });
+      return;
+    } catch (error) {
+      console.log(`Pre-packaged environment not found at ${packagedEnvDir}`);
+    }
   }
 
   const yamlHash = crypto.createHash("sha256").update(yamlContent).digest("hex");
