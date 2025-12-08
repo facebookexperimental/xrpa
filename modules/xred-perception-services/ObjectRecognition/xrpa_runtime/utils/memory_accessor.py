@@ -81,29 +81,17 @@ class MemoryAccessor:
     def is_null(self) -> bool:
         return self._data_source is None or self._size == 0
 
-    def write_zeros(self):
-        write_offset = MemoryOffset()
-        while write_offset._offset < self._size:
-            if self._size - write_offset._offset >= 8:
-                self.write_ulong(0, write_offset)
-            elif self._size - write_offset._offset >= 4:
-                self.write_int(0, write_offset)
-            else:
-                self.write_byte(0, write_offset)
-
-    def copy_from(self, other: "MemoryAccessor"):
-        if other.is_null():
+    def copy_from(self, src: "MemoryAccessor"):
+        if src.is_null():
             return
-        size = min(other.size, self._size)
-        read_offset = MemoryOffset()
-        write_offset = MemoryOffset()
-        while read_offset._offset < size:
-            if size - read_offset._offset >= 8:
-                self.write_ulong(other.read_ulong(read_offset), write_offset)
-            elif size - read_offset._offset >= 4:
-                self.write_int(other.read_int(read_offset), write_offset)
-            else:
-                self.write_byte(other.read_byte(read_offset), write_offset)
+        size = min(src.size, self._size)
+        if size <= 0:
+            return
+        src_start = src._mem_offset
+        dst_start = self._mem_offset
+        self._data_source[dst_start : dst_start + size] = src._data_source[
+            src_start : src_start + size
+        ]
 
     def get_array(self, type_name: str) -> "MemoryArray":
         return MemoryArray(self, type_name)
@@ -297,10 +285,18 @@ class MemoryArray(Generic[T]):
         self._mem_accessor.write_at_offset(offset, self._type_name, value)
 
     def copy_from(
-        self, self_offset: int, other: "MemoryArray", other_offset: int, count: int
+        self, self_offset: int, src: "MemoryArray", src_offset: int, count: int
     ):
-        for i in range(count):
-            self[self_offset + i] = other[other_offset + i]
+        if count <= 0:
+            return
+        byte_count = count * self._value_size
+        src_byte_offset = src_offset * src._value_size
+        dst_byte_offset = self_offset * self._value_size
+        src_start = src._mem_accessor._mem_offset + src_byte_offset
+        dst_start = self._mem_accessor._mem_offset + dst_byte_offset
+        self._mem_accessor._data_source[dst_start : dst_start + byte_count] = (
+            src._mem_accessor._data_source[src_start : src_start + byte_count]
+        )
 
     def slice(self, offset_idx: int) -> "MemoryArray[T]":
         return MemoryArray(
