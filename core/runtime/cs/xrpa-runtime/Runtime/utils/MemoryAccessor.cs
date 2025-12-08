@@ -16,6 +16,7 @@
 
 
 using System;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Xrpa
@@ -150,26 +151,6 @@ namespace Xrpa
             return _dataSource == null || _size == 0;
         }
 
-        public void WriteToZeros()
-        {
-            MemoryOffset writePos = new();
-            while (writePos._offset < _size)
-            {
-                if (_size - writePos._offset >= 8)
-                {
-                    WriteUlong(0, writePos);
-                }
-                else if (_size - writePos._offset >= 4)
-                {
-                    WriteInt(0, writePos);
-                }
-                else
-                {
-                    WriteByte(0, writePos);
-                }
-            }
-        }
-
         public void CopyFrom(MemoryAccessor other)
         {
             if (other.IsNull())
@@ -177,23 +158,11 @@ namespace Xrpa
                 return;
             }
             int size = other.Size < _size ? other.Size : _size;
-            MemoryOffset readPos = new();
-            MemoryOffset writePos = new();
-            while (readPos._offset < size)
-            {
-                if (size - readPos._offset >= 8)
-                {
-                    WriteUlong(other.ReadUlong(readPos), writePos);
-                }
-                else if (size - readPos._offset >= 4)
-                {
-                    WriteInt(other.ReadInt(readPos), writePos);
-                }
-                else
-                {
-                    WriteByte(other.ReadByte(readPos), writePos);
-                }
-            }
+            Buffer.MemoryCopy(
+                other._dataSource + other._memOffset,
+                _dataSource + _memOffset,
+                _size,
+                size);
         }
 
         public MemoryArray<ValueType> GetArray<ValueType>() where ValueType : unmanaged
@@ -295,30 +264,28 @@ namespace Xrpa
             int strOffset = offset.Advance(byteCount);
             XrpaUtils.BoundsAssert(strOffset, byteCount, 0, _size);
             byte[] byteArray = new byte[byteCount];
-            for (int i = 0; i < byteCount; i++)
-            {
-                byteArray[i] = *(_dataSource + _memOffset + strOffset + i);
-            }
+            Marshal.Copy((IntPtr)(_dataSource + _memOffset + strOffset), byteArray, 0, byteCount);
             return byteArray;
         }
 
         public void WriteBytes(byte[] val, MemoryOffset offset)
         {
-            if (val == null)
+            WriteBytes(val, 0, val?.Length ?? 0, offset);
+        }
+
+        public void WriteBytes(byte[] val, int srcOffset, int count, MemoryOffset offset)
+        {
+            if (val == null || count == 0)
             {
                 WriteInt(0, offset);
                 return;
             }
 
-            int byteCount = val.Length;
-            WriteInt(byteCount, offset);
+            WriteInt(count, offset);
 
-            int strOffset = offset.Advance(byteCount);
-            XrpaUtils.BoundsAssert(strOffset, byteCount, 0, _size);
-            for (int i = 0; i < byteCount; i++)
-            {
-                *(_dataSource + _memOffset + strOffset + i) = val[i];
-            }
+            int strOffset = offset.Advance(count);
+            XrpaUtils.BoundsAssert(strOffset, count, 0, _size);
+            Marshal.Copy(val, srcOffset, (IntPtr)(_dataSource + _memOffset + strOffset), count);
         }
 
         public static int DynSizeOfBytes(byte[] val)
