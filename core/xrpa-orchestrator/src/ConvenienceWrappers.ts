@@ -261,6 +261,10 @@ export function XrpaPythonStandalone(
 }
 
 async function runInCondaEnvironmentInternal(yamlPath: string, cwd: string, args: string[]) {
+  if (args.length === 0) {
+    throw new Error("args array cannot be empty");
+  }
+
   const yamlContent = await fs.readFile(yamlPath, "utf8");
   const envName = yamlContent.split("\n")[0].split(" ")[1];
 
@@ -271,15 +275,16 @@ async function runInCondaEnvironmentInternal(yamlPath: string, cwd: string, args
   for (const packagedEnvDir of possibleDirs) {
     try {
       await fs.access(packagedEnvDir);
-      const pythonBin = os.platform() === "win32"
-        ? path.join(packagedEnvDir, "Scripts", "python.exe")
-        : path.join(packagedEnvDir, "bin", "python");
-      await fs.access(pythonBin, fs.constants.X_OK);
+      const command = args[0];
+      const commandBin = os.platform() === "win32"
+        ? path.join(packagedEnvDir, "Scripts", `${command}.exe`)
+        : path.join(packagedEnvDir, "bin", command);
+      await fs.access(commandBin, fs.constants.X_OK);
 
       console.log(`Using pre-packaged conda environment at ${packagedEnvDir}`);
 
       await runProcess({
-        filename: pythonBin,
+        filename: commandBin,
         args: args.slice(1),
         cwd,
         pipeStdout: true,
