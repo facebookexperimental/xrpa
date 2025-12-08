@@ -19,7 +19,6 @@
 #pragma once
 
 #include "VisualEmotionDetectionTypes.h"
-#include <ImageTypes.h>
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -30,6 +29,7 @@
 #include <xrpa-runtime/reconciler/ObjectCollection.h>
 #include <xrpa-runtime/transport/TransportStream.h>
 #include <xrpa-runtime/transport/TransportStreamAccessor.h>
+#include <xrpa-runtime/utils/ImageTypes.h>
 #include <xrpa-runtime/utils/MemoryAccessor.h>
 #include <xrpa-runtime/utils/XrpaTypes.h>
 
@@ -44,7 +44,7 @@ class ImageInputReader : public Xrpa::ObjectAccessorInterface {
 
   explicit ImageInputReader(const Xrpa::MemoryAccessor& memAccessor) : Xrpa::ObjectAccessorInterface(memAccessor) {}
 
-  ImageTypes::Image getImage() {
+  Xrpa::Image getImage() {
     return DSEmotionImage::readValue(memAccessor_, readOffset_);
   }
 
@@ -58,7 +58,7 @@ class ImageInputWriter : public ImageInputReader {
 
   explicit ImageInputWriter(const Xrpa::MemoryAccessor& memAccessor) : ImageInputReader(memAccessor) {}
 
-  void setImage(const ImageTypes::Image& value) {
+  void setImage(const Xrpa::Image& value) {
     DSEmotionImage::writeValue(value, memAccessor_, writeOffset_);
   }
 
@@ -246,7 +246,7 @@ class OutboundVisualEmotionDetection : public Xrpa::DataStoreObject {
     return fieldsChanged & 1;
   }
 
-  void sendImageInput(const ImageTypes::Image& image) {
+  void sendImageInput(const Xrpa::Image& image) {
     auto message = ImageInputWriter(collection_->sendMessage(
         getXrpaId(),
         0,

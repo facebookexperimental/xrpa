@@ -22,7 +22,7 @@
 #include "LlmHubTypes.h"
 #include <functional>
 #include <string>
-#include <vector>
+#include <xrpa-runtime/utils/ByteVector.h>
 
 namespace XrpaDataflowPrograms {
 
@@ -47,7 +47,7 @@ class SimpleQuery {
     }
   }
 
-  void sendQuery(const std::string& data, const std::vector<uint8_t>& jpegImageData, int id) {
+  void sendQuery(const std::string& data, const Xrpa::ByteVector& jpegImageData, int id) {
     if (objLlmHubLlmQuery0_) {
       objLlmHubLlmQuery0_->sendQuery(data, jpegImageData, id);
     }

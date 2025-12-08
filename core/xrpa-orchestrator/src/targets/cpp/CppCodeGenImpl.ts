@@ -112,7 +112,7 @@ export const PRIMITIVE_INTRINSICS: PrimitiveIntrinsics = {
   float32: { typename: "float" },
   bool: { typename: "bool" },
   arrayFloat3: { typename: "std::array<float, 3>", headerFile: "<array>" },
-  bytearray: { typename: "std::vector<uint8_t>", headerFile: "<vector>" },
+  bytearray: { typename: "Xrpa::ByteVector", headerFile: "<xrpa-runtime/utils/ByteVector.h>" },
 
   autovar: { typename: "auto" },
 

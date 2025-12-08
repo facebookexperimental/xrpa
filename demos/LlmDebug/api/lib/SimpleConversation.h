@@ -22,7 +22,7 @@
 #include "LlmHubTypes.h"
 #include <functional>
 #include <string>
-#include <vector>
+#include <xrpa-runtime/utils/ByteVector.h>
 
 namespace XrpaDataflowPrograms {
 
@@ -47,7 +47,7 @@ class SimpleConversation {
     }
   }
 
-  void sendChatMessage(const std::string& data, const std::vector<uint8_t>& jpegImageData, int id) {
+  void sendChatMessage(const std::string& data, const Xrpa::ByteVector& jpegImageData, int id) {
     if (objLlmHubLlmConversation2_) {
       objLlmHubLlmConversation2_->sendChatMessage(data, jpegImageData, id);
     }

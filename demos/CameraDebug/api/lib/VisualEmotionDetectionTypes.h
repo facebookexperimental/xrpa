@@ -18,10 +18,10 @@
 
 #pragma once
 
-#include <ImageTypes.h>
 #include <chrono>
 #include <utility>
-#include <vector>
+#include <xrpa-runtime/utils/ByteVector.h>
+#include <xrpa-runtime/utils/ImageTypes.h>
 #include <xrpa-runtime/utils/MemoryAccessor.h>
 #include <xrpa-runtime/utils/XrpaTypes.h>
 
@@ -61,7 +61,7 @@ class DSScalar {
 
 class DSEmotionImage {
  public:
-  static ImageTypes::Image readValue(const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+  static Xrpa::Image readValue(const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
     int32_t width = memAccessor.readValue<int32_t>(offset);
     int32_t height = memAccessor.readValue<int32_t>(offset);
     uint32_t format = memAccessor.readValue<uint32_t>(offset);
@@ -71,11 +71,11 @@ class DSEmotionImage {
     uint64_t exposureDuration = memAccessor.readValue<uint64_t>(offset);
     uint64_t timestamp = memAccessor.readValue<uint64_t>(offset);
     float captureFrameRate = DSScalar::readValue(memAccessor, offset);
-    std::vector<uint8_t> data = memAccessor.readValue<std::vector<uint8_t>>(offset);
-    return ImageTypes::Image{width, height, static_cast<ImageTypes::Format>(format), static_cast<ImageTypes::Encoding>(encoding), static_cast<ImageTypes::Orientation>(orientation), gain, Xrpa::reinterpretValue<std::chrono::nanoseconds, uint64_t>(exposureDuration), Xrpa::reinterpretValue<std::chrono::nanoseconds, uint64_t>(timestamp), captureFrameRate, std::move(data)};
+    Xrpa::ByteVector data = memAccessor.readValue<Xrpa::ByteVector>(offset);
+    return Xrpa::Image{width, height, static_cast<Xrpa::ImageFormat>(format), static_cast<Xrpa::ImageEncoding>(encoding), static_cast<Xrpa::ImageOrientation>(orientation), gain, Xrpa::reinterpretValue<std::chrono::nanoseconds, uint64_t>(exposureDuration), Xrpa::reinterpretValue<std::chrono::nanoseconds, uint64_t>(timestamp), captureFrameRate, std::move(data)};
   }
 
-  static void writeValue(const ImageTypes::Image& val, const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
+  static void writeValue(const Xrpa::Image& val, const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
     memAccessor.writeValue<int32_t>(val.width, offset);
     memAccessor.writeValue<int32_t>(val.height, offset);
     memAccessor.writeValue<uint32_t>(static_cast<uint32_t>(val.format), offset);
@@ -85,11 +85,11 @@ class DSEmotionImage {
     memAccessor.writeValue<uint64_t>(Xrpa::reinterpretValue<uint64_t, std::chrono::nanoseconds>(val.exposureDuration), offset);
     memAccessor.writeValue<uint64_t>(Xrpa::reinterpretValue<uint64_t, std::chrono::nanoseconds>(val.timestamp), offset);
     DSScalar::writeValue(val.captureFrameRate, memAccessor, offset);
-    memAccessor.writeValue<std::vector<uint8_t>>(val.data, offset);
+    memAccessor.writeValue<Xrpa::ByteVector>(val.data, offset);
   }
 
-  static int32_t dynSizeOfValue(const ImageTypes::Image& val) {
-    return Xrpa::MemoryAccessor::dynSizeOfValue<std::vector<uint8_t>>(val.data);
+  static int32_t dynSizeOfValue(const Xrpa::Image& val) {
+    return Xrpa::MemoryAccessor::dynSizeOfValue<Xrpa::ByteVector>(val.data);
   }
 };
 

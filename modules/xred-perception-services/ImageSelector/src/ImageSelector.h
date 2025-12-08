@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <ImageTypes.h>
 #include <lib/ImageSelectorModule.h>
+#include <xrpa-runtime/utils/ImageTypes.h>
 #include <deque>
 #include <memory>
 
@@ -34,7 +34,7 @@ class ImageSelector : public ImageSelectorDataStore::ReconciledImageSelector {
   }
 
  private:
-  std::deque<ImageTypes::Image> images_;
+  std::deque<Xrpa::Image> images_;
   std::deque<ImageSelectorDataStore::DataPoseDynamics> poses_;
 
   bool pickImage();

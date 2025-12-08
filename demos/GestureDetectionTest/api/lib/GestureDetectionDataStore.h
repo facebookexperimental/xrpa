@@ -19,7 +19,6 @@
 #pragma once
 
 #include "GestureDetectionTypes.h"
-#include <ImageTypes.h>
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -30,6 +29,7 @@
 #include <xrpa-runtime/reconciler/ObjectCollection.h>
 #include <xrpa-runtime/transport/TransportStream.h>
 #include <xrpa-runtime/transport/TransportStreamAccessor.h>
+#include <xrpa-runtime/utils/ImageTypes.h>
 #include <xrpa-runtime/utils/MemoryAccessor.h>
 #include <xrpa-runtime/utils/XrpaTypes.h>
 
@@ -44,7 +44,7 @@ class ImageInputReader : public Xrpa::ObjectAccessorInterface {
 
   explicit ImageInputReader(const Xrpa::MemoryAccessor& memAccessor) : Xrpa::ObjectAccessorInterface(memAccessor) {}
 
-  ImageTypes::Image getImage() {
+  Xrpa::Image getImage() {
     return DSGestureImage::readValue(memAccessor_, readOffset_);
   }
 
@@ -58,7 +58,7 @@ class ImageInputWriter : public ImageInputReader {
 
   explicit ImageInputWriter(const Xrpa::MemoryAccessor& memAccessor) : ImageInputReader(memAccessor) {}
 
-  void setImage(const ImageTypes::Image& value) {
+  void setImage(const Xrpa::Image& value) {
     DSGestureImage::writeValue(value, memAccessor_, writeOffset_);
   }
 
@@ -220,7 +220,7 @@ class OutboundGestureDetection : public Xrpa::DataStoreObject {
     handleXrpaFieldsChanged(fieldsChanged);
   }
 
-  void sendImageInput(const ImageTypes::Image& image) {
+  void sendImageInput(const Xrpa::Image& image) {
     auto message = ImageInputWriter(collection_->sendMessage(
         getXrpaId(),
         0,

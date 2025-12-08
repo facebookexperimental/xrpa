@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <xrpa-runtime/utils/ByteVector.h>
 #include <xrpa-runtime/utils/XrpaUtils.h>
 
 #include <cstdint>
@@ -98,53 +99,19 @@ class MemoryAccessor {
     return size_;
   }
 
-  void writeToZeros() {
-    MemoryOffset writePos;
-    while (writePos.offset_ < size_) {
-      if (size_ - writePos.offset_ >= 8) {
-        writeValue<uint64_t>(0, writePos);
-      } else if (size_ - writePos.offset_ >= 4) {
-        writeValue<uint32_t>(0, writePos);
-      } else {
-        writeValue<uint8_t>(0, writePos);
-      }
-    }
-  }
-
   void copyFrom(const MemoryAccessor& other) {
     if (other.isNull()) {
       return;
     }
     int32_t size = other.size_ < size_ ? other.size_ : size_;
-    MemoryOffset readPos;
-    MemoryOffset writePos;
-    while (readPos.offset_ < size) {
-      if (size - readPos.offset_ >= 8) {
-        writeValue<uint64_t>(other.readValue<uint64_t>(readPos), writePos);
-      } else if (size - readPos.offset_ >= 4) {
-        writeValue<uint32_t>(other.readValue<uint32_t>(readPos), writePos);
-      } else {
-        writeValue<uint8_t>(other.readValue<uint8_t>(readPos), writePos);
-      }
-    }
+    std::memcpy(memPtr_ + offset_, other.memPtr_ + other.offset_, size);
   }
 
   void copyFrom(void* ptr) {
     if (ptr == nullptr) {
       return;
     }
-    auto* src = reinterpret_cast<uint8_t*>(ptr);
-    MemoryOffset readPos;
-    MemoryOffset writePos;
-    while (readPos.offset_ < size_) {
-      if (size_ - readPos.offset_ >= 8) {
-        writeValue<uint64_t>(*reinterpret_cast<uint64_t*>(src + readPos.advance(8)), writePos);
-      } else if (size_ - readPos.offset_ >= 4) {
-        writeValue<uint32_t>(*reinterpret_cast<uint32_t*>(src + readPos.advance(4)), writePos);
-      } else {
-        writeValue<uint8_t>(*reinterpret_cast<uint8_t*>(src + readPos.advance(1)), writePos);
-      }
-    }
+    std::memcpy(memPtr_ + offset_, ptr, size_);
   }
 
   template <typename T>
@@ -163,11 +130,11 @@ class MemoryAccessor {
   }
 
   template <>
-  [[nodiscard]] std::vector<uint8_t> readValue<std::vector<uint8_t>>(MemoryOffset& pos) const {
+  [[nodiscard]] ByteVector readValue<ByteVector>(MemoryOffset& pos) const {
     auto byteCount = readValue<int32_t>(pos);
 
     xrpaDebugBoundsAssert(pos.offset_, byteCount, 0, size_);
-    auto ret = std::vector<uint8_t>(byteCount);
+    ByteVector ret(byteCount);
     std::memcpy(ret.data(), memPtr_ + offset_ + pos.advance(byteCount), byteCount);
     return ret;
   }
@@ -188,7 +155,7 @@ class MemoryAccessor {
   }
 
   template <>
-  void writeValue<std::vector<uint8_t>>(const std::vector<uint8_t>& val, MemoryOffset& pos) const {
+  void writeValue<ByteVector>(const ByteVector& val, MemoryOffset& pos) const {
     int32_t byteCount = val.size();
     writeValue<int32_t>(byteCount, pos);
 
@@ -218,8 +185,7 @@ template <>
 }
 
 template <>
-[[nodiscard]] inline int32_t MemoryAccessor::dynSizeOfValue<std::vector<uint8_t>>(
-    const std::vector<uint8_t>& val) {
+[[nodiscard]] inline int32_t MemoryAccessor::dynSizeOfValue<ByteVector>(const ByteVector& val) {
   return val.size();
 }
 

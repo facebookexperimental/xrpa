@@ -53,7 +53,8 @@ void EntryPoint(LlmDebugModule* moduleData) {
     jpegFile.close();
   }
 
-  query->sendQuery("What is in this image?", jpegImageData, 1);
+  query->sendQuery(
+      "What is in this image?", Xrpa::ByteVector(jpegImageData.data(), jpegImageData.size()), 1);
 
   query->onResponse([&](uint64_t /*timestamp*/, const std::string& response, int id) {
     std::cout << "[LlmDebug] Query response [" << id << "]: " << response << std::endl;

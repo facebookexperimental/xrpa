@@ -105,10 +105,9 @@ interface ImageTypeMapping {
   ImageFormat: TypeSpec;
   ImageEncoding: TypeSpec;
   ImageOrientation: TypeSpec;
-  buckDep?: string;
 }
 
-function mapInterfaceImageTypes(imageTypes: ImageTypeMapping, programInterface: ProgramInterface, usingBuck: boolean) {
+function mapInterfaceImageTypes(imageTypes: ImageTypeMapping, programInterface: ProgramInterface) {
   let hasImageTypes = false;
   for (const name in programInterface.namedTypes) {
     const type = programInterface.namedTypes[name];
@@ -122,10 +121,6 @@ function mapInterfaceImageTypes(imageTypes: ImageTypeMapping, programInterface: 
     mapInterfaceType(programInterface, "ImageFormat", imageTypes.ImageFormat);
     mapInterfaceType(programInterface, "ImageEncoding", imageTypes.ImageEncoding);
     mapInterfaceType(programInterface, "ImageOrientation", imageTypes.ImageOrientation);
-
-    if (usingBuck && imageTypes.buckDep) {
-      addBuckDependency(imageTypes.buckDep);
-    }
   }
 }
 
@@ -135,43 +130,42 @@ interface MappableContext {
   externalProgramInterfaces: Record<string, ExternalProgramInterfaceContext>;
 }
 
-export function mapImageTypes(ctx: MappableContext, imageTypes: ImageTypeMapping, usingBuck = false) {
+export function mapImageTypes(ctx: MappableContext, imageTypes: ImageTypeMapping) {
   if (ctx.programInterface) {
-    mapInterfaceImageTypes(imageTypes, ctx.programInterface, usingBuck);
+    mapInterfaceImageTypes(imageTypes, ctx.programInterface);
   }
 
   if (ctx.programInterfaces) {
     for (const programInterface of ctx.programInterfaces) {
-      mapInterfaceImageTypes(imageTypes, programInterface, usingBuck);
+      mapInterfaceImageTypes(imageTypes, programInterface);
     }
   }
 
   for (const key in ctx.externalProgramInterfaces) {
     const programInterface = ctx.externalProgramInterfaces[key].programInterface;
-    mapInterfaceImageTypes(imageTypes, programInterface, usingBuck);
+    mapInterfaceImageTypes(imageTypes, programInterface);
   }
 }
 
 function mapCppImageTypes(ctx: NativeProgramContext) {
   mapImageTypes(ctx, {
     Image: {
-      typename: "ImageTypes::Image",
-      headerFile: "<ImageTypes.h>",
+      typename: "Xrpa::Image",
+      headerFile: "<xrpa-runtime/utils/ImageTypes.h>",
     },
     ImageFormat: {
-      typename: "ImageTypes::Format",
-      headerFile: "<ImageTypes.h>",
+      typename: "Xrpa::ImageFormat",
+      headerFile: "<xrpa-runtime/utils/ImageTypes.h>",
     },
     ImageEncoding: {
-      typename: "ImageTypes::Encoding",
-      headerFile: "<ImageTypes.h>",
+      typename: "Xrpa::ImageEncoding",
+      headerFile: "<xrpa-runtime/utils/ImageTypes.h>",
     },
     ImageOrientation: {
-      typename: "ImageTypes::Orientation",
-      headerFile: "<ImageTypes.h>",
+      typename: "Xrpa::ImageOrientation",
+      headerFile: "<xrpa-runtime/utils/ImageTypes.h>",
     },
-    buckDep: "//arvr/libraries/xred/xrpa/modules/Shared/image:ImageTypes",
-  }, getBuckConfig(ctx) != undefined);
+  });
 }
 
 export function XrpaNativeCppProgram(name: string, outputDir: string, callback: (ctx: NativeProgramContext) => void) {

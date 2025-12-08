@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <ImageTypes.h>
 #include <lib/CameraModule.h>
 
 #include <folly/MPMCQueue.h>
@@ -52,8 +51,8 @@ class CameraFeed : public CameraDataStore::ReconciledCameraFeed {
 
  private:
   OceanSetup* oceanSetup_;
-  folly::MPMCQueue<ImageTypes::Image> rgbQueue_;
-  ImageTypes::Image tempRgbImage_;
+  folly::MPMCQueue<Xrpa::Image> rgbQueue_;
+  Xrpa::Image tempRgbImage_;
 
   CameraMediaManager::Subscription mediaSubscription_;
 };

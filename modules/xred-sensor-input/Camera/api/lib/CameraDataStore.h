@@ -19,7 +19,6 @@
 #pragma once
 
 #include "CameraTypes.h"
-#include <ImageTypes.h>
 #include <functional>
 #include <memory>
 #include <string>
@@ -29,6 +28,7 @@
 #include <xrpa-runtime/reconciler/ObjectCollection.h>
 #include <xrpa-runtime/transport/TransportStream.h>
 #include <xrpa-runtime/transport/TransportStreamAccessor.h>
+#include <xrpa-runtime/utils/ImageTypes.h>
 #include <xrpa-runtime/utils/MemoryAccessor.h>
 #include <xrpa-runtime/utils/XrpaTypes.h>
 
@@ -91,7 +91,7 @@ class CameraImageReader : public Xrpa::ObjectAccessorInterface {
 
   explicit CameraImageReader(const Xrpa::MemoryAccessor& memAccessor) : Xrpa::ObjectAccessorInterface(memAccessor) {}
 
-  ImageTypes::Image getImage() {
+  Xrpa::Image getImage() {
     return DSRgbImage::readValue(memAccessor_, readOffset_);
   }
 
@@ -105,7 +105,7 @@ class CameraImageWriter : public CameraImageReader {
 
   explicit CameraImageWriter(const Xrpa::MemoryAccessor& memAccessor) : CameraImageReader(memAccessor) {}
 
-  void setImage(const ImageTypes::Image& value) {
+  void setImage(const Xrpa::Image& value) {
     DSRgbImage::writeValue(value, memAccessor_, writeOffset_);
   }
 
@@ -281,7 +281,7 @@ class ReconciledCameraFeed : public Xrpa::DataStoreObject {
     return fieldsChanged & 1;
   }
 
-  void sendCameraImage(const ImageTypes::Image& image) {
+  void sendCameraImage(const Xrpa::Image& image) {
     auto message = CameraImageWriter(collection_->sendMessage(
         getXrpaId(),
         1,

@@ -19,7 +19,6 @@
 #pragma once
 
 #include "ImageSelectorTypes.h"
-#include <ImageTypes.h>
 #include <functional>
 #include <memory>
 #include <xrpa-runtime/reconciler/DataStoreInterfaces.h>
@@ -27,6 +26,7 @@
 #include <xrpa-runtime/reconciler/ObjectCollection.h>
 #include <xrpa-runtime/transport/TransportStream.h>
 #include <xrpa-runtime/transport/TransportStreamAccessor.h>
+#include <xrpa-runtime/utils/ImageTypes.h>
 #include <xrpa-runtime/utils/MemoryAccessor.h>
 #include <xrpa-runtime/utils/XrpaTypes.h>
 
@@ -41,7 +41,7 @@ class RgbCameraReader : public Xrpa::ObjectAccessorInterface {
 
   explicit RgbCameraReader(const Xrpa::MemoryAccessor& memAccessor) : Xrpa::ObjectAccessorInterface(memAccessor) {}
 
-  ImageTypes::Image getImage() {
+  Xrpa::Image getImage() {
     return DSImageRgbImage::readValue(memAccessor_, readOffset_);
   }
 
@@ -55,7 +55,7 @@ class RgbCameraWriter : public RgbCameraReader {
 
   explicit RgbCameraWriter(const Xrpa::MemoryAccessor& memAccessor) : RgbCameraReader(memAccessor) {}
 
-  void setImage(const ImageTypes::Image& value) {
+  void setImage(const Xrpa::Image& value) {
     DSImageRgbImage::writeValue(value, memAccessor_, writeOffset_);
   }
 
@@ -97,7 +97,7 @@ class RgbImageRgbImageReader : public Xrpa::ObjectAccessorInterface {
 
   explicit RgbImageRgbImageReader(const Xrpa::MemoryAccessor& memAccessor) : Xrpa::ObjectAccessorInterface(memAccessor) {}
 
-  ImageTypes::Image getImage() {
+  Xrpa::Image getImage() {
     return DSImageRgbImage::readValue(memAccessor_, readOffset_);
   }
 
@@ -111,7 +111,7 @@ class RgbImageRgbImageWriter : public RgbImageRgbImageReader {
 
   explicit RgbImageRgbImageWriter(const Xrpa::MemoryAccessor& memAccessor) : RgbImageRgbImageReader(memAccessor) {}
 
-  void setImage(const ImageTypes::Image& value) {
+  void setImage(const Xrpa::Image& value) {
     DSImageRgbImage::writeValue(value, memAccessor_, writeOffset_);
   }
 
@@ -212,7 +212,7 @@ class ReconciledImageSelector : public Xrpa::DataStoreObject {
     poseDynamicsMessageHandler_ = handler;
   }
 
-  void sendRgbImage(const ImageTypes::Image& image) {
+  void sendRgbImage(const Xrpa::Image& image) {
     auto message = RgbImageRgbImageWriter(collection_->sendMessage(
         getXrpaId(),
         3,

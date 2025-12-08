@@ -20,7 +20,6 @@
 
 #include "AriaTypes.h"
 #include <Eigen/Eigen>
-#include <ImageTypes.h>
 #include <chrono>
 #include <functional>
 #include <lib/ImageSelectorTypes.h>
@@ -33,6 +32,7 @@
 #include <xrpa-runtime/signals/InboundSignalData.h>
 #include <xrpa-runtime/transport/TransportStream.h>
 #include <xrpa-runtime/transport/TransportStreamAccessor.h>
+#include <xrpa-runtime/utils/ImageTypes.h>
 #include <xrpa-runtime/utils/MemoryAccessor.h>
 #include <xrpa-runtime/utils/XrpaTypes.h>
 
@@ -47,7 +47,7 @@ class RgbCameraReader : public Xrpa::ObjectAccessorInterface {
 
   explicit RgbCameraReader(const Xrpa::MemoryAccessor& memAccessor) : Xrpa::ObjectAccessorInterface(memAccessor) {}
 
-  ImageTypes::Image getImage() {
+  Xrpa::Image getImage() {
     return DSRgbImage::readValue(memAccessor_, readOffset_);
   }
 
@@ -61,7 +61,7 @@ class RgbCameraWriter : public RgbCameraReader {
 
   explicit RgbCameraWriter(const Xrpa::MemoryAccessor& memAccessor) : RgbCameraReader(memAccessor) {}
 
-  void setImage(const ImageTypes::Image& value) {
+  void setImage(const Xrpa::Image& value) {
     DSRgbImage::writeValue(value, memAccessor_, writeOffset_);
   }
 
@@ -75,7 +75,7 @@ class SlamCamera1Reader : public Xrpa::ObjectAccessorInterface {
 
   explicit SlamCamera1Reader(const Xrpa::MemoryAccessor& memAccessor) : Xrpa::ObjectAccessorInterface(memAccessor) {}
 
-  ImageTypes::Image getImage() {
+  Xrpa::Image getImage() {
     return DSSlamImage::readValue(memAccessor_, readOffset_);
   }
 
@@ -89,7 +89,7 @@ class SlamCamera1Writer : public SlamCamera1Reader {
 
   explicit SlamCamera1Writer(const Xrpa::MemoryAccessor& memAccessor) : SlamCamera1Reader(memAccessor) {}
 
-  void setImage(const ImageTypes::Image& value) {
+  void setImage(const Xrpa::Image& value) {
     DSSlamImage::writeValue(value, memAccessor_, writeOffset_);
   }
 
@@ -103,7 +103,7 @@ class SlamCamera2Reader : public Xrpa::ObjectAccessorInterface {
 
   explicit SlamCamera2Reader(const Xrpa::MemoryAccessor& memAccessor) : Xrpa::ObjectAccessorInterface(memAccessor) {}
 
-  ImageTypes::Image getImage() {
+  Xrpa::Image getImage() {
     return DSSlamImage::readValue(memAccessor_, readOffset_);
   }
 
@@ -117,7 +117,7 @@ class SlamCamera2Writer : public SlamCamera2Reader {
 
   explicit SlamCamera2Writer(const Xrpa::MemoryAccessor& memAccessor) : SlamCamera2Reader(memAccessor) {}
 
-  void setImage(const ImageTypes::Image& value) {
+  void setImage(const Xrpa::Image& value) {
     DSSlamImage::writeValue(value, memAccessor_, writeOffset_);
   }
 

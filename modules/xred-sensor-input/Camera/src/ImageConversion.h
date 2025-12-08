@@ -16,15 +16,17 @@
 
 #pragma once
 
-#include "ImageTypes.h"
-
 namespace Ocean {
 class Frame;
 }
 
+namespace Xrpa {
+struct Image;
+}
+
 namespace ImageUtils {
 
-Ocean::Frame convertImageToOceanFrame(const ImageTypes::Image& image);
-ImageTypes::Image convertOceanFrameToImage(const Ocean::Frame& frame, float captureFrameRate);
+Ocean::Frame convertImageToOceanFrame(const Xrpa::Image& image);
+Xrpa::Image convertOceanFrameToImage(const Ocean::Frame& frame, float captureFrameRate);
 
 } // namespace ImageUtils

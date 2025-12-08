@@ -19,11 +19,9 @@
 #pragma once
 
 #include "LlmHubTypes.h"
-#include <ImageTypes.h>
 #include <functional>
 #include <memory>
 #include <string>
-#include <vector>
 #include <xrpa-runtime/external_utils/UuidGen.h>
 #include <xrpa-runtime/reconciler/DataStoreInterfaces.h>
 #include <xrpa-runtime/reconciler/DataStoreReconciler.h>
@@ -31,6 +29,8 @@
 #include <xrpa-runtime/reconciler/ObjectCollectionIndex.h>
 #include <xrpa-runtime/transport/TransportStream.h>
 #include <xrpa-runtime/transport/TransportStreamAccessor.h>
+#include <xrpa-runtime/utils/ByteVector.h>
+#include <xrpa-runtime/utils/ImageTypes.h>
 #include <xrpa-runtime/utils/MemoryAccessor.h>
 #include <xrpa-runtime/utils/XrpaTypes.h>
 
@@ -163,8 +163,8 @@ class LlmChatMessageReader : public Xrpa::ObjectAccessorInterface {
   }
 
   // Optional JPEG image data.
-  std::vector<uint8_t> getJpegImageData() {
-    return memAccessor_.readValue<std::vector<uint8_t>>(readOffset_);
+  Xrpa::ByteVector getJpegImageData() {
+    return memAccessor_.readValue<Xrpa::ByteVector>(readOffset_);
   }
 
   // Optional ID. If sent with a chat message, the response will have the same ID.
@@ -186,8 +186,8 @@ class LlmChatMessageWriter : public LlmChatMessageReader {
     memAccessor_.writeValue<std::string>(value, writeOffset_);
   }
 
-  void setJpegImageData(const std::vector<uint8_t>& value) {
-    memAccessor_.writeValue<std::vector<uint8_t>>(value, writeOffset_);
+  void setJpegImageData(const Xrpa::ByteVector& value) {
+    memAccessor_.writeValue<Xrpa::ByteVector>(value, writeOffset_);
   }
 
   void setId(int value) {
@@ -290,8 +290,8 @@ class LlmQueryReader : public Xrpa::ObjectAccessorInterface {
   }
 
   // Optional JPEG image data.
-  std::vector<uint8_t> getJpegImageData() {
-    return memAccessor_.readValue<std::vector<uint8_t>>(readOffset_);
+  Xrpa::ByteVector getJpegImageData() {
+    return memAccessor_.readValue<Xrpa::ByteVector>(readOffset_);
   }
 
   inline bool checkApiKeyChanged(uint64_t fieldsChanged) const {
@@ -411,8 +411,8 @@ class LlmQueryWriter : public LlmQueryReader {
     memAccessor_.writeValue<std::string>(value, writeOffset_);
   }
 
-  void setJpegImageData(const std::vector<uint8_t>& value) {
-    memAccessor_.writeValue<std::vector<uint8_t>>(value, writeOffset_);
+  void setJpegImageData(const Xrpa::ByteVector& value) {
+    memAccessor_.writeValue<Xrpa::ByteVector>(value, writeOffset_);
   }
 
  private:
@@ -425,7 +425,7 @@ class RgbImageFeedReader : public Xrpa::ObjectAccessorInterface {
 
   explicit RgbImageFeedReader(const Xrpa::MemoryAccessor& memAccessor) : Xrpa::ObjectAccessorInterface(memAccessor) {}
 
-  ImageTypes::Image getImage() {
+  Xrpa::Image getImage() {
     return DSRgbImage::readValue(memAccessor_, readOffset_);
   }
 
@@ -439,7 +439,7 @@ class RgbImageFeedWriter : public RgbImageFeedReader {
 
   explicit RgbImageFeedWriter(const Xrpa::MemoryAccessor& memAccessor) : RgbImageFeedReader(memAccessor) {}
 
-  void setImage(const ImageTypes::Image& value) {
+  void setImage(const Xrpa::Image& value) {
     DSRgbImage::writeValue(value, memAccessor_, writeOffset_);
   }
 
@@ -1189,17 +1189,17 @@ class OutboundLlmQuery : public Xrpa::DataStoreObject {
     }
   }
 
-  const std::vector<uint8_t>& getJpegImageData() const {
+  const Xrpa::ByteVector& getJpegImageData() const {
     return localJpegImageData_;
   }
 
-  void setJpegImageData(const std::vector<uint8_t>& jpegImageData) {
+  void setJpegImageData(const Xrpa::ByteVector& jpegImageData) {
     localJpegImageData_ = jpegImageData;
     if ((changeBits_ & 2048) == 0) {
       changeBits_ |= 2048;
       changeByteCount_ += 4;
     }
-    changeByteCount_ += Xrpa::MemoryAccessor::dynSizeOfValue<std::vector<uint8_t>>(localJpegImageData_);
+    changeByteCount_ += Xrpa::MemoryAccessor::dynSizeOfValue<Xrpa::ByteVector>(localJpegImageData_);
     if (collection_) {
       if (!hasNotifiedNeedsWrite_) {
         collection_->notifyObjectNeedsWrite(getXrpaId());
@@ -1213,7 +1213,7 @@ class OutboundLlmQuery : public Xrpa::DataStoreObject {
     LlmQueryWriter objAccessor;
     if (!createWritten_) {
       changeBits_ = 3967;
-      changeByteCount_ = Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localApiKey_) + Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localSysPrompt_) + Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localJsonSchema_) + Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localUserPrompt_) + Xrpa::MemoryAccessor::dynSizeOfValue<std::vector<uint8_t>>(localJpegImageData_) + 56;
+      changeByteCount_ = Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localApiKey_) + Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localSysPrompt_) + Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localJsonSchema_) + Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localUserPrompt_) + Xrpa::MemoryAccessor::dynSizeOfValue<Xrpa::ByteVector>(localJpegImageData_) + 56;
       objAccessor = LlmQueryWriter::create(accessor, getCollectionId(), getXrpaId(), changeByteCount_, createTimestamp_);
       createWritten_ = true;
     } else if (changeBits_ != 0) {
@@ -1263,7 +1263,7 @@ class OutboundLlmQuery : public Xrpa::DataStoreObject {
   uint64_t prepDSFullUpdate() {
     createWritten_ = false;
     changeBits_ = 3967;
-    changeByteCount_ = Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localApiKey_) + Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localSysPrompt_) + Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localJsonSchema_) + Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localUserPrompt_) + Xrpa::MemoryAccessor::dynSizeOfValue<std::vector<uint8_t>>(localJpegImageData_) + 56;
+    changeByteCount_ = Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localApiKey_) + Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localSysPrompt_) + Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localJsonSchema_) + Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(localUserPrompt_) + Xrpa::MemoryAccessor::dynSizeOfValue<Xrpa::ByteVector>(localJpegImageData_) + 56;
     return createTimestamp_;
   }
 
@@ -1326,11 +1326,11 @@ class OutboundLlmQuery : public Xrpa::DataStoreObject {
     return fieldsChanged & 2048;
   }
 
-  void sendQuery(const std::string& data, const std::vector<uint8_t>& jpegImageData, int id) {
+  void sendQuery(const std::string& data, const Xrpa::ByteVector& jpegImageData, int id) {
     auto message = LlmChatMessageWriter(collection_->sendMessage(
         getXrpaId(),
         10,
-        Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(data) + Xrpa::MemoryAccessor::dynSizeOfValue<std::vector<uint8_t>>(jpegImageData) + 12));
+        Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(data) + Xrpa::MemoryAccessor::dynSizeOfValue<Xrpa::ByteVector>(jpegImageData) + 12));
     message.setData(data);
     message.setJpegImageData(jpegImageData);
     message.setId(id);
@@ -1385,7 +1385,7 @@ class OutboundLlmQuery : public Xrpa::DataStoreObject {
   std::string localUserPrompt_ = "";
 
   // Optional JPEG image data.
-  std::vector<uint8_t> localJpegImageData_;
+  Xrpa::ByteVector localJpegImageData_;
 
   uint64_t createTimestamp_;
   uint64_t changeBits_ = 0;
@@ -1737,7 +1737,7 @@ class OutboundLlmTriggeredQuery : public Xrpa::DataStoreObject {
     return fieldsChanged & 2048;
   }
 
-  void sendRgbImageFeed(const ImageTypes::Image& image) {
+  void sendRgbImageFeed(const Xrpa::Image& image) {
     auto message = RgbImageFeedWriter(collection_->sendMessage(
         getXrpaId(),
         11,
@@ -2090,11 +2090,11 @@ class OutboundLlmConversation : public Xrpa::DataStoreObject {
     return fieldsChanged & 512;
   }
 
-  void sendChatMessage(const std::string& data, const std::vector<uint8_t>& jpegImageData, int id) {
+  void sendChatMessage(const std::string& data, const Xrpa::ByteVector& jpegImageData, int id) {
     auto message = LlmChatMessageWriter(collection_->sendMessage(
         getXrpaId(),
         10,
-        Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(data) + Xrpa::MemoryAccessor::dynSizeOfValue<std::vector<uint8_t>>(jpegImageData) + 12));
+        Xrpa::MemoryAccessor::dynSizeOfValue<std::string>(data) + Xrpa::MemoryAccessor::dynSizeOfValue<Xrpa::ByteVector>(jpegImageData) + 12));
     message.setData(data);
     message.setJpegImageData(jpegImageData);
     message.setId(id);

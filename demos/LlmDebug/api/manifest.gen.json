@@ -37,6 +37,8 @@
   "xrpa-runtime/transport/SharedMemoryTransportStream.h",
   "xrpa-runtime/transport/TransportStream.h",
   "xrpa-runtime/transport/TransportStreamAccessor.h",
+  "xrpa-runtime/utils/ByteVector.h",
+  "xrpa-runtime/utils/ImageTypes.h",
   "xrpa-runtime/utils/MemoryAccessor.h",
   "xrpa-runtime/utils/PlacedRingBuffer.h",
   "xrpa-runtime/utils/SimpleReconciler.h",

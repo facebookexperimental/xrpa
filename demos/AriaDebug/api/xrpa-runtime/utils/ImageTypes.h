@@ -1,4 +1,5 @@
 /*
+// @generated
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,25 +17,24 @@
 
 #pragma once
 
+#include <xrpa-runtime/utils/ByteVector.h>
 #include <chrono>
-#include <cstdint>
-#include <vector>
 
-namespace ImageTypes {
+namespace Xrpa {
 
-enum class Format : uint32_t {
+enum class ImageFormat : uint32_t {
   RGB8 = 0,
   BGR8 = 1,
   RGBA8 = 2,
   Y8 = 3,
 };
 
-enum class Encoding : uint32_t {
+enum class ImageEncoding : uint32_t {
   Raw = 0,
   Jpeg = 1,
 };
 
-enum class Orientation : uint32_t {
+enum class ImageOrientation : uint32_t {
   Oriented = 0,
   RotatedCW = 1,
   RotatedCCW = 2,
@@ -45,16 +45,16 @@ struct Image {
   int width;
   int height;
 
-  Format format;
-  Encoding encoding;
-  Orientation orientation;
+  ImageFormat format;
+  ImageEncoding encoding;
+  ImageOrientation orientation;
 
   float gain;
   std::chrono::nanoseconds exposureDuration;
   std::chrono::nanoseconds timestamp;
   float captureFrameRate;
 
-  std::vector<uint8_t> data;
+  Xrpa::ByteVector data;
 };
 
-} // namespace ImageTypes
+} // namespace Xrpa

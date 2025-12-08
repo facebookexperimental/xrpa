@@ -24,11 +24,11 @@
 #include "CameraDataStore.h"
 #include "ImageViewerDataStore.h"
 #include "OpticalCharacterRecognitionDataStore.h"
-#include <ImageTypes.h>
 #include <chrono>
 #include <functional>
 #include <string>
 #include <xrpa-runtime/signals/InboundSignalForwarder.h>
+#include <xrpa-runtime/utils/ImageTypes.h>
 
 namespace XrpaDataflowPrograms {
 
@@ -78,7 +78,7 @@ class OcrTestProgram {
     return fieldsChanged & 2;
   }
 
-  void onCameraImage(std::function<void(uint64_t, const ImageTypes::Image&)> handler) {
+  void onCameraImage(std::function<void(uint64_t, const Xrpa::Image&)> handler) {
     paramCameraImage_ = handler;
   }
 
@@ -196,7 +196,7 @@ class OcrTestProgram {
   // Error message if audio input failed
   std::string paramAudioErrorMessage_ = "";
 
-  std::function<void(uint64_t, const ImageTypes::Image&)> paramCameraImage_ = nullptr;
+  std::function<void(uint64_t, const Xrpa::Image&)> paramCameraImage_ = nullptr;
   std::function<void(uint64_t, const std::string&, std::chrono::nanoseconds, bool, const std::string&)> paramOcrResult_ = nullptr;
   std::function<void(uint64_t, const std::string&, std::chrono::nanoseconds, bool, const std::string&)> paramSpeechCommand_ = nullptr;
   std::shared_ptr<CameraDataStore::OutboundCameraFeed> objCameraCameraFeed0_;
