@@ -52,7 +52,7 @@ class SceneCameraReader : public Xrpa::ObjectAccessorInterface {
 
   // Gaze position in scene camera pixels corresponding to this frame
   Eigen::Vector2f getGazePosition() {
-    return DSVector2::readValue(memAccessor_, readOffset_);
+    return DSScale2::readValue(memAccessor_, readOffset_);
   }
 
  private:
@@ -70,7 +70,7 @@ class SceneCameraWriter : public SceneCameraReader {
   }
 
   void setGazePosition(Eigen::Vector2f value) {
-    DSVector2::writeValue(value, memAccessor_, writeOffset_);
+    DSScale2::writeValue(value, memAccessor_, writeOffset_);
   }
 
  private:
@@ -146,7 +146,7 @@ class EyeEventReader : public Xrpa::ObjectAccessorInterface {
 
   // Mean gaze position in scene camera pixels
   Eigen::Vector2f getMeanGaze() {
-    return DSVector2::readValue(memAccessor_, readOffset_);
+    return DSScale2::readValue(memAccessor_, readOffset_);
   }
 
   // Event amplitude in degrees
@@ -182,7 +182,7 @@ class EyeEventWriter : public EyeEventReader {
   }
 
   void setMeanGaze(Eigen::Vector2f value) {
-    DSVector2::writeValue(value, memAccessor_, writeOffset_);
+    DSScale2::writeValue(value, memAccessor_, writeOffset_);
   }
 
   void setAmplitude(float value) {

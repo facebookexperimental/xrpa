@@ -36,12 +36,12 @@ import {
   ProgramInput,
   Quaternion,
   Scalar,
+  Scale2,
   Signal,
   String,
   Timestamp,
   UnitVector3,
   useCoordinateSystem,
-  Vector2,
   Vector3,
   XrpaDataType,
   XrpaProgramInterface,
@@ -79,14 +79,14 @@ function createEyeTrackingInterface() {
       eventType: EyeEventType,
       startTime: HiResTimestamp("Event start timestamp"),
       endTime: HiResTimestamp("Event end timestamp"),
-      meanGaze: Vector2("Mean gaze position in scene camera pixels"),
+      meanGaze: Scale2("Mean gaze position in scene camera pixels"),
       amplitude: Angle(0, "Event amplitude in degrees"),
       maxVelocity: Scalar(0, "Maximum velocity in pixels/degree"),
     });
 
     const SceneCameraMessage = Message({
       image: sceneImage,
-      gazePosition: Vector2("Gaze position in scene camera pixels corresponding to this frame"),
+      gazePosition: Scale2("Gaze position in scene camera pixels corresponding to this frame"),
     });
 
     ProgramInput("EyeTrackingDevice", Collection({

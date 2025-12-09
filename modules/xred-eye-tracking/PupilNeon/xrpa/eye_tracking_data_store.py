@@ -39,8 +39,8 @@ class SceneCameraReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterface):
     return xrpa.eye_tracking_types.DSSceneImage.read_value(self._mem_accessor, self._read_offset)
 
   # Gaze position in scene camera pixels corresponding to this frame
-  def get_gaze_position(self) -> xrpa.eye_tracking_types.Vector2:
-    return xrpa.eye_tracking_types.DSVector2.read_value(self._mem_accessor, self._read_offset)
+  def get_gaze_position(self) -> xrpa.eye_tracking_types.Scale2:
+    return xrpa.eye_tracking_types.DSScale2.read_value(self._mem_accessor, self._read_offset)
 
 class SceneCameraWriter(SceneCameraReader):
   def __init__(self, mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor):
@@ -50,8 +50,8 @@ class SceneCameraWriter(SceneCameraReader):
   def set_image(self, value: xrpa_runtime.utils.image_types.Image) -> None:
     xrpa.eye_tracking_types.DSSceneImage.write_value(value, self._mem_accessor, self._write_offset)
 
-  def set_gaze_position(self, value: xrpa.eye_tracking_types.Vector2) -> None:
-    xrpa.eye_tracking_types.DSVector2.write_value(value, self._mem_accessor, self._write_offset)
+  def set_gaze_position(self, value: xrpa.eye_tracking_types.Scale2) -> None:
+    xrpa.eye_tracking_types.DSScale2.write_value(value, self._mem_accessor, self._write_offset)
 
 class ImuDataReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterface):
   def __init__(self, mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor):
@@ -101,8 +101,8 @@ class EyeEventReader(xrpa_runtime.utils.xrpa_types.ObjectAccessorInterface):
     return self._mem_accessor.read_ulong(self._read_offset)
 
   # Mean gaze position in scene camera pixels
-  def get_mean_gaze(self) -> xrpa.eye_tracking_types.Vector2:
-    return xrpa.eye_tracking_types.DSVector2.read_value(self._mem_accessor, self._read_offset)
+  def get_mean_gaze(self) -> xrpa.eye_tracking_types.Scale2:
+    return xrpa.eye_tracking_types.DSScale2.read_value(self._mem_accessor, self._read_offset)
 
   # Event amplitude in degrees
   def get_amplitude(self) -> float:
@@ -126,8 +126,8 @@ class EyeEventWriter(EyeEventReader):
   def set_end_time(self, value: int) -> None:
     self._mem_accessor.write_ulong(value, self._write_offset)
 
-  def set_mean_gaze(self, value: xrpa.eye_tracking_types.Vector2) -> None:
-    xrpa.eye_tracking_types.DSVector2.write_value(value, self._mem_accessor, self._write_offset)
+  def set_mean_gaze(self, value: xrpa.eye_tracking_types.Scale2) -> None:
+    xrpa.eye_tracking_types.DSScale2.write_value(value, self._mem_accessor, self._write_offset)
 
   def set_amplitude(self, value: float) -> None:
     xrpa.eye_tracking_types.DSAngle.write_value(value, self._mem_accessor, self._write_offset)
@@ -656,7 +656,7 @@ class ReconciledEyeTrackingDevice(xrpa_runtime.reconciler.data_store_interfaces.
   def check_scene_camera_frame_rate_changed(self, fields_changed: int) -> bool:
     return (fields_changed & 131072) != 0
 
-  def send_scene_camera(self, image: xrpa_runtime.utils.image_types.Image, gaze_position: xrpa.eye_tracking_types.Vector2) -> None:
+  def send_scene_camera(self, image: xrpa_runtime.utils.image_types.Image, gaze_position: xrpa.eye_tracking_types.Scale2) -> None:
     message = SceneCameraWriter(self._collection.send_message(
         self.get_xrpa_id(),
         17,
@@ -673,7 +673,7 @@ class ReconciledEyeTrackingDevice(xrpa_runtime.reconciler.data_store_interfaces.
     message.set_gyro(gyro)
     message.set_accel(accel)
 
-  def send_eye_event(self, event_type: xrpa.eye_tracking_types.EyeEventType, start_time: int, end_time: int, mean_gaze: xrpa.eye_tracking_types.Vector2, amplitude: float, max_velocity: float) -> None:
+  def send_eye_event(self, event_type: xrpa.eye_tracking_types.EyeEventType, start_time: int, end_time: int, mean_gaze: xrpa.eye_tracking_types.Scale2, amplitude: float, max_velocity: float) -> None:
     message = EyeEventWriter(self._collection.send_message(
         self.get_xrpa_id(),
         20,

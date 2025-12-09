@@ -25,6 +25,7 @@ import xrpa_runtime.signals.signal_shared
 import xrpa_runtime.utils.xrpa_module
 from pupil_labs.realtime_api import Device
 from xrpa.eye_tracking_data_store import ReconciledEyeTrackingDevice
+from xrpa.eye_tracking_types import EyeEventType, Scale2
 from xrpa.pupil_neon_application_interface import PupilNeonApplicationInterface
 
 TICK_RATE = 30
@@ -257,8 +258,8 @@ class PupilLabsDeviceHandler(ReconciledEyeTrackingDevice):
                         else "unknown"
                     )
 
-                    # Fetch calibration
-                    calibration_json = await self._fetch_calibration()
+                    # Fetch calibration using the already-connected device
+                    calibration_json = await self._fetch_calibration(device)
 
                     # Queue status update to be processed in tick()
                     self._status_queue.put(
@@ -289,35 +290,88 @@ class PupilLabsDeviceHandler(ReconciledEyeTrackingDevice):
                 }
             )
 
-    async def _fetch_calibration(self):
-        """Fetch camera calibration data from device and return as JSON string."""
+    async def _fetch_calibration(self, device=None):
+        """Fetch camera calibration data from device and return as JSON string.
+
+        Args:
+            device: Optional connected Device instance. If None, creates a new connection.
+        """
         try:
-            async with Device.from_discovered_device(self._device_info) as device:
+            if device is not None:
+                # Use the provided device connection
+                print(
+                    "[PupilNeon] Fetching calibration using existing device connection..."
+                )
                 calibration = await device.get_calibration()
+            else:
+                # Create a new connection if no device provided
+                print("[PupilNeon] Fetching calibration with new device connection...")
+                if self._device_info is None:
+                    print("[PupilNeon] Calibration fetch failed: device_info is None")
+                    return ""
+                async with Device.from_discovered_device(self._device_info) as dev:
+                    calibration = await dev.get_calibration()
 
-                if calibration and hasattr(calibration, "scene_camera"):
-                    scene_cal = calibration.scene_camera
-                    camera_matrix = scene_cal.camera_matrix
+            if calibration is None:
+                print(
+                    "[PupilNeon] Calibration fetch failed: device.get_calibration() returned None"
+                )
+                return ""
 
-                    self._camera_matrix = [
-                        [camera_matrix[0][0], camera_matrix[0][1], camera_matrix[0][2]],
-                        [camera_matrix[1][0], camera_matrix[1][1], camera_matrix[1][2]],
-                        [camera_matrix[2][0], camera_matrix[2][1], camera_matrix[2][2]],
-                    ]
+            # The calibration object has camera data as direct attributes:
+            # - scene_camera_matrix: 3x3 intrinsic matrix
+            # - scene_distortion_coefficients: distortion params
+            # - scene_extrinsics_affine_matrix: extrinsics
+            if not hasattr(calibration, "scene_camera_matrix"):
+                print(
+                    f"[PupilNeon] Calibration fetch failed: calibration object has no 'scene_camera_matrix' attribute. Available attributes: {dir(calibration)}"
+                )
+                return ""
 
-                    calibration_data = {
-                        "camera_matrix": self._camera_matrix,
-                        "width": scene_cal.width if hasattr(scene_cal, "width") else 0,
-                        "height": scene_cal.height
-                        if hasattr(scene_cal, "height")
-                        else 0,
-                    }
+            camera_matrix = calibration.scene_camera_matrix
+            if camera_matrix is None:
+                print(
+                    "[PupilNeon] Calibration fetch failed: scene_camera_matrix is None"
+                )
+                return ""
 
-                    print("[PupilNeon] Camera calibration fetched successfully")
-                    return json.dumps(calibration_data)
+            print(
+                f"[PupilNeon] Raw camera_matrix shape: {camera_matrix.shape if hasattr(camera_matrix, 'shape') else 'N/A'}, type: {type(camera_matrix)}"
+            )
+
+            self._camera_matrix = [
+                [
+                    float(camera_matrix[0][0]),
+                    float(camera_matrix[0][1]),
+                    float(camera_matrix[0][2]),
+                ],
+                [
+                    float(camera_matrix[1][0]),
+                    float(camera_matrix[1][1]),
+                    float(camera_matrix[1][2]),
+                ],
+                [
+                    float(camera_matrix[2][0]),
+                    float(camera_matrix[2][1]),
+                    float(camera_matrix[2][2]),
+                ],
+            ]
+
+            calibration_data = {
+                "camera_matrix": self._camera_matrix,
+            }
+
+            print("[PupilNeon] Camera calibration fetched successfully")
+            print(
+                f"[PupilNeon] Calibration data: fx={self._camera_matrix[0][0]:.2f}, fy={self._camera_matrix[1][1]:.2f}, cx={self._camera_matrix[0][2]:.2f}, cy={self._camera_matrix[1][2]:.2f}"
+            )
+            return json.dumps(calibration_data)
 
         except Exception as e:
             print(f"[PupilNeon] Calibration fetch error: {e}")
+            import traceback
+
+            traceback.print_exc()
 
         return ""
 
@@ -680,33 +734,44 @@ class PupilLabsDeviceHandler(ReconciledEyeTrackingDevice):
 
     def _unproject_gaze_to_direction(self, pixel_x, pixel_y):
         """
-        Convert gaze pixel coordinates to a unit direction vector in camera space.
-        Uses camera intrinsics to unproject 2D pixel to 3D ray.
+        Convert gaze pixel coordinates to a unit direction vector in camera space,
+        then transform to world coordinate convention.
 
         Args:
             pixel_x, pixel_y: Gaze position in scene camera pixels
 
         Returns:
-            (x, y, z) normalized direction vector in camera coordinate frame
+            (x, y, z) normalized direction vector in world coordinate convention
+            World space: X-right, Y-forward, Z-up
         """
         if self._camera_matrix is None:
-            return (0.0, 0.0, 1.0)
+            return (0.0, 1.0, 0.0)  # Default: looking forward in world coords
 
         fx = self._camera_matrix[0][0]
         fy = self._camera_matrix[1][1]
         cx = self._camera_matrix[0][2]
         cy = self._camera_matrix[1][2]
 
-        x_normalized = (pixel_x - cx) / fx
-        y_normalized = (pixel_y - cy) / fy
-        z_normalized = 1.0
+        # Unproject pixel to normalized camera coordinates
+        # Camera space: X-right, Y-down, Z-forward
+        cam_x = (pixel_x - cx) / fx
+        cam_y = (pixel_y - cy) / fy
+        cam_z = 1.0
 
-        magnitude = np.sqrt(x_normalized**2 + y_normalized**2 + z_normalized**2)
+        # Transform from camera coords to world coordinate convention
+        # Camera: X-right, Y-down, Z-forward
+        # World:  X-right, Y-forward, Z-up
+        # So: world_x = cam_x, world_y = cam_z, world_z = -cam_y
+        world_x = cam_x
+        world_y = cam_z  # camera forward -> world forward
+        world_z = -cam_y  # camera down -> world up (negated)
+
+        magnitude = np.sqrt(world_x**2 + world_y**2 + world_z**2)
 
         return (
-            x_normalized / magnitude,
-            y_normalized / magnitude,
-            z_normalized / magnitude,
+            world_x / magnitude,
+            world_y / magnitude,
+            world_z / magnitude,
         )
 
     def _rotate_vector_by_quaternion(self, vector, quaternion):
@@ -905,11 +970,9 @@ class PupilLabsDeviceHandler(ReconciledEyeTrackingDevice):
 
     def _find_gaze_for_timestamp(self, frame_timestamp_ns):
         """Find the gaze data closest to the given frame timestamp."""
-        from xrpa.eye_tracking_types import Vector2
-
         if not self._gaze_history:
             # No gaze data available yet
-            return Vector2(0.0, 0.0)
+            return Scale2(0.0, 0.0)
 
         # Find the gaze timestamp closest to the frame timestamp
         closest_timestamp = min(
@@ -917,7 +980,7 @@ class PupilLabsDeviceHandler(ReconciledEyeTrackingDevice):
         )
 
         gaze_x, gaze_y = self._gaze_history[closest_timestamp]
-        return Vector2(gaze_x, gaze_y)
+        return Scale2(gaze_x, gaze_y)
 
     def _update_frame_rate(self):
         """Update frame rate tracking."""
@@ -972,7 +1035,6 @@ class PupilLabsDeviceHandler(ReconciledEyeTrackingDevice):
 
     def _process_eye_events(self):
         """Process eye events from queue."""
-        from xrpa.eye_tracking_types import EyeEventType, Vector2
 
         while not self._data_queues["events"].empty():
             try:
@@ -986,14 +1048,14 @@ class PupilLabsDeviceHandler(ReconciledEyeTrackingDevice):
                 end_time = event_data["end_time"]
 
                 if "mean_gaze_x" in event_data:
-                    mean_gaze = Vector2(
+                    mean_gaze = Scale2(
                         event_data["mean_gaze_x"], event_data["mean_gaze_y"]
                     )
                     amplitude = event_data["amplitude"]
                     max_velocity = event_data["max_velocity"]
                 else:
                     # For events without gaze data (blinks, onsets), use default values
-                    mean_gaze = Vector2(0.0, 0.0)
+                    mean_gaze = Scale2(0.0, 0.0)
                     amplitude = 0.0
                     max_velocity = 0.0
 

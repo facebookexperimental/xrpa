@@ -30,7 +30,7 @@ namespace EyeTrackingDataStore {
 
 static inline Xrpa::TransportConfig GenTransportConfig() {
   Xrpa::TransportConfig config;
-  config.schemaHash = Xrpa::HashValue(0xc0501e465ab80a0b, 0xf695396386015ca8, 0xffa6f3230c250cbe, 0x5893636f9c85b315);
+  config.schemaHash = Xrpa::HashValue(0x2c6f556bae2a2d8f, 0x97550f7bc9cc0736, 0x7ec8ce9c8fb2e0a7, 0xf7fa50df2f8c2c47);
   config.changelogByteCount = 34883200;
   return config;
 }
@@ -91,7 +91,7 @@ class DSSceneImage {
   }
 };
 
-class DSVector2 {
+class DSScale2 {
  public:
   static Eigen::Vector2f readValue(const Xrpa::MemoryAccessor& memAccessor, Xrpa::MemoryOffset& offset) {
     float x = memAccessor.readValue<float>(offset);

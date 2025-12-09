@@ -21,7 +21,7 @@ import xrpa_runtime.utils.memory_accessor
 import xrpa_runtime.utils.xrpa_types
 
 class eye_tracking_data_store_config:
-  transport_config = xrpa_runtime.utils.xrpa_types.TransportConfig(xrpa_runtime.utils.xrpa_types.HashValue(0xc0501e465ab80a0b, 0xf695396386015ca8, 0xffa6f3230c250cbe, 0x5893636f9c85b315), 34883200)
+  transport_config = xrpa_runtime.utils.xrpa_types.TransportConfig(xrpa_runtime.utils.xrpa_types.HashValue(0x2c6f556bae2a2d8f, 0x97550f7bc9cc0736, 0x7ec8ce9c8fb2e0a7, 0xf7fa50df2f8c2c47), 34883200)
 
 class EyeEventType(enum.Enum):
   Blink = 0
@@ -31,7 +31,7 @@ class EyeEventType(enum.Enum):
   SaccadeOnset = 4
 
 @dataclasses.dataclass
-class Vector2:
+class Scale2:
   x: float
   y: float
 
@@ -99,17 +99,17 @@ class DSSceneImage:
     return xrpa_runtime.utils.memory_accessor.MemoryAccessor.dyn_size_of_bytearray(val.data)
 
 @dataclasses.dataclass
-class DSVector2:
+class DSScale2:
   @staticmethod
-  def read_value(mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor, offset: xrpa_runtime.utils.memory_accessor.MemoryOffset) -> Vector2:
+  def read_value(mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor, offset: xrpa_runtime.utils.memory_accessor.MemoryOffset) -> Scale2:
     x = mem_accessor.read_float(offset)
     y = mem_accessor.read_float(offset)
-    return Vector2(x * 100, y * 100)
+    return Scale2(x, y)
 
   @staticmethod
-  def write_value(val: Vector2, mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor, offset: xrpa_runtime.utils.memory_accessor.MemoryOffset) -> None:
-    mem_accessor.write_float(val.x / 100, offset)
-    mem_accessor.write_float(val.y / 100, offset)
+  def write_value(val: Scale2, mem_accessor: xrpa_runtime.utils.memory_accessor.MemoryAccessor, offset: xrpa_runtime.utils.memory_accessor.MemoryOffset) -> None:
+    mem_accessor.write_float(val.x, offset)
+    mem_accessor.write_float(val.y, offset)
 
 @dataclasses.dataclass
 class DSVector3:
