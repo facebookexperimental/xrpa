@@ -170,8 +170,11 @@ export class YarnWorkspaceBuildOrderGenerator {
       const packageInfo = this.packages.get(packageName);
       if (packageInfo) {
         const packagePath = path.join(this.rootPath, packageInfo.path);
-        console.log(`${packageName}> yarn ${command.join(' ')}`);
-        execSync(`yarn ${command.join(' ')}`, { stdio: 'inherit', cwd: packagePath });
+        const packageJson = fs.readJsonSync(path.join(packagePath, 'package.json'));
+        if (packageJson.scripts?.[command[0]]) {
+          console.log(`${packageName}> yarn ${command.join(' ')}`);
+          execSync(`yarn ${command.join(' ')}`, { stdio: 'inherit', cwd: packagePath });
+        }
       }
     }
   }

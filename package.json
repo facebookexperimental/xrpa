@@ -22,6 +22,7 @@
     "tsc": "ts-node scripts/yarn-workspaces.ts tsc",
     "codegen": "ts-node scripts/yarn-workspaces.ts codegen",
     "build": "ts-node scripts/yarn-workspaces.ts build",
+    "build:release": "yarn build && ts-node scripts/yarn-workspaces.ts oss-publish",
     "audio-input": "yarn workspace @xrpa/xred-audio-input run AudioInput",
     "audio-transcription": "yarn workspace @xrpa/xred-audio-transcription run Transcription",
     "debug": "yarn workspace @xrpa/xred-debug run ImageViewer",
@@ -47,7 +48,6 @@
     "gesture-detection": "yarn workspace @xrpa/xred-gesture-detection run Gesture",
     "clean": "ts-node scripts/yarn-workspaces.ts clean || true",
     "test": "ts-node scripts/yarn-workspaces.ts test || true",
-    "publish:all": "yarn build && echo 'Ready for OSS publishing!'",
     "update-version-numbers": "ts-node scripts/update-version-numbers.ts",
     "buildModules": "tsx .ci/buildModules.ts"
   },
