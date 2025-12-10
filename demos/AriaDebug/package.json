@@ -1,6 +1,6 @@
 {
   "name": "xred-aria-debug",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "Aria Debug",
   "main": "scripts/index.ts",
   "private": true,
@@ -20,12 +20,12 @@
     "ts-node": "^10.9.1"
   },
   "dependencies": {
-    "@xrpa/xred-debug": "^1.14.0",
-    "@xrpa/xred-device-input": "^1.14.0",
-    "@xrpa/xred-perception-services": "^1.14.0",
-    "@xrpa/xred-sensor-input": "^1.14.0",
-    "@xrpa/xred-signal-processing": "^1.14.0",
-    "@xrpa/xrpa-orchestrator": "^1.14.0",
+    "@xrpa/xred-debug": "^1.15.0",
+    "@xrpa/xred-device-input": "^1.15.0",
+    "@xrpa/xred-perception-services": "^1.15.0",
+    "@xrpa/xred-sensor-input": "^1.15.0",
+    "@xrpa/xred-signal-processing": "^1.15.0",
+    "@xrpa/xrpa-orchestrator": "^1.15.0",
     "zod": "^3.21.4"
   }
 }

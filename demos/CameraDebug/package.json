@@ -1,6 +1,6 @@
 {
   "name": "xred-camera-debug",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "Camera module test",
   "main": "scripts/index.ts",
   "private": true,
@@ -20,10 +20,10 @@
     "ts-node": "^10.9.1"
   },
   "dependencies": {
-    "@xrpa/xred-debug": "^1.14.0",
-    "@xrpa/xred-eye-tracking": "^1.14.0",
-    "@xrpa/xred-sensor-input": "^1.14.0",
-    "@xrpa/xred-visual-emotion-detection": "^1.14.0",
-    "@xrpa/xrpa-orchestrator": "^1.14.0"
+    "@xrpa/xred-debug": "^1.15.0",
+    "@xrpa/xred-eye-tracking": "^1.15.0",
+    "@xrpa/xred-sensor-input": "^1.15.0",
+    "@xrpa/xred-visual-emotion-detection": "^1.15.0",
+    "@xrpa/xrpa-orchestrator": "^1.15.0"
   }
 }

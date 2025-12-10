@@ -1,6 +1,6 @@
 {
   "name": "xred-llm-debug",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "LLM module test",
   "main": "scripts/index.ts",
   "private": true,
@@ -23,8 +23,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.24.0",
-    "@xrpa/xred-perception-services": "^1.14.0",
-    "@xrpa/xrpa-orchestrator": "^1.14.0",
+    "@xrpa/xred-perception-services": "^1.15.0",
+    "@xrpa/xrpa-orchestrator": "^1.15.0",
     "express": "5.0.0",
     "zod": "^4.0.0"
   }

@@ -1,7 +1,7 @@
 {
   "name": "xrpa-workspace",
-  "version": "1.14.0",
-  "description": "XRPA Ecosystem Monorepo",
+  "version": "1.15.0",
+  "description": "Xrpa Ecosystem Monorepo",
   "private": true,
   "config": {
     "repo_path": "arvr/libraries/xred/xrpa"

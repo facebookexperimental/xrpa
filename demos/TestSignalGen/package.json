@@ -1,6 +1,6 @@
 {
   "name": "xred-test-signal-gen",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "Signal Generation Test",
   "main": "scripts/TestSignalGenStandalone.ts",
   "private": true,
@@ -20,8 +20,8 @@
     "ts-node": "^10.9.1"
   },
   "dependencies": {
-    "@xrpa/xred-device-input": "^1.14.0",
-    "@xrpa/xred-signal-processing": "^1.14.0",
-    "@xrpa/xrpa-orchestrator": "^1.14.0"
+    "@xrpa/xred-device-input": "^1.15.0",
+    "@xrpa/xred-signal-processing": "^1.15.0",
+    "@xrpa/xrpa-orchestrator": "^1.15.0"
   }
 }

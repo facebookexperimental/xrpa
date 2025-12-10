@@ -1,6 +1,6 @@
 {
   "name": "xred-gesture-detection-test",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "Gesture Detection test",
   "main": "scripts/index.ts",
   "private": true,
@@ -20,9 +20,9 @@
     "ts-node": "^10.9.1"
   },
   "dependencies": {
-    "@xrpa/xrpa-orchestrator": "^1.14.0",
-    "@xrpa/xred-debug": "^1.14.0",
-    "@xrpa/xred-sensor-input": "^1.14.0",
-    "@xrpa/xred-gesture-detection": "^1.14.0"
+    "@xrpa/xrpa-orchestrator": "^1.15.0",
+    "@xrpa/xred-debug": "^1.15.0",
+    "@xrpa/xred-sensor-input": "^1.15.0",
+    "@xrpa/xred-gesture-detection": "^1.15.0"
   }
 }

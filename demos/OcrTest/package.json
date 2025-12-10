@@ -1,6 +1,6 @@
 {
   "name": "xred-ocr-test",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "Ocr test",
   "main": "scripts/index.ts",
   "private": true,
@@ -20,11 +20,11 @@
     "ts-node": "^10.9.1"
   },
   "dependencies": {
-    "@xrpa/xrpa-orchestrator": "^1.14.0",
-    "@xrpa/xred-debug": "^1.14.0",
-    "@xrpa/xred-sensor-input": "^1.14.0",
-    "@xrpa/xred-audio-input": "^1.14.0",
-    "@xrpa/xred-audio-transcription": "^1.14.0",
-    "@xrpa/xred-optical-character-recognition": "^1.14.0"
+    "@xrpa/xrpa-orchestrator": "^1.15.0",
+    "@xrpa/xred-debug": "^1.15.0",
+    "@xrpa/xred-sensor-input": "^1.15.0",
+    "@xrpa/xred-audio-input": "^1.15.0",
+    "@xrpa/xred-audio-transcription": "^1.15.0",
+    "@xrpa/xred-optical-character-recognition": "^1.15.0"
   }
 }

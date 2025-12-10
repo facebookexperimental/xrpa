@@ -1,6 +1,6 @@
 {
   "name": "xred-python-signal-gen",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "Python signal test",
   "main": "scripts/index.ts",
   "private": true,
@@ -20,7 +20,7 @@
     "ts-node": "^10.9.1"
   },
   "dependencies": {
-    "@xrpa/xred-signal-output": "^1.14.0",
-    "@xrpa/xrpa-orchestrator": "^1.14.0"
+    "@xrpa/xred-signal-output": "^1.15.0",
+    "@xrpa/xrpa-orchestrator": "^1.15.0"
   }
 }
