@@ -31,6 +31,7 @@
   "xrpa_runtime/utils/image_utils.py",
   "xrpa_runtime/utils/memory_accessor.py",
   "xrpa_runtime/utils/placed_ring_buffer.py",
+  "xrpa_runtime/utils/spmc_ring_buffer.py",
   "xrpa_runtime/utils/string_embedding.py",
   "xrpa_runtime/utils/time_utils.py",
   "xrpa_runtime/utils/xrpa_module.py",
