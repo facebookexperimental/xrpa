@@ -380,7 +380,13 @@ export async function buildCondaApplication(yamlPath: string, filename: string, 
     params.push("--add-data", `${file}${sep}.`);
   }
 
-  await runInCondaEnvironmentInternal(yamlPath, path.dirname(filename), ["pip", "install", "pyinstaller"]);
+  // Only install pyinstaller if not already present
+  try {
+    await runInCondaEnvironmentInternal(yamlPath, path.dirname(filename), ["pip", "show", "pyinstaller"]);
+  } catch (error) {
+    await runInCondaEnvironmentInternal(yamlPath, path.dirname(filename), ["pip", "install", "pyinstaller"]);
+  }
+
   await runInCondaEnvironmentInternal(yamlPath, path.dirname(filename), [
     "pyinstaller",
     ...params,
