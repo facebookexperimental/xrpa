@@ -595,7 +595,7 @@ void printUsage(const char* programName) {
   std::cout << "  --help             Show this help" << std::endl;
 }
 
-Config parseArgs(int argc, char* argv[]) {
+Config parseArgs(int argc, char* argv[]) { // NOLINT(modernize-avoid-c-arrays)
   Config config;
 
   for (int i = 1; i < argc; ++i) {
