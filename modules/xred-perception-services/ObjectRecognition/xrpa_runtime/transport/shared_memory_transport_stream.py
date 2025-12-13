@@ -158,6 +158,11 @@ class SharedMemoryTransportStream(MemoryTransportStream):
 
                 # Call FlushViewOfFile to flush writes on Windows
                 kernel32 = ctypes.windll.kernel32
+
+                # Define proper function signature for 64-bit compatibility
+                kernel32.FlushViewOfFile.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+                kernel32.FlushViewOfFile.restype = ctypes.wintypes.BOOL
+
                 # Get the buffer address from SharedMemory
                 buf_addr = ctypes.addressof(
                     ctypes.c_char.from_buffer(self._shared_memory.buf)
