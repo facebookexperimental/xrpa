@@ -50,7 +50,8 @@
     "test": "ts-node scripts/yarn-workspaces.ts test || true",
     "update-version-numbers": "ts-node scripts/update-version-numbers.ts",
     "gather-release-binaries": "ts-node scripts/gather-release-binaries.ts",
-    "buildModules": "tsx .ci/buildModules.ts"
+    "buildModules": "tsx .ci/buildModules.ts",
+    "package-conda-env": "tsx scripts/package-conda-env.ts"
   },
   "devDependencies": {
     "@types/node": "18.11.18",
