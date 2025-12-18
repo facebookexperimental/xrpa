@@ -17,16 +17,16 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-export async function sleep(waitTimeInSeconds: number) {
-  return new Promise(resolve => setTimeout(resolve, waitTimeInSeconds));
+export async function sleep(waitTimeInMilliseconds: number) {
+  return new Promise(resolve => setTimeout(resolve, waitTimeInMilliseconds));
 }
 
-export async function withTimeout<T>(p: Promise<T>, timeoutInSeconds: number, errorString = 'Timeout reached', abortFlag?: Future<boolean>): Promise<T> {
+export async function withTimeout<T>(p: Promise<T>, timeoutInMilliseconds: number, errorString = 'Timeout reached', abortFlag?: Future<boolean>): Promise<T> {
   const promises = [
     p,
     new Promise<T>((_, reject) => setTimeout(() => {
       reject(new Error(errorString));
-    }, timeoutInSeconds)),
+    }, timeoutInMilliseconds)),
   ];
 
   if (abortFlag) {
