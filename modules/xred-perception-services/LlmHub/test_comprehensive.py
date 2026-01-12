@@ -99,7 +99,7 @@ class TestResults:
         print(f"Passed: {self.passed}")
         print(f"Failed: {self.failed}")
         print(
-            f"Success rate: {(self.passed/self.total*100):.1f}%"
+            f"Success rate: {(self.passed / self.total * 100):.1f}%"
             if self.total > 0
             else "No tests run"
         )

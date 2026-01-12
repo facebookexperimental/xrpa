@@ -20,7 +20,6 @@ from typing import Any, Dict, Optional
 
 import mediapipe as mp
 import numpy as np
-
 from xrpa.gesture_detection_types import GestureType, MotionDirection
 from xrpa_runtime.utils.image_types import Image as XrpaImage
 from xrpa_runtime.utils.image_utils import convert_to_pil

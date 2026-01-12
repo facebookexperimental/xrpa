@@ -17,7 +17,6 @@ from typing import List
 
 from xrpa_runtime.signals.signal_ring_buffer import SignalRingBuffer
 from xrpa_runtime.signals.signal_shared import SignalPacket, SignalTypeInference
-
 from xrpa_runtime.utils.allocated_memory import AllocatedMemory
 from xrpa_runtime.utils.memory_accessor import MemoryAccessor, MemoryUtils
 

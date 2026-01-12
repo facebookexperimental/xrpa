@@ -19,7 +19,6 @@ from xrpa.python_signal_gen_application_interface import (
     PythonSignalGenApplicationInterface,
 )
 from xrpa.signal_output_types import DeviceBindingType
-
 from xrpa_runtime.signals.signal_shared import SignalChannelData
 
 

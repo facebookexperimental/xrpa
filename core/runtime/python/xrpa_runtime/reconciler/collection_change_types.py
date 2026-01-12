@@ -16,7 +16,6 @@
 from enum import Enum
 
 from xrpa_runtime.transport.transport_stream_accessor import ChangeEventAccessor
-
 from xrpa_runtime.utils.memory_accessor import MemoryAccessor, MemoryOffset
 from xrpa_runtime.utils.xrpa_types import ObjectUuid
 

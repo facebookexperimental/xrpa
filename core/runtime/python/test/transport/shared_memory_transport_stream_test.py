@@ -20,11 +20,9 @@ import unittest
 from arvr.libraries.xred.xrpa.core.runtime.python.test.transport.data_store_reconciler_test import (
     DataStoreReconcilerTest,
 )
-
 from arvr.libraries.xred.xrpa.core.runtime.python.test.transport.transport_test import (
     TransportTest,
 )
-
 from xrpa_runtime.transport.shared_memory_transport_stream import (
     SharedMemoryTransportStream,
 )

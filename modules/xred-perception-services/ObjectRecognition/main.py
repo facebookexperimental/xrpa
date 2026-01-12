@@ -17,7 +17,6 @@ import threading
 
 import cv2
 import torch
-
 import xrpa_runtime.utils.xrpa_module
 from PIL import Image as PilImage
 from transformers import AutoImageProcessor, DeformableDetrForObjectDetection

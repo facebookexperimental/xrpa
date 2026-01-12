@@ -30,7 +30,6 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
 from xrpa.sensory_stimulus_types import Pose, Quaternion, Vector3
 from xrpa.unity_module_test_application_interface import (
     UnityModuleTestApplicationInterface,

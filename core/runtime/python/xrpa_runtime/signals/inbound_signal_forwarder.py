@@ -17,7 +17,6 @@ from typing import TYPE_CHECKING
 
 from xrpa_runtime.signals.inbound_signal_data import InboundSignalDataInterface
 from xrpa_runtime.signals.signal_shared import SignalPacket
-
 from xrpa_runtime.utils.memory_accessor import MemoryAccessor
 
 if TYPE_CHECKING:
