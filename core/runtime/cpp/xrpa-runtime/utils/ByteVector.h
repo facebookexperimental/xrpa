@@ -131,14 +131,14 @@ class ByteVector {
   }
 
  private:
-  static std::unique_ptr<uint8_t[]> allocate(size_type size) {
+  static std::unique_ptr<uint8_t[]> allocate(size_type size) { // NOLINT(modernize-avoid-c-arrays)
     if (size <= 0) {
       return nullptr;
     }
-    return std::unique_ptr<uint8_t[]>(new uint8_t[size]);
+    return std::unique_ptr<uint8_t[]>(new uint8_t[size]); // NOLINT(modernize-avoid-c-arrays)
   }
 
-  std::unique_ptr<uint8_t[]> data_;
+  std::unique_ptr<uint8_t[]> data_; // NOLINT(modernize-avoid-c-arrays)
   size_type size_ = 0;
 };
 
