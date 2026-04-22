@@ -757,7 +757,7 @@ class OutboundBarType : public Xrpa::DataStoreObject {
     return createTimestamp_;
   }
 
-  void processDSUpdate(BarTypeReader& value, uint64_t fieldsChanged) {}
+  void processDSUpdate(BarTypeReader& /*value*/, uint64_t /*fieldsChanged*/) {}
 
   void processDSMessage(
       int32_t /*messageType*/,
