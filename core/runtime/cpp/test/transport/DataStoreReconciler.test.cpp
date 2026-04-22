@@ -377,7 +377,7 @@ class BarTypeLocal : public Xrpa::DataStoreObject {
     }
   }
 
-  void writeDSChanges(TransportStreamAccessor* accessor) {}
+  void writeDSChanges(TransportStreamAccessor* /*accessor*/) {}
 
   static uint64_t prepDSFullUpdate() {
     return 0;
