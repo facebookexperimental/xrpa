@@ -383,10 +383,10 @@ class BarTypeLocal : public Xrpa::DataStoreObject {
     return 0;
   }
 
-  void
-  processDSMessage(int32_t messageType, uint64_t timestamp, const MemoryAccessor& messageAccessor) {
-    // no message handlers
-  }
+  void processDSMessage(
+      int32_t /*messageType*/,
+      uint64_t /*timestamp*/,
+      const MemoryAccessor& /*messageAccessor*/) {}
 };
 
 class FooTypeLocalBinding {
