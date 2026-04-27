@@ -124,8 +124,9 @@ class MemoryAccessor {
     auto byteCount = readValue<int32_t>(pos);
 
     xrpaDebugBoundsAssert(pos.offset_, byteCount, 0, size_);
-    return std::string(
-        reinterpret_cast<char*>(memPtr_ + offset_ + pos.advance(byteCount)), byteCount);
+    return {
+        reinterpret_cast<char*>(memPtr_ + offset_ + pos.advance(byteCount)),
+        static_cast<size_t>(byteCount)};
   }
 
   template <>
