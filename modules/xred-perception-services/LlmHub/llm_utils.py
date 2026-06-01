@@ -227,13 +227,7 @@ def _handle_tool_calling_workflow(
         queue.put((RESULT_MSG, result_str))
         return False, conversation_messages, tool_call_count
 
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    tool_results = loop.run_until_complete(_execute_tool_calls(mcp_tools, tool_calls))
+    tool_results = asyncio.run(_execute_tool_calls(mcp_tools, tool_calls))
 
     updated_messages = conversation_messages.copy()
     updated_messages.append({"role": "ai", "text": result_str})
@@ -256,13 +250,7 @@ def _chat_stream_thread_metagen(
     mcp_server_urls: List[str],
     max_tool_calls=20,
 ):
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    mcp_tools = loop.run_until_complete(get_mcp_tool_set(mcp_server_urls))
+    mcp_tools = asyncio.run(get_mcp_tool_set(mcp_server_urls))
     if not mcp_tools:
         print(
             f"[LlmHub]: sending request to MetaGen proxy using model {payload['model']}"
@@ -422,13 +410,7 @@ def _chat_stream_thread_local_mlx(
     # Always use the default model
     model_path = DEFAULT_MLX_MODEL
 
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    mcp_tools = loop.run_until_complete(get_mcp_tool_set(mcp_server_urls))
+    mcp_tools = asyncio.run(get_mcp_tool_set(mcp_server_urls))
     if not mcp_tools:
         print(f"[LlmHub]: Using default MLX model: {model_path}")
     else:
@@ -556,13 +538,8 @@ def _chat_stream_thread_llama_api(
     mcp_server_urls: List[str],
     max_tool_calls=20,
 ):
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    mcp_tools = loop.run_until_complete(get_mcp_tool_set(mcp_server_urls))
+    runner = asyncio.Runner()
+    mcp_tools = runner.run(get_mcp_tool_set(mcp_server_urls))
     if not mcp_tools:
         print(f"[LlmHub]: sending request to Llama API using model {model_name}")
     else:
@@ -682,9 +659,7 @@ def _chat_stream_thread_llama_api(
                         arguments = {}
 
                     try:
-                        result = loop.run_until_complete(
-                            mcp_tools.call_tool(tool_name, arguments)
-                        )
+                        result = runner.run(mcp_tools.call_tool(tool_name, arguments))
                         tool_result = result or {
                             "content": [{"text": "No result returned"}],
                             "isError": True,
