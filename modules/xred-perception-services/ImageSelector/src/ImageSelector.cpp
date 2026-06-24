@@ -16,6 +16,8 @@
 
 #include "ImageSelector.h"
 
+#include <cassert>
+
 constexpr double kPixelPerDegree8Mp = 2880 / 110.f;
 constexpr double kPixelPerDegree2Mp = kPixelPerDegree8Mp / 2.f;
 
