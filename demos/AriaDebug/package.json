@@ -26,6 +26,6 @@
     "@xrpa/xred-sensor-input": "^1.15.0",
     "@xrpa/xred-signal-processing": "^1.15.0",
     "@xrpa/xrpa-orchestrator": "^1.15.0",
-    "zod": "^3.21.4"
+    "zod": "^4.6.6"
   }
 }

@@ -22,10 +22,10 @@
     "ts-node": "^10.9.1"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@modelcontextprotocol/sdk": "^1.32.0",
     "@xrpa/xred-perception-services": "^1.15.0",
     "@xrpa/xrpa-orchestrator": "^1.15.0",
     "express": "5.0.0",
-    "zod": "^4.0.0"
+    "zod": "^4.6.6"
   }
 }
