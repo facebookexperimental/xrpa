@@ -23,6 +23,7 @@
 #endif
 
 #include <boost/tokenizer.hpp>
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -78,7 +79,7 @@ std::vector<std::string> processCommandLine(int argc, char** argv) {
   }
 
   // reverse the order of the command line arguments for CLI11
-  std::reverse(commandLineArgs.begin(), commandLineArgs.end());
+  std::ranges::reverse(commandLineArgs);
   return commandLineArgs;
 }
 

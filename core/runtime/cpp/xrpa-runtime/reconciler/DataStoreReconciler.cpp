@@ -162,8 +162,7 @@ void DataStoreReconciler::sendFullUpdate() {
   for (auto& iter : collections_) {
     iter.second->prepFullUpdate(entries);
   }
-  std::sort(
-      entries.begin(), entries.end(), [](auto& a, auto& b) { return a.timestamp_ < b.timestamp_; });
+  std::ranges::sort(entries, [](auto& a, auto& b) { return a.timestamp_ < b.timestamp_; });
 
   pendingWrites_.clear();
   for (auto& entry : entries) {
